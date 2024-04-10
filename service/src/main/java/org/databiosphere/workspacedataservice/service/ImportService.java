@@ -4,6 +4,7 @@ import static org.databiosphere.workspacedataservice.shared.model.Schedulable.AR
 import static org.databiosphere.workspacedataservice.shared.model.Schedulable.ARG_TOKEN;
 import static org.databiosphere.workspacedataservice.shared.model.Schedulable.ARG_URL;
 
+import com.google.common.annotations.VisibleForTesting;
 import java.io.Serializable;
 import java.util.HashMap;
 import java.util.Map;
@@ -144,14 +145,15 @@ public class ImportService {
     }
   }
 
-  protected Schedulable createSchedulable(
+  @VisibleForTesting
+  public static Schedulable createSchedulable(
       ImportRequestServerModel.TypeEnum importType,
       UUID jobId,
       Map<String, Serializable> arguments) {
     return switch (importType) {
       case TDRMANIFEST -> new TdrManifestSchedulable(
           jobId.toString(), "TDR manifest import", arguments);
-      case PFB -> new PfbSchedulable(jobId.toString(), "TODO: PFB import", arguments);
+      case PFB -> new PfbSchedulable(jobId.toString(), "PFB import", arguments);
     };
   }
 }

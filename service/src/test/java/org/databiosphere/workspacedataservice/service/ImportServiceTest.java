@@ -1,5 +1,6 @@
 package org.databiosphere.workspacedataservice.service;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.databiosphere.workspacedataservice.generated.ImportRequestServerModel.TypeEnum;
 import static org.databiosphere.workspacedataservice.shared.model.Schedulable.ARG_COLLECTION;
 import static org.databiosphere.workspacedataservice.shared.model.Schedulable.ARG_TOKEN;
@@ -103,7 +104,7 @@ class ImportServiceTest extends TestBase {
     UUID jobId = UUID.randomUUID();
     Map<String, Serializable> arguments = Map.of("foo", "bar", "twenty-three", 23);
 
-    Schedulable actual = importService.createSchedulable(importType, jobId, arguments);
+    Schedulable actual = ImportService.createSchedulable(importType, jobId, arguments);
 
     JobDataMap expectedJobDataMap = new JobDataMap();
     expectedJobDataMap.put("foo", "bar");
@@ -111,7 +112,8 @@ class ImportServiceTest extends TestBase {
 
     assertEquals(jobId.toString(), actual.getId());
     assertEquals(importType.name(), actual.getGroup());
-    assertEquals(expectedJobDataMap, actual.getArgumentsAsJobDataMap());
+
+    assertThat(actual.getJobDetail().getJobDataMap()).isEqualTo(expectedJobDataMap);
   }
 
   private static Stream<Arguments> provideImplementationClasses() {
@@ -126,7 +128,7 @@ class ImportServiceTest extends TestBase {
   void createSchedulableImplementationClasses(
       TypeEnum importType, Class<? extends Job> expectedClass) {
     UUID jobId = UUID.randomUUID();
-    Schedulable actual = importService.createSchedulable(importType, jobId, Map.of());
+    Schedulable actual = ImportService.createSchedulable(importType, jobId, Map.of());
     assertEquals(expectedClass, actual.getImplementation());
   }
 

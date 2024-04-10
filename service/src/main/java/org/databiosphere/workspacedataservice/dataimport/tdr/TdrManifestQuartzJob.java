@@ -1,11 +1,13 @@
 package org.databiosphere.workspacedataservice.dataimport.tdr;
 
 import static org.apache.parquet.avro.AvroReadSupport.READ_INT96_AS_FIXED;
+import static org.databiosphere.workspacedataservice.generated.ImportRequestServerModel.TypeEnum.TDRMANIFEST;
 import static org.databiosphere.workspacedataservice.sam.SamAuthorizationDao.WORKSPACE_ROLES;
 import static org.databiosphere.workspacedataservice.service.ImportService.ARG_TDR_SYNC_PERMISSION;
 import static org.databiosphere.workspacedataservice.shared.model.Schedulable.ARG_COLLECTION;
 import static org.databiosphere.workspacedataservice.shared.model.Schedulable.ARG_TOKEN;
 import static org.databiosphere.workspacedataservice.shared.model.Schedulable.ARG_URL;
+import static org.databiosphere.workspacedataservice.shared.model.job.JobType.DATA_IMPORT;
 
 import bio.terra.datarepo.model.RelationshipModel;
 import bio.terra.datarepo.model.SnapshotExportResponseModel;
@@ -14,6 +16,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.Multimap;
 import com.google.common.collect.Multimaps;
+import io.micrometer.observation.Observation;
 import io.micrometer.observation.ObservationRegistry;
 import java.io.File;
 import java.io.IOException;
@@ -106,6 +109,12 @@ public class TdrManifestQuartzJob extends QuartzJob {
   @Override
   protected JobDao getJobDao() {
     return this.jobDao;
+  }
+
+  @Override
+  protected void annotateObservation(Observation observation) {
+    observation.lowCardinalityKeyValue("jobType", DATA_IMPORT.toString());
+    observation.lowCardinalityKeyValue("importType", TDRMANIFEST.toString());
   }
 
   // TODO AJ-1523 unit tests
@@ -201,10 +210,7 @@ public class TdrManifestQuartzJob extends QuartzJob {
       RecordSink recordSink,
       ImportMode importMode) {
     // upsert this parquet file's contents
-    try (ParquetReader<GenericRecord> avroParquetReader =
-        AvroParquetReader.<GenericRecord>builder(inputFile)
-            .set(READ_INT96_AS_FIXED, "true")
-            .build()) {
+    try (ParquetReader<GenericRecord> avroParquetReader = readerForFile(inputFile)) {
       logger.info("batch-writing records for file ...");
       return batchWriteService.batchWrite(
           recordSourceFactory.forTdrImport(avroParquetReader, table, importMode),
@@ -214,6 +220,22 @@ public class TdrManifestQuartzJob extends QuartzJob {
     } catch (Throwable t) {
       throw new TdrManifestImportException(t.getMessage(), t);
     }
+  }
+
+  /**
+   * Creates an AvroParquetReader for a given input file. This should only be called from within a
+   * try-with-resources. It exists as a standalone method to allow unit tests to work with the same
+   * AvroParquetReader as used by this class.
+   *
+   * @param inputFile the file to read
+   * @return the reader
+   * @throws IOException on problem creating the reader
+   */
+  @VisibleForTesting
+  static ParquetReader<GenericRecord> readerForFile(InputFile inputFile) throws IOException {
+    return AvroParquetReader.<GenericRecord>builder(inputFile)
+        .set(READ_INT96_AS_FIXED, "true")
+        .build();
   }
 
   /**

@@ -1,17 +1,23 @@
 package org.databiosphere.workspacedataservice.dao;
 
 import static org.databiosphere.workspacedataservice.generated.GenericJobServerModel.JobTypeEnum;
+import static org.databiosphere.workspacedataservice.generated.GenericJobServerModel.JobTypeEnum.DATA_IMPORT;
 import static org.databiosphere.workspacedataservice.generated.GenericJobServerModel.StatusEnum;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Preconditions;
+import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.core.instrument.Tags;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.time.Duration;
+import java.time.InstantSource;
 import java.time.ZoneOffset;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
+import org.databiosphere.workspacedataservice.dataimport.ImportJobInput;
 import org.databiosphere.workspacedataservice.generated.GenericJobServerModel;
 import org.databiosphere.workspacedataservice.shared.model.CollectionId;
 import org.databiosphere.workspacedataservice.shared.model.job.Job;
@@ -28,14 +34,21 @@ import org.springframework.stereotype.Repository;
 /** Read/write jobs via the sys_wds.job Postgres table */
 @Repository
 public class PostgresJobDao implements JobDao {
-
   private static final Logger logger = LoggerFactory.getLogger(PostgresJobDao.class);
   private final NamedParameterJdbcTemplate namedTemplate;
   private final ObjectMapper mapper;
+  private final MeterRegistry metrics;
+  private final InstantSource instantSource;
 
-  public PostgresJobDao(NamedParameterJdbcTemplate namedTemplate, ObjectMapper mapper) {
+  public PostgresJobDao(
+      NamedParameterJdbcTemplate namedTemplate,
+      ObjectMapper mapper,
+      MeterRegistry metrics,
+      InstantSource instantSource) {
     this.namedTemplate = namedTemplate;
     this.mapper = mapper;
+    this.metrics = metrics;
+    this.instantSource = instantSource;
   }
 
   @Override
@@ -199,7 +212,7 @@ public class PostgresJobDao implements JobDao {
     logger.info("Job {} is now in status {}", jobId, status);
 
     // return the updated job
-    return getJob(jobId);
+    return measureElapsedTime(getJob(jobId), status);
   }
 
   /**
@@ -216,7 +229,7 @@ public class PostgresJobDao implements JobDao {
             + "from sys_wds.job "
             + "where id = :jobId",
         new MapSqlParameterSource("jobId", jobId.toString()),
-        new AsyncJobRowMapper());
+        new AsyncJobRowMapper(mapper));
   }
 
   public List<GenericJobServerModel> getJobsForCollection(
@@ -235,43 +248,84 @@ public class PostgresJobDao implements JobDao {
       sb.append(" and status in (:statuses)");
       params.addValue("statuses", statuses.get());
     }
-    return namedTemplate.query(sb.toString(), params, new AsyncJobRowMapper());
+    return namedTemplate.query(sb.toString(), params, new AsyncJobRowMapper(mapper));
   }
 
   // rowmapper for retrieving Job objects from the db
   private static class AsyncJobRowMapper implements RowMapper<GenericJobServerModel> {
+    private final ObjectMapper mapper;
+
+    public AsyncJobRowMapper(ObjectMapper mapper) {
+      this.mapper = mapper;
+    }
+
     @Override
     public GenericJobServerModel mapRow(ResultSet rs, int rowNum) throws SQLException {
       UUID jobId = UUID.fromString(rs.getString("id"));
+      JobTypeEnum jobType = getJobType(rs);
+      StatusEnum status = getStatus(rs);
+      var created = rs.getTimestamp("created").toLocalDateTime().atOffset(ZoneOffset.UTC);
+      var updated = rs.getTimestamp("updated").toLocalDateTime().atOffset(ZoneOffset.UTC);
+      UUID collectionId = rs.getObject("collection_id", UUID.class);
 
-      JobTypeEnum jobType = JobTypeEnum.UNKNOWN;
+      // TODO: AJ-1011 also return stacktrace, result.
+      return new GenericJobServerModel(
+              jobId, jobType, /* instanceId= */ collectionId, status, created, updated)
+          .errorMessage(rs.getString("error"))
+          .input(getJobInput(jobType, rs));
+    }
+
+    private JobTypeEnum getJobType(ResultSet rs) throws SQLException {
       String jobTypeStr = rs.getString("type");
       try {
-        jobType = JobTypeEnum.fromValue(jobTypeStr);
+        return JobTypeEnum.fromValue(jobTypeStr);
       } catch (IllegalArgumentException ill) {
         logger.warn("Unexpected JobTypeEnum found: {}", jobTypeStr);
       }
+      return JobTypeEnum.UNKNOWN;
+    }
 
-      StatusEnum status = StatusEnum.UNKNOWN;
+    private StatusEnum getStatus(ResultSet rs) throws SQLException {
       String statusStr = rs.getString("status");
       try {
-        status = StatusEnum.fromValue(statusStr);
+        return StatusEnum.fromValue(statusStr);
       } catch (IllegalArgumentException ill) {
         logger.warn("Unexpected StatusEnum found: {}", statusStr);
       }
-
-      var created = rs.getTimestamp("created").toLocalDateTime().atOffset(ZoneOffset.UTC);
-      var updated = rs.getTimestamp("updated").toLocalDateTime().atOffset(ZoneOffset.UTC);
-
-      UUID collectionId = rs.getObject("collection_id", UUID.class);
-      GenericJobServerModel job =
-          new GenericJobServerModel(jobId, jobType, collectionId, status, created, updated);
-
-      job.errorMessage(rs.getString("error"));
-      job.instanceId(rs.getObject("collection_id", UUID.class));
-
-      // TODO: AJ-1011 also return stacktrace, input, result.
-      return job;
+      return StatusEnum.UNKNOWN;
     }
+
+    private JobInput getJobInput(JobTypeEnum jobType, ResultSet rs) throws SQLException {
+      Class<? extends JobInput> targetClass =
+          DATA_IMPORT.equals(jobType) ? ImportJobInput.class : JobInput.class;
+      try {
+        return mapper.readValue(rs.getString("input"), targetClass);
+      } catch (JsonProcessingException e) {
+        logger.error("Error deserializing input: {}; input will be empty.", e.getMessage());
+      }
+      return JobInput.empty();
+    }
+  }
+
+  private GenericJobServerModel measureElapsedTime(GenericJobServerModel job, StatusEnum status) {
+    metrics
+        .timer("wds.job.elapsed", getTags(job, status))
+        .record(
+            Duration.between(job.getCreated(), instantSource.instant().atOffset(ZoneOffset.UTC)));
+    return job;
+  }
+
+  private static Tags getTags(GenericJobServerModel job, StatusEnum status) {
+    Tags tags = Tags.of("jobType", job.getJobType().toString());
+    tags = tags.and("newStatus", status.toString());
+
+    Object jobInput = job.getInput();
+    if (jobInput != null
+        && job.getJobType() == DATA_IMPORT
+        && jobInput instanceof ImportJobInput inputJobInput) {
+      tags = tags.and("importType", inputJobInput.importType().toString());
+    }
+
+    return tags;
   }
 }

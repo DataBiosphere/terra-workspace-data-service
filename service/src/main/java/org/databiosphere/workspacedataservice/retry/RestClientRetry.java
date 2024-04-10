@@ -1,5 +1,7 @@
 package org.databiosphere.workspacedataservice.retry;
 
+import io.micrometer.observation.Observation;
+import io.micrometer.observation.ObservationRegistry;
 import java.util.Objects;
 import org.databiosphere.workspacedataservice.service.model.exception.AuthenticationException;
 import org.databiosphere.workspacedataservice.service.model.exception.AuthorizationException;
@@ -18,6 +20,11 @@ import org.springframework.web.client.HttpStatusCodeException;
 @Component
 public class RestClientRetry {
   private static final Logger LOGGER = LoggerFactory.getLogger(RestClientRetry.class);
+  private final ObservationRegistry observations;
+
+  public RestClientRetry(ObservationRegistry observations) {
+    this.observations = observations;
+  }
 
   /**
    * Perform a REST client request with logging and exception handling, and return the result of
@@ -41,6 +48,8 @@ public class RestClientRetry {
       listeners = {"retryLoggingListener"})
   public <T> T withRetryAndErrorHandling(RestCall<T> restCall, String loggerHint)
       throws RestException, AuthenticationException, AuthorizationException {
+    Observation observation =
+        Observation.start("wds.outbound", observations).lowCardinalityKeyValue("hint", loggerHint);
     try {
       LOGGER.debug("Sending {} request to REST target ...", loggerHint);
       T functionResult = restCall.run();
@@ -49,10 +58,14 @@ public class RestClientRetry {
       } else {
         LOGGER.debug("{} REST request successful", loggerHint);
       }
+      observation.lowCardinalityKeyValue("outcome", "SUCCEEDED");
       return functionResult;
     } catch (Exception e) {
       int exceptionHttpCode = extractResponseCode(e);
-
+      observation
+          .lowCardinalityKeyValue("responseCode", String.valueOf(exceptionHttpCode))
+          .lowCardinalityKeyValue("outcome", "ERROR");
+      observation.error(e);
       switch (exceptionHttpCode) {
           // retryable http codes
         case 0:
@@ -81,6 +94,8 @@ public class RestClientRetry {
               resolvedStatus,
               "Error from " + loggerHint + " REST target: " + e.getMessage()); // not retryable
       }
+    } finally {
+      observation.stop();
     }
   }
 

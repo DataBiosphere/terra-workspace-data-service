@@ -63,7 +63,7 @@ dependencies {
     implementation 'org.postgresql:postgresql'
     implementation 'org.webjars:webjars-locator-core' // versioned by spring dependency management
     implementation 'com.fasterxml.jackson.dataformat:jackson-dataformat-csv'
-    implementation 'io.sentry:sentry-logback:7.6.0'
+    implementation 'io.sentry:sentry-logback:7.7.0'
     implementation 'net.logstash.logback:logstash-logback-encoder:7.4'
     implementation 'org.codehaus.janino:janino'
     implementation 'org.liquibase:liquibase-core'
@@ -119,7 +119,7 @@ dependencies {
     implementation "org.glassfish.jersey.core:jersey-common"
 
     annotationProcessor 'org.springframework.boot:spring-boot-configuration-processor'
-    runtimeOnly 'org.webjars.npm:swagger-ui-dist:5.13.0'
+    runtimeOnly 'org.webjars.npm:swagger-ui-dist:5.14.0'
     testImplementation 'io.micrometer:micrometer-observation-test'
     testImplementation 'org.springframework.boot:spring-boot-starter-test'
     testImplementation 'org.junit.jupiter:junit-jupiter'

@@ -14,9 +14,9 @@ import java.math.BigDecimal;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
+import org.databiosphere.workspacedataservice.annotations.WithTestObservationRegistry;
 import org.databiosphere.workspacedataservice.common.TestBase;
 import org.databiosphere.workspacedataservice.dao.RecordDao;
-import org.databiosphere.workspacedataservice.observability.TestObservationRegistryConfig;
 import org.databiosphere.workspacedataservice.service.model.DataTypeMapping;
 import org.databiosphere.workspacedataservice.shared.model.RecordAttributes;
 import org.databiosphere.workspacedataservice.shared.model.RecordRequest;
@@ -26,14 +26,13 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.context.annotation.Import;
 import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.ActiveProfiles;
 
 @SpringBootTest
 @DirtiesContext
 @ActiveProfiles(profiles = {"mock-sam"})
-@Import(TestObservationRegistryConfig.class)
+@WithTestObservationRegistry
 class RecordServiceTest extends TestBase {
 
   @Autowired DataTypeInferer inferer;
@@ -59,9 +58,6 @@ class RecordServiceTest extends TestBase {
     // create record service that uses the simple meter registry
     RecordService recordService = new RecordService(recordDao, inferer, observationRegistry);
 
-    // assert the observation registry has no observations
-    assertThat(observationRegistry).hasNumberOfObservationsEqualTo(0);
-
     // insert a simple record; this will create "myAttr" as numeric
     RecordType recordType = RecordType.valueOf("myType");
     recordService.upsertSingleRecord(
@@ -75,10 +71,6 @@ class RecordServiceTest extends TestBase {
     assertEquals(
         Map.of("pk", DataTypeMapping.STRING, "myAttr", DataTypeMapping.NUMBER),
         recordDao.getExistingTableSchema(collectionId, recordType));
-
-    // assert the observation registry still has no counters; we only create an observation when
-    // altering a column, and we just created a table but didn't issue any alters
-    assertThat(observationRegistry).hasNumberOfObservationsEqualTo(0);
 
     // insert another record, which will update the "myAttr" to be a string
     recordService.upsertSingleRecord(

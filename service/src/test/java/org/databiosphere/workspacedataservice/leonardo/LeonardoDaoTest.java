@@ -18,7 +18,6 @@ import org.broadinstitute.dsde.workbench.client.leonardo.model.AppType;
 import org.broadinstitute.dsde.workbench.client.leonardo.model.AuditInfo;
 import org.broadinstitute.dsde.workbench.client.leonardo.model.ListAppResponse;
 import org.databiosphere.workspacedataservice.common.TestBase;
-import org.databiosphere.workspacedataservice.retry.RestClientRetry;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -29,7 +28,7 @@ import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.TestPropertySource;
 
 @DirtiesContext
-@SpringBootTest(classes = {LeonardoConfig.class, RestClientRetry.class})
+@SpringBootTest
 @TestPropertySource(
     properties = {"twds.instance.workspace-id=90e1b179-9f83-4a6f-a8c2-db083df4cd03"})
 class LeonardoDaoTest extends TestBase {

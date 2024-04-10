@@ -12,6 +12,9 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import org.apache.avro.Conversions;
+import org.apache.avro.LogicalType;
+import org.apache.avro.LogicalTypes;
 import org.apache.avro.Schema;
 import org.apache.avro.generic.GenericData;
 import org.apache.avro.generic.GenericEnumSymbol;
@@ -138,7 +141,7 @@ public abstract class AvroRecordConverter {
 
     // Avro fixed
     if (attribute instanceof GenericData.Fixed fixedAttr) {
-      return fixedAttr.toString();
+      return convertFixed(fixedAttr);
     }
 
     // Avro strings
@@ -183,6 +186,38 @@ public abstract class AvroRecordConverter {
         attribute,
         attribute.getClass());
     return attribute.toString();
+  }
+
+  // Parquet has a concept of "physical type" and "logical type". For some numeric types,
+  // the physical type is a fixed-size byte array (GenericData.Fixed), but the logical type
+  // defines the desired shape of the value, such as Decimal. This method converts the fixed-size
+  // byte arrays to decimals.
+  private Object convertFixed(GenericData.Fixed fixedAttr) {
+    // check if this fixed has a logical type
+    LogicalType logicalType = fixedAttr.getSchema().getLogicalType();
+
+    // handle logical decimals
+    if (logicalType instanceof LogicalTypes.Decimal) {
+      // transform the bytes into a BigDecimal. This BigDecimal will have scale and precision
+      // specified by the schema, which can be much larger than the actual values and leads
+      // to trailing zeros in the decimal part of the number
+      BigDecimal bigDecimal =
+          new Conversions.DecimalConversion()
+              .fromFixed(fixedAttr, fixedAttr.getSchema(), logicalType);
+
+      // now, try to turn the BigDecimal back into an int or a double; this truncates the
+      // precision to the actual value. Example: 0.220000000 will become 0.22
+      try {
+        return bigDecimal.intValueExact();
+      } catch (ArithmeticException ae) {
+        return bigDecimal.doubleValue();
+      }
+    }
+
+    // here, we could handle other logical types such as date or the various timestamps
+
+    // if this was NOT a logical decimal, just toString() it so we have some usable value
+    return fixedAttr.toString();
   }
 
   private String convertToString(Object attribute) {

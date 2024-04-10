@@ -12,6 +12,7 @@ import au.com.dius.pact.consumer.junit5.PactTestFor;
 import au.com.dius.pact.core.model.PactSpecVersion;
 import au.com.dius.pact.core.model.RequestResponsePact;
 import au.com.dius.pact.core.model.annotations.Pact;
+import io.micrometer.observation.tck.TestObservationRegistry;
 import java.util.Map;
 import org.broadinstitute.dsde.workbench.client.sam.model.SystemStatus;
 import org.databiosphere.workspacedataservice.retry.RestClientRetry;
@@ -261,12 +262,15 @@ class SamPactTest {
   }
 
   private SamDao getSamDao(MockServer mockServer) {
-    return new HttpSamDao(new HttpSamClientFactory(mockServer.getUrl()), new RestClientRetry());
+    return new HttpSamDao(
+        new HttpSamClientFactory(mockServer.getUrl()),
+        new RestClientRetry(TestObservationRegistry.create()));
   }
 
   private SamAuthorizationDaoFactory samAuthorizationDaoFactory(MockServer mockServer) {
     return new SamAuthorizationDaoFactory(
-        new HttpSamClientFactory(mockServer.getUrl()), new RestClientRetry());
+        new HttpSamClientFactory(mockServer.getUrl()),
+        new RestClientRetry(TestObservationRegistry.create()));
   }
 
   private WorkspaceId dummyWorkspaceId() {
