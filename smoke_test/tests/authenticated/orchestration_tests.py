@@ -13,11 +13,11 @@ class OrchestrationTests(TestCase):
   ORCHESTRATION_HOST = None
   WORKSPACE_NAMESPACE = None
   WORKSPACE_NAME = None
-  ACCESS_TOKEN = None
+  USER_TOKEN = None
 
   @staticmethod
   def build_orchestration_url(path: str) -> str:
-    assert OrchestrationTests.ORCHESTRATION_HOST, "ERROR - OrchestrationSmokeTestCase.ORCHESTRATION_HOST not properly set"
+    assert OrchestrationTests.ORCHESTRATION_HOST, "ERROR - OrchestrationTests.ORCHESTRATION_HOST not properly set"
     if re.match(r"^\s*https?://", OrchestrationTests.ORCHESTRATION_HOST):
       return urljoin(OrchestrationTests.ORCHESTRATION_HOST, path)
     else:
@@ -27,15 +27,8 @@ class OrchestrationTests(TestCase):
   @cache
   def call_orchestration(path: str) -> Response:
     """Function is memoized so that we only make the call once"""
-    access_token = OrchestrationTests.ACCESS_TOKEN
-    oidc_headers = {
-      "Authorization": f"Bearer {access_token}",
-      "OIDC_access_token": access_token,
-      "OIDC_CLAIM_user_id": "cwds_orchestration_test_id",
-      "OIDC_CLAIM_expires_in": "10000",
-      "OIDC_CLAIM_email": "cwds.orchestration.test@example.com"
-    }
-    return requests.get(OrchestrationTests.build_orchestration_url(path), headers=oidc_headers)
+    headers = { "Authorization": f"Bearer {OrchestrationTests.USER_TOKEN}" }
+    return requests.get(OrchestrationTests.build_orchestration_url(path), headers=headers)
 
   @staticmethod
   def workspace_path() -> str:

@@ -43,7 +43,7 @@ def gather_tests(main_args) -> TestSuite:
       OrchestrationTests.ORCHESTRATION_HOST = main_args.orchestration_host
       OrchestrationTests.WORKSPACE_NAMESPACE = main_args.workspace_namespace
       OrchestrationTests.WORKSPACE_NAME = main_args.workspace_name
-      OrchestrationTests.ACCESS_TOKEN = main_args.user_token
+      OrchestrationTests.USER_TOKEN = main_args.user_token
       add_tests_to_suite(suite, OrchestrationTests)
     else:
       print("user_token, workspace_namespace, or workspace_name are missing.  Skipping orchestration tests.")
