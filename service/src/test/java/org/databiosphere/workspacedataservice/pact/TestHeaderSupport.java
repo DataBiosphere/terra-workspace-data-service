@@ -3,7 +3,7 @@ package org.databiosphere.workspacedataservice.pact;
 import com.google.common.collect.ImmutableMap;
 import java.util.Arrays;
 
-class PactTestSupport {
+class TestHeaderSupport {
 
   static final String BEARER_TOKEN = "fakebearertoken";
 
@@ -32,13 +32,5 @@ class PactTestSupport {
         .map(map -> new ImmutableMap.Builder<String, String>().putAll(map))
         .reduce(new ImmutableMap.Builder<>(), (first, second) -> first.putAll(second.build()))
         .build();
-  }
-
-  static ImmutableMap<String, String> authorizedJsonContentTypeHeaders() {
-    return mergeHeaders(authorization(BEARER_TOKEN), contentTypeJson());
-  }
-
-  static ImmutableMap<String, String> authorizedAcceptJsonHeaders() {
-    return mergeHeaders(authorization(BEARER_TOKEN), acceptJson());
   }
 }

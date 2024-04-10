@@ -4,7 +4,7 @@ import static au.com.dius.pact.consumer.dsl.LambdaDsl.newJsonBody;
 import static bio.terra.workspace.model.CloningInstructionsEnum.*;
 import static bio.terra.workspace.model.CloningInstructionsEnum.NOTHING;
 import static org.databiosphere.workspacedataservice.TestTags.PACT_TEST;
-import static org.databiosphere.workspacedataservice.pact.PactTestSupport.*;
+import static org.databiosphere.workspacedataservice.pact.TestHeaderSupport.*;
 import static org.databiosphere.workspacedataservice.workspacemanager.WorkspaceManagerDao.*;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
