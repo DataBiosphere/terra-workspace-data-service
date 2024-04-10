@@ -102,15 +102,19 @@ tests as well as all authenticated tests using the access token provided in this
 ### --orchestration-host
 
 Optional - Can be just a domain or a domain and port, similar to CWDS_HOST, but should point to an
-orchestration backend.
+orchestration backend. Omitting this will cause the orchestration tests to be skipped.
 
 ### --workspace-namespace
 
-Optional - The namespace of the workspace to be used in the orchestration integration tests.
+Optional - The namespace of the workspace to be used in the orchestration integration tests. Omitting
+this will cause the orchestration tests to be skipped. This should be the namespace of the workspace
+identified by the WORKSPACE_ID parameter.
 
 ### --workspace-name
 
-Optional - The name of the workspace to be used in the orchestration integration tests.
+Optional - The name of the workspace to be used in the orchestration integration tests. Omitting this
+will cause the orchestration tests to be skipped. This should be the name of the workspace
+identified by the WORKSPACE_ID parameter.
 
 ### Verbosity
 
