@@ -1,9 +1,11 @@
 package org.databiosphere.workspacedataservice.pact;
 
 import static au.com.dius.pact.consumer.dsl.LambdaDsl.newJsonBody;
+import static bio.terra.workspace.model.CloningInstructionsEnum.*;
 import static bio.terra.workspace.model.CloningInstructionsEnum.NOTHING;
 import static org.databiosphere.workspacedataservice.TestTags.PACT_TEST;
 import static org.databiosphere.workspacedataservice.pact.PactTestSupport.*;
+import static org.databiosphere.workspacedataservice.workspacemanager.WorkspaceManagerDao.*;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -20,7 +22,6 @@ import au.com.dius.pact.core.model.PactSpecVersion;
 import au.com.dius.pact.core.model.RequestResponsePact;
 import au.com.dius.pact.core.model.annotations.Pact;
 import au.com.dius.pact.provider.spring.SpringRestPactRunner;
-import bio.terra.workspace.model.CloningInstructionsEnum;
 import com.google.common.collect.ImmutableMap;
 import io.micrometer.observation.ObservationRegistry;
 import io.micrometer.observation.tck.TestObservationRegistry;
@@ -31,7 +32,6 @@ import org.databiosphere.workspacedataservice.rawls.RawlsApi;
 import org.databiosphere.workspacedataservice.rawls.RawlsClient;
 import org.databiosphere.workspacedataservice.rawls.SnapshotListResponse;
 import org.databiosphere.workspacedataservice.retry.RestClientRetry;
-import org.databiosphere.workspacedataservice.workspacemanager.WorkspaceManagerDao;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -72,30 +72,27 @@ class RawlsPactTest {
     // - each of which has an "attributes" object and a "metadata" object
     return newJsonBody(
             body ->
-                body.array(
+                body.minArrayLike(
                     "gcpDataRepoSnapshots",
+                    /* minSize= */ 1,
                     snapshots ->
-                        snapshots.object(
-                            o ->
-                                o.object(
-                                        "metadata",
-                                        metadata ->
-                                            metadata
-                                                .stringValue("workspaceId", WORKSPACE_UUID)
-                                                .stringValue("resourceId", RESOURCE_UUID)
-                                                .stringType("name")
-                                                .stringType("description")
-                                                .stringType("resourceType")
-                                                .stringType("stewardshipType")
-                                                .stringValue(
-                                                    "cloningInstructions", NOTHING.toString())
-                                                .array("properties", emptyArray -> {}))
-                                    .object(
-                                        "attributes",
-                                        attributes ->
-                                            attributes
-                                                .stringType("instanceName")
-                                                .stringType("snapshot")))))
+                        snapshots
+                            .object(
+                                "metadata",
+                                metadata ->
+                                    metadata
+                                        .uuid("workspaceId", UUID.fromString(WORKSPACE_UUID))
+                                        .uuid("resourceId")
+                                        .stringType("name")
+                                        .stringType("description")
+                                        .stringType("resourceType")
+                                        .stringType("stewardshipType")
+                                        .stringValue("cloningInstructions", NOTHING.toString())
+                                        .array("properties", emptyArray -> {}))
+                            .object(
+                                "attributes",
+                                attributes ->
+                                    attributes.stringType("instanceName").stringType("snapshot"))))
         .build();
   }
 
@@ -115,14 +112,10 @@ class RawlsPactTest {
                 body.stringValue("snapshotId", RESOURCE_UUID)
                     .stringType("name")
                     .stringType("description")
-                    .stringValue(
-                        "cloningInstructions", CloningInstructionsEnum.REFERENCE.toString())
+                    .stringValue("cloningInstructions", REFERENCE.toString())
                     .object(
                         "properties",
-                        properties ->
-                            properties.stringValue(
-                                WorkspaceManagerDao.PROP_PURPOSE,
-                                WorkspaceManagerDao.PURPOSE_POLICY)))
+                        properties -> properties.stringValue(PROP_PURPOSE, PURPOSE_POLICY)))
         .build();
   }
 
@@ -134,9 +127,9 @@ class RawlsPactTest {
             .stringValue("snapshotId", RESOURCE_UUID)
             .stringType("name")
             .stringType("description")
-            .stringValue("cloningInstructions", CloningInstructionsEnum.REFERENCE.toString())
+            .stringValue("cloningInstructions", REFERENCE.toString())
             .object("properties")
-            .stringValue(WorkspaceManagerDao.PROP_PURPOSE, WorkspaceManagerDao.PURPOSE_POLICY)
+            .stringValue(PROP_PURPOSE, PURPOSE_POLICY)
             .closeObject();
     return builder
         .given(
