@@ -11,6 +11,7 @@ import static org.mockito.Mockito.when;
 
 import java.net.URI;
 import java.util.UUID;
+import org.broadinstitute.dsde.workbench.client.sam.ApiException;
 import org.databiosphere.workspacedataservice.annotations.SingleTenant;
 import org.databiosphere.workspacedataservice.dao.CollectionDao;
 import org.databiosphere.workspacedataservice.generated.ImportRequestServerModel;
@@ -114,6 +115,34 @@ class ImportServiceDataPlaneTest {
     // sam dao says the user does not have read or write permission
     stubWriteWorkspacePermission(workspaceId).thenReturn(false);
     stubReadWorkspacePermission(workspaceId).thenReturn(false);
+
+    // ACT/ASSERT
+    // extract the UUID here so the lambda below has only one invocation possibly throwing a runtime
+    // exception
+    UUID collectionUuid = collectionId.id();
+    // perform the import request
+    AuthenticationMaskableException actual =
+        assertThrows(
+            AuthenticationMaskableException.class,
+            () -> importService.createImport(collectionUuid, importRequest));
+
+    // ASSERT
+    assertEquals("Collection", actual.getObjectType());
+  }
+
+  @Test
+  void errorCheckingReadAccess() {
+    // ARRANGE
+    // collection dao says the collection exists and returns the expected workspace id
+    when(collectionDao.collectionSchemaExists(collectionId.id())).thenReturn(true);
+    when(collectionDao.getWorkspaceId(collectionId)).thenReturn(workspaceId);
+    // sam dao says the user does not have write permission, and fails to check read permission
+    stubWriteWorkspacePermission(workspaceId).thenReturn(false);
+    stubReadWorkspacePermission(workspaceId)
+        .thenAnswer(
+            invocation -> {
+              throw new ApiException(0, "Unit test errors");
+            });
 
     // ACT/ASSERT
     // extract the UUID here so the lambda below has only one invocation possibly throwing a runtime

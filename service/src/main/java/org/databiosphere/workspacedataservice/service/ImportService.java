@@ -65,15 +65,20 @@ public class ImportService {
         collectionService.canWriteCollection(CollectionId.of(collectionId));
     logger.debug("hasWriteCollectionPermission? {}", hasWriteCollectionPermission);
     if (!hasWriteCollectionPermission) {
-      boolean hasReadCollectionPermission =
-          collectionService.canReadCollection(CollectionId.of(collectionId));
+      boolean hasReadCollectionPermission = false;
+      try {
+        hasReadCollectionPermission =
+            collectionService.canReadCollection(CollectionId.of(collectionId));
+      } catch (Exception e) {
+        logger.warn("Problem determining read permission for data import: " + e.getMessage(), e);
+      }
       if (hasReadCollectionPermission) {
         // If the user has read permission but not write permission, it is safe to throw
         // a non-maskable auth exception.
         throw new AuthenticationException("This action requires write permission.");
       } else {
-        // User does not even have read permission, so we throw a maskable exception, which will
-        // result in a 404 to the end user.
+        // User does not even have read permission, or we couldn't determine if the user has read
+        // permission, so we throw a maskable exception. This will result in a 404 to the end user.
         throw new AuthenticationMaskableException("Collection");
       }
     }
