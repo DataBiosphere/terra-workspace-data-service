@@ -1,6 +1,5 @@
 import re
 import requests
-import json
 
 from uuid import uuid4
 from functools import cache
@@ -56,5 +55,5 @@ class OrchestrationTests(TestCase):
     response = OrchestrationTests.call_orchestration(self.job_listing_path())
     self.assertEqual(response.status_code, 200,
                      f"Job Listing HTTP Status is not 200: {response.text}")
-    job_list = json.loads(response.text)
+    job_list = response.json()
     self.assertIsInstance(job_list, list, "job listing was not an array")
