@@ -38,7 +38,7 @@ jobs:
   # Note: All workflows from the same PR merge should have the same copy of settings.gradle on disk,
   # which should be the one from the HEAD of the main branch before the workflow starts running
   regulated-tag-job:
-    uses: ./.github/workflows/tag-0.3.0.yml
+    uses: ./.github/workflows/tag.yml
     with:
       # The 'ref' parameter ensures that the consumer version is postfixed with the HEAD commit of the PR branch,
       # facilitating cross-referencing of a pact between Pact Broker and GitHub.
