@@ -85,3 +85,21 @@ jobs:
           name: Test Reports
           path: service/build/reports
           retention-days: 14
+          
+  bump-check:
+    runs-on: ubuntu-latest
+    outputs:
+      is-bump: ${{ steps.skiptest.outputs.is-bump }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Skip version bump merges
+        id: bumpcheck
+        uses: ./.github/actions/bump-skip
+        with:
+          event-name: ${{ github.event_name }}
+
+  tag:
+    if: always() && needs.bump-check.outputs.is-bump == 'no' && github.event_name == 'push' && github.ref == 'refs/heads/main'
+    uses: ./.github/workflows/tag-0.3.0.yml
+    needs: [ build, unit-tests, bump-check ]
+    secrets: inherit
