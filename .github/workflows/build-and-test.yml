@@ -100,6 +100,6 @@ jobs:
 
   tag:
     if: always() && needs.bump-check.outputs.is-bump == 'no' && github.event_name == 'push' && github.ref == 'refs/heads/main'
-    uses: ./.github/workflows/tag-0.3.0.yml
+    uses: ./.github/workflows/tag.yml
     needs: [ build, unit-tests, bump-check ]
     secrets: inherit
