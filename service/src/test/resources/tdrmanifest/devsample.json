@@ -1,0 +1,181 @@
+{
+  "snapshot": {
+    "id": "26f8ca1a-06d7-4466-b3f6-f56d84cbe0b8",
+    "name": "20231025_authdomain_test",
+    "description": "Exported manually from dev environment https://jade.datarepo-dev.broadinstitute.org/snapshots/26f8ca1a-06d7-4466-b3f6-f56d84cbe0b8",
+    "createdDate": "2023-10-25T16:20:57.267774Z",
+    "consentCode": null,
+    "source": [
+      {
+        "dataset": {
+          "id": "c1a15bb3-73ce-4c25-a762-8f12200fc9d0",
+          "name": "person_sample_test",
+          "description": "Dataset based on https://jade.datarepo-dev.broadinstitute.org/snapshots/26f8ca1a-06d7-4466-b3f6-f56d84cbe0b8",
+          "defaultProfileId": "9904f196-c8fd-4d75-a2b5-a2e5b2556310",
+          "createdDate": "2022-07-11T15:27:03.496704Z",
+          "storage": [
+            {
+              "region": "us-central1",
+              "cloudResource": "bigquery",
+              "cloudPlatform": "gcp"
+            },
+            {
+              "region": "us-east4",
+              "cloudResource": "firestore",
+              "cloudPlatform": "gcp"
+            },
+            {
+              "region": "us-central1",
+              "cloudResource": "bucket",
+              "cloudPlatform": "gcp"
+            }
+          ],
+          "secureMonitoringEnabled": true,
+          "cloudPlatform": "gcp",
+          "dataProject": "datarepo-dev-d54f197f",
+          "storageAccount": null,
+          "phsId": "phs000710",
+          "selfHosted": false,
+          "predictableFileIds": false,
+          "tags": [],
+          "resourceLocks": {
+            "exclusive": null,
+            "shared": []
+          }
+        },
+        "datasetProperties": null,
+        "asset": "default"
+      }
+    ],
+    "tables": [
+      {
+        "name": "person",
+        "columns": [
+          {
+            "name": "id",
+            "datatype": "integer",
+            "array_of": false,
+            "required": true
+          },
+          {
+            "name": "first_name",
+            "datatype": "string",
+            "array_of": false,
+            "required": false
+          },
+          {
+            "name": "last_name",
+            "datatype": "string",
+            "array_of": false,
+            "required": false
+          },
+          {
+            "name": "email",
+            "datatype": "string",
+            "array_of": false,
+            "required": false
+          },
+          {
+            "name": "birth_date",
+            "datatype": "date",
+            "array_of": false,
+            "required": false
+          },
+          {
+            "name": "samples",
+            "datatype": "integer",
+            "array_of": true,
+            "required": false
+          }
+        ],
+        "primaryKey": [
+          "id"
+        ],
+        "partitionMode": "none",
+        "datePartitionOptions": null,
+        "intPartitionOptions": null,
+        "rowCount": 3
+      },
+      {
+        "name": "sample",
+        "columns": [
+          {
+            "name": "id",
+            "datatype": "integer",
+            "array_of": false,
+            "required": true
+          },
+          {
+            "name": "sample_name",
+            "datatype": "string",
+            "array_of": false,
+            "required": false
+          },
+          {
+            "name": "sample_file",
+            "datatype": "fileref",
+            "array_of": false,
+            "required": false
+          }
+        ],
+        "primaryKey": [
+          "id"
+        ],
+        "partitionMode": "none",
+        "datePartitionOptions": null,
+        "intPartitionOptions": null,
+        "rowCount": 5
+      }
+    ],
+    "relationships": [
+      {
+        "name": "person_sample",
+        "from": {
+          "table": "person",
+          "column": "samples"
+        },
+        "to": {
+          "table": "sample",
+          "column": "id"
+        }
+      }
+    ],
+    "profileId": "9904f196-c8fd-4d75-a2b5-a2e5b2556310",
+    "dataProject": "datarepo-dev-f76f6adb",
+    "accessInformation": null,
+    "creationInformation": null,
+    "cloudPlatform": "gcp",
+    "properties": null,
+    "duosFirecloudGroup": null,
+    "globalFileIds": false,
+    "compactIdPrefix": null,
+    "tags": [],
+    "resourceLocks": {
+      "exclusive": null,
+      "shared": null
+    }
+  },
+  "validatedPrimaryKeys": null,
+  "format": {
+    "parquet": {
+      "location": {
+        "tables": [
+          {
+            "name": "person",
+            "paths": [
+              "classpath:parquet/devsample/person.parquet"
+            ]
+          },
+          {
+            "name": "sample",
+            "paths": [
+              "classpath:parquet/devsample/sample.parquet"
+            ]
+          }
+        ]
+      },
+      "manifest": "classpath:tdrmanifest/devsample.json"
+    },
+    "workspace": null
+  }
+}

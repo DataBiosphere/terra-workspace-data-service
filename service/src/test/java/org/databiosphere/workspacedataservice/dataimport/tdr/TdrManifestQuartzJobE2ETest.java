@@ -70,6 +70,9 @@ class TdrManifestQuartzJobE2ETest extends TestBase {
   @Value("classpath:tdrmanifest/v2f.json")
   Resource v2fManifestResource;
 
+  @Value("classpath:tdrmanifest/devsample.json")
+  Resource devSampleManifestResource;
+
   UUID collectionId;
 
   @BeforeEach
@@ -212,6 +215,43 @@ class TdrManifestQuartzJobE2ETest extends TestBase {
             .put("all_data_types", 5)
             .put("feature_consequence", 1003)
             .build();
+
+    assertEquals(expectedCounts, actualCounts);
+  }
+
+  @Test
+  @Tag(SLOW)
+  void devSampleManifest() throws IOException, JobExecutionException {
+    var importRequest =
+        new ImportRequestServerModel(TDRMANIFEST, devSampleManifestResource.getURI());
+
+    // because we have a mock scheduler dao, this won't trigger Quartz
+    var genericJobServerModel = importService.createImport(collectionId, importRequest);
+
+    UUID jobId = genericJobServerModel.getJobId();
+    JobExecutionContext mockContext =
+        stubJobContext(jobId, devSampleManifestResource, collectionId);
+
+    // WSM should report no snapshots already linked to this workspace
+    when(wsmDao.enumerateDataRepoSnapshotReferences(any(), anyInt(), anyInt()))
+        .thenReturn(new ResourceList());
+
+    testSupport
+        .buildTdrManifestQuartzJob(/* workspaceId= */ UUID.randomUUID())
+        .execute(mockContext);
+
+    List<RecordTypeSchema> allTypes =
+        recordOrchestratorService.describeAllRecordTypes(collectionId, "v0.2");
+
+    Map<String, Integer> actualCounts =
+        allTypes.stream()
+            .collect(
+                Collectors.toMap(
+                    recordTypeSchema -> recordTypeSchema.name().getName(),
+                    RecordTypeSchema::count));
+
+    Map<String, Integer> expectedCounts =
+        new ImmutableMap.Builder<String, Integer>().put("person", 3).put("sample", 5).build();
 
     assertEquals(expectedCounts, actualCounts);
   }

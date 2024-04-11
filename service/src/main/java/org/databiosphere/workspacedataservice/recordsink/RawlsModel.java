@@ -167,8 +167,14 @@ public class RawlsModel {
     }
   }
 
-  public record CreateAttributeEntityReferenceList(String attributeName)
+  public record CreateAttributeEntityReferenceList(String attributeListName)
       implements AttributeOperation {
+
+    @Override
+    @JsonIgnore // prefer attributeListName for serialization
+    public String attributeName() {
+      return attributeListName;
+    }
 
     @Override
     public Op op() {
