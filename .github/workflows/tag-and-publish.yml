@@ -30,7 +30,7 @@ jobs:
         id: tag
         env:
           GITHUB_TOKEN: ${{ secrets.BROADBOT_TOKEN }}
-          DEFAULT_BUMP: patch
+          DEFAULT_BUMP: minor
           RELEASE_BRANCHES: main
           VERSION_FILE_PATH: build.gradle
           VERSION_LINE_MATCH: "^\\s*version\\s*=\\s*'.*'"
