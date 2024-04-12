@@ -163,18 +163,18 @@
           {
             "name": "person",
             "paths": [
-              "classpath:parquet/devsample/person.parquet"
+              "classpath:parquet/with-entity-reference-lists/person.parquet"
             ]
           },
           {
             "name": "sample",
             "paths": [
-              "classpath:parquet/devsample/sample.parquet"
+              "classpath:parquet/with-entity-reference-lists/sample.parquet"
             ]
           }
         ]
       },
-      "manifest": "classpath:tdrmanifest/devsample.json"
+      "manifest": "classpath:tdrmanifest/with-entity-reference-lists.json"
     },
     "workspace": null
   }

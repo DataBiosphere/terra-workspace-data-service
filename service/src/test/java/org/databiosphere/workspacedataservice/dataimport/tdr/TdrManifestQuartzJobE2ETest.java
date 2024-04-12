@@ -70,8 +70,8 @@ class TdrManifestQuartzJobE2ETest extends TestBase {
   @Value("classpath:tdrmanifest/v2f.json")
   Resource v2fManifestResource;
 
-  @Value("classpath:tdrmanifest/devsample.json")
-  Resource devSampleManifestResource;
+  @Value("classpath:tdrmanifest/with-entity-reference-lists.json")
+  Resource withEntityReferenceListsResource;
 
   UUID collectionId;
 
@@ -221,16 +221,16 @@ class TdrManifestQuartzJobE2ETest extends TestBase {
 
   @Test
   @Tag(SLOW)
-  void devSampleManifest() throws IOException, JobExecutionException {
+  void withEntityReferenceListsManifest() throws IOException, JobExecutionException {
     var importRequest =
-        new ImportRequestServerModel(TDRMANIFEST, devSampleManifestResource.getURI());
+        new ImportRequestServerModel(TDRMANIFEST, withEntityReferenceListsResource.getURI());
 
     // because we have a mock scheduler dao, this won't trigger Quartz
     var genericJobServerModel = importService.createImport(collectionId, importRequest);
 
     UUID jobId = genericJobServerModel.getJobId();
     JobExecutionContext mockContext =
-        stubJobContext(jobId, devSampleManifestResource, collectionId);
+        stubJobContext(jobId, withEntityReferenceListsResource, collectionId);
 
     // WSM should report no snapshots already linked to this workspace
     when(wsmDao.enumerateDataRepoSnapshotReferences(any(), anyInt(), anyInt()))
