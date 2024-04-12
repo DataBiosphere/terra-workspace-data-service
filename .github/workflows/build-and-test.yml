@@ -85,3 +85,32 @@ jobs:
           name: Test Reports
           path: service/build/reports
           retention-days: 14
+          
+  bump-check:
+    runs-on: ubuntu-latest
+    outputs:
+      is-bump: ${{ steps.skiptest.outputs.is-bump }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Skip version bump merges
+        id: bumpcheck
+        uses: ./.github/actions/bump-skip
+        with:
+          event-name: ${{ github.event_name }}
+
+  tag:
+    if: always() && needs.bump-check.outputs.is-bump == 'no' && github.event_name == 'push' && github.ref == 'refs/heads/main'
+    uses: ./.github/workflows/tag.yml
+    needs: [ build, unit-tests, bump-check ]
+    secrets: inherit
+
+  # Publish Docker image to Google and Azure Container Registries, also reports to sherlock
+  docker-image-job:
+    if: always() && needs.bump-check.outputs.is-bump == 'no' && github.event_name == 'push' && github.ref == 'refs/heads/main'
+    needs: [build, bump-check, tag]
+    uses: ./.github/workflows/publish-docker.yml
+    with:
+      new-tag: ${{ needs.tag-job.outputs.new_tag }}
+    secrets:
+      ACR_SP_PASSWORD: ${{ secrets.ACR_SP_PASSWORD }}
+      ACR_SP_USER: ${{ secrets.ACR_SP_USER }}
