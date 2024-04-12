@@ -175,13 +175,14 @@ class WsmPactTest {
                         "cloningInstructions", CloningInstructionsEnum.REFERENCE.toString());
                     metadata.datetime("name", nameFormatString);
                     // expect exactly one property, declaring the snapshot as being for policy only
-                    metadata.minMaxArrayLike(
+                    metadata.array(
                         "properties",
-                        /* minSize= */ 1,
-                        /* maxSize= */ 1,
-                        p -> {
-                          p.stringValue(
-                              WorkspaceManagerDao.PROP_PURPOSE, WorkspaceManagerDao.PURPOSE_POLICY);
+                        a -> {
+                          a.object(
+                              p -> {
+                                p.stringValue("key", WorkspaceManagerDao.PROP_PURPOSE);
+                                p.stringValue("value", WorkspaceManagerDao.PURPOSE_POLICY);
+                              });
                         });
                   });
             })
