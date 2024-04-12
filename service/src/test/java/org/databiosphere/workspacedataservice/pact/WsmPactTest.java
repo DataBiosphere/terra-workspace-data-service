@@ -180,8 +180,8 @@ class WsmPactTest {
                         /* minSize= */ 1,
                         /* maxSize= */ 3,
                         p -> {
-                          p.stringValue("key", WorkspaceManagerDao.PROP_PURPOSE);
-                          p.stringValue("value", WorkspaceManagerDao.PURPOSE_POLICY);
+                          p.stringValue(
+                              WorkspaceManagerDao.PROP_PURPOSE, WorkspaceManagerDao.PURPOSE_POLICY);
                         });
                   });
             })
@@ -384,8 +384,9 @@ class WsmPactTest {
                                       /* minSize= */ 1,
                                       /* maxSize= */ 3,
                                       p -> {
-                                        p.stringValue("key", WorkspaceManagerDao.PROP_PURPOSE);
-                                        p.stringValue("value", WorkspaceManagerDao.PURPOSE_POLICY);
+                                        p.stringValue(
+                                            WorkspaceManagerDao.PROP_PURPOSE,
+                                            WorkspaceManagerDao.PURPOSE_POLICY);
                                       });
                                 });
                             resource.object(
