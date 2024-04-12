@@ -384,9 +384,8 @@ class WsmPactTest {
                                       /* minSize= */ 1,
                                       /* maxSize= */ 1,
                                       p -> {
-                                        p.stringValue(
-                                            WorkspaceManagerDao.PROP_PURPOSE,
-                                            WorkspaceManagerDao.PURPOSE_POLICY);
+                                        p.stringValue("key", WorkspaceManagerDao.PROP_PURPOSE);
+                                        p.stringValue("value", WorkspaceManagerDao.PURPOSE_POLICY);
                                       });
                                 });
                             resource.object(
