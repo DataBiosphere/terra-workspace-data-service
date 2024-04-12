@@ -178,7 +178,7 @@ class WsmPactTest {
                     metadata.minMaxArrayLike(
                         "properties",
                         /* minSize= */ 1,
-                        /* maxSize= */ 3,
+                        /* maxSize= */ 1,
                         p -> {
                           p.stringValue(
                               WorkspaceManagerDao.PROP_PURPOSE, WorkspaceManagerDao.PURPOSE_POLICY);
@@ -382,7 +382,7 @@ class WsmPactTest {
                                   metadata.minMaxArrayLike(
                                       "properties",
                                       /* minSize= */ 1,
-                                      /* maxSize= */ 3,
+                                      /* maxSize= */ 1,
                                       p -> {
                                         p.stringValue(
                                             WorkspaceManagerDao.PROP_PURPOSE,
