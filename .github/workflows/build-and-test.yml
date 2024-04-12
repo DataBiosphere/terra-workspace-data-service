@@ -89,7 +89,7 @@ jobs:
   bump-check:
     runs-on: ubuntu-latest
     outputs:
-      is-bump: ${{ steps.skiptest.outputs.is-bump }}
+      is-bump: ${{ steps.bumpcheck.outputs.is-bump }}
     steps:
       - uses: actions/checkout@v4
       - name: Skip version bump merges
