@@ -167,8 +167,14 @@ public class RawlsModel {
     }
   }
 
-  public record CreateAttributeEntityReferenceList(String attributeName)
+  public record CreateAttributeEntityReferenceList(String attributeListName)
       implements AttributeOperation {
+
+    @Override
+    @JsonIgnore // prefer attributeListName for serialization
+    public String attributeName() {
+      return attributeListName;
+    }
 
     @Override
     public Op op() {
@@ -186,11 +192,11 @@ public class RawlsModel {
     }
   }
 
-  @VisibleForTesting
   /**
    * This deserializer allows expressive testing of serialized JSON, no parts of the current
    * production runtime require the Rawls JSON to be deserialized.
    */
+  @VisibleForTesting
   static class AttributeValueDeserializer extends JsonDeserializer<AttributeValue> {
 
     @Override

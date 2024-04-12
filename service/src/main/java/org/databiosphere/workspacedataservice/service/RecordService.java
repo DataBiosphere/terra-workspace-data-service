@@ -102,17 +102,19 @@ public class RecordService {
       for (Map.Entry<String, Object> attribute : arrayAttributesForThisRecord) {
         // How to read relation list depends on its source, which we don't know here, so we have to
         // check
-        List<String> rels;
+        List<Object> rels;
         if (attribute.getValue() instanceof List<?>) {
-          rels = (List<String>) attribute.getValue();
+          // attribute.getValue() might be a Collection<RelationAttribute>, so we can't just cast
+          // it to a List<String>
+          rels = (List<Object>) attribute.getValue();
         } else {
           rels =
               Arrays.asList(
-                  inferer.getArrayOfType(attribute.getValue().toString(), String[].class));
+                  inferer.getArrayOfType(attribute.getValue().toString(), Object[].class));
         }
         Relation relDef = new Relation(attribute.getKey(), RelationUtils.getTypeValueForList(rels));
         List<RelationValue> relList = relationArrayValues.getOrDefault(relDef, new ArrayList<>());
-        relList.addAll(rels.stream().map(r -> createRelationValue(rec, r)).toList());
+        relList.addAll(rels.stream().map(r -> createRelationValue(rec, r.toString())).toList());
         relationArrayValues.put(relDef, relList);
       }
     }
