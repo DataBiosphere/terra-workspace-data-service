@@ -17,6 +17,17 @@ env:
   CAN_I_DEPLOY_RUN_NAME: 'can-i-deploy-${{ github.event.repository.name }}-${{ github.run_id }}-${{ github.run_attempt }}'
 
 jobs:
+  bump-check:
+    runs-on: ubuntu-latest
+    outputs:
+      is-bump: ${{ steps.bumpcheck.outputs.is-bump }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Skip version bump merges
+        id: bumpcheck
+        uses: ./.github/actions/bump-skip
+        with:
+          event-name: ${{ github.event_name }}
   # The primary objective of this section is to carefully control the dispatching of tags,
   # ensuring it only occurs during the 'Tag, publish, deploy' workflow.
   # However, a challenge arises with contract tests, as they require knowledge of the upcoming tag
@@ -38,6 +49,8 @@ jobs:
   # Note: All workflows from the same PR merge should have the same copy of settings.gradle on disk,
   # which should be the one from the HEAD of the main branch before the workflow starts running
   regulated-tag-job:
+    needs: [ bump-check ]
+    if: ${{ needs.bump-check.outputs.is-bump == 'no' }}
     uses: ./.github/workflows/tag.yml
     with:
       # The 'ref' parameter ensures that the consumer version is postfixed with the HEAD commit of the PR branch,
