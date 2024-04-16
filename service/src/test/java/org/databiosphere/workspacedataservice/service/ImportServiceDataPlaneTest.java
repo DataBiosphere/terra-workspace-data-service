@@ -78,7 +78,7 @@ class ImportServiceDataPlaneTest {
     assertDoesNotThrow(() -> importService.createImport(collectionUuid, importRequest));
   }
 
-  /* collection exists, workspace matches env var, user has write permission */
+  /* collection exists, workspace matches env var, user has read but not write permission */
   @Test
   void userHasOnlyReadPermission() {
     // ARRANGE
