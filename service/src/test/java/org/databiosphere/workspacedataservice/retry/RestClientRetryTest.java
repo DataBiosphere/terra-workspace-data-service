@@ -1,6 +1,8 @@
 package org.databiosphere.workspacedataservice.retry;
-;
+
 import static io.micrometer.observation.tck.TestObservationRegistryAssert.assertThat;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -344,6 +346,54 @@ class RestClientRetryTest extends TestBase {
         .hasError()
         .thenError()
         .hasMessage("Not Found");
+  }
+
+  @Test
+  void doesNotCountSingleAttemptAsRetry() {
+    // arrange
+    VoidRestCall voidRestCall = () -> {}; // no-op
+
+    // act
+    assertDoesNotThrow(
+        () -> restClientRetry.withRetryAndErrorHandling(voidRestCall, "RestCall-unittest"));
+
+    // assert
+    assertThat(observations)
+        .hasNumberOfObservationsWithNameEqualTo("wds.outbound", 1)
+        .hasObservationWithNameEqualTo("wds.outbound")
+        .that()
+        .doesNotHaveLowCardinalityKeyValue("retryAttempt", "0") // don't bother counting 0th attempt
+        .hasBeenStarted()
+        .hasBeenStopped();
+  }
+
+  @Test
+  void countsAdditionalAttemptAsRetry() {
+    // arrange
+    AtomicInteger counter = new AtomicInteger(0);
+    VoidRestCall voidRestCall =
+        () -> {
+          if (counter.getAndIncrement() == 0) {
+            observations.clear(); // clear the observation from the first attempt
+            throw new bio.terra.workspace.client.ApiException(503, "Fake retryable exception.");
+          }
+          // will succeed otherwise on an additional attempt
+        }; // no-op
+
+    // act/assert
+    assertDoesNotThrow(
+        () -> restClientRetry.withRetryAndErrorHandling(voidRestCall, "RestCall-unittest"));
+
+    // assert
+    assertThat(observations)
+        .hasNumberOfObservationsWithNameEqualTo("wds.outbound", 1)
+        .hasObservationWithNameEqualTo("wds.outbound")
+        .that()
+        .hasLowCardinalityKeyValue("retryCount", "1")
+        .hasBeenStarted()
+        .hasBeenStopped();
+
+    assertThat(counter.get()).isEqualTo(2); // 2 attempts total
   }
 
   private void expectRestExceptionWithStatusCode(int expectedStatusCode, RestCall<?> restCall) {

@@ -2,6 +2,7 @@ package org.databiosphere.workspacedataservice.pact;
 
 import static au.com.dius.pact.consumer.dsl.LambdaDsl.newJsonBody;
 import static org.databiosphere.workspacedataservice.TestTags.PACT_TEST;
+import static org.databiosphere.workspacedataservice.pact.TestHeaderSupport.*;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -23,7 +24,6 @@ import bio.terra.workspace.model.ResourceType;
 import bio.terra.workspace.model.StewardshipType;
 import com.google.common.collect.ImmutableMap;
 import io.micrometer.observation.tck.TestObservationRegistry;
-import java.util.Arrays;
 import java.util.UUID;
 import org.databiosphere.workspacedataservice.activitylog.ActivityLogger;
 import org.databiosphere.workspacedataservice.dataimport.snapshotsupport.WsmSnapshotSupport;
@@ -62,7 +62,6 @@ class WsmPactTest {
   private static final String USER_EMAIL = "fake.user@e.mail";
   private static final int NUM_SNAPSHOTS_THAT_EXIST = 3;
   private static final int NUM_SNAPSHOTS_REQUESTED = NUM_SNAPSHOTS_THAT_EXIST + 2;
-  private static final String BEARER_TOKEN = "fakebearertoken";
   @MockBean ActivityLogger activityLogger;
 
   @BeforeEach
@@ -550,34 +549,6 @@ class WsmPactTest {
         new HttpWorkspaceManagerClientFactory(mockServer.getUrl());
     return new WorkspaceManagerDao(
         clientFactory, new RestClientRetry(TestObservationRegistry.create()));
-  }
-
-  // headers
-  private static ImmutableMap<String, String> authorization(String bearerToken) {
-    return new ImmutableMap.Builder<String, String>()
-        .put("Authorization", String.format("Bearer %s", bearerToken))
-        .build();
-  }
-
-  private static ImmutableMap<String, String> contentTypeJson() {
-    // pact will automatically assume an expected Content-Type of "application/json; charset=UTF-8"
-    // unless we explicitly tell it otherwise
-    return new ImmutableMap.Builder<String, String>()
-        .put("Content-Type", "application/json")
-        .build();
-  }
-
-  private static ImmutableMap<String, String> acceptJson() {
-    return new ImmutableMap.Builder<String, String>().put("Accept", "application/json").build();
-  }
-
-  @SafeVarargs
-  private static ImmutableMap<String, String> mergeHeaders(
-      ImmutableMap<String, String>... headerMaps) {
-    return Arrays.stream(headerMaps)
-        .map(map -> new ImmutableMap.Builder<String, String>().putAll(map))
-        .reduce(new ImmutableMap.Builder<>(), (first, second) -> first.putAll(second.build()))
-        .build();
   }
 
   // paths

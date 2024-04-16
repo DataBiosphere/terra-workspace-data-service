@@ -3,6 +3,7 @@ package org.databiosphere.workspacedataservice.retry;
 import io.micrometer.observation.Observation;
 import io.micrometer.observation.ObservationRegistry;
 import java.util.Objects;
+import java.util.Optional;
 import org.databiosphere.workspacedataservice.service.model.exception.AuthenticationException;
 import org.databiosphere.workspacedataservice.service.model.exception.AuthorizationException;
 import org.databiosphere.workspacedataservice.service.model.exception.RestConnectionException;
@@ -14,6 +15,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.retry.annotation.Backoff;
 import org.springframework.retry.annotation.Retryable;
+import org.springframework.retry.support.RetrySynchronizationManager;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.HttpStatusCodeException;
 
@@ -95,6 +97,12 @@ public class RestClientRetry {
               "Error from " + loggerHint + " REST target: " + e.getMessage()); // not retryable
       }
     } finally {
+      Optional.ofNullable(RetrySynchronizationManager.getContext())
+          .ifPresent(
+              context -> {
+                int retryCount = context.getRetryCount();
+                observation.lowCardinalityKeyValue("retryCount", Integer.toString(retryCount));
+              });
       observation.stop();
     }
   }

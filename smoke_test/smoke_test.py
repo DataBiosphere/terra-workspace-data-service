@@ -89,15 +89,11 @@ if __name__ == "__main__":
   1: Minimal - (default) Prints number of tests executed plus a dot for each success and an F for each failure
   2: Verbose - Help string and its result will be printed for each test"""
   )
+  # Note: CWDS_HOST & user_token are positional for compatibility with:
+  # https://github.com/broadinstitute/terra-github-workflows/blob/main/.github/actions/run-smoke-tests/action.yaml
   parser.add_argument(
     "CWDS_HOST",
     help="domain with optional port number of the cWDS host you want to test"
-  )
-  parser.add_argument(
-    "workspace_id",
-    nargs='?',
-    default=None,
-    help="Optional; workspace id against which tests run. If this and user_token are present, enables additional tests."
   )
   parser.add_argument(
     "user_token",
@@ -106,9 +102,9 @@ if __name__ == "__main__":
     help="Optional; auth token for authenticated tests. If this and workspace_id are present, enables additional tests."
   )
   parser.add_argument(
-    "--orchestration-host",
+    "--workspace-id",
     default=None,
-    help="Optional; domain with optional port number of the orchestration host you want to test."
+    help="Optional; workspace id against which tests run. If this and user_token are present, enables additional tests."
   )
   parser.add_argument(
     "--workspace-namespace",
@@ -119,6 +115,11 @@ if __name__ == "__main__":
     "--workspace-name",
     default=None,
     help="Optional; workspace name against which orchestration tests run. Required for orchestration tests to run."
+  )
+  parser.add_argument(
+    "--orchestration-host",
+    default=None,
+    help="Optional; domain with optional port number of the orchestration host you want to test."
   )
 
   args = parser.parse_args()

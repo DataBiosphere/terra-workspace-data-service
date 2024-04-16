@@ -24,6 +24,5 @@ runs:
           { 
           "bee-name": "${{ inputs.bee_name }}", 
           "bee-template-name": "rawls-e2e-azure-tests", 
-          "version-template": "dev",
-          "default-versions-only": true
+          "version-template": "dev" 
           }
