@@ -1,7 +1,6 @@
 package org.databiosphere.workspacedataservice.dataimport;
 
 import static bio.terra.pfb.PfbReader.convertEnum;
-import static org.apache.avro.Schema.Field;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -26,6 +25,7 @@ import org.databiosphere.workspacedataservice.shared.model.Record;
 import org.databiosphere.workspacedataservice.shared.model.RecordAttributes;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.lang.Nullable;
 
 /** Logic to convert Avro GenericRecord to WDS's Record. Used by PFB import and TDR import. */
 public abstract class AvroRecordConverter {
@@ -90,11 +90,10 @@ public abstract class AvroRecordConverter {
       if (ignoreAttributes.contains(fieldName)) {
         continue;
       }
-      Object value =
-          objectAttributes.get(fieldName) == null
-              ? null
-              : convertAttributeType(objectAttributes.get(fieldName), field);
-      attributes.putAttribute(fieldName, value);
+
+      attributes.putAttribute(
+          fieldName,
+          convertAttributeType(destructureElementList(objectAttributes.get(fieldName), field)));
     }
     return attributes;
   }
@@ -106,7 +105,8 @@ public abstract class AvroRecordConverter {
    * @return the WDS attribute value
    */
   @VisibleForTesting
-  public Object convertAttributeType(Object attribute, Field field) {
+  @Nullable
+  public Object convertAttributeType(@Nullable Object attribute) {
 
     if (attribute == null) {
       return null;
@@ -132,7 +132,7 @@ public abstract class AvroRecordConverter {
 
     // Avro arrays
     if (attribute instanceof Collection<?> collAttr) {
-      return elementList(collAttr, field);
+      return collAttr.stream().map(this::convertAttributeType).toList();
     }
 
     // Avro maps
@@ -189,33 +189,42 @@ public abstract class AvroRecordConverter {
     return attribute.toString();
   }
 
-  private List<?> elementList(Collection<?> collAttr, Field field) {
-    // check to see if this is a Parquet structured list
-    if (isStructuredList(field)) {
+  /**
+   * Checks if this Field a structured element list; if it is, this method destructures the list and
+   * returns its elements.
+   *
+   * @see #isStructuredList(Field)
+   * @param attrValue the value to potentially destructure
+   * @param field the schema field to inspect for structure
+   * @return destructured elements, or the original input attrValue if not a structured list
+   */
+  @Nullable
+  private Object destructureElementList(@Nullable Object attrValue, Field field) {
+    if (attrValue instanceof Collection<?> collAttr && isStructuredList(field)) {
+      // check to see if this is a Parquet structured list
       return collAttr.stream()
           .map(
               element -> {
                 GenericRecord elementRecord =
                     (GenericRecord) element; // cast is safe due to if condition
-                Field elementField =
-                    field
-                        .schema()
-                        .getElementType()
-                        .getFields()
-                        .get(0); // get is safe due to if condition
-                return convertAttributeType(
-                    elementRecord.get(0), // get is safe due to if condition
-                    elementField);
+                return elementRecord.get(0); // get is safe due to if condition
               })
           .toList();
     } else {
-      // field will be unused in this case
-
-      Field elementField = new Field("unused", Schema.create(Schema.Type.DOUBLE));
-      return collAttr.stream().map(element -> convertAttributeType(element, elementField)).toList();
+      return attrValue;
     }
   }
 
+  /**
+   * Is this Field a structured element list? We see structured element lists from Parquet; see <a
+   * href="https://github.com/apache/parquet-format/blob/master/LogicalTypes.md#lists">doc</a>.
+   * Parquet uses these structures to enforce constraints around nullability and repeatability. User
+   * data in the form of [1, 2] is serialized as [{"element":1},{"element":2}]. This method detects
+   * such a structure.
+   *
+   * @param field the schema field to inspect
+   * @return whether this is a Parquet structured list
+   */
   private boolean isStructuredList(Field field) {
     // for backwards compatibility with older Parquet files, also check:
     //   - could be named "array" or "${field.schema().getName()}_tuple" instead of "list"

@@ -44,10 +44,6 @@ class PfbRecordConverterTest extends TestBase {
 
   @Autowired private PfbRecordConverter converter;
 
-  // TODO AJ-1774: is it safe to reuse this in all tests?
-  private final Schema.Field TEST_FIELD =
-      new Schema.Field("unused", Schema.create(Schema.Type.STRING));
-
   // PFB "id" and "name" columns become the WDS Record id and type, respectively
   @Test
   void recordIdentifiers() {
@@ -240,7 +236,7 @@ class PfbRecordConverterTest extends TestBase {
   @ParameterizedTest(name = "with input of {0}, return value should be {1}")
   @MethodSource("provideConvertScalarAttributesArgs")
   void convertScalarAttributes(Object input, Object expected) {
-    Object actual = converter.convertAttributeType(input, TEST_FIELD);
+    Object actual = converter.convertAttributeType(input);
     assertEquals(expected, actual);
   }
 
@@ -249,7 +245,7 @@ class PfbRecordConverterTest extends TestBase {
   void convertScalarEnums() {
     Object input = new GenericData.EnumSymbol(Schema.create(Schema.Type.STRING), "bar");
 
-    Object actual = converter.convertAttributeType(input, TEST_FIELD);
+    Object actual = converter.convertAttributeType(input);
     assertEquals("bar", actual);
   }
 
@@ -295,7 +291,7 @@ class PfbRecordConverterTest extends TestBase {
   @ParameterizedTest(name = "with array input of {0}, return value should be {1}")
   @MethodSource("provideConvertArrayAttributesArgs")
   void convertArrayAttributes(Object input, Object expected) {
-    Object actual = converter.convertAttributeType(input, TEST_FIELD);
+    Object actual = converter.convertAttributeType(input);
     assertEquals(expected, actual);
   }
 
@@ -308,13 +304,7 @@ class PfbRecordConverterTest extends TestBase {
             new GenericData.EnumSymbol(Schema.create(Schema.Type.STRING), "foo"),
             new GenericData.EnumSymbol(Schema.create(Schema.Type.STRING), "baz"));
 
-    Schema.Field field =
-        new Schema.Field(
-            "array_of_enums",
-            Schema.createArray(
-                Schema.createEnum("name", "doc", "namespace", List.of("foo", "bar", "baz"))));
-
-    Object actual = converter.convertAttributeType(input, field);
+    Object actual = converter.convertAttributeType(input);
     assertEquals(List.of("bar", "foo", "baz"), actual);
   }
 
@@ -323,7 +313,7 @@ class PfbRecordConverterTest extends TestBase {
   @MethodSource("provideDecodeEnumArgs")
   void decodesEnums(String symbol, String expected) {
     Object input = List.of(new GenericData.EnumSymbol(Schema.create(Schema.Type.STRING), symbol));
-    Object actual = converter.convertAttributeType(input, TEST_FIELD);
+    Object actual = converter.convertAttributeType(input);
     assertEquals(List.of(expected), actual);
   }
 
