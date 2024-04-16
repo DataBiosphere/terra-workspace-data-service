@@ -25,7 +25,6 @@ import org.databiosphere.workspacedataservice.shared.model.Record;
 import org.databiosphere.workspacedataservice.shared.model.RecordAttributes;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.lang.Nullable;
 
 /** Logic to convert Avro GenericRecord to WDS's Record. Used by PFB import and TDR import. */
 public abstract class AvroRecordConverter {
@@ -91,9 +90,13 @@ public abstract class AvroRecordConverter {
         continue;
       }
 
-      attributes.putAttribute(
-          fieldName,
-          convertAttributeType(destructureElementList(objectAttributes.get(fieldName), field)));
+      Object value =
+          objectAttributes.get(fieldName) == null
+              ? null
+              : convertAttributeType(
+                  destructureElementList(objectAttributes.get(fieldName), field));
+
+      attributes.putAttribute(fieldName, value);
     }
     return attributes;
   }
@@ -105,8 +108,7 @@ public abstract class AvroRecordConverter {
    * @return the WDS attribute value
    */
   @VisibleForTesting
-  @Nullable
-  public Object convertAttributeType(@Nullable Object attribute) {
+  public Object convertAttributeType(Object attribute) {
 
     if (attribute == null) {
       return null;
@@ -132,6 +134,7 @@ public abstract class AvroRecordConverter {
 
     // Avro arrays
     if (attribute instanceof Collection<?> collAttr) {
+      // recurse
       return collAttr.stream().map(this::convertAttributeType).toList();
     }
 
@@ -198,8 +201,7 @@ public abstract class AvroRecordConverter {
    * @param field the schema field to inspect for structure
    * @return destructured elements, or the original input attrValue if not a structured list
    */
-  @Nullable
-  private Object destructureElementList(@Nullable Object attrValue, Field field) {
+  private Object destructureElementList(Object attrValue, Field field) {
     if (attrValue instanceof Collection<?> collAttr && isStructuredList(field)) {
       // check to see if this is a Parquet structured list
       return collAttr.stream()
