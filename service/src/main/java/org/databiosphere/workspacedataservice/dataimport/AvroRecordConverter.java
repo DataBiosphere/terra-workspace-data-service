@@ -202,14 +202,14 @@ public abstract class AvroRecordConverter {
    * @return destructured elements, or the original input attrValue if not a structured list
    */
   private Object destructureElementList(Object attrValue, Field field) {
+    // if this is a structured parquet list, destructure it
     if (attrValue instanceof Collection<?> collAttr && isStructuredList(field)) {
-      // check to see if this is a Parquet structured list
       return collAttr.stream()
           .map(
               element -> {
                 GenericRecord elementRecord =
-                    (GenericRecord) element; // cast is safe due to if condition
-                return elementRecord.get(0); // get is safe due to if condition
+                    (GenericRecord) element; // cast is safe due to isStructuredList condition
+                return elementRecord.get(0); // get is safe due to isStructuredList condition
               })
           .toList();
     } else {
@@ -228,13 +228,15 @@ public abstract class AvroRecordConverter {
    * @return whether this is a Parquet structured list
    */
   private boolean isStructuredList(Field field) {
-    // for backwards compatibility with older Parquet files, also check:
-    //   - could be named "array" or "${field.schema().getName()}_tuple" instead of "list"
+    // field must be declared as an array
     if (Schema.Type.ARRAY.equals(field.schema().getType())) {
       Schema elementSchema = field.schema().getElementType();
-      return Schema.Type.RECORD.equals(elementSchema.getType())
-          && elementSchema.getName().equals("list")
-          && elementSchema.getFields().size() == 1;
+      return Schema.Type.RECORD.equals(elementSchema.getType()) // elements must be records
+          && elementSchema.getFields().size() == 1 // with only a single field
+          // and the sub-element is named "list", "array", or "${field.name()}_tuple"
+          && (elementSchema.getName().equals("list")
+              || elementSchema.getName().equals("array")
+              || elementSchema.getName().equals(field.name() + "_tuple"));
     }
     return false;
   }
