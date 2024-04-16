@@ -1,6 +1,7 @@
 package org.databiosphere.workspacedataservice.dataimport;
 
 import static bio.terra.pfb.PfbReader.convertEnum;
+import static org.apache.avro.Schema.Field;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -16,6 +17,7 @@ import org.apache.avro.Conversions;
 import org.apache.avro.LogicalType;
 import org.apache.avro.LogicalTypes;
 import org.apache.avro.Schema;
+import org.apache.avro.Schema.Field;
 import org.apache.avro.generic.GenericData;
 import org.apache.avro.generic.GenericEnumSymbol;
 import org.apache.avro.generic.GenericRecord;
@@ -91,7 +93,7 @@ public abstract class AvroRecordConverter {
       Object value =
           objectAttributes.get(fieldName) == null
               ? null
-              : convertAttributeType(objectAttributes.get(fieldName));
+              : convertAttributeType(objectAttributes.get(fieldName), field);
       attributes.putAttribute(fieldName, value);
     }
     return attributes;
@@ -104,7 +106,7 @@ public abstract class AvroRecordConverter {
    * @return the WDS attribute value
    */
   @VisibleForTesting
-  public Object convertAttributeType(Object attribute) {
+  public Object convertAttributeType(Object attribute, Field field) {
 
     if (attribute == null) {
       return null;
@@ -130,8 +132,7 @@ public abstract class AvroRecordConverter {
 
     // Avro arrays
     if (attribute instanceof Collection<?> collAttr) {
-      // recurse
-      return collAttr.stream().map(this::convertAttributeType).toList();
+      return elementList(collAttr, field);
     }
 
     // Avro maps
@@ -186,6 +187,45 @@ public abstract class AvroRecordConverter {
         attribute,
         attribute.getClass());
     return attribute.toString();
+  }
+
+  private List<?> elementList(Collection<?> collAttr, Field field) {
+    // check to see if this is a Parquet structured list
+    if (isStructuredList(field)) {
+      return collAttr.stream()
+          .map(
+              element -> {
+                GenericRecord elementRecord =
+                    (GenericRecord) element; // cast is safe due to if condition
+                Field elementField =
+                    field
+                        .schema()
+                        .getElementType()
+                        .getFields()
+                        .get(0); // get is safe due to if condition
+                return convertAttributeType(
+                    elementRecord.get(0), // get is safe due to if condition
+                    elementField);
+              })
+          .toList();
+    } else {
+      // field will be unused in this case
+
+      Field elementField = new Field("unused", Schema.create(Schema.Type.DOUBLE));
+      return collAttr.stream().map(element -> convertAttributeType(element, elementField)).toList();
+    }
+  }
+
+  private boolean isStructuredList(Field field) {
+    // for backwards compatibility with older Parquet files, also check:
+    //   - could be named "array" or "${field.schema().getName()}_tuple" instead of "list"
+    if (Schema.Type.ARRAY.equals(field.schema().getType())) {
+      Schema elementSchema = field.schema().getElementType();
+      return Schema.Type.RECORD.equals(elementSchema.getType())
+          && elementSchema.getName().equals("list")
+          && elementSchema.getFields().size() == 1;
+    }
+    return false;
   }
 
   // Parquet has a concept of "physical type" and "logical type". For some numeric types,

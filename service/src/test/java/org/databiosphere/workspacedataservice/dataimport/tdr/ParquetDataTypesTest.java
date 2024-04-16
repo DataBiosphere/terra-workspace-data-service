@@ -5,6 +5,7 @@ import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.io.IOException;
+import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -134,7 +135,14 @@ class ParquetDataTypesTest extends TestBase {
       assertThat(records).hasSize(3);
 
       // map of id -> expected samples value
-      var expectedMap = Map.of(1, List.of(1, 2), 2, List.of(3), 3, List.of(4, 5));
+      var expectedMap =
+          Map.of(
+              1,
+              List.of(BigDecimal.valueOf(1), BigDecimal.valueOf(2)),
+              2,
+              List.of(BigDecimal.valueOf(3)),
+              3,
+              List.of(BigDecimal.valueOf(4), BigDecimal.valueOf(5)));
 
       expectedMap.forEach(
           (id, expected) -> {
@@ -149,12 +157,6 @@ class ParquetDataTypesTest extends TestBase {
             List<Object> actualList = assertInstanceOf(List.class, actual);
             assertThat(actualList).containsExactlyElementsOf(expected);
           });
-      List.of("samples", "numeric_custom", "bignumeric_default", "bignumeric_custom")
-          .forEach(
-              attributeName ->
-                  assertThat(getColumnValues(records, attributeName))
-                      .describedAs("for column %s", attributeName)
-                      .containsExactlyInAnyOrder(0, 0.01, 0.22));
     }
   }
 
