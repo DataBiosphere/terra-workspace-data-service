@@ -19,6 +19,7 @@ import org.databiosphere.workspacedataservice.dataimport.tdr.TdrManifestSchedula
 import org.databiosphere.workspacedataservice.generated.GenericJobServerModel;
 import org.databiosphere.workspacedataservice.generated.ImportRequestServerModel;
 import org.databiosphere.workspacedataservice.sam.SamDao;
+import org.databiosphere.workspacedataservice.service.model.exception.AuthenticationException;
 import org.databiosphere.workspacedataservice.service.model.exception.AuthenticationMaskableException;
 import org.databiosphere.workspacedataservice.shared.model.CollectionId;
 import org.databiosphere.workspacedataservice.shared.model.Schedulable;
@@ -64,11 +65,22 @@ public class ImportService {
         collectionService.canWriteCollection(CollectionId.of(collectionId));
     logger.debug("hasWriteCollectionPermission? {}", hasWriteCollectionPermission);
     if (!hasWriteCollectionPermission) {
-      // Throw a maskable exception, which will result in a 404 to the end user.
-      // As an enhancement, we could instead perform a second check for read permissions here.
-      // If the user has read permission but not write permission, it would be safe to throw
-      // a non-maskable auth exception.
-      throw new AuthenticationMaskableException("Collection");
+      boolean hasReadCollectionPermission = false;
+      try {
+        hasReadCollectionPermission =
+            collectionService.canReadCollection(CollectionId.of(collectionId));
+      } catch (Exception e) {
+        logger.warn("Problem determining read permission for data import: " + e.getMessage(), e);
+      }
+      if (hasReadCollectionPermission) {
+        // If the user has read permission but not write permission, it is safe to throw
+        // a non-maskable auth exception.
+        throw new AuthenticationException("This action requires write permission.");
+      } else {
+        // User does not even have read permission, or we couldn't determine if the user has read
+        // permission, so we throw a maskable exception. This will result in a 404 to the end user.
+        throw new AuthenticationMaskableException("Collection");
+      }
     }
 
     importSourceValidator.validateImport(importRequest.getUrl());
