@@ -25,6 +25,7 @@ import org.databiosphere.workspacedataservice.shared.model.Record;
 import org.databiosphere.workspacedataservice.shared.model.RecordAttributes;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.lang.Nullable;
 
 /** Logic to convert Avro GenericRecord to WDS's Record. Used by PFB import and TDR import. */
 public abstract class AvroRecordConverter {
@@ -108,7 +109,8 @@ public abstract class AvroRecordConverter {
    * @return the WDS attribute value
    */
   @VisibleForTesting
-  public Object convertAttributeType(Object attribute) {
+  @Nullable
+  public Object convertAttributeType(@Nullable Object attribute) {
 
     if (attribute == null) {
       return null;
@@ -201,7 +203,8 @@ public abstract class AvroRecordConverter {
    * @param field the schema field to inspect for structure
    * @return destructured elements, or the original input attrValue if not a structured list
    */
-  private Object destructureElementList(Object attrValue, Field field) {
+  @Nullable
+  protected Object destructureElementList(@Nullable Object attrValue, Field field) {
     // if this is a structured parquet list, destructure it
     if (attrValue instanceof Collection<?> collAttr && isStructuredList(field)) {
       return collAttr.stream()

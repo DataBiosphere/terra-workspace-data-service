@@ -6,6 +6,7 @@ import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import org.apache.avro.Schema;
 import org.apache.avro.generic.GenericRecord;
 import org.databiosphere.workspacedataservice.dataimport.AvroRecordConverter;
 import org.databiosphere.workspacedataservice.service.model.TdrManifestImportTable;
@@ -56,12 +57,23 @@ public class ParquetRecordConverter extends AvroRecordConverter {
 
     RecordAttributes attributes = RecordAttributes.empty();
 
+    // filter the relationship models to those known by this schema. This should only reduce the
+    // list in strange conditions in which the TDR schema is out of sync with the Parquet schema.
+    List<RelationshipModel> knownModels =
+        relationshipModels.stream()
+            .filter(
+                model ->
+                    genericRecord.getSchema().hasFields()
+                        && genericRecord.hasField(model.getFrom().getColumn()))
+            .toList();
+
     // loop through relation columns
-    relationshipModels.forEach(
+    knownModels.forEach(
         relationshipModel -> {
           String attrName = relationshipModel.getFrom().getColumn();
           // get value from Avro
-          Object value = genericRecord.get(attrName);
+          Schema.Field field = genericRecord.getSchema().getField(attrName);
+          Object value = destructureElementList(genericRecord.get(attrName), field);
           if (value != null) {
             String targetType = relationshipModel.getTo().getTable();
             // is it an array?
