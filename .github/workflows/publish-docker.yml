@@ -38,6 +38,11 @@ jobs:
       - name: Short hash experiments
         id: shortHashExperiments
         run: |
+          # full sha for PRs
+
+          git_short_sha=$(echo ${{ github.event.pull_request.head.sha || github.sha}} | cut -c1-7)
+          echo "git_short_sha: ${{ git_short_sha }}"
+
           echo "github.base_ref: ${{ github.base_ref }}"
           echo "github.head_ref: ${{ github.head_ref }}"
           echo "github.ref: ${{ github.ref }}"
