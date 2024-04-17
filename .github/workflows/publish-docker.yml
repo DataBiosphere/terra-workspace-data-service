@@ -35,26 +35,12 @@ jobs:
           java-version: '17'
           distribution: 'temurin'
 
-      - name: Short hash experiments
-        id: shortHashExperiments
-        run: |
-          # full sha for PRs
-
-          git_short_sha=$(echo ${{ github.event.pull_request.head.sha || github.sha}} | cut -c1-7)
-          echo "git_short_sha: $git_short_sha"
-
-          echo "github.base_ref: ${{ github.base_ref }}"
-          echo "github.head_ref: ${{ github.head_ref }}"
-          echo "github.ref: ${{ github.ref }}"
-          echo "github.ref_name: ${{ github.ref_name }}"
-          echo "github.sha: ${{ github.sha }}"
-          echo "github.event.pull_request.head.sha: ${{ github.event.pull_request.head.sha }}"
-          echo "github.event.pull_request.head: ${{ toJSON(github.event.pull_request.head) }}"
-
       - name: Set commit short hash
         id: setHash
+        # github.event.pull_request.head.sha is the latest commit for a pull request
+        # github.sha is the latest commit for a merge to main (but is the merge commit on PRs)
         run: |
-          git_short_sha=$(git rev-parse --short HEAD)
+          git_short_sha=$(echo ${{ github.event.pull_request.head.sha || github.sha }} | cut -c1-7)
           echo $git_short_sha
           echo "git_short_sha=${git_short_sha}" >> $GITHUB_OUTPUT
 
