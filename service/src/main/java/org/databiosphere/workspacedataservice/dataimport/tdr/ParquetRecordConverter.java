@@ -71,8 +71,10 @@ public class ParquetRecordConverter extends AvroRecordConverter {
     knownModels.forEach(
         relationshipModel -> {
           String attrName = relationshipModel.getFrom().getColumn();
-          // get value from Avro
+          // get field definition from Avro. The call to getField() here is non-null because
+          // we filter relationship models above.
           Schema.Field field = genericRecord.getSchema().getField(attrName);
+          // get value from Avro
           Object value = destructureElementList(genericRecord.get(attrName), field);
           if (value != null) {
             String targetType = relationshipModel.getTo().getTable();
