@@ -195,8 +195,8 @@ public abstract class AvroRecordConverter {
   }
 
   /**
-   * Checks if this Field a structured element list; if it is, this method destructures the list and
-   * returns its elements.
+   * Checks if this Field is a structured element list; if it is, this method destructures the list
+   * and returns its elements.
    *
    * @see #isStructuredList(Field)
    * @param attrValue the value to potentially destructure
