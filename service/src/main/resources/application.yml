@@ -118,6 +118,8 @@ server:
   error:
     include-stacktrace: never
     include-message: always
+  tomcat:
+    use-relative-redirects: true
 
 twds:
   write.batch.size: 5000
