@@ -119,6 +119,7 @@ server:
     include-stacktrace: never
     include-message: always
   tomcat:
+    # relative redirects fix issues redirecting to swagger-ui in BEEs
     use-relative-redirects: true
 
 twds:
