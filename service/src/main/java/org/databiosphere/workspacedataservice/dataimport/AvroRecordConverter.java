@@ -16,6 +16,7 @@ import org.apache.avro.Conversions;
 import org.apache.avro.LogicalType;
 import org.apache.avro.LogicalTypes;
 import org.apache.avro.Schema;
+import org.apache.avro.Schema.Field;
 import org.apache.avro.generic.GenericData;
 import org.apache.avro.generic.GenericEnumSymbol;
 import org.apache.avro.generic.GenericRecord;
@@ -24,6 +25,7 @@ import org.databiosphere.workspacedataservice.shared.model.Record;
 import org.databiosphere.workspacedataservice.shared.model.RecordAttributes;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.lang.Nullable;
 
 /** Logic to convert Avro GenericRecord to WDS's Record. Used by PFB import and TDR import. */
 public abstract class AvroRecordConverter {
@@ -88,10 +90,13 @@ public abstract class AvroRecordConverter {
       if (ignoreAttributes.contains(fieldName)) {
         continue;
       }
+
       Object value =
           objectAttributes.get(fieldName) == null
               ? null
-              : convertAttributeType(objectAttributes.get(fieldName));
+              : convertAttributeType(
+                  destructureElementList(objectAttributes.get(fieldName), field));
+
       attributes.putAttribute(fieldName, value);
     }
     return attributes;
@@ -104,7 +109,8 @@ public abstract class AvroRecordConverter {
    * @return the WDS attribute value
    */
   @VisibleForTesting
-  public Object convertAttributeType(Object attribute) {
+  @Nullable
+  public Object convertAttributeType(@Nullable Object attribute) {
 
     if (attribute == null) {
       return null;
@@ -186,6 +192,56 @@ public abstract class AvroRecordConverter {
         attribute,
         attribute.getClass());
     return attribute.toString();
+  }
+
+  /**
+   * Checks if this Field is a structured element list; if it is, this method destructures the list
+   * and returns its elements.
+   *
+   * @see #isStructuredList(Field)
+   * @param attrValue the value to potentially destructure
+   * @param field the schema field to inspect for structure
+   * @return destructured elements, or the original input attrValue if not a structured list
+   */
+  @Nullable
+  protected Object destructureElementList(@Nullable Object attrValue, Field field) {
+    // if this is a structured parquet list, destructure it
+    if (attrValue instanceof Collection<?> collAttr && isStructuredList(field)) {
+      return collAttr.stream()
+          .map(
+              element -> {
+                GenericRecord elementRecord =
+                    (GenericRecord) element; // cast is safe due to isStructuredList condition
+                return elementRecord.get(0); // get is safe due to isStructuredList condition
+              })
+          .toList();
+    } else {
+      return attrValue;
+    }
+  }
+
+  /**
+   * Is this Field a structured element list? We see structured element lists from Parquet; see <a
+   * href="https://github.com/apache/parquet-format/blob/master/LogicalTypes.md#lists">doc</a>.
+   * Parquet uses these structures to enforce constraints around nullability and repeatability. User
+   * data in the form of [1, 2] is serialized as [{"element":1},{"element":2}]. This method detects
+   * such a structure.
+   *
+   * @param field the schema field to inspect
+   * @return whether this is a Parquet structured list
+   */
+  private boolean isStructuredList(Field field) {
+    // field must be declared as an array
+    if (Schema.Type.ARRAY.equals(field.schema().getType())) {
+      Schema elementSchema = field.schema().getElementType();
+      return Schema.Type.RECORD.equals(elementSchema.getType()) // elements must be records
+          && elementSchema.getFields().size() == 1 // with only a single field
+          // and the sub-element is named "list", "array", or "${field.name()}_tuple"
+          && (elementSchema.getName().equals("list")
+              || elementSchema.getName().equals("array")
+              || elementSchema.getName().equals(field.name() + "_tuple"));
+    }
+    return false;
   }
 
   // Parquet has a concept of "physical type" and "logical type". For some numeric types,

@@ -4,7 +4,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.databiosphere.workspacedataservice.TestTags.SLOW;
 import static org.databiosphere.workspacedataservice.dataimport.pfb.PfbTestUtils.stubJobContext;
 import static org.databiosphere.workspacedataservice.generated.ImportRequestServerModel.TypeEnum.TDRMANIFEST;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.Mockito.when;
@@ -25,6 +27,8 @@ import org.databiosphere.workspacedataservice.service.RecordOrchestratorService;
 import org.databiosphere.workspacedataservice.service.model.AttributeSchema;
 import org.databiosphere.workspacedataservice.service.model.DataTypeMapping;
 import org.databiosphere.workspacedataservice.service.model.RecordTypeSchema;
+import org.databiosphere.workspacedataservice.shared.model.RecordResponse;
+import org.databiosphere.workspacedataservice.shared.model.RecordType;
 import org.databiosphere.workspacedataservice.workspacemanager.WorkspaceManagerDao;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -254,6 +258,14 @@ class TdrManifestQuartzJobE2ETest extends TestBase {
         new ImmutableMap.Builder<String, Integer>().put("person", 3).put("sample", 5).build();
 
     assertEquals(expectedCounts, actualCounts);
+
+    // spot-check that the person type references the sample type
+    RecordResponse recordResponse =
+        recordOrchestratorService.getSingleRecord(
+            collectionId, "v0.2", RecordType.valueOf("person"), "1");
+    Object actual = recordResponse.recordAttributes().getAttributeValue("samples");
+    String[] actualArray = assertInstanceOf(String[].class, actual);
+    assertArrayEquals(new String[] {"terra-wds:/sample/1", "terra-wds:/sample/2"}, actualArray);
   }
 
   private void assertDataType(
