@@ -8,6 +8,8 @@ updates:
     open-pull-requests-limit: 10
     reviewers:
       - "@DataBiosphere/analysisjourneys"
+    commit-message:
+      prefix: "[AJ-1782]"
     schedule:
       interval: "weekly"
       day: "monday"
