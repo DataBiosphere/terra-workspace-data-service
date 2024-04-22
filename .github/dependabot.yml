@@ -1,6 +1,12 @@
 version: 2
+registries:
+  broad-artifactory:
+    type: maven-repository
+    url: https://broadinstitute.jfrog.io/artifactory/libs-release
 updates:
   - package-ecosystem: "gradle"
+    registries:
+      - "broad-artifactory"
     directory: "/"
     labels:
       - "dependencies"
