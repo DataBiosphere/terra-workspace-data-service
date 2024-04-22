@@ -21,3 +21,18 @@ updates:
         update-types:
           - "minor"
           - "patch"
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    labels:
+      - "dependencies"
+      - "github-actions"
+    open-pull-requests-limit: 10
+    reviewers:
+      - "@DataBiosphere/analysisjourneys"
+    commit-message:
+      prefix: "[AJ-1782]"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "08:00"
+      timezone: "America/New_York"
