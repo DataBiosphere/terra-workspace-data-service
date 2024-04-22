@@ -1,4 +1,8 @@
 version: 2
+registries:
+  broad-artifactory:
+    type: maven-repository
+    url: https://broadinstitute.jfrog.io/artifactory/libs-release
 updates:
   - package-ecosystem: "gradle"
     directory: "/"
@@ -21,3 +25,23 @@ updates:
         update-types:
           - "minor"
           - "patch"
+  - package-ecosystem: "gradle"
+    registries:
+      - "broad-artifactory"
+    directory: "/"
+    labels:
+      - "dependencies"
+      - "gradle"
+    reviewers:
+      - "@DataBiosphere/analysisjourneys"
+    commit-message:
+      prefix: "[AJ-1782]"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "08:00"
+      timezone: "America/New_York"
+    groups:
+      java-pfb:
+        patterns:
+          - "bio.terra:java-pfb-library"
