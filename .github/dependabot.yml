@@ -27,9 +27,6 @@ updates:
         update-types:
           - "minor"
           - "patch"
-      java-pfb:
-        patterns:
-          - "bio.terra:java-pfb-library"
   - package-ecosystem: "github-actions"
     directory: "/"
     labels:
