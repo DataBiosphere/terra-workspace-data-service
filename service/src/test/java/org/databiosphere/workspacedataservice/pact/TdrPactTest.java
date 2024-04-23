@@ -30,7 +30,7 @@ import org.junit.jupiter.api.Test;
 class TdrPactTest {
   static final UUID dummySnapshotId = UUID.fromString("12345678-abc9-012d-3456-e7fab89cd01e");
 
-  @Pact(consumer = "wds")
+  @Pact(consumer = "${CONSUMER_NAME:wds}")
   public RequestResponsePact noSnapshotPact(PactDslWithProvider builder) {
     return builder
         .given("snapshot with given id doesn't exist", Map.of("id", dummySnapshotId.toString()))
@@ -43,7 +43,7 @@ class TdrPactTest {
         .toPact();
   }
 
-  @Pact(consumer = "wds")
+  @Pact(consumer = "${CONSUMER_NAME:wds}")
   public RequestResponsePact noAccessToSnapshotPact(PactDslWithProvider builder) {
     return builder
         .given(
@@ -58,7 +58,7 @@ class TdrPactTest {
         .toPact();
   }
 
-  @Pact(consumer = "wds")
+  @Pact(consumer = "${CONSUMER_NAME:wds}")
   public RequestResponsePact userHasAccessToSnapshotPact(PactDslWithProvider builder) {
     return builder
         .given(
