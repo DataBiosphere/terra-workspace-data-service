@@ -246,13 +246,29 @@ test {
     systemProperties['user.timezone'] = "UTC"
 }
 
-tasks.register("pactTests", Test) {
+tasks.register("wdsPactTests", Test) {
+    environment "CONSUMER_NAME", "wds"
     useJUnitPlatform {
         includeTags "pact-test"
     }
     testLogging {
         showStandardStreams = true
     }
+}
+
+tasks.register("cwdsPactTests", Test) {
+    environment "CONSUMER_NAME", "cwds"
+    useJUnitPlatform {
+        includeTags "pact-test"
+    }
+    testLogging {
+        showStandardStreams = true
+    }
+}
+
+tasks.register("pactTests") {
+    dependsOn "wdsPactTests"
+    dependsOn "cwdsPactTests"
 }
 
 testing {
