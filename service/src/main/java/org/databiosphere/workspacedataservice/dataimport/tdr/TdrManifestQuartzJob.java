@@ -4,8 +4,6 @@ import static org.apache.parquet.avro.AvroReadSupport.READ_INT96_AS_FIXED;
 import static org.databiosphere.workspacedataservice.generated.ImportRequestServerModel.TypeEnum.TDRMANIFEST;
 import static org.databiosphere.workspacedataservice.sam.SamAuthorizationDao.WORKSPACE_ROLES;
 import static org.databiosphere.workspacedataservice.service.ImportService.ARG_TDR_SYNC_PERMISSION;
-import static org.databiosphere.workspacedataservice.shared.model.Schedulable.ARG_COLLECTION;
-import static org.databiosphere.workspacedataservice.shared.model.Schedulable.ARG_TOKEN;
 import static org.databiosphere.workspacedataservice.shared.model.Schedulable.ARG_URL;
 import static org.databiosphere.workspacedataservice.shared.model.job.JobType.DATA_IMPORT;
 
@@ -27,7 +25,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
-import java.util.function.Supplier;
 import org.apache.avro.generic.GenericRecord;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.parquet.avro.AvroParquetReader;
@@ -39,8 +36,10 @@ import org.databiosphere.workspacedataservice.config.DataImportProperties;
 import org.databiosphere.workspacedataservice.dao.JobDao;
 import org.databiosphere.workspacedataservice.dataimport.FileDownloadHelper;
 import org.databiosphere.workspacedataservice.dataimport.ImportDetails;
+import org.databiosphere.workspacedataservice.dataimport.ImportDetailsRetriever;
 import org.databiosphere.workspacedataservice.dataimport.snapshotsupport.SnapshotSupport;
 import org.databiosphere.workspacedataservice.dataimport.snapshotsupport.SnapshotSupportFactory;
+import org.databiosphere.workspacedataservice.jobexec.JobDataMapReader;
 import org.databiosphere.workspacedataservice.jobexec.JobExecutionException;
 import org.databiosphere.workspacedataservice.jobexec.QuartzJob;
 import org.databiosphere.workspacedataservice.recordsink.RawlsAttributePrefixer.PrefixStrategy;
@@ -50,16 +49,12 @@ import org.databiosphere.workspacedataservice.recordsource.RecordSource.ImportMo
 import org.databiosphere.workspacedataservice.recordsource.RecordSourceFactory;
 import org.databiosphere.workspacedataservice.sam.SamDao;
 import org.databiosphere.workspacedataservice.service.BatchWriteService;
-import org.databiosphere.workspacedataservice.service.CollectionService;
 import org.databiosphere.workspacedataservice.service.model.BatchWriteResult;
 import org.databiosphere.workspacedataservice.service.model.TdrManifestImportTable;
 import org.databiosphere.workspacedataservice.service.model.exception.RestException;
 import org.databiosphere.workspacedataservice.service.model.exception.TdrManifestImportException;
-import org.databiosphere.workspacedataservice.shared.model.BearerToken;
-import org.databiosphere.workspacedataservice.shared.model.CollectionId;
 import org.databiosphere.workspacedataservice.shared.model.RecordType;
 import org.databiosphere.workspacedataservice.shared.model.WorkspaceId;
-import org.quartz.JobDataMap;
 import org.quartz.JobExecutionContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -67,41 +62,40 @@ import org.springframework.stereotype.Component;
 
 @Component
 public class TdrManifestQuartzJob extends QuartzJob {
+  private final Logger logger = LoggerFactory.getLogger(this.getClass());
 
   private final RecordSinkFactory recordSinkFactory;
   private final BatchWriteService batchWriteService;
-  private final CollectionService collectionService;
   private final ActivityLogger activityLogger;
   private final ObjectMapper mapper;
   private final RecordSourceFactory recordSourceFactory;
   private final SnapshotSupportFactory snapshotSupportFactory;
   private final SamDao samDao;
   private final boolean isTdrPermissionSyncingEnabled;
-
-  private final Logger logger = LoggerFactory.getLogger(this.getClass());
+  private final ImportDetailsRetriever importDetailsRetriever;
 
   public TdrManifestQuartzJob(
       JobDao jobDao,
       RecordSourceFactory recordSourceFactory,
       RecordSinkFactory recordSinkFactory,
       BatchWriteService batchWriteService,
-      CollectionService collectionService,
       ActivityLogger activityLogger,
       ObjectMapper mapper,
       ObservationRegistry observationRegistry,
       DataImportProperties dataImportProperties,
       SnapshotSupportFactory snapshotSupportFactory,
-      SamDao samDao) {
+      SamDao samDao,
+      ImportDetailsRetriever importDetailsRetriever) {
     super(jobDao, observationRegistry, dataImportProperties);
     this.recordSinkFactory = recordSinkFactory;
     this.recordSourceFactory = recordSourceFactory;
     this.batchWriteService = batchWriteService;
-    this.collectionService = collectionService;
     this.activityLogger = activityLogger;
     this.mapper = mapper;
     this.snapshotSupportFactory = snapshotSupportFactory;
     this.samDao = samDao;
     this.isTdrPermissionSyncingEnabled = dataImportProperties.isTdrPermissionSyncingEnabled();
+    this.importDetailsRetriever = importDetailsRetriever;
   }
 
   @Override
@@ -114,38 +108,31 @@ public class TdrManifestQuartzJob extends QuartzJob {
   @Override
   protected void executeInternal(UUID jobId, JobExecutionContext context) {
     // Grab the manifest url from the job's data map
-    JobDataMap jobDataMap = context.getMergedJobDataMap();
-    URL url = getJobDataUrl(jobDataMap, ARG_URL);
+    JobDataMapReader jobData = JobDataMapReader.fromContext(context);
+    URL url = jobData.getURL(ARG_URL);
 
     // Collect details needed for import
-    UUID targetCollection = getJobDataUUID(jobDataMap, ARG_COLLECTION);
-    String authToken = getJobDataString(jobDataMap, ARG_TOKEN);
-    Supplier<String> userEmailSupplier = () -> samDao.getUserEmail(BearerToken.of(authToken));
-
-    // determine the workspace for the target collection
-    CollectionId collectionId = CollectionId.of(targetCollection);
-    WorkspaceId workspaceId = collectionService.getWorkspaceId(collectionId);
-    ImportDetails importDetails =
-        new ImportDetails(jobId, userEmailSupplier, workspaceId, collectionId, PrefixStrategy.TDR);
+    ImportDetails details = importDetailsRetriever.fetch(jobId, jobData, PrefixStrategy.TDR);
 
     // read manifest
     SnapshotExportResponseModel snapshotExportResponseModel = parseManifest(url);
 
     // get the snapshot id from the manifest
     UUID snapshotId = snapshotExportResponseModel.getSnapshot().getId();
-    logger.info("Starting import of snapshot {} to collection {}", snapshotId, targetCollection);
+    logger.info(
+        "Starting import of snapshot {} to collection {}", snapshotId, details.collectionId());
 
     // Create snapshot reference
-    linkSnapshots(Set.of(snapshotId), workspaceId);
+    linkSnapshots(Set.of(snapshotId), details.workspaceId());
 
     // read the manifest and extract the information necessary to perform the import
     List<TdrManifestImportTable> tdrManifestImportTables =
-        extractTableInfo(snapshotExportResponseModel, workspaceId);
+        extractTableInfo(snapshotExportResponseModel, details.workspaceId());
 
     // get all the parquet files from the manifests
 
     FileDownloadHelper fileDownloadHelper = getFilesForImport(tdrManifestImportTables);
-    try (RecordSink recordSink = recordSinkFactory.buildRecordSink(importDetails)) {
+    try (RecordSink recordSink = recordSinkFactory.buildRecordSink(details)) {
       // loop through the tables to be imported and upsert base attributes
       var result =
           importTables(
@@ -175,8 +162,8 @@ public class TdrManifestQuartzJob extends QuartzJob {
                               .withRecordType(entry.getKey())
                               .ofQuantity(entry.getValue())));
       // sync permissions if option is enabled and we're running in the control-plane
-      if (isTdrPermissionSyncingEnabled && jobDataMap.getBoolean(ARG_TDR_SYNC_PERMISSION)) {
-        syncPermissions(workspaceId, snapshotId);
+      if (isTdrPermissionSyncingEnabled && jobData.getBoolean(ARG_TDR_SYNC_PERMISSION)) {
+        syncPermissions(details.workspaceId(), snapshotId);
       }
     } catch (Exception e) {
       throw new TdrManifestImportException(e.getMessage(), e);
