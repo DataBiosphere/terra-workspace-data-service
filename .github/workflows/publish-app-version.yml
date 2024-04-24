@@ -56,7 +56,7 @@ jobs:
         run: |
           set -e
           cd terra-helmfile
-          HELM_CUR_TAG=$(grep "/terra-workspace-data-service:" charts/wds/values.yaml | sed "s,.*/terra-workspace-data-service:,,")
+          HELM_CUR_TAG=$(grep "applicationVersion: " charts/wds/values.yaml | sed "s,.*applicationVersion: ,,")
           git checkout -b ${JIRA_ID}-auto-update-${HELM_NEW_TAG}
           [[ -n "$HELM_CUR_TAG" && -n "$HELM_NEW_TAG" ]]
           sed -i "s/$HELM_CUR_TAG/$HELM_NEW_TAG/" charts/wds/values.yaml
