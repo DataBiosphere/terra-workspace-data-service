@@ -15,19 +15,12 @@ import org.slf4j.LoggerFactory;
 
 public class RawlsJsonQuartzJob extends QuartzJob {
   private final Logger logger = LoggerFactory.getLogger(getClass());
-  private final JobDao jobDao;
 
   public RawlsJsonQuartzJob(
       DataImportProperties dataImportProperties,
       ObservationRegistry observationRegistry,
       JobDao jobDao) {
-    super(observationRegistry, dataImportProperties);
-    this.jobDao = jobDao;
-  }
-
-  @Override
-  protected JobDao getJobDao() {
-    return this.jobDao;
+    super(jobDao, observationRegistry, dataImportProperties);
   }
 
   @Override
