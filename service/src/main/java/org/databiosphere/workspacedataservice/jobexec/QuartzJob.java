@@ -6,13 +6,11 @@ import static org.databiosphere.workspacedataservice.shared.model.Schedulable.AR
 
 import io.micrometer.observation.Observation;
 import io.micrometer.observation.ObservationRegistry;
-import java.net.URL;
 import java.util.UUID;
 import org.databiosphere.workspacedataservice.config.DataImportProperties;
 import org.databiosphere.workspacedataservice.dao.JobDao;
 import org.databiosphere.workspacedataservice.service.MDCServletRequestListener;
 import org.quartz.Job;
-import org.quartz.JobDataMap;
 import org.quartz.JobExecutionContext;
 import org.quartz.JobKey;
 import org.slf4j.MDC;
@@ -61,7 +59,8 @@ public abstract class QuartzJob implements Job {
     UUID jobId = UUID.fromString(jobKey.getName());
 
     // (try to) set the MDC request id based on the originating thread
-    propagateMdc(context);
+    JobDataMapReader jobData = JobDataMapReader.fromContext(context);
+    propagateMdc(jobData);
 
     Observation observation =
         Observation.start("wds.job.execute", observationRegistry)
@@ -73,12 +72,11 @@ public abstract class QuartzJob implements Job {
       jobDao.running(jobId);
       observation.event(Observation.Event.of("job.running"));
       // look for an auth token in the Quartz JobDataMap
-      String authToken = getJobDataString(context.getMergedJobDataMap(), ARG_TOKEN);
+      String authToken = jobData.getString(ARG_TOKEN);
       // and stash the auth token into job context
-      if (authToken != null) {
-        JobContextHolder.init();
-        JobContextHolder.setAttribute(ATTRIBUTE_NAME_TOKEN, authToken);
-      }
+      JobContextHolder.init();
+      JobContextHolder.setAttribute(ATTRIBUTE_NAME_TOKEN, authToken);
+
       // execute the specifics of this job
       executeInternal(jobId, context);
 
@@ -104,69 +102,12 @@ public abstract class QuartzJob implements Job {
   protected abstract void executeInternal(UUID jobId, JobExecutionContext context);
 
   // try to retrieve MDC id from job context and add to this thread; don't fail if this errors out
-  private void propagateMdc(JobExecutionContext context) {
+  private void propagateMdc(JobDataMapReader reader) {
     try {
-      String requestId =
-          getJobDataString(context.getMergedJobDataMap(), MDCServletRequestListener.MDC_KEY);
+      String requestId = reader.getString(MDCServletRequestListener.MDC_KEY);
       MDC.put(MDCServletRequestListener.MDC_KEY, requestId);
     } catch (Exception e) {
       // noop
-    }
-  }
-
-  /**
-   * Retrieve a String value from a JobDataMap. Throws a JobExecutionException if the value is not
-   * found/null or not a String.
-   *
-   * @param jobDataMap the map from which to retrieve the String
-   * @param key where to find the String in the map
-   * @return value from the JobDataMap
-   */
-  protected String getJobDataString(JobDataMap jobDataMap, String key) {
-    String returnValue;
-    try {
-      returnValue = jobDataMap.getString(key);
-      if (returnValue == null) {
-        throw new JobExecutionException("Key '%s' was null in JobDataMap".formatted(key));
-      }
-      return returnValue;
-    } catch (Exception e) {
-      throw new JobExecutionException(
-          "Error retrieving key %s from JobDataMap: %s".formatted(key, e.getMessage()), e);
-    }
-  }
-
-  /**
-   * Retrieve a UUID value from a JobDataMap. Throws a JobExecutionException if the value is not
-   * found/null or not a UUID.
-   *
-   * @param jobDataMap the map from which to retrieve the UUID
-   * @param key where to find the UUID in the map
-   * @return value from the JobDataMap
-   */
-  protected UUID getJobDataUUID(JobDataMap jobDataMap, String key) {
-    try {
-      return UUID.fromString(jobDataMap.getString(key));
-    } catch (Exception e) {
-      throw new JobExecutionException(
-          "Error retrieving key %s as UUID from JobDataMap: %s".formatted(key, e.getMessage()), e);
-    }
-  }
-
-  /**
-   * Retrieve a URL value from a JobDataMap. Throws a JobExecutionException if the value is not
-   * found/null or cannot be parsed into a URL.
-   *
-   * @param jobDataMap the map from which to retrieve the URL
-   * @param key where to find the URL in the map
-   * @return value from the JobDataMap
-   */
-  protected URL getJobDataUrl(JobDataMap jobDataMap, String key) {
-    try {
-      return new URL(jobDataMap.getString(key));
-    } catch (Exception e) {
-      throw new JobExecutionException(
-          "Error retrieving key %s as URL from JobDataMap: %s".formatted(key, e.getMessage()), e);
     }
   }
 }
