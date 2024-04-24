@@ -10,6 +10,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
+import org.apache.commons.lang3.NotImplementedException;
 import org.databiosphere.workspacedataservice.dao.JobDao;
 import org.databiosphere.workspacedataservice.dao.SchedulerDao;
 import org.databiosphere.workspacedataservice.dataimport.ImportJobInput;
@@ -156,9 +157,10 @@ public class ImportService {
       UUID jobId,
       Map<String, Serializable> arguments) {
     return switch (importType) {
+      case PFB -> new PfbSchedulable(jobId.toString(), "PFB import", arguments);
+      case RAWLSJSON -> throw new NotImplementedException("RAWLSJSON import not implemented");
       case TDRMANIFEST -> new TdrManifestSchedulable(
           jobId.toString(), "TDR manifest import", arguments);
-      case PFB -> new PfbSchedulable(jobId.toString(), "PFB import", arguments);
     };
   }
 }
