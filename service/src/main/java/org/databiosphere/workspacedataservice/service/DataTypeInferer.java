@@ -60,7 +60,7 @@ public class DataTypeInferer {
     return result;
   }
 
-  Map<String, DataTypeMapping> inferTypes(List<Record> records) {
+  public Map<String, DataTypeMapping> inferTypes(List<Record> records) {
     Map<String, DataTypeMapping> result = new HashMap<>();
     for (Record rcd : records) {
       if (rcd.getAttributes() == null) {

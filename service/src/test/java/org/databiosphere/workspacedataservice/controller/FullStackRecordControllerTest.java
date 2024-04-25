@@ -439,7 +439,7 @@ class FullStackRecordControllerTest extends TestBase {
 
   @Test
   @Transactional
-  void dataTypeMismatchShouldFailBatchWrite() throws Exception {
+  void dataTypeMismatchShouldNotFailBatchWrite() throws Exception {
     RecordType recordType = RecordType.valueOf("bw-test");
     List<Record> someRecords = createSomeRecords(recordType, 2);
     List<BatchOperation> operations =
@@ -454,7 +454,7 @@ class FullStackRecordControllerTest extends TestBase {
         .get(1)
         .getRecord()
         .getAttributes()
-        .putAttribute("attr2", "not a float, this should fail");
+        .putAttribute("attr2", "not a float, this should not fail");
     ResponseEntity<ErrorResponse> response =
         restTemplate.exchange(
             "/{instanceid}/batch/{v}/{type}",
@@ -464,15 +464,7 @@ class FullStackRecordControllerTest extends TestBase {
             instanceId,
             versionId,
             recordType);
-    assertThat(response.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
-    ErrorResponse err = response.getBody();
-    assertNotNull(err);
-    assertThat(err.getMessage())
-        .contains(
-            "Some of the records in your request don't have the proper data for the record type");
-    assertThat(response.getBody().getMessage())
-        .contains(
-            "is a STRING in the request but is defined as NUMBER in the record type definition for bw-test");
+    assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
   }
 
   @Test
