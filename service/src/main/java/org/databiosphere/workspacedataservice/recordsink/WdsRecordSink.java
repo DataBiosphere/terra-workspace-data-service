@@ -69,9 +69,4 @@ public class WdsRecordSink implements RecordSink {
   public void deleteBatch(RecordType recordType, List<Record> records) {
     recordDao.batchDelete(collectionId.id(), recordType, records);
   }
-
-  @Override
-  public void close() {
-    // no-op
-  }
 }
