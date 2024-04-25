@@ -19,6 +19,7 @@ import io.micrometer.observation.ObservationRegistry;
 import java.io.File;
 import java.io.IOException;
 import java.net.MalformedURLException;
+import java.net.URI;
 import java.net.URL;
 import java.util.Collection;
 import java.util.List;
@@ -107,15 +108,15 @@ public class TdrManifestQuartzJob extends QuartzJob {
   // TODO AJ-1523 unit tests
   @Override
   protected void executeInternal(UUID jobId, JobExecutionContext context) {
-    // Grab the manifest url from the job's data map
+    // Grab the manifest uri from the job's data map
     JobDataMapReader jobData = JobDataMapReader.fromContext(context);
-    URL url = jobData.getURL(ARG_URL);
+    URI uri = jobData.getURI(ARG_URL);
 
     // Collect details needed for import
     ImportDetails details = importDetailsRetriever.fetch(jobId, jobData, PrefixStrategy.TDR);
 
     // read manifest
-    SnapshotExportResponseModel snapshotExportResponseModel = parseManifest(url);
+    SnapshotExportResponseModel snapshotExportResponseModel = parseManifest(uri);
 
     // get the snapshot id from the manifest
     UUID snapshotId = snapshotExportResponseModel.getSnapshot().getId();
@@ -298,14 +299,14 @@ public class TdrManifestQuartzJob extends QuartzJob {
   /**
    * Read the manifest from the user-specified URL into a SnapshotExportResponseModel java object
    *
-   * @param manifestUrl url to the manifest
+   * @param manifestUri url to the manifest
    * @return parsed object
    */
   @VisibleForTesting
-  SnapshotExportResponseModel parseManifest(URL manifestUrl) {
+  SnapshotExportResponseModel parseManifest(URI manifestUri) {
     // read manifest
     try {
-      return mapper.readValue(manifestUrl, SnapshotExportResponseModel.class);
+      return mapper.readValue(manifestUri.toURL(), SnapshotExportResponseModel.class);
     } catch (IOException e) {
       throw new JobExecutionException(
           "Error reading TDR snapshot manifest: %s".formatted(e.getMessage()), e);

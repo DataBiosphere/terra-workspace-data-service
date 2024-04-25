@@ -3,18 +3,15 @@ package org.databiosphere.workspacedataservice.dataimport;
 import java.net.URI;
 import java.util.Set;
 import java.util.regex.Pattern;
-import org.databiosphere.workspacedataservice.config.DataImportProperties;
 import org.databiosphere.workspacedataservice.service.model.exception.ValidationException;
-import org.springframework.stereotype.Component;
 
-@Component
 public class ImportSourceValidator {
   private final Set<String> allowedSchemes;
   private final Set<Pattern> allowedHosts;
 
-  public ImportSourceValidator(DataImportProperties dataImportProperties) {
-    this.allowedSchemes = dataImportProperties.getAllowedSchemes();
-    this.allowedHosts = dataImportProperties.getAllowedHosts();
+  ImportSourceValidator(Set<String> allowedSchemes, Set<Pattern> allowedHosts) {
+    this.allowedSchemes = allowedSchemes;
+    this.allowedHosts = allowedHosts;
   }
 
   public void validateImport(URI importUrl) {

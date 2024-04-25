@@ -13,12 +13,13 @@ import java.util.UUID;
 import org.databiosphere.workspacedataservice.dao.JobDao;
 import org.databiosphere.workspacedataservice.dao.SchedulerDao;
 import org.databiosphere.workspacedataservice.dataimport.ImportJobInput;
-import org.databiosphere.workspacedataservice.dataimport.ImportSourceValidator;
+import org.databiosphere.workspacedataservice.dataimport.ImportSourceValidatorFactory;
 import org.databiosphere.workspacedataservice.dataimport.pfb.PfbSchedulable;
 import org.databiosphere.workspacedataservice.dataimport.rawlsjson.RawlsJsonSchedulable;
 import org.databiosphere.workspacedataservice.dataimport.tdr.TdrManifestSchedulable;
 import org.databiosphere.workspacedataservice.generated.GenericJobServerModel;
 import org.databiosphere.workspacedataservice.generated.ImportRequestServerModel;
+import org.databiosphere.workspacedataservice.generated.ImportRequestServerModel.TypeEnum;
 import org.databiosphere.workspacedataservice.sam.SamDao;
 import org.databiosphere.workspacedataservice.service.model.exception.AuthenticationException;
 import org.databiosphere.workspacedataservice.service.model.exception.AuthenticationMaskableException;
@@ -41,19 +42,19 @@ public class ImportService {
   private final SamDao samDao;
   private final JobDao jobDao;
   private final SchedulerDao schedulerDao;
-  private final ImportSourceValidator importSourceValidator;
+  private final ImportSourceValidatorFactory importSourceValidatorFactory;
 
   public ImportService(
       CollectionService collectionService,
       SamDao samDao,
       JobDao jobDao,
       SchedulerDao schedulerDao,
-      ImportSourceValidator importSourceValidator) {
+      ImportSourceValidatorFactory importSourceValidatorFactory) {
     this.collectionService = collectionService;
     this.samDao = samDao;
     this.jobDao = jobDao;
     this.schedulerDao = schedulerDao;
-    this.importSourceValidator = importSourceValidator;
+    this.importSourceValidatorFactory = importSourceValidatorFactory;
   }
 
   public GenericJobServerModel createImport(
@@ -84,13 +85,13 @@ public class ImportService {
       }
     }
 
-    importSourceValidator.validateImport(importRequest.getUrl());
+    importSourceValidatorFactory
+        .create(importRequest.getType())
+        .validateImport(importRequest.getUrl());
 
     // get a token to execute the job
     String petToken = samDao.getPetToken();
 
-    // TODO: translate the ImportRequestServerModel into a Job
-    // for now, just make an example job
     logger.info("Data import of type {} requested", importRequest.getType());
 
     ImportJobInput importJobInput = ImportJobInput.from(importRequest);
@@ -153,9 +154,7 @@ public class ImportService {
 
   @VisibleForTesting
   public static Schedulable createSchedulable(
-      ImportRequestServerModel.TypeEnum importType,
-      UUID jobId,
-      Map<String, Serializable> arguments) {
+      TypeEnum importType, UUID jobId, Map<String, Serializable> arguments) {
     return switch (importType) {
       case PFB -> new PfbSchedulable(jobId.toString(), "PFB import", arguments);
       case RAWLSJSON -> new RawlsJsonSchedulable(jobId.toString(), "RAWLSJSON import", arguments);

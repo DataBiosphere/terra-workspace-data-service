@@ -120,7 +120,7 @@ class TdrManifestQuartzJobTest extends TestBase {
     UUID workspaceId = UUID.randomUUID();
     TdrManifestQuartzJob tdrManifestQuartzJob = testSupport.buildTdrManifestQuartzJob(workspaceId);
     SnapshotExportResponseModel snapshotExportResponseModel =
-        tdrManifestQuartzJob.parseManifest(manifestAzure.getURL());
+        tdrManifestQuartzJob.parseManifest(manifestAzure.getURI());
 
     // this manifest describes tables for project, edges, test_result, genome in the snapshot,
     // but only contains export data files for project, edges, and test_result.
@@ -184,7 +184,7 @@ class TdrManifestQuartzJobTest extends TestBase {
     TdrManifestQuartzJob tdrManifestQuartzJob = testSupport.buildTdrManifestQuartzJob(workspaceId);
     SnapshotExportResponseModel snapshotExportResponseModel =
         assertDoesNotThrow(
-            () -> tdrManifestQuartzJob.parseManifest(manifestWithUnknownProperties.getURL()));
+            () -> tdrManifestQuartzJob.parseManifest(manifestWithUnknownProperties.getURI()));
 
     // smoke-test that it parsed correctly
     assertEquals(

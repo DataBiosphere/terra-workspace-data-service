@@ -5,6 +5,7 @@ import static java.util.Arrays.stream;
 import static java.util.Collections.emptyMap;
 import static java.util.stream.Stream.concat;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.databiosphere.workspacedataservice.dataimport.rawlsjson.RawlsJsonQuartzJob.rawlsJsonBlobName;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.times;
@@ -330,7 +331,7 @@ class RawlsRecordSinkTest extends TestBase {
             .put("workspaceId", WORKSPACE_ID.toString())
             .put("userEmail", USER_EMAIL.get())
             .put("jobId", JOB_ID.toString())
-            .put("upsertFile", storage.getBucketName() + "/" + JOB_ID + ".rawlsUpsert")
+            .put("upsertFile", storage.getBucketName() + "/" + rawlsJsonBlobName(JOB_ID))
             .put("isUpsert", "true")
             .put("isCWDS", "true")
             .build();

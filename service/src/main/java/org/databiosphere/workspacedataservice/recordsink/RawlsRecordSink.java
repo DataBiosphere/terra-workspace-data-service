@@ -12,6 +12,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.stream.Stream;
 import org.databiosphere.workspacedataservice.dataimport.ImportDetails;
+import org.databiosphere.workspacedataservice.dataimport.rawlsjson.RawlsJsonQuartzJob;
 import org.databiosphere.workspacedataservice.pubsub.PubSub;
 import org.databiosphere.workspacedataservice.pubsub.RawlsJsonPublisher;
 import org.databiosphere.workspacedataservice.recordsink.RawlsModel.AddListMember;
@@ -60,8 +61,7 @@ public class RawlsRecordSink implements RecordSink {
    */
   public static RawlsRecordSink create(
       ObjectMapper mapper, GcsStorage storage, PubSub pubSub, ImportDetails details) {
-    String blobName = "%s.rawlsUpsert".formatted(details.jobId().toString());
-    Blob blob = storage.createBlob(blobName);
+    Blob blob = storage.createBlob(RawlsJsonQuartzJob.rawlsJsonBlobName(details.jobId()));
     return new RawlsRecordSink(
         new RawlsAttributePrefixer(details.prefixStrategy()),
         JsonWriter.create(storage.getOutputStream(blob), mapper),
