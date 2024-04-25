@@ -67,13 +67,6 @@
     <appender-ref ref="Sentry"/>
   </logger>
 
-  <!-- DispatcherServlet logs request URLs and response codes at DEBUG level -->
-  <logger name="org.springframework.web.servlet.DispatcherServlet" level="debug"
-          additivity="false">
-    <appender-ref ref="CONSOLE"/>
-    <appender-ref ref="Sentry"/>
-  </logger>
-
   <!-- log the remainder of org.springframework.web at INFO level -->
   <logger name="org.springframework.web" level="info" additivity="false">
     <appender-ref ref="CONSOLE"/>
