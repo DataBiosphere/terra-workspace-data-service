@@ -74,8 +74,7 @@ public class TsvBatchTypeDetectionTest extends TestBase {
   void schemaSafeAcrossBatches() throws IOException {
     // generate a TSV input with one column. The first batch of rows has numerics for this column,
     // but the second batch has a string. This should not fail the import.
-    String tsvContent =
-        """
+    String tsvContent = """
 id\tmyColumn
 1\t1
 2\t2
