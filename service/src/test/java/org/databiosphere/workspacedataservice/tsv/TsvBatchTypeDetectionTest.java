@@ -1,10 +1,16 @@
 package org.databiosphere.workspacedataservice.tsv;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
 
 import java.io.IOException;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
+import org.databiosphere.workspacedataservice.common.TestBase;
 import org.databiosphere.workspacedataservice.dao.CollectionDao;
 import org.databiosphere.workspacedataservice.dao.RecordDao;
 import org.databiosphere.workspacedataservice.recordsink.RecordSink;
@@ -19,12 +25,15 @@ import org.databiosphere.workspacedataservice.service.model.AttributeSchema;
 import org.databiosphere.workspacedataservice.service.model.DataTypeMapping;
 import org.databiosphere.workspacedataservice.service.model.RecordTypeSchema;
 import org.databiosphere.workspacedataservice.shared.model.CollectionId;
+import org.databiosphere.workspacedataservice.shared.model.Record;
 import org.databiosphere.workspacedataservice.shared.model.RecordType;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentMatchers;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.mock.mockito.SpyBean;
 import org.springframework.http.MediaType;
 import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.test.annotation.DirtiesContext;
@@ -33,7 +42,7 @@ import org.springframework.test.context.TestPropertySource;
 @DirtiesContext
 @SpringBootTest
 @TestPropertySource(properties = {"twds.write.batch.size=2"})
-public class TsvBatchTypeDetectionTest {
+public class TsvBatchTypeDetectionTest extends TestBase {
 
   @Autowired private RecordSourceFactory recordSourceFactory;
   @Autowired private RecordSinkFactory recordSinkFactory;
@@ -41,8 +50,8 @@ public class TsvBatchTypeDetectionTest {
   @Autowired private RecordOrchestratorService recordOrchestratorService;
   @Autowired private CollectionDao collectionDao;
   @Autowired RecordDao recordDao;
-  @Autowired DataTypeInferer inferer;
-  @Autowired RecordService recordService;
+  @SpyBean DataTypeInferer inferer;
+  @SpyBean RecordService recordService;
 
   private static final UUID COLLECTION = UUID.fromString("aaaabbbb-cccc-dddd-1111-222233334444");
   private static final RecordType THING_TYPE = RecordType.valueOf("thing");
@@ -65,7 +74,8 @@ public class TsvBatchTypeDetectionTest {
   void schemaSafeAcrossBatches() throws IOException {
     // generate a TSV input with one column. The first batch of rows has numerics for this column,
     // but the second batch has a string. This should not fail the import.
-    String tsvContent = """
+    String tsvContent =
+        """
 id\tmyColumn
 1\t1
 2\t2
@@ -88,6 +98,13 @@ id\tmyColumn
     try (RecordSink recordSink = recordSinkFactory.buildRecordSink(CollectionId.of(COLLECTION))) {
       batchWriteService.batchWrite(recordSource, recordSink, THING_TYPE, primaryKey);
     }
+
+    // we should write two batches
+    verify(recordService, times(2))
+        .batchUpsert(eq(COLLECTION), eq(THING_TYPE), any(), any(), eq(primaryKey));
+
+    // and we should have inferred the schema twice as well
+    verify(inferer, times(2)).inferTypes(ArgumentMatchers.<List<Record>>any());
 
     // retrieve the final record schema
     RecordTypeSchema actualRecordSchema =
