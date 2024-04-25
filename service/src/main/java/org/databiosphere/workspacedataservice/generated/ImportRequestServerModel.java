@@ -33,6 +33,8 @@ public class ImportRequestServerModel {
   public enum TypeEnum {
     PFB("PFB"),
     
+    RAWLSJSON("RAWLSJSON"),
+    
     TDRMANIFEST("TDRMANIFEST");
 
     private String value;

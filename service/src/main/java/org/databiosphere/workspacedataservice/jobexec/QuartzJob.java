@@ -36,17 +36,18 @@ import org.slf4j.MDC;
 // note this implements Quartz's `Job`, not WDS's own `Job`
 public abstract class QuartzJob implements Job {
 
+  private final JobDao jobDao;
   private final ObservationRegistry observationRegistry;
   private final DataImportProperties dataImportProperties;
 
   protected QuartzJob(
-      ObservationRegistry observationRegistry, DataImportProperties dataImportProperties) {
+      JobDao jobDao,
+      ObservationRegistry observationRegistry,
+      DataImportProperties dataImportProperties) {
+    this.jobDao = jobDao;
     this.observationRegistry = observationRegistry;
     this.dataImportProperties = dataImportProperties;
   }
-
-  /** implementing classes are expected to be beans that inject a JobDao */
-  protected abstract JobDao getJobDao();
 
   /**
    * implementing classes should override to annotate the observation with additional information
@@ -69,7 +70,7 @@ public abstract class QuartzJob implements Job {
     annotateObservation(observation);
     try {
       // mark this job as running
-      getJobDao().running(jobId);
+      jobDao.running(jobId);
       observation.event(Observation.Event.of("job.running"));
       // look for an auth token in the Quartz JobDataMap
       String authToken = getJobDataString(context.getMergedJobDataMap(), ARG_TOKEN);
@@ -83,7 +84,7 @@ public abstract class QuartzJob implements Job {
 
       // if we reached here, and config says we should, mark this job as successful
       if (dataImportProperties.isSucceedOnCompletion()) {
-        getJobDao().succeeded(jobId);
+        jobDao.succeeded(jobId);
         observation.lowCardinalityKeyValue("outcome", StatusEnum.SUCCEEDED.getValue());
       } else {
         // ensure we give the observation an outcome, even though we left the job running
@@ -91,7 +92,7 @@ public abstract class QuartzJob implements Job {
       }
     } catch (Exception e) {
       // on any otherwise-unhandled exception, mark the job as failed
-      getJobDao().fail(jobId, e);
+      jobDao.fail(jobId, e);
       observation.error(e);
       observation.lowCardinalityKeyValue("outcome", StatusEnum.ERROR.getValue());
     } finally {
