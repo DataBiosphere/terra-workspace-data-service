@@ -60,7 +60,6 @@ public class DataTypeInferer {
     return result;
   }
 
-  @VisibleForTesting
   public Map<String, DataTypeMapping> inferTypes(List<Record> records) {
     Map<String, DataTypeMapping> result = new HashMap<>();
     for (Record rcd : records) {

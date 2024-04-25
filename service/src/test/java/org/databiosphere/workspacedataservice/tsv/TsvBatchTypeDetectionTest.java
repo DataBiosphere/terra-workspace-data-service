@@ -42,7 +42,7 @@ import org.springframework.test.context.TestPropertySource;
 @DirtiesContext
 @SpringBootTest
 @TestPropertySource(properties = {"twds.write.batch.size=2"})
-public class TsvBatchTypeDetectionTest extends TestBase {
+class TsvBatchTypeDetectionTest extends TestBase {
 
   @Autowired private RecordSourceFactory recordSourceFactory;
   @Autowired private RecordSinkFactory recordSinkFactory;
