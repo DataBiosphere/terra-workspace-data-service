@@ -12,6 +12,7 @@ import static org.mockito.Mockito.when;
 import com.google.common.collect.ImmutableMap;
 import java.io.IOException;
 import java.io.Serializable;
+import java.net.URI;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -155,12 +156,21 @@ public class PfbTestUtils {
 
   public static JobExecutionContext stubJobContext(UUID jobId, Resource resource, UUID collectionId)
       throws IOException {
-    return stubJobContext(jobId, resource, collectionId, false);
+    return stubJobContext(jobId, resource, collectionId, /* shouldPermissionSync= */ false);
+  }
+
+  public static JobExecutionContext stubJobContext(UUID jobId, URI uri, UUID collectionId) {
+    return stubJobContext(jobId, uri, collectionId, /* shouldPermissionSync= */ false);
   }
 
   public static JobExecutionContext stubJobContext(
       UUID jobId, Resource resource, UUID collectionId, boolean shouldPermissionSync)
       throws IOException {
+    return stubJobContext(jobId, resource.getURI(), collectionId, shouldPermissionSync);
+  }
+
+  public static JobExecutionContext stubJobContext(
+      UUID jobId, URI resourceUri, UUID collectionId, boolean shouldPermissionSync) {
     JobExecutionContext mockContext = mock(JobExecutionContext.class);
 
     var schedulable =
@@ -169,7 +179,7 @@ public class PfbTestUtils {
             jobId,
             new ImmutableMap.Builder<String, Serializable>()
                 .put(ARG_TOKEN, BEARER_TOKEN)
-                .put(ARG_URL, resource.getURL().toString())
+                .put(ARG_URL, resourceUri.toString())
                 .put(ARG_COLLECTION, collectionId.toString())
                 .put(ARG_TDR_SYNC_PERMISSION, shouldPermissionSync)
                 .build());

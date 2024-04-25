@@ -10,6 +10,7 @@ import org.databiosphere.workspacedataservice.dataimport.ImportDetails;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+/** Publishes a message to pub/sub for the given {@link ImportDetails}. */
 public class RawlsJsonPublisher {
   private final Logger logger = LoggerFactory.getLogger(getClass());
 

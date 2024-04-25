@@ -9,8 +9,10 @@ import static org.assertj.core.util.Streams.stream;
 import static org.springframework.util.StreamUtils.copyToString;
 
 import com.google.cloud.storage.Blob;
+import com.google.cloud.storage.StorageException;
 import java.io.IOException;
 import java.io.OutputStream;
+import java.net.URI;
 import org.databiosphere.workspacedataservice.common.TestBase;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
@@ -147,6 +149,40 @@ class GcsStorageTest extends TestBase {
     assertThatNoException().isThrownBy(() -> storage.deleteBlob("missingBlob"));
   }
 
+  @Test
+  void moveExistingBlob() throws IOException {
+    // Arrange
+    String initialContent = "initial content";
+    String newBlobName = "newBlobName";
+    Blob sourceBlob = storage.createBlob("sourceBlobName");
+    try (OutputStream outputStream = storage.getOutputStream(sourceBlob)) {
+      outputStream.write(initialContent.getBytes());
+    }
+
+    // Act
+    URI sourceUri = getUri(sourceBlob);
+    Blob targetBlob = storage.createBlob(newBlobName);
+    Blob movedBlob = storage.moveBlob(sourceUri, targetBlob);
+
+    // Assert
+    assertThat(movedBlob.getName()).isEqualTo(newBlobName);
+    assertThat(getContentsAsString(newBlobName)).isEqualTo(initialContent);
+    assertThatExceptionOfType(IOException.class)
+        .isThrownBy(() -> storage.getBlobContents("sourceBlobName"))
+        .withMessageContaining("The blob was not found");
+  }
+
+  @Test
+  void moveNonExistentBlob() {
+    // Arrange
+    URI sourceUri = URI.create("gs://nonExistentBucket/nonExistentBlob");
+
+    // Act / Assert
+    assertThatExceptionOfType(StorageException.class)
+        .isThrownBy(() -> storage.moveBlob(sourceUri, storage.createBlob("targetBlobName")))
+        .withMessageContaining("nonExistentBlob");
+  }
+
   private String getContentsAsString(String blobName) throws IOException {
     return copyToString(storage.getBlobContents(blobName), defaultCharset());
   }
@@ -155,5 +191,9 @@ class GcsStorageTest extends TestBase {
     Iterable<Blob> blobsInBucket = storage.getBlobsInBucket();
     assertThat(blobsInBucket).hasSize(1);
     return stream(blobsInBucket).collect(onlyElement());
+  }
+
+  private URI getUri(Blob blob) {
+    return URI.create(blob.getBlobId().toGsUtilUri());
   }
 }

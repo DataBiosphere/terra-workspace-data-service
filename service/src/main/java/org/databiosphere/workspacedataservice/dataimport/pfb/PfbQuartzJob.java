@@ -10,7 +10,7 @@ import static org.databiosphere.workspacedataservice.shared.model.job.JobType.DA
 import bio.terra.pfb.PfbReader;
 import io.micrometer.observation.Observation;
 import io.micrometer.observation.ObservationRegistry;
-import java.net.URL;
+import java.net.URI;
 import java.util.Objects;
 import java.util.Set;
 import java.util.Spliterator;
@@ -90,9 +90,9 @@ public class PfbQuartzJob extends QuartzJob {
 
   @Override
   protected void executeInternal(UUID jobId, JobExecutionContext context) {
-    // Grab the PFB url from the job's data map
+    // Grab the PFB uri from the job's data map
     JobDataMapReader jobData = JobDataMapReader.fromContext(context);
-    URL url = jobData.getURL(ARG_URL);
+    URI uri = jobData.getURI(ARG_URL);
 
     ImportDetails details = importDetailsRetriever.fetch(jobId, jobData, PrefixStrategy.PFB);
 
@@ -103,7 +103,7 @@ public class PfbQuartzJob extends QuartzJob {
     //
     // This is HTTP connection #1 to the PFB.
     logger.info("Finding snapshots in this PFB...");
-    Set<UUID> snapshotIds = withPfbStream(url, this::findSnapshots);
+    Set<UUID> snapshotIds = withPfbStream(uri, this::findSnapshots);
 
     logger.info("Linking snapshots...");
     linkSnapshots(snapshotIds, details.workspaceId());
@@ -113,14 +113,14 @@ public class PfbQuartzJob extends QuartzJob {
       // This is HTTP connection #2 to the PFB.
       logger.info("Importing tables and rows from this PFB...");
       BatchWriteResult result =
-          withPfbStream(url, stream -> importTables(stream, recordSink, BASE_ATTRIBUTES));
+          withPfbStream(uri, stream -> importTables(stream, recordSink, BASE_ATTRIBUTES));
 
       // This is HTTP connection #3 to the PFB.
       logger.info("Updating tables and rows from this PFB with relations...");
       // TODO: merging batch results may have unexpected behavior until BatchWriteResult can
       //   group its merged results under import mode; most notably, relations will be double
       //   counted
-      result.merge(withPfbStream(url, stream -> importTables(stream, recordSink, RELATIONS)));
+      result.merge(withPfbStream(uri, stream -> importTables(stream, recordSink, RELATIONS)));
     } catch (DataImportException e) {
       throw new PfbImportException(e.getMessage(), e);
     }
@@ -137,15 +137,15 @@ public class PfbQuartzJob extends QuartzJob {
   }
 
   /**
-   * convenience wrapper function to execute a PfbStreamConsumer on a PFB at a given url, handling
+   * convenience wrapper function to execute a PfbStreamConsumer on a PFB at a given uri, handling
    * opening and closing of a DataFileStream for that PFB.
    *
-   * @param url location of the PFB
+   * @param uri location of the PFB
    * @param consumer code to execute against the PFB's contents
    */
-  <T> T withPfbStream(URL url, PfbStreamConsumer<T> consumer) {
+  <T> T withPfbStream(URI uri, PfbStreamConsumer<T> consumer) {
     try (DataFileStream<GenericRecord> dataStream =
-        PfbReader.getGenericRecordsStream(url.toString())) {
+        PfbReader.getGenericRecordsStream(uri.toString())) {
       return consumer.run(dataStream);
     } catch (Exception e) {
       throw new PfbParsingException("Error processing PFB: " + e.getMessage(), e);

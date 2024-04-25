@@ -1,10 +1,11 @@
 package org.databiosphere.workspacedataservice.jobexec;
 
-import java.net.URL;
+import java.net.URI;
 import java.util.UUID;
 import org.quartz.JobDataMap;
 import org.quartz.JobExecutionContext;
 
+/** Utility class to read typed keys from a {@link JobDataMap}. */
 public class JobDataMapReader {
 
   private final JobDataMap jobDataMap;
@@ -55,15 +56,15 @@ public class JobDataMapReader {
   }
 
   /**
-   * Retrieve a URL value from a JobDataMap. Throws a JobExecutionException if the value is not
-   * found/null or cannot be parsed into a URL.
+   * Retrieve a URI value from a JobDataMap. Throws a JobExecutionException if the value is not
+   * found/null or cannot be parsed into a URI.
    *
-   * @param key where to find the URL in the map
-   * @return value from the JobDataMap
+   * @param key where to find the URI in the map
+   * @return {@link URI} from the JobDataMap
    */
-  public URL getURL(String key) {
+  public URI getURI(String key) {
     try {
-      return new URL(jobDataMap.getString(key));
+      return new URI(jobDataMap.getString(key));
     } catch (Exception e) {
       throw new JobExecutionException(
           "Error retrieving key %s as URL from JobDataMap: %s".formatted(key, e.getMessage()), e);
@@ -74,7 +75,7 @@ public class JobDataMapReader {
    * Retrieve a Boolean from a JobDataMap. Throws a JobExecutionException if the value is not
    * found/null or cannot be parsed into a Boolean.
    */
-  public Boolean getBoolean(String key) {
+  public boolean getBoolean(String key) {
     try {
       return jobDataMap.getBooleanValue(key);
     } catch (Exception e) {

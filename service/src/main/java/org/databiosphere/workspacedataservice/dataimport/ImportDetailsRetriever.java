@@ -14,6 +14,7 @@ import org.databiosphere.workspacedataservice.shared.model.CollectionId;
 import org.databiosphere.workspacedataservice.shared.model.WorkspaceId;
 import org.springframework.stereotype.Component;
 
+/** Retrieves various common details needed for import jobs. */
 @Component
 public class ImportDetailsRetriever {
 

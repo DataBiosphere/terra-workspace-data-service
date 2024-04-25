@@ -7,17 +7,23 @@ import com.google.cloud.BaseWriteChannel;
 import com.google.cloud.WriteChannel;
 import com.google.cloud.spring.storage.GoogleStorageResource;
 import com.google.cloud.storage.Blob;
+import com.google.cloud.storage.BlobId;
 import com.google.cloud.storage.Storage;
+import com.google.cloud.storage.Storage.CopyRequest;
 import com.google.cloud.storage.StorageOptions;
 import com.google.common.annotations.VisibleForTesting;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.net.URI;
 import java.nio.channels.Channels;
 import org.databiosphere.workspacedataservice.config.DataImportProperties;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.util.unit.DataSize;
 
 public class GcsStorage {
+  private final Logger logger = LoggerFactory.getLogger(this.getClass());
   private final Storage storage;
   private final String bucketName;
   private final DataSize blobWriterChunkSize;
@@ -50,7 +56,8 @@ public class GcsStorage {
     this.blobWriterChunkSize = blobWriterChunkSize;
   }
 
-  GcsStorage(Storage storage, String bucketName) {
+  @VisibleForTesting
+  public GcsStorage(Storage storage, String bucketName) {
     this(storage, bucketName, DEFAULT_CHUNK_SIZE);
   }
 
@@ -97,6 +104,24 @@ public class GcsStorage {
   @VisibleForTesting
   public void deleteBlob(String blobName) {
     storage.delete(this.bucketName, blobName);
+  }
+
+  /**
+   * Moves a blob from one location to another. As move isn't an atomic operation, it accomplishes
+   * this by copying to the new location and deleting the original. Based on: <a
+   * href="https://cloud.google.com/storage/docs/samples/storage-move-file#storage_move_file-java"
+   * />
+   *
+   * @return Blob reference to the file's new location
+   */
+  public Blob moveBlob(URI sourceUri, Blob target) {
+    BlobId source = BlobId.fromGsUtilUri(sourceUri.toString());
+    storage.copy(CopyRequest.newBuilder().setSource(source).setTarget(target).build());
+    Blob copiedBlob = storage.get(target.getBlobId());
+    storage.get(source).delete();
+    logger.atInfo().log("Moved %s to %s".formatted(sourceUri, copiedBlob.getBlobId()));
+
+    return copiedBlob;
   }
 
   private GoogleStorageResource getGcsResource(String blobName) {

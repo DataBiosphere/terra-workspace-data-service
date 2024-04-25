@@ -19,6 +19,7 @@ import org.databiosphere.workspacedataservice.dataimport.rawlsjson.RawlsJsonSche
 import org.databiosphere.workspacedataservice.dataimport.tdr.TdrManifestSchedulable;
 import org.databiosphere.workspacedataservice.generated.GenericJobServerModel;
 import org.databiosphere.workspacedataservice.generated.ImportRequestServerModel;
+import org.databiosphere.workspacedataservice.generated.ImportRequestServerModel.TypeEnum;
 import org.databiosphere.workspacedataservice.sam.SamDao;
 import org.databiosphere.workspacedataservice.service.model.exception.AuthenticationException;
 import org.databiosphere.workspacedataservice.service.model.exception.AuthenticationMaskableException;
@@ -41,6 +42,7 @@ public class ImportService {
   private final SamDao samDao;
   private final JobDao jobDao;
   private final SchedulerDao schedulerDao;
+
   private final ImportValidator importValidator;
 
   public ImportService(
@@ -89,8 +91,6 @@ public class ImportService {
     // get a token to execute the job
     String petToken = samDao.getPetToken();
 
-    // TODO: translate the ImportRequestServerModel into a Job
-    // for now, just make an example job
     logger.info("Data import of type {} requested", importRequest.getType());
 
     ImportJobInput importJobInput = ImportJobInput.from(importRequest);
@@ -153,9 +153,7 @@ public class ImportService {
 
   @VisibleForTesting
   public static Schedulable createSchedulable(
-      ImportRequestServerModel.TypeEnum importType,
-      UUID jobId,
-      Map<String, Serializable> arguments) {
+      TypeEnum importType, UUID jobId, Map<String, Serializable> arguments) {
     return switch (importType) {
       case PFB -> new PfbSchedulable(jobId.toString(), "PFB import", arguments);
       case RAWLSJSON -> new RawlsJsonSchedulable(jobId.toString(), "RAWLSJSON import", arguments);
