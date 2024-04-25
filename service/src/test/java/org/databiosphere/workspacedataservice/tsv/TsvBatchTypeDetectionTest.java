@@ -79,6 +79,8 @@ id\tmyColumn
 1\t1
 2\t2
 3\t"I'm a string!"
+4\t4
+5\t5
 """;
     MockMultipartFile file =
         new MockMultipartFile(
@@ -89,7 +91,8 @@ id\tmyColumn
 
     // call the BatchWriteService. Since this test specifies a batch size of 2, the type detection
     // in the first batch will determine that myColumn is a number. The second batch will encounter
-    // a string for that column.
+    // a string for that column. The third batch is all numbers again, but by then we've already
+    // made the column a string.
     TsvRecordSource recordSource =
         recordSourceFactory.forTsv(file.getInputStream(), THING_TYPE, Optional.of(primaryKey));
     // batchWrite will fail if we are not correctly re-detecting datatypes in later batches
@@ -98,12 +101,12 @@ id\tmyColumn
       batchWriteService.batchWrite(recordSource, recordSink, THING_TYPE, primaryKey);
     }
 
-    // we should write two batches
-    verify(recordService, times(2))
+    // we should write three batches
+    verify(recordService, times(3))
         .batchUpsert(eq(COLLECTION), eq(THING_TYPE), any(), any(), eq(primaryKey));
 
-    // and we should have inferred the schema twice as well
-    verify(inferer, times(2)).inferTypes(ArgumentMatchers.<List<Record>>any());
+    // and we should have inferred the schema three times as well
+    verify(inferer, times(3)).inferTypes(ArgumentMatchers.<List<Record>>any());
 
     // retrieve the final record schema
     RecordTypeSchema actualRecordSchema =
