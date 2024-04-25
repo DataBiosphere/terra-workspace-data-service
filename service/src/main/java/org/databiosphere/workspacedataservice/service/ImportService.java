@@ -15,6 +15,7 @@ import org.databiosphere.workspacedataservice.dao.SchedulerDao;
 import org.databiosphere.workspacedataservice.dataimport.ImportJobInput;
 import org.databiosphere.workspacedataservice.dataimport.ImportSourceValidator;
 import org.databiosphere.workspacedataservice.dataimport.pfb.PfbSchedulable;
+import org.databiosphere.workspacedataservice.dataimport.rawlsjson.RawlsJsonSchedulable;
 import org.databiosphere.workspacedataservice.dataimport.tdr.TdrManifestSchedulable;
 import org.databiosphere.workspacedataservice.generated.GenericJobServerModel;
 import org.databiosphere.workspacedataservice.generated.ImportRequestServerModel;
@@ -156,9 +157,10 @@ public class ImportService {
       UUID jobId,
       Map<String, Serializable> arguments) {
     return switch (importType) {
+      case PFB -> new PfbSchedulable(jobId.toString(), "PFB import", arguments);
+      case RAWLSJSON -> new RawlsJsonSchedulable(jobId.toString(), "RAWLSJSON import", arguments);
       case TDRMANIFEST -> new TdrManifestSchedulable(
           jobId.toString(), "TDR manifest import", arguments);
-      case PFB -> new PfbSchedulable(jobId.toString(), "PFB import", arguments);
     };
   }
 }

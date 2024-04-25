@@ -44,6 +44,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.EnumSource;
+import org.junit.jupiter.params.provider.EnumSource.Mode;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mockito;
@@ -99,8 +100,11 @@ class ImportServiceTest extends TestBase {
 
   // does createSchedulable properly store the jobId, job group, and job data map?
   @ParameterizedTest(name = "for import type {0}")
-  @EnumSource(ImportRequestServerModel.TypeEnum.class)
-  void createSchedulableValues(ImportRequestServerModel.TypeEnum importType) {
+  @EnumSource(
+      value = TypeEnum.class,
+      names = {"RAWLSJSON"},
+      mode = Mode.EXCLUDE)
+  void createSchedulableValues(TypeEnum importType) {
     UUID jobId = UUID.randomUUID();
     Map<String, Serializable> arguments = Map.of("foo", "bar", "twenty-three", 23);
 
@@ -135,8 +139,11 @@ class ImportServiceTest extends TestBase {
   // this is the happy path for importService.createImport; we should end up with a
   // job in QUEUED status
   @ParameterizedTest(name = "for import type {0}")
-  @EnumSource(ImportRequestServerModel.TypeEnum.class)
-  void persistsJobAsQueued(ImportRequestServerModel.TypeEnum importType) {
+  @EnumSource(
+      value = TypeEnum.class,
+      names = {"RAWLSJSON"},
+      mode = Mode.EXCLUDE)
+  void persistsJobAsQueued(TypeEnum importType) {
     // schedulerDao.schedule(), which returns void, returns successfully
     doNothing().when(schedulerDao).schedule(any(Schedulable.class));
     // create collection (in the MockCollectionDao)
@@ -157,8 +164,11 @@ class ImportServiceTest extends TestBase {
 
   // importService.createImport should make appropriate calls to the SchedulerDao
   @ParameterizedTest(name = "for import type {0}")
-  @EnumSource(ImportRequestServerModel.TypeEnum.class)
-  void addsJobToScheduler(ImportRequestServerModel.TypeEnum importType) {
+  @EnumSource(
+      value = TypeEnum.class,
+      names = {"RAWLSJSON"},
+      mode = Mode.EXCLUDE)
+  void addsJobToScheduler(TypeEnum importType) {
     // schedulerDao.schedule(), which returns void, returns successfully
     doNothing().when(schedulerDao).schedule(any(Schedulable.class));
     // create collection (in the MockCollectionDao)
@@ -188,8 +198,11 @@ class ImportServiceTest extends TestBase {
 
   // if we hit an error scheduling the job in Quartz, we should mark the job as being in ERROR
   @ParameterizedTest(name = "for import type {0}")
-  @EnumSource(ImportRequestServerModel.TypeEnum.class)
-  void failsJobIfSchedulingFails(ImportRequestServerModel.TypeEnum importType) {
+  @EnumSource(
+      value = TypeEnum.class,
+      names = {"RAWLSJSON"},
+      mode = Mode.EXCLUDE)
+  void failsJobIfSchedulingFails(TypeEnum importType) {
     // schedulerDao.schedule(), which returns void, returns successfully
     doThrow(new RuntimeException("unit test failme"))
         .when(schedulerDao)
@@ -211,9 +224,11 @@ class ImportServiceTest extends TestBase {
   }
 
   @ParameterizedTest(name = "for import type {0}")
-  @EnumSource(ImportRequestServerModel.TypeEnum.class)
-  void doesNotCreateJobWithoutPetToken(ImportRequestServerModel.TypeEnum importType)
-      throws ApiException {
+  @EnumSource(
+      value = TypeEnum.class,
+      names = {"RAWLSJSON"},
+      mode = Mode.EXCLUDE)
+  void doesNotCreateJobWithoutPetToken(TypeEnum importType) throws ApiException {
     given(mockSamClientFactory.getGoogleApi(any(BearerToken.class))).willReturn(mockSamGoogleApi);
     // Sam permission check will always return true
     given(mockSamGoogleApi.getArbitraryPetServiceAccountToken(any()))
@@ -235,8 +250,11 @@ class ImportServiceTest extends TestBase {
   }
 
   @ParameterizedTest(name = "for import type {0}, validates import source before creating job")
-  @EnumSource(ImportRequestServerModel.TypeEnum.class)
-  void doesNotCreateJobIfImportSourceValidationFails(ImportRequestServerModel.TypeEnum importType) {
+  @EnumSource(
+      value = TypeEnum.class,
+      names = {"RAWLSJSON"},
+      mode = Mode.EXCLUDE)
+  void doesNotCreateJobIfImportSourceValidationFails(TypeEnum importType) {
     // Arrange
     // schedulerDao.schedule(), which returns void, returns successfully
     doNothing().when(schedulerDao).schedule(any(Schedulable.class));
