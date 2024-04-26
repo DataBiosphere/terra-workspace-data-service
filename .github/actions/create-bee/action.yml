@@ -14,15 +14,15 @@ runs:
   using: 'composite'
   steps:
     - name: dispatch to terra-github-workflows
-      uses: broadinstitute/workflow-dispatch@v3
+      uses: broadinstitute/workflow-dispatch@v4
       with:
         workflow: bee-create
         repo: broadinstitute/terra-github-workflows
         ref: refs/heads/main
         token: '${{ inputs.token }}'
         inputs: >-
-          { 
-          "bee-name": "${{ inputs.bee_name }}", 
-          "bee-template-name": "rawls-e2e-azure-tests", 
-          "version-template": "dev" 
+          {
+          "bee-name": "${{ inputs.bee_name }}",
+          "bee-template-name": "rawls-e2e-azure-tests",
+          "version-template": "dev"
           }

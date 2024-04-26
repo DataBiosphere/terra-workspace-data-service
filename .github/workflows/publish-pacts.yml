@@ -150,7 +150,7 @@ jobs:
           echo "pact-b64=${nonBreakingB64}" >> $GITHUB_OUTPUT
 
       - name: Dispatch to terra-github-workflows
-        uses: broadinstitute/workflow-dispatch@v4.0.0
+        uses: broadinstitute/workflow-dispatch@v4
         with:
           run-name: '${{ env.PUBLISH_CONTRACT_RUN_NAME }}-${{ matrix.pact_path }}'
           workflow: .github/workflows/publish-contracts.yaml
@@ -174,7 +174,7 @@ jobs:
         pacticipant-name: ["wds", "cwds"]
     steps:
       - name: Dispatch to terra-github-workflows
-        uses: broadinstitute/workflow-dispatch@v4.0.0
+        uses: broadinstitute/workflow-dispatch@v4
         with:
           run-name: "${{ env.CAN_I_DEPLOY_RUN_NAME }}-${{ matrix.pacticipant-name }}"
           workflow: .github/workflows/can-i-deploy.yaml

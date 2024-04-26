@@ -103,7 +103,7 @@ jobs:
     if: '${{ needs.init-github-context.outputs.delete-bee && always() }}'
     steps:
       - name: dispatch to terra-github-workflows
-        uses: broadinstitute/workflow-dispatch@v3
+        uses: broadinstitute/workflow-dispatch@v4
         with:
           workflow: bee-destroy
           repo: broadinstitute/terra-github-workflows
