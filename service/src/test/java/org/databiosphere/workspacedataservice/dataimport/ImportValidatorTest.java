@@ -7,6 +7,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import java.net.URI;
 import org.databiosphere.workspacedataservice.common.TestBase;
 import org.databiosphere.workspacedataservice.generated.ImportRequestServerModel;
+import org.databiosphere.workspacedataservice.generated.ImportRequestServerModel.TypeEnum;
 import org.databiosphere.workspacedataservice.service.model.exception.ValidationException;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -23,8 +24,7 @@ class ImportValidatorTest extends TestBase {
     // Arrange
     URI importUri =
         URI.create("http://teststorageaccount.blob.core.windows.net/testcontainer/file");
-    ImportRequestServerModel importRequest =
-        new ImportRequestServerModel(ImportRequestServerModel.TypeEnum.PFB, importUri);
+    ImportRequestServerModel importRequest = new ImportRequestServerModel(TypeEnum.PFB, importUri);
 
     // Act/Assert
     ValidationException err =
@@ -47,8 +47,7 @@ class ImportValidatorTest extends TestBase {
   void allowsImportsFromCloudStorage(String cloudStorageUrl) {
     // Arrange
     URI importUri = URI.create(cloudStorageUrl);
-    ImportRequestServerModel importRequest =
-        new ImportRequestServerModel(ImportRequestServerModel.TypeEnum.PFB, importUri);
+    ImportRequestServerModel importRequest = new ImportRequestServerModel(TypeEnum.PFB, importUri);
 
     // Act/Assert
     assertDoesNotThrow(() -> importValidator.validateImport(importRequest));
@@ -58,8 +57,7 @@ class ImportValidatorTest extends TestBase {
   void allowsImportsFromConfiguredSources() {
     // Arrange
     URI importUri = URI.create("https://files.terra.bio/file");
-    ImportRequestServerModel importRequest =
-        new ImportRequestServerModel(ImportRequestServerModel.TypeEnum.PFB, importUri);
+    ImportRequestServerModel importRequest = new ImportRequestServerModel(TypeEnum.PFB, importUri);
 
     // Act/Assert
     assertDoesNotThrow(() -> importValidator.validateImport(importRequest));
@@ -69,8 +67,7 @@ class ImportValidatorTest extends TestBase {
   void rejectsImportsFromOtherSources() {
     // Arrange
     URI importUri = URI.create("https://example.com/file");
-    ImportRequestServerModel importRequest =
-        new ImportRequestServerModel(ImportRequestServerModel.TypeEnum.PFB, importUri);
+    ImportRequestServerModel importRequest = new ImportRequestServerModel(TypeEnum.PFB, importUri);
 
     // Act/Assert
     ValidationException err =
