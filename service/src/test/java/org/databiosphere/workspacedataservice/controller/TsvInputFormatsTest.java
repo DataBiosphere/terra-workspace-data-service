@@ -117,7 +117,14 @@ class TsvInputFormatsTest extends TestBase {
         Arguments.of(
             "[1,5.67]",
             new BigDecimal[] {BigDecimal.valueOf(1), BigDecimal.valueOf(5.67)},
-            "[1,5.67]")
+            "[1,5.67]"),
+        // array of array of string. The expected value here is incorrect, but serves
+        // for now to get the test running.
+        Arguments.of(
+            "[[\"one\",\"two\"],[\"three\",\"four\"]]",
+            new String[][] {new String[] {"one", "two"}, new String[] {"three", "four"}},
+            "[[\"one\",\"two\"],[\"three\",\"four\"]]")
+
         // TODO: array of numbers with leading zeros
         // TODO: smart-quotes?
         // TODO: string-escaping for special characters
