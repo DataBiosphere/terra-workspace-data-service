@@ -105,9 +105,7 @@ class TdrManifestQuartzJobE2ETest extends TestBase {
     when(wsmDao.enumerateDataRepoSnapshotReferences(any(), anyInt(), anyInt()))
         .thenReturn(new ResourceList());
 
-    testSupport
-        .buildTdrManifestQuartzJob(/* workspaceId= */ UUID.randomUUID())
-        .execute(mockContext);
+    testSupport.buildTdrManifestQuartzJob().execute(mockContext);
 
     List<RecordTypeSchema> allTypes =
         recordOrchestratorService.describeAllRecordTypes(collectionId, "v0.2");
@@ -240,9 +238,7 @@ class TdrManifestQuartzJobE2ETest extends TestBase {
     when(wsmDao.enumerateDataRepoSnapshotReferences(any(), anyInt(), anyInt()))
         .thenReturn(new ResourceList());
 
-    testSupport
-        .buildTdrManifestQuartzJob(/* workspaceId= */ UUID.randomUUID())
-        .execute(mockContext);
+    testSupport.buildTdrManifestQuartzJob().execute(mockContext);
 
     List<RecordTypeSchema> allTypes =
         recordOrchestratorService.describeAllRecordTypes(collectionId, "v0.2");

@@ -3,7 +3,6 @@ package org.databiosphere.workspacedataservice.dataimport.tdr;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.micrometer.observation.ObservationRegistry;
 import java.net.URL;
-import java.util.UUID;
 import org.databiosphere.workspacedataservice.activitylog.ActivityLogger;
 import org.databiosphere.workspacedataservice.config.DataImportProperties;
 import org.databiosphere.workspacedataservice.dao.JobDao;
@@ -29,11 +28,11 @@ class TdrTestSupport {
   @Autowired private ActivityLogger activityLogger;
   @Autowired private ObjectMapper objectMapper;
   @Autowired private ObservationRegistry observationRegistry;
-  @Autowired DataImportProperties dataImportProperties;
+  @Autowired private DataImportProperties dataImportProperties;
   @Autowired private SnapshotSupportFactory snapshotSupportFactory;
 
   /** Returns a TdrManifestQuartzJob that is capable of pulling parquet files from the classpath. */
-  TdrManifestQuartzJob buildTdrManifestQuartzJob(UUID workspaceId) {
+  TdrManifestQuartzJob buildTdrManifestQuartzJob() {
     return new TdrManifestQuartzJob(
         jobDao,
         recordSourceFactory,

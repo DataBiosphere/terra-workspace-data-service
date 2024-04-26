@@ -11,6 +11,7 @@ import org.databiosphere.workspacedataservice.dao.JobDao;
 import org.databiosphere.workspacedataservice.dataimport.snapshotsupport.SnapshotSupportFactory;
 import org.databiosphere.workspacedataservice.generated.GenericJobServerModel;
 import org.databiosphere.workspacedataservice.generated.ImportRequestServerModel;
+import org.databiosphere.workspacedataservice.generated.ImportRequestServerModel.TypeEnum;
 import org.databiosphere.workspacedataservice.recordsink.RecordSinkFactory;
 import org.databiosphere.workspacedataservice.recordsource.RecordSourceFactory;
 import org.databiosphere.workspacedataservice.sam.SamDao;
@@ -37,12 +38,12 @@ class PfbTestSupport {
   @Autowired private ImportService importService;
   @Autowired private SamDao samDao;
   @Autowired private SnapshotSupportFactory snapshotSupportFactory;
-  @Autowired DataImportProperties dataImportProperties;
+  @Autowired private DataImportProperties dataImportProperties;
 
   UUID executePfbImportQuartzJob(UUID collectionId, Resource pfbResource)
       throws IOException, JobExecutionException {
     ImportRequestServerModel importRequest =
-        new ImportRequestServerModel(ImportRequestServerModel.TypeEnum.PFB, pfbResource.getURI());
+        new ImportRequestServerModel(TypeEnum.PFB, pfbResource.getURI());
 
     // because we have a mock scheduler dao, this won't trigger Quartz
     GenericJobServerModel genericJobServerModel =
@@ -51,16 +52,12 @@ class PfbTestSupport {
     UUID jobId = genericJobServerModel.getJobId();
     JobExecutionContext mockContext = stubJobContext(jobId, pfbResource, collectionId);
 
-    buildPfbQuartzJob(collectionId).execute(mockContext);
+    buildPfbQuartzJob().execute(mockContext);
 
     return jobId;
   }
 
   PfbQuartzJob buildPfbQuartzJob() {
-    return buildPfbQuartzJob(UUID.randomUUID());
-  }
-
-  private PfbQuartzJob buildPfbQuartzJob(UUID workspaceId) {
     return new PfbQuartzJob(
         jobDao,
         recordSourceFactory,
