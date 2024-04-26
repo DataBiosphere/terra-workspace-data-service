@@ -10,26 +10,24 @@ import org.springframework.stereotype.Component;
 
 @Component
 public class ImportValidator {
-  private final Set<String> allowedSchemes;
+  private final boolean allowHttpUrls;
   private final Set<Pattern> allowedHosts;
 
   public ImportValidator(DataImportProperties dataImportProperties) {
-    this.allowedSchemes = dataImportProperties.getAllowedSchemes();
+    this.allowHttpUrls = dataImportProperties.areHttpUrlsAllowed();
     this.allowedHosts = dataImportProperties.getAllowedHosts();
   }
 
   public void validateImport(ImportRequestServerModel importRequest) {
     URI importUrl = importRequest.getUrl();
-    if (!allowedSchemes.contains(importUrl.getScheme())) {
+    String urlScheme = importUrl.getScheme();
+    if (!(urlScheme.equals("https") || (urlScheme.equals("http") && allowHttpUrls))) {
       throw new ValidationException(
           "Files may not be imported from %s URLs.".formatted(importUrl.getScheme()));
     }
 
-    // File URLs don't have a host to validate.
-    boolean isFileUrl = importUrl.getScheme().equals("file");
-    if (!isFileUrl
-        && allowedHosts.stream()
-            .noneMatch(allowedHost -> allowedHost.matcher(importUrl.getHost()).matches())) {
+    if (allowedHosts.stream()
+        .noneMatch(allowedHost -> allowedHost.matcher(importUrl.getHost()).matches())) {
       throw new ValidationException(
           "Files may not be imported from %s.".formatted(importUrl.getHost()));
     }

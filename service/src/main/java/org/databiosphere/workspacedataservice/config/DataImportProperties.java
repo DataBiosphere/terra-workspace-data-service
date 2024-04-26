@@ -25,7 +25,7 @@ public class DataImportProperties {
   private boolean enableTdrPermissionSync = false;
 
   private Set<Pattern> allowedHosts = emptySet();
-  private Set<String> allowedSchemes = Set.of("https");
+  private boolean allowHttpUrls = false;
   private String rawlsNotificationsTopic;
   private String statusUpdatesTopic;
   private String statusUpdatesSubscription;
@@ -91,12 +91,12 @@ public class DataImportProperties {
     this.allowedHosts = stream(allowedHosts).map(Pattern::compile).collect(Collectors.toSet());
   }
 
-  public Set<String> getAllowedSchemes() {
-    return allowedSchemes;
+  public boolean areHttpUrlsAllowed() {
+    return allowHttpUrls;
   }
 
-  public void setAllowedSchemes(String[] allowedSchemes) {
-    this.allowedSchemes = stream(allowedSchemes).collect(Collectors.toSet());
+  public void setAllowHttpUrls(boolean allowHttpUrls) {
+    this.allowHttpUrls = allowHttpUrls;
   }
 
   public String getRawlsNotificationsTopic() {

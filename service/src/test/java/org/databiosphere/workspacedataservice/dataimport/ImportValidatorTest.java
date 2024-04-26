@@ -33,6 +33,19 @@ class ImportValidatorTest extends TestBase {
     assertEquals("Files may not be imported from http URLs.", err.getMessage());
   }
 
+  @Test
+  void rejectsFileImportUrls() {
+    // Arrange
+    URI importUri = URI.create("file:///path/to/file");
+    ImportRequestServerModel importRequest = new ImportRequestServerModel(TypeEnum.PFB, importUri);
+
+    // Act/Assert
+    ValidationException err =
+        assertThrows(
+            ValidationException.class, () -> importValidator.validateImport(importRequest));
+    assertEquals("Files may not be imported from file URLs.", err.getMessage());
+  }
+
   @ParameterizedTest
   @ValueSource(
       strings = {

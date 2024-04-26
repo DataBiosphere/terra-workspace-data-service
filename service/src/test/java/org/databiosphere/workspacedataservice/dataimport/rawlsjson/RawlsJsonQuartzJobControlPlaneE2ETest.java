@@ -2,10 +2,12 @@ package org.databiosphere.workspacedataservice.dataimport.rawlsjson;
 
 import static org.junit.jupiter.api.Assertions.fail;
 
+import org.databiosphere.workspacedataservice.dataimport.ImportValidator;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.TestPropertySource;
@@ -22,13 +24,14 @@ import org.springframework.test.context.TestPropertySource;
     properties = {
       // turn off pubsub autoconfiguration for tests
       "spring.cloud.gcp.pubsub.enabled=false",
-      // Allow file imports to test with files from resources.
-      "twds.data-import.allowed-schemes=file",
       // Rawls url must be valid, else context initialization (Spring startup) will fail
       "rawlsUrl=https://localhost/",
     })
 @AutoConfigureMockMvc
 class RawlsJsonQuartzJobControlPlaneE2ETest {
+  // Mock ImportValidator to allow importing test data from a file:// URL.
+  @MockBean ImportValidator importValidator;
+
   @Disabled("Not yet implemented")
   @Test
   void happyPath() {
