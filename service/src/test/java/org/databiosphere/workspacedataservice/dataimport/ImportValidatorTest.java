@@ -6,6 +6,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import java.net.URI;
 import org.databiosphere.workspacedataservice.common.TestBase;
+import org.databiosphere.workspacedataservice.generated.ImportRequestServerModel;
 import org.databiosphere.workspacedataservice.service.model.exception.ValidationException;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -14,19 +15,21 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 
 @SpringBootTest(properties = {"twds.data-import.allowed-hosts=.*\\.terra\\.bio"})
-class ImportSourceValidatorTest extends TestBase {
-  @Autowired ImportSourceValidator importSourceValidator;
+class ImportValidatorTest extends TestBase {
+  @Autowired ImportValidator importValidator;
 
   @Test
   void requiresHttpsImportUrls() {
     // Arrange
     URI importUri =
         URI.create("http://teststorageaccount.blob.core.windows.net/testcontainer/file");
+    ImportRequestServerModel importRequest =
+        new ImportRequestServerModel(ImportRequestServerModel.TypeEnum.PFB, importUri);
 
     // Act/Assert
     ValidationException err =
         assertThrows(
-            ValidationException.class, () -> importSourceValidator.validateImport(importUri));
+            ValidationException.class, () -> importValidator.validateImport(importRequest));
     assertEquals("Files may not be imported from http URLs.", err.getMessage());
   }
 
@@ -44,29 +47,35 @@ class ImportSourceValidatorTest extends TestBase {
   void allowsImportsFromCloudStorage(String cloudStorageUrl) {
     // Arrange
     URI importUri = URI.create(cloudStorageUrl);
+    ImportRequestServerModel importRequest =
+        new ImportRequestServerModel(ImportRequestServerModel.TypeEnum.PFB, importUri);
 
     // Act/Assert
-    assertDoesNotThrow(() -> importSourceValidator.validateImport(importUri));
+    assertDoesNotThrow(() -> importValidator.validateImport(importRequest));
   }
 
   @Test
   void allowsImportsFromConfiguredSources() {
     // Arrange
     URI importUri = URI.create("https://files.terra.bio/file");
+    ImportRequestServerModel importRequest =
+        new ImportRequestServerModel(ImportRequestServerModel.TypeEnum.PFB, importUri);
 
     // Act/Assert
-    assertDoesNotThrow(() -> importSourceValidator.validateImport(importUri));
+    assertDoesNotThrow(() -> importValidator.validateImport(importRequest));
   }
 
   @Test
   void rejectsImportsFromOtherSources() {
     // Arrange
     URI importUri = URI.create("https://example.com/file");
+    ImportRequestServerModel importRequest =
+        new ImportRequestServerModel(ImportRequestServerModel.TypeEnum.PFB, importUri);
 
     // Act/Assert
     ValidationException err =
         assertThrows(
-            ValidationException.class, () -> importSourceValidator.validateImport(importUri));
+            ValidationException.class, () -> importValidator.validateImport(importRequest));
     assertEquals("Files may not be imported from example.com.", err.getMessage());
   }
 }
