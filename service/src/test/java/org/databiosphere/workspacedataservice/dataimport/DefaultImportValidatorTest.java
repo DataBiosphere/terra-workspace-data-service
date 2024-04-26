@@ -1,10 +1,13 @@
 package org.databiosphere.workspacedataservice.dataimport;
 
+import static java.util.Collections.emptySet;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import java.net.URI;
+import java.util.Set;
+import java.util.regex.Pattern;
 import org.databiosphere.workspacedataservice.common.TestBase;
 import org.databiosphere.workspacedataservice.generated.ImportRequestServerModel;
 import org.databiosphere.workspacedataservice.generated.ImportRequestServerModel.TypeEnum;
@@ -12,16 +15,13 @@ import org.databiosphere.workspacedataservice.service.model.exception.Validation
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
 
-@SpringBootTest(properties = {"twds.data-import.allowed-hosts=.*\\.terra\\.bio"})
-class ImportValidatorTest extends TestBase {
-  @Autowired ImportValidator importValidator;
-
+class DefaultImportValidatorTest extends TestBase {
   @Test
   void requiresHttpsImportUrls() {
     // Arrange
+    ImportValidator importValidator = new DefaultImportValidator(emptySet());
+
     URI importUri =
         URI.create("http://teststorageaccount.blob.core.windows.net/testcontainer/file");
     ImportRequestServerModel importRequest = new ImportRequestServerModel(TypeEnum.PFB, importUri);
@@ -36,6 +36,8 @@ class ImportValidatorTest extends TestBase {
   @Test
   void rejectsFileImportUrls() {
     // Arrange
+    ImportValidator importValidator = new DefaultImportValidator(emptySet());
+
     URI importUri = URI.create("file:///path/to/file");
     ImportRequestServerModel importRequest = new ImportRequestServerModel(TypeEnum.PFB, importUri);
 
@@ -59,6 +61,8 @@ class ImportValidatorTest extends TestBase {
       })
   void allowsImportsFromCloudStorage(String cloudStorageUrl) {
     // Arrange
+    ImportValidator importValidator = new DefaultImportValidator(emptySet());
+
     URI importUri = URI.create(cloudStorageUrl);
     ImportRequestServerModel importRequest = new ImportRequestServerModel(TypeEnum.PFB, importUri);
 
@@ -69,6 +73,9 @@ class ImportValidatorTest extends TestBase {
   @Test
   void allowsImportsFromConfiguredSources() {
     // Arrange
+    ImportValidator importValidator =
+        new DefaultImportValidator(Set.of(Pattern.compile(".*\\.terra\\.bio")));
+
     URI importUri = URI.create("https://files.terra.bio/file");
     ImportRequestServerModel importRequest = new ImportRequestServerModel(TypeEnum.PFB, importUri);
 
@@ -79,6 +86,9 @@ class ImportValidatorTest extends TestBase {
   @Test
   void rejectsImportsFromOtherSources() {
     // Arrange
+    ImportValidator importValidator =
+        new DefaultImportValidator(Set.of(Pattern.compile(".*\\.terra\\.bio")));
+
     URI importUri = URI.create("https://example.com/file");
     ImportRequestServerModel importRequest = new ImportRequestServerModel(TypeEnum.PFB, importUri);
 
