@@ -22,7 +22,7 @@ runs:
   using: 'composite'
   steps:
     - name: dispatch to terra-github-workflows
-      uses: broadinstitute/workflow-dispatch@v4.0.0
+      uses: broadinstitute/workflow-dispatch@v4
       with:
         workflow: attach-billing-project-to-landing-zone.yaml
         repo: broadinstitute/terra-github-workflows
