@@ -184,6 +184,12 @@ class DataTypeInfererTest extends TestBase {
         .isEqualTo(DataTypeMapping.ARRAY_OF_STRING);
   }
 
+  @Test
+  void inferArrayOfArrays() {
+    assertThat(inferer.inferType("[[\"one\",\"two\"],[\"three\",\"four\"]]"))
+        .isEqualTo(DataTypeMapping.ARRAY_OF_JSON);
+  }
+
   // Test for [AJ-1143]: TSV fails to upload if it has nulls in a relation column
   @Test
   void allowNullRelations() {
