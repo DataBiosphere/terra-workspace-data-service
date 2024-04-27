@@ -151,6 +151,12 @@ public class TsvJsonArgumentsProvider implements ArgumentsProvider {
             List.of(Map.of("value", "foo"), Map.of("value", "bar"), Map.of("value", "baz")),
             false),
 
+        // array of arrays
+        Arguments.of(
+            "[[\"one\",\"two\"],[\"three\",\"four\"]]",
+            List.of(List.of("one", "two"), List.of("three", "four")),
+            false),
+
         // mixed array (these deserialize as mixed lists, will be coerced to a single data type
         // later in processing)
         Arguments.of(

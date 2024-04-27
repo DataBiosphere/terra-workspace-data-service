@@ -225,6 +225,14 @@ public class TsvDeserializer extends StdDeserializer<RecordAttributes> {
         return on.toString();
       }
     }
+    if (element instanceof ArrayNode an) {
+      // this array element is itself an array. Recurse.
+      Stream<JsonNode> elementsStream =
+          StreamSupport.stream(
+              Spliterators.spliteratorUnknownSize(an.elements(), Spliterator.ORDERED), false);
+
+      return elementsStream.map(this::arrayElementToObject).toList();
+    }
     if (element instanceof TextNode strElement) {
       return cellToAttribute(strElement.toString());
     }
