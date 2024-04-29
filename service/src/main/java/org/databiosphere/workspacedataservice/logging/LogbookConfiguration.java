@@ -12,7 +12,6 @@ public class LogbookConfiguration {
 
   @Bean
   public Logbook logbook() {
-    Logbook logbook = Logbook.builder().condition(exclude(requestTo("/status/**"))).build();
-    return logbook;
+    return Logbook.builder().condition(exclude(requestTo("/status/**"))).build();
   }
 }
