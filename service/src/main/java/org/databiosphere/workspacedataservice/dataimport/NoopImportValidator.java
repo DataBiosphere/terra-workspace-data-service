@@ -5,9 +5,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public class NoopImportValidator implements ImportValidator {
-  private static final Logger LOGGER = LoggerFactory.getLogger(NoopImportValidator.class);
+  private final Logger logger = LoggerFactory.getLogger(getClass());
 
   public void validateImport(ImportRequestServerModel importRequest) {
-    LOGGER.warn("Skipping import validation.");
+    logger.warn("Skipping import validation.");
   }
 }
