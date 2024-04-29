@@ -1,6 +1,7 @@
-package org.databiosphere.workspacedataservice.shared.model;
+package org.databiosphere.workspacedataservice.shared.model.attributes;
 
 import org.databiosphere.workspacedataservice.service.RelationUtils;
+import org.databiosphere.workspacedataservice.shared.model.RecordType;
 
 public record RelationAttribute(RecordType targetType, String targetId) {
 

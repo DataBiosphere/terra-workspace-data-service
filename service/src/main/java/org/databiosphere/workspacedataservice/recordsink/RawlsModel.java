@@ -27,7 +27,7 @@ import com.google.common.annotations.VisibleForTesting;
 import java.io.IOException;
 import java.util.List;
 import org.databiosphere.workspacedataservice.shared.model.RecordType;
-import org.databiosphere.workspacedataservice.shared.model.RelationAttribute;
+import org.databiosphere.workspacedataservice.shared.model.attributes.RelationAttribute;
 import org.springframework.lang.Nullable;
 
 /**
@@ -221,8 +221,8 @@ public class RawlsModel {
             yield AttributeValue.of(node.toString());
           }
         }
-        default -> throw new RawlsDeserializationException(
-            "Unexpected JSON token: " + currentToken) {};
+        default ->
+            throw new RawlsDeserializationException("Unexpected JSON token: " + currentToken) {};
       };
     }
   }

@@ -20,7 +20,7 @@ import org.databiosphere.workspacedataservice.recordsource.RecordSource.ImportMo
 import org.databiosphere.workspacedataservice.recordsource.RecordSource.WriteStreamInfo;
 import org.databiosphere.workspacedataservice.shared.model.Record;
 import org.databiosphere.workspacedataservice.shared.model.RecordType;
-import org.databiosphere.workspacedataservice.shared.model.RelationAttribute;
+import org.databiosphere.workspacedataservice.shared.model.attributes.RelationAttribute;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
