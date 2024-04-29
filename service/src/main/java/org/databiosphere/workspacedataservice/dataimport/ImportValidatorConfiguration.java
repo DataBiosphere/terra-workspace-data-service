@@ -11,15 +11,15 @@ import org.springframework.core.env.Environment;
 public class ImportValidatorConfiguration {
   @Bean
   @ConditionalOnProperty(
-      name = "twds.data-import.disable-validation",
-      havingValue = "false",
+      name = "twds.data-import.require-validation",
+      havingValue = "true",
       matchIfMissing = true)
   ImportValidator getDefaultImportValidator(DataImportProperties dataImportProperties) {
     return new DefaultImportValidator(dataImportProperties.getAllowedHosts());
   }
 
   @Bean
-  @ConditionalOnProperty(name = "twds.data-import.disable-validation", havingValue = "true")
+  @ConditionalOnProperty(name = "twds.data-import.require-validation", havingValue = "false")
   ImportValidator getNoopImportValidator(Environment environment) {
     if (!environment.matchesProfiles("local")) {
       throw new ConfigurationException("Import validation can only be disabled in local mode.");
