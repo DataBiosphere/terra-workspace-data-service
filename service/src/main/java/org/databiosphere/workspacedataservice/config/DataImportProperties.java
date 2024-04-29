@@ -18,7 +18,6 @@ public class DataImportProperties {
   private String rawlsNotificationsTopic;
   private String statusUpdatesTopic;
   private String statusUpdatesSubscription;
-  private String rawlsJsonDirectImportBucket;
 
   /** Where to write records after import, options are defined by {@link RecordSinkMode} */
   public RecordSinkMode getBatchWriteRecordSink() {
@@ -36,15 +35,6 @@ public class DataImportProperties {
 
   void setRawlsBucketName(String rawlsBucketName) {
     this.rawlsBucketName = rawlsBucketName;
-  }
-
-  /** A bucket from which Rawls JSON files can be directly imported without conversion. */
-  public String getRawlsJsonDirectImportBucket() {
-    return rawlsJsonDirectImportBucket;
-  }
-
-  void setRawlsJsonDirectImportBucket(String rawlsJsonDirectImportBucket) {
-    this.rawlsJsonDirectImportBucket = rawlsJsonDirectImportBucket;
   }
 
   /**

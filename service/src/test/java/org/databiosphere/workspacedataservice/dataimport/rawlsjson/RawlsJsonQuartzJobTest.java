@@ -3,12 +3,10 @@ package org.databiosphere.workspacedataservice.dataimport.rawlsjson;
 import static java.util.stream.StreamSupport.stream;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.databiosphere.workspacedataservice.dataimport.rawlsjson.RawlsJsonQuartzJob.rawlsJsonBlobName;
-import static org.databiosphere.workspacedataservice.dataimport.rawlsjson.RawlsJsonQuartzJobTest.INCOMING_BUCKET;
 import static org.databiosphere.workspacedataservice.dataimport.rawlsjson.RawlsJsonTestSupport.stubJobContext;
 import static org.mockito.Mockito.verify;
 
 import com.google.cloud.storage.Blob;
-import com.google.cloud.storage.contrib.nio.testing.LocalStorageHelper;
 import com.google.common.collect.ImmutableMap;
 import java.net.URI;
 import java.util.List;
@@ -46,20 +44,18 @@ import org.springframework.test.context.TestPropertySource;
     properties = {
       // turn off pubsub autoconfiguration for tests
       "spring.cloud.gcp.pubsub.enabled=false",
-      "twds.data-import.rawls-json-direct-import-bucket=" + INCOMING_BUCKET,
       "rawlsUrl=https://localhost/",
     })
 class RawlsJsonQuartzJobTest extends TestBase {
-  static final String INCOMING_BUCKET = "allowed-bucket";
   @Autowired private RawlsJsonTestSupport testSupport;
   @SpyBean private PubSub pubSub;
-  @MockBean private JobDao jobDao;
 
-  private GcsStorage incomingStorage;
+  // mock out JobDao to prevent Job state transitions from requiring a real entry in db
+  @MockBean private JobDao jobDao;
 
   @Autowired
   @Qualifier("mockGcsStorage")
-  private GcsStorage outgoingStorage;
+  private GcsStorage storage;
 
   /** ArgumentCaptor for the message passed to {@link PubSub#publishSync(Map)}. */
   @Captor private ArgumentCaptor<Map<String, String>> pubSubMessageCaptor;
@@ -69,13 +65,11 @@ class RawlsJsonQuartzJobTest extends TestBase {
   @BeforeEach
   void setup() {
     collectionId = CollectionId.of(UUID.randomUUID());
-    incomingStorage = new GcsStorage(LocalStorageHelper.getOptions().getService(), INCOMING_BUCKET);
   }
 
   @AfterEach
   void teardown() {
-    deleteAllBlobs(incomingStorage);
-    deleteAllBlobs(outgoingStorage);
+    deleteAllBlobs(storage);
   }
 
   @ParameterizedTest(name = "isUpsert should be passed through to pubsub ({0})")
@@ -100,7 +94,7 @@ class RawlsJsonQuartzJobTest extends TestBase {
         .put("workspaceId", collectionId.toString())
         .put("userEmail", MockSamUsersApi.MOCK_USER_EMAIL)
         .put("jobId", jobId.toString())
-        .put("upsertFile", outgoingStorage.getBucketName() + "/" + rawlsJsonBlobName(jobId))
+        .put("upsertFile", storage.getBucketName() + "/" + rawlsJsonBlobName(jobId))
         .put("isUpsert", String.valueOf(isUpsert))
         .put("isCWDS", "true")
         .build();
@@ -112,7 +106,7 @@ class RawlsJsonQuartzJobTest extends TestBase {
   }
 
   private void assertSingleBlobWritten(String expectedBlobName) {
-    List<Blob> blobsWritten = listBlobs(outgoingStorage);
+    List<Blob> blobsWritten = listBlobs(storage);
     assertThat(blobsWritten).hasSize(1);
     assertThat(blobsWritten.get(0).getName()).isEqualTo(expectedBlobName);
   }
@@ -122,7 +116,7 @@ class RawlsJsonQuartzJobTest extends TestBase {
   }
 
   private Blob createRandomBlob() {
-    return incomingStorage.createBlob(UUID.randomUUID().toString());
+    return storage.createBlob(UUID.randomUUID().toString());
   }
 
   private URI getUri(Blob blob) {

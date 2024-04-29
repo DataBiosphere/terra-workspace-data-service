@@ -12,8 +12,6 @@ twds:
     succeed-on-completion: false
     # Name of the Google Cloud Storage bucket where JSON files are uploaded for import.
     rawls-bucket-name: ${SERVICE_GOOGLE_BUCKET}
-    # Name of the Google Cloud Storage bucket where JSON files can be directly imported from.
-    rawls-json-direct-import-bucket: ${RAWLS_JSON_DIRECT_IMPORT_BUCKET:}
     enable-tdr-permission-sync: true
     # Name of PubSub topic to notify Rawls of JSON files ready for import.
     rawls-notifications-topic: ${RAWLS_NOTIFY_TOPIC}
