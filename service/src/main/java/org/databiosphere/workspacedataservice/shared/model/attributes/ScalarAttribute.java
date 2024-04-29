@@ -13,6 +13,11 @@ public abstract class ScalarAttribute<T> implements Attribute {
   }
 
   @Override
+  public String toString() {
+    return this.value.toString();
+  }
+
+  @Override
   public boolean equals(Object obj) {
     if (obj instanceof ScalarAttribute<?> other) {
       return this.value.equals(other.value);
@@ -21,7 +26,7 @@ public abstract class ScalarAttribute<T> implements Attribute {
   }
 
   @Override
-  public String toString() {
-    return this.value.toString();
+  public int hashCode() {
+    return this.value.hashCode();
   }
 }
