@@ -18,6 +18,7 @@ public class ImportValidatorConfiguration {
     return new DefaultImportValidator(dataImportProperties.getAllowedHosts());
   }
 
+  /** Allow import validation to be disabled for some test workflows. */
   @Bean
   @ConditionalOnProperty(name = "twds.data-import.require-validation", havingValue = "false")
   ImportValidator getNoopImportValidator(Environment environment) {
