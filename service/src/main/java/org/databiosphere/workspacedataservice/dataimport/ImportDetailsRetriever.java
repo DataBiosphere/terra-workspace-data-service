@@ -32,8 +32,6 @@ public class ImportDetailsRetriever {
     String authToken = jobData.getString(ARG_TOKEN);
     Supplier<String> userEmailSupplier = () -> samDao.getUserEmail(BearerToken.of(authToken));
 
-    // Import all the tables and rows inside the PFB.
-    //
     // determine the workspace for the target collection
     CollectionId collectionId = CollectionId.of(targetCollection);
     WorkspaceId workspaceId = collectionService.getWorkspaceId(collectionId);
