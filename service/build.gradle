@@ -45,8 +45,8 @@ ext {
 dependencies {
     // Azure libraries
     implementation 'com.microsoft.azure:applicationinsights-runtime-attach:3.4.19'
-    implementation 'com.azure:azure-storage-blob:12.25.3'
-    implementation 'com.azure:azure-identity-extensions:1.1.14' // postgres password plugin
+    implementation 'com.azure:azure-storage-blob:12.25.4'
+    implementation 'com.azure:azure-identity-extensions:1.1.15' // postgres password plugin
 
     implementation 'org.springframework.boot:spring-boot-starter'
     implementation 'org.springframework.boot:spring-boot-starter-jdbc'
@@ -83,7 +83,7 @@ dependencies {
     implementation 'com.squareup.okhttp3:okhttp' // required by Sam client
     implementation "bio.terra:datarepo-client:2.13.0-SNAPSHOT"
     implementation "bio.terra:workspace-manager-client:0.254.983-SNAPSHOT"
-    implementation "bio.terra:java-pfb-library:0.37.0"
+    implementation "bio.terra:java-pfb-library:0.40.0"
     implementation project(path: ':client')
 
     // Parquet, used for TDR snapshot import
@@ -119,7 +119,7 @@ dependencies {
     implementation "org.glassfish.jersey.core:jersey-common"
 
     annotationProcessor 'org.springframework.boot:spring-boot-configuration-processor'
-    runtimeOnly 'org.webjars.npm:swagger-ui-dist:5.17.0'
+    runtimeOnly 'org.webjars.npm:swagger-ui-dist:5.17.2'
     testImplementation 'io.micrometer:micrometer-observation-test'
     testImplementation 'org.springframework.boot:spring-boot-starter-test'
     testImplementation 'org.junit.jupiter:junit-jupiter'
