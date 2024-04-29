@@ -68,7 +68,6 @@ import org.springframework.stereotype.Component;
 @Component
 public class TdrManifestQuartzJob extends QuartzJob {
 
-  private final JobDao jobDao;
   private final RecordSinkFactory recordSinkFactory;
   private final BatchWriteService batchWriteService;
   private final CollectionService collectionService;
@@ -93,8 +92,7 @@ public class TdrManifestQuartzJob extends QuartzJob {
       DataImportProperties dataImportProperties,
       SnapshotSupportFactory snapshotSupportFactory,
       SamDao samDao) {
-    super(observationRegistry, dataImportProperties);
-    this.jobDao = jobDao;
+    super(jobDao, observationRegistry, dataImportProperties);
     this.recordSinkFactory = recordSinkFactory;
     this.recordSourceFactory = recordSourceFactory;
     this.batchWriteService = batchWriteService;
@@ -104,11 +102,6 @@ public class TdrManifestQuartzJob extends QuartzJob {
     this.snapshotSupportFactory = snapshotSupportFactory;
     this.samDao = samDao;
     this.isTdrPermissionSyncingEnabled = dataImportProperties.isTdrPermissionSyncingEnabled();
-  }
-
-  @Override
-  protected JobDao getJobDao() {
-    return this.jobDao;
   }
 
   @Override

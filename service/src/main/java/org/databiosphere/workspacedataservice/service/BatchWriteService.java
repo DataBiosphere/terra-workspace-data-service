@@ -67,7 +67,7 @@ public class BatchWriteService {
     BatchWriteResult result = BatchWriteResult.empty();
 
     // tracker to stash the schemas for the record types seen while processing this stream
-    Map<RecordType, Map<String, DataTypeMapping>> typesSeen = new HashMap<>();
+    Map<RecordType, Map<String, DataTypeMapping>> typeSchemas = new HashMap<>();
 
     // loop through, in batches, the records provided by the RecordSource. This loops
     // until the RecordSource returns an empty batch.
@@ -92,18 +92,16 @@ public class BatchWriteService {
         // despite its name, copyOf avoids copying if possible
         List<Record> records = ImmutableList.copyOf(groupedRecords.get(recType));
 
-        // have we already processed at least one batch of this record type?
-        boolean isTypeAlreadySeen = typesSeen.containsKey(recType);
-        // if this is the first time we've seen this record type, infer and update this
-        // record type's schema, then save that schema back to the `typesSeen` map
-        if (!isTypeAlreadySeen && opType == OperationType.UPSERT) {
+        // infer and update this record type's schema, then save that schema back to the
+        // `typeSchemas` map
+        if (opType == OperationType.UPSERT) {
           Map<String, DataTypeMapping> inferredSchema = inferer.inferTypes(records);
           Map<String, DataTypeMapping> finalSchema =
               recordSink.createOrModifyRecordType(recType, inferredSchema, records, primaryKey);
-          typesSeen.put(recType, finalSchema);
+          typeSchemas.put(recType, finalSchema);
         }
 
-        Map<String, DataTypeMapping> schema = typesSeen.get(recType);
+        Map<String, DataTypeMapping> schema = typeSchemas.get(recType);
         // when updating relations only, do not update if there are no relations
         if (recordSource.importMode() == BASE_ATTRIBUTES || !schema.isEmpty()) {
           // For relations only, remove records that have no relations

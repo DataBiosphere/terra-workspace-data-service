@@ -20,6 +20,7 @@ import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Collectors;
 import org.databiosphere.workspacedataservice.common.TestBase;
+import org.databiosphere.workspacedataservice.dataimport.ImportValidator;
 import org.databiosphere.workspacedataservice.generated.ImportRequestServerModel;
 import org.databiosphere.workspacedataservice.service.CollectionService;
 import org.databiosphere.workspacedataservice.service.ImportService;
@@ -57,11 +58,7 @@ import org.springframework.test.context.ActiveProfiles;
  */
 @ActiveProfiles(profiles = {"mock-sam", "noop-scheduler-dao"})
 @DirtiesContext
-@SpringBootTest(
-    properties = {
-      // Allow file imports to test with files from resources.
-      "twds.data-import.allowed-schemes=file"
-    })
+@SpringBootTest
 @AutoConfigureMockMvc
 class TdrManifestQuartzJobE2ETest extends TestBase {
   @Autowired private RecordOrchestratorService recordOrchestratorService;
@@ -69,6 +66,8 @@ class TdrManifestQuartzJobE2ETest extends TestBase {
   @Autowired private CollectionService collectionService;
   @Autowired private TdrTestSupport testSupport;
 
+  // Mock ImportValidator to allow importing test data from a file:// URL.
+  @MockBean ImportValidator importValidator;
   @MockBean WorkspaceManagerDao wsmDao;
 
   @Value("classpath:tdrmanifest/v2f.json")
@@ -105,9 +104,7 @@ class TdrManifestQuartzJobE2ETest extends TestBase {
     when(wsmDao.enumerateDataRepoSnapshotReferences(any(), anyInt(), anyInt()))
         .thenReturn(new ResourceList());
 
-    testSupport
-        .buildTdrManifestQuartzJob(/* workspaceId= */ UUID.randomUUID())
-        .execute(mockContext);
+    testSupport.buildTdrManifestQuartzJob().execute(mockContext);
 
     List<RecordTypeSchema> allTypes =
         recordOrchestratorService.describeAllRecordTypes(collectionId, "v0.2");
@@ -240,9 +237,7 @@ class TdrManifestQuartzJobE2ETest extends TestBase {
     when(wsmDao.enumerateDataRepoSnapshotReferences(any(), anyInt(), anyInt()))
         .thenReturn(new ResourceList());
 
-    testSupport
-        .buildTdrManifestQuartzJob(/* workspaceId= */ UUID.randomUUID())
-        .execute(mockContext);
+    testSupport.buildTdrManifestQuartzJob().execute(mockContext);
 
     List<RecordTypeSchema> allTypes =
         recordOrchestratorService.describeAllRecordTypes(collectionId, "v0.2");

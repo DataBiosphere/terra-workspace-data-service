@@ -78,7 +78,7 @@ jobs:
         if: steps.FirstAttemptLandingZone.outcome == 'failure'
         uses: ./.github/actions/landing-zone-attach
         with:
-          run_name: "${{ env.ATTACH_BP_TO_LZ_RUN_NAME }}-retry"
+          run_name: "${{ env.ATTACH_BP_TO_LZ_RUN_NAME }}"
           bee_name: ${{ env.BEE_NAME }}
           token: '${{ env.TOKEN }}'
           project_name: ${{ needs.params-gen.outputs.project-name }}
@@ -103,7 +103,7 @@ jobs:
     if: '${{ needs.init-github-context.outputs.delete-bee && always() }}'
     steps:
       - name: dispatch to terra-github-workflows
-        uses: broadinstitute/workflow-dispatch@v3
+        uses: broadinstitute/workflow-dispatch@v4
         with:
           workflow: bee-destroy
           repo: broadinstitute/terra-github-workflows

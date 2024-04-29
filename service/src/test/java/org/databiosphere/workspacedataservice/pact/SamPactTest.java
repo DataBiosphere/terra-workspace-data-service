@@ -41,7 +41,7 @@ class SamPactTest {
     RequestContextHolder.setRequestAttributes(new ServletRequestAttributes(request));
   }
 
-  @Pact(consumer = "wds", provider = "sam")
+  @Pact(consumer = "${CONSUMER_NAME:wds}", provider = "sam")
   public RequestResponsePact statusApiPact(PactDslWithProvider builder) {
     return builder
         .given("Sam is ok")
@@ -54,7 +54,7 @@ class SamPactTest {
         .toPact();
   }
 
-  @Pact(consumer = "wds", provider = "sam")
+  @Pact(consumer = "${CONSUMER_NAME:wds}", provider = "sam")
   public RequestResponsePact downStatusApiPact(PactDslWithProvider builder) {
     return builder
         .given("Sam is not ok")
@@ -67,7 +67,7 @@ class SamPactTest {
         .toPact();
   }
 
-  @Pact(consumer = "wds", provider = "sam")
+  @Pact(consumer = "${CONSUMER_NAME:wds}", provider = "sam")
   public RequestResponsePact writeNoPermissionPact(PactDslWithProvider builder) {
     return builder
         .given("user does not have write permission", Map.of("dummyResourceId", dummyResourceId))
@@ -82,7 +82,7 @@ class SamPactTest {
         .toPact();
   }
 
-  @Pact(consumer = "wds", provider = "sam")
+  @Pact(consumer = "${CONSUMER_NAME:wds}", provider = "sam")
   public RequestResponsePact writePermissionPact(PactDslWithProvider builder) {
     return builder
         .given("user has write permission", Map.of("dummyResourceId", dummyResourceId))
@@ -97,7 +97,7 @@ class SamPactTest {
         .toPact();
   }
 
-  @Pact(consumer = "wds", provider = "sam")
+  @Pact(consumer = "${CONSUMER_NAME:wds}", provider = "sam")
   public RequestResponsePact readPermissionPact(PactDslWithProvider builder) {
     return builder
         .given("user has read permission", Map.of("dummyResourceId", dummyResourceId))
@@ -112,7 +112,7 @@ class SamPactTest {
         .toPact();
   }
 
-  @Pact(consumer = "wds", provider = "sam")
+  @Pact(consumer = "${CONSUMER_NAME:wds}", provider = "sam")
   public RequestResponsePact readNoPermissionPact(PactDslWithProvider builder) {
     return builder
         .given("user does not have read permission", Map.of("dummyResourceId", dummyResourceId))
@@ -127,7 +127,7 @@ class SamPactTest {
         .toPact();
   }
 
-  @Pact(consumer = "wds", provider = "sam")
+  @Pact(consumer = "${CONSUMER_NAME:wds}", provider = "sam")
   public RequestResponsePact userStatusPact(PactDslWithProvider builder) {
     var userResponseShape =
         new PactDslJsonBody()
@@ -147,7 +147,7 @@ class SamPactTest {
         .toPact();
   }
 
-  @Pact(consumer = "wds", provider = "sam")
+  @Pact(consumer = "${CONSUMER_NAME:wds}", provider = "sam")
   public RequestResponsePact noUserStatusPact(PactDslWithProvider builder) {
     return builder
         .given("user status info request without access token")
@@ -159,7 +159,7 @@ class SamPactTest {
         .toPact();
   }
 
-  @Pact(consumer = "wds", provider = "sam")
+  @Pact(consumer = "${CONSUMER_NAME:wds}", provider = "sam")
   public RequestResponsePact petTokenPact(PactDslWithProvider builder) {
     PactDslJsonRootValue responseBody = PactDslJsonRootValue.stringType("aToken");
 

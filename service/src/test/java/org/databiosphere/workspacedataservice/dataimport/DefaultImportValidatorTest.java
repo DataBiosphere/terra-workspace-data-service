@@ -5,29 +5,45 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import java.net.URI;
+import java.util.Set;
+import java.util.regex.Pattern;
 import org.databiosphere.workspacedataservice.common.TestBase;
+import org.databiosphere.workspacedataservice.generated.ImportRequestServerModel;
+import org.databiosphere.workspacedataservice.generated.ImportRequestServerModel.TypeEnum;
 import org.databiosphere.workspacedataservice.service.model.exception.ValidationException;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
 
-@SpringBootTest(properties = {"twds.data-import.allowed-hosts=.*\\.terra\\.bio"})
-class ImportSourceValidatorTest extends TestBase {
-  @Autowired ImportSourceValidator importSourceValidator;
+class DefaultImportValidatorTest extends TestBase {
+  private final ImportValidator importValidator =
+      new DefaultImportValidator(Set.of(Pattern.compile(".*\\.terra\\.bio")));
 
   @Test
   void requiresHttpsImportUrls() {
     // Arrange
     URI importUri =
         URI.create("http://teststorageaccount.blob.core.windows.net/testcontainer/file");
+    ImportRequestServerModel importRequest = new ImportRequestServerModel(TypeEnum.PFB, importUri);
 
     // Act/Assert
     ValidationException err =
         assertThrows(
-            ValidationException.class, () -> importSourceValidator.validateImport(importUri));
+            ValidationException.class, () -> importValidator.validateImport(importRequest));
     assertEquals("Files may not be imported from http URLs.", err.getMessage());
+  }
+
+  @Test
+  void rejectsFileImportUrls() {
+    // Arrange
+    URI importUri = URI.create("file:///path/to/file");
+    ImportRequestServerModel importRequest = new ImportRequestServerModel(TypeEnum.PFB, importUri);
+
+    // Act/Assert
+    ValidationException err =
+        assertThrows(
+            ValidationException.class, () -> importValidator.validateImport(importRequest));
+    assertEquals("Files may not be imported from file URLs.", err.getMessage());
   }
 
   @ParameterizedTest
@@ -44,29 +60,32 @@ class ImportSourceValidatorTest extends TestBase {
   void allowsImportsFromCloudStorage(String cloudStorageUrl) {
     // Arrange
     URI importUri = URI.create(cloudStorageUrl);
+    ImportRequestServerModel importRequest = new ImportRequestServerModel(TypeEnum.PFB, importUri);
 
     // Act/Assert
-    assertDoesNotThrow(() -> importSourceValidator.validateImport(importUri));
+    assertDoesNotThrow(() -> importValidator.validateImport(importRequest));
   }
 
   @Test
   void allowsImportsFromConfiguredSources() {
     // Arrange
     URI importUri = URI.create("https://files.terra.bio/file");
+    ImportRequestServerModel importRequest = new ImportRequestServerModel(TypeEnum.PFB, importUri);
 
     // Act/Assert
-    assertDoesNotThrow(() -> importSourceValidator.validateImport(importUri));
+    assertDoesNotThrow(() -> importValidator.validateImport(importRequest));
   }
 
   @Test
   void rejectsImportsFromOtherSources() {
     // Arrange
     URI importUri = URI.create("https://example.com/file");
+    ImportRequestServerModel importRequest = new ImportRequestServerModel(TypeEnum.PFB, importUri);
 
     // Act/Assert
     ValidationException err =
         assertThrows(
-            ValidationException.class, () -> importSourceValidator.validateImport(importUri));
+            ValidationException.class, () -> importValidator.validateImport(importRequest));
     assertEquals("Files may not be imported from example.com.", err.getMessage());
   }
 }

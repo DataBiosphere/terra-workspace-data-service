@@ -49,7 +49,7 @@ paths:
               properties:
                 type:
                   type: string
-                  enum: [ PFB, TDRMANIFEST ]
+                  enum: [ PFB, RAWLSJSON, TDRMANIFEST ]
                   description: format of file to import
                 url:
                   type: string
