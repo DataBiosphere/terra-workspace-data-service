@@ -32,7 +32,7 @@ public class LeonardoDao {
     var workspaceApps = this.leonardoClientFactory.getAppsV2Api(token);
     try {
       RestCall<List<ListAppResponse>> listAppsFunction =
-          () -> workspaceApps.listAppsV2(workspaceId, null, false, null);
+          () -> workspaceApps.listAppsV2(workspaceId, null, false, null, null);
       List<ListAppResponse> response =
           restClientRetry.withRetryAndErrorHandling(listAppsFunction, "WorkspaceApps.listApps");
       // unsure what the key would be if there is more than 1 wds present in the listed apps, but in
