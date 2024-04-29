@@ -188,7 +188,8 @@ public class RawlsModel {
    */
   public record EntityReference(RecordType entityType, String entityName) {
     public static EntityReference fromRelationAttribute(RelationAttribute relationAttribute) {
-      return new EntityReference(relationAttribute.targetType(), relationAttribute.targetId());
+      return new EntityReference(
+          relationAttribute.getTargetType(), relationAttribute.getTargetId());
     }
   }
 
