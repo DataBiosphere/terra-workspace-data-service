@@ -32,6 +32,15 @@ public class DefaultImportValidator implements ImportValidator {
     this.allowedHosts = Sets.union(ALWAYS_ALLOWED_HOSTS, allowedHosts);
   }
 
+  private Set<Pattern> getAllowedHostsForImportUrlScheme(String scheme) {
+    // Allow imports from any GCS bucket.
+    if (scheme.equals("gs")) {
+      return Set.of(Pattern.compile(".*"));
+    }
+
+    return allowedHosts;
+  }
+
   public void validateImport(ImportRequestServerModel importRequest) {
     TypeEnum importType = importRequest.getType();
     Set<String> schemesSupportedForImportType =
@@ -43,11 +52,8 @@ public class DefaultImportValidator implements ImportValidator {
       throw new ValidationException("Files may not be imported from %s URLs.".formatted(urlScheme));
     }
 
-    // Imports should be allowed from any GCS bucket.
-    boolean skipHostValidation = urlScheme.equals("gs");
-    if (!skipHostValidation
-        && allowedHosts.stream()
-            .noneMatch(allowedHost -> allowedHost.matcher(importUrl.getHost()).matches())) {
+    if (getAllowedHostsForImportUrlScheme(urlScheme).stream()
+        .noneMatch(allowedHost -> allowedHost.matcher(importUrl.getHost()).matches())) {
       throw new ValidationException(
           "Files may not be imported from %s.".formatted(importUrl.getHost()));
     }
