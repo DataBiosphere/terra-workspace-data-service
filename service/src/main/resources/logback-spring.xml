@@ -73,6 +73,4 @@
     <appender-ref ref="Sentry"/>
   </logger>
 
-  <logger name="org.zalando.logbook" level="TRACE"/>
-
 </configuration>
