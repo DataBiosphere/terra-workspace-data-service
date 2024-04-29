@@ -43,7 +43,9 @@ ext {
 }
 
 dependencies {
+    // logging
     implementation 'org.zalando:logbook-spring-boot-starter:3.8.0'
+
     // Azure libraries
     implementation 'com.microsoft.azure:applicationinsights-runtime-attach:3.4.19'
     implementation 'com.azure:azure-storage-blob:12.25.3'

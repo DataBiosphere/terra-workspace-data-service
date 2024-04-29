@@ -113,7 +113,6 @@ logging:
   level:
     com.zaxxer.hikari.HikariConfig: INFO
     com.zaxxer.hikari: INFO
-    org.springframework.web.filter.CommonsRequestLoggingFilter: DEBUG
     org.zalando.logbook: TRACE
 server:
   error:
