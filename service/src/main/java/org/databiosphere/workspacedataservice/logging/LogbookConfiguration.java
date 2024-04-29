@@ -15,7 +15,7 @@ public class LogbookConfiguration {
   @Bean
   public Logbook logbook() {
     return Logbook.builder()
-        .condition(exclude(requestTo("/status/liveness"), requestTo("/status/readiness")))
+        .condition(exclude(requestTo("/status/liveness"), requestTo("/status/readiness"), requestTo("/prometheus")))
         .sink(new CommonsLogFormatSink(new DefaultHttpLogWriter()))
         .build();
   }
