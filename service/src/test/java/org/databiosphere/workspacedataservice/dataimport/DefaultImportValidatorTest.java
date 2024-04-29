@@ -88,4 +88,15 @@ class DefaultImportValidatorTest extends TestBase {
             ValidationException.class, () -> importValidator.validateImport(importRequest));
     assertEquals("Files may not be imported from example.com.", err.getMessage());
   }
+
+  @Test
+  void acceptsGsUrlsForRawlsJsonImports() {
+    // Arrange
+    URI importUri = URI.create("gs://test-bucket/file");
+    ImportRequestServerModel importRequest =
+        new ImportRequestServerModel(TypeEnum.RAWLSJSON, importUri);
+
+    // Act/Assert
+    assertDoesNotThrow(() -> importValidator.validateImport(importRequest));
+  }
 }
