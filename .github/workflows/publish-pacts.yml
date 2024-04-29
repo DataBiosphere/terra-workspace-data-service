@@ -115,30 +115,18 @@ jobs:
       - name: Run consumer tests
         run: ./gradlew pactTests
 
-      - name: Locate all pact json files and output Base64-encoded pacts
+      - name: Locate pact files
         id: locate-pacts
         run: |
-          # Locate .json pact files in $pactOutputDir
-          pactPaths=($(find "${{ env.WDS_PACTS_OUTPUT_DIR }}" -type f -name "*.json"))
-
-          # Put the Base64-encoded pacts in JSON string
-          pactPathsJson="["
-          # Loop through $pactPaths and encode the corresponding pact
-          for path in "${pactPaths[@]}"; do
-            pactPathsJson="${pactPathsJson}\"$path\", "
-          done
-
-          pactPathsJson="${pactPathsJson%, }]"
-
-          echo "pact-paths=$pactPathsJson" >> $GITHUB_OUTPUT
+          pactPaths=$(find "$WDS_PACTS_OUTPUT_DIR" -type f -name "*.json" | jq -cnR "[inputs]")
+          echo "pact-paths=$pactPaths" >> $GITHUB_OUTPUT
 
       - name: Upload pact files to artifact
         id: upload-pacts
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: ${{ env.WDS_PACTS_ARTIFACT }}
-          path: |
-            ${{ env.WDS_PACTS_OUTPUT_DIR }}
+          path: ${{ env.WDS_PACTS_OUTPUT_DIR }}
           retention-days: 1
 
   publish-pacts-job:
@@ -150,11 +138,10 @@ jobs:
     steps:
       - name: Download pact files from artifact
         id: download-pacts
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           name: ${{ env.WDS_PACTS_ARTIFACT }}
-          path: |
-            ${{ env.WDS_PACTS_OUTPUT_DIR }}
+          path: ${{ env.WDS_PACTS_OUTPUT_DIR }}
 
       - name: Encode pact as non-breaking base64 string
         id: encode-pact
@@ -163,7 +150,7 @@ jobs:
           echo "pact-b64=${nonBreakingB64}" >> $GITHUB_OUTPUT
 
       - name: Dispatch to terra-github-workflows
-        uses: broadinstitute/workflow-dispatch@v4.0.0
+        uses: broadinstitute/workflow-dispatch@v4
         with:
           run-name: '${{ env.PUBLISH_CONTRACT_RUN_NAME }}-${{ matrix.pact_path }}'
           workflow: .github/workflows/publish-contracts.yaml
@@ -178,21 +165,24 @@ jobs:
             "repo-branch": "${{ needs.init-github-context.outputs.repo-branch }}",
             "release-tag": "${{ needs.regulated-tag-job.outputs.new-tag }}"
           }'
-      
+
   can-i-deploy: # The can-i-deploy job will run as a result of a PR. It reports the pact verification statuses on all deployed environments.
     runs-on: ubuntu-latest
     needs: [ run-consumer-contract-tests, regulated-tag-job ]
+    strategy:
+      matrix:
+        pacticipant-name: ["wds", "cwds"]
     steps:
       - name: Dispatch to terra-github-workflows
-        uses: broadinstitute/workflow-dispatch@v4.0.0
+        uses: broadinstitute/workflow-dispatch@v4
         with:
-          run-name: "${{ env.CAN_I_DEPLOY_RUN_NAME }}"
+          run-name: "${{ env.CAN_I_DEPLOY_RUN_NAME }}-${{ matrix.pacticipant-name }}"
           workflow: .github/workflows/can-i-deploy.yaml
           repo: broadinstitute/terra-github-workflows
           ref: refs/heads/main
           token: ${{ secrets.BROADBOT_TOKEN }} # github token for access to kick off a job in the private repo
           inputs: '{
-            "run-name": "${{ env.CAN_I_DEPLOY_RUN_NAME }}",
-            "pacticipant": "wds",
+            "run-name": "${{ env.CAN_I_DEPLOY_RUN_NAME }}-${{ matrix.pacticipant-name }}",
+            "pacticipant": "${{ matrix.pacticipant-name }}",
             "version": "${{ needs.regulated-tag-job.outputs.new-tag }}"
           }'

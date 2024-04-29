@@ -49,7 +49,7 @@ class RawlsPactTest {
   private static final String WORKSPACE_UUID = "facade00-0000-4000-a000-000000000000";
   private static final String RESOURCE_UUID = "5ca1ab1e-0000-4000-a000-000000000000";
 
-  @Pact(consumer = "wds", provider = "rawls")
+  @Pact(consumer = "cwds", provider = "rawls")
   RequestResponsePact enumerateSnapshotsPact(PactDslWithProvider builder) {
     return builder
         .given("one snapshot in the given workspace", Map.of("workspaceId", WORKSPACE_UUID))
@@ -119,7 +119,7 @@ class RawlsPactTest {
         .build();
   }
 
-  @Pact(consumer = "wds", provider = "rawls")
+  @Pact(consumer = "cwds", provider = "rawls")
   RequestResponsePact createSnapshotPact(PactDslWithProvider builder) {
 
     var snapshotRequest =

@@ -118,7 +118,7 @@ class TdrManifestQuartzJobTest extends TestBase {
   @Test
   void extractSnapshotInfo() throws IOException {
     UUID workspaceId = UUID.randomUUID();
-    TdrManifestQuartzJob tdrManifestQuartzJob = testSupport.buildTdrManifestQuartzJob(workspaceId);
+    TdrManifestQuartzJob tdrManifestQuartzJob = testSupport.buildTdrManifestQuartzJob();
     SnapshotExportResponseModel snapshotExportResponseModel =
         tdrManifestQuartzJob.parseManifest(manifestAzure.getURL());
 
@@ -160,7 +160,7 @@ class TdrManifestQuartzJobTest extends TestBase {
   @Test
   void parseEmptyParquet() throws IOException {
     UUID workspaceId = UUID.randomUUID();
-    TdrManifestQuartzJob tdrManifestQuartzJob = testSupport.buildTdrManifestQuartzJob(workspaceId);
+    TdrManifestQuartzJob tdrManifestQuartzJob = testSupport.buildTdrManifestQuartzJob();
     TdrManifestImportTable table =
         new TdrManifestImportTable(
             RecordType.valueOf("data"),
@@ -181,7 +181,7 @@ class TdrManifestQuartzJobTest extends TestBase {
   @Test
   void parseUnknownFieldsInManifest() {
     UUID workspaceId = UUID.randomUUID();
-    TdrManifestQuartzJob tdrManifestQuartzJob = testSupport.buildTdrManifestQuartzJob(workspaceId);
+    TdrManifestQuartzJob tdrManifestQuartzJob = testSupport.buildTdrManifestQuartzJob();
     SnapshotExportResponseModel snapshotExportResponseModel =
         assertDoesNotThrow(
             () -> tdrManifestQuartzJob.parseManifest(manifestWithUnknownProperties.getURL()));
@@ -197,7 +197,7 @@ class TdrManifestQuartzJobTest extends TestBase {
     UUID workspaceId = UUID.randomUUID();
     UUID jobId = UUID.randomUUID();
     Supplier<String> emailSupplier = () -> "testEmail";
-    TdrManifestQuartzJob tdrManifestQuartzJob = testSupport.buildTdrManifestQuartzJob(workspaceId);
+    TdrManifestQuartzJob tdrManifestQuartzJob = testSupport.buildTdrManifestQuartzJob();
     TdrManifestImportTable table =
         new TdrManifestImportTable(
             RecordType.valueOf("data"),
@@ -244,8 +244,7 @@ class TdrManifestQuartzJobTest extends TestBase {
         .thenReturn(new ResourceList());
 
     // set up the job
-    TdrManifestQuartzJob tdrManifestQuartzJob =
-        testSupport.buildTdrManifestQuartzJob(workspaceId.id());
+    TdrManifestQuartzJob tdrManifestQuartzJob = testSupport.buildTdrManifestQuartzJob();
     JobExecutionContext mockContext = stubJobContext(jobId, v2fManifestResource, collectionId.id());
 
     // ACT
@@ -280,8 +279,7 @@ class TdrManifestQuartzJobTest extends TestBase {
     doNothing().when(samDao).addWorkspacePoliciesAsSnapshotReader(any(), any(), anyString());
 
     // set up the job
-    TdrManifestQuartzJob tdrManifestQuartzJob =
-        testSupport.buildTdrManifestQuartzJob(workspaceId.id());
+    TdrManifestQuartzJob tdrManifestQuartzJob = testSupport.buildTdrManifestQuartzJob();
     JobExecutionContext mockContext =
         stubJobContext(
             jobId, v2fManifestResource, collectionId.id(), /* shouldPermissionSync= */ true);

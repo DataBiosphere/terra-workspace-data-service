@@ -51,7 +51,11 @@ class LeonardoDaoTest extends TestBase {
     final int statusCode = HttpStatus.INTERNAL_SERVER_ERROR.value();
     given(
             mockAppsApi.listAppsV2(
-                anyString(), nullable(String.class), anyBoolean(), nullable(String.class)))
+                anyString(),
+                nullable(String.class),
+                anyBoolean(),
+                nullable(String.class),
+                nullable(String.class)))
         .willThrow(
             new org.broadinstitute.dsde.workbench.client.leonardo.ApiException(
                 statusCode, "Intentional error thrown for unit test"));

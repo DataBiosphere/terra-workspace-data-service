@@ -8,7 +8,7 @@ plugins {
     id 'org.openapi.generator'
     id 'com.diffplug.spotless'
     id 'jacoco'
-    id "au.com.dius.pact" version "4.6.8"
+    id "au.com.dius.pact" version "4.6.9"
     id 'jvm-test-suite'
 }
 
@@ -48,8 +48,8 @@ dependencies {
 
     // Azure libraries
     implementation 'com.microsoft.azure:applicationinsights-runtime-attach:3.4.19'
-    implementation 'com.azure:azure-storage-blob:12.25.3'
-    implementation 'com.azure:azure-identity-extensions:1.1.14' // postgres password plugin
+    implementation 'com.azure:azure-storage-blob:12.25.4'
+    implementation 'com.azure:azure-identity-extensions:1.1.15' // postgres password plugin
 
     implementation 'org.springframework.boot:spring-boot-starter'
     implementation 'org.springframework.boot:spring-boot-starter-jdbc'
@@ -82,11 +82,11 @@ dependencies {
 
     // Terra libraries
     implementation group: 'org.broadinstitute.dsde.workbench', name: 'sam-client_2.13', version: '0.1-752b4f3'
-    implementation group: 'org.broadinstitute.dsde.workbench', name: 'leonardo-client_2.13', version: '1.3.6-22ee00b'
+    implementation group: 'org.broadinstitute.dsde.workbench', name: 'leonardo-client_2.13', version: '1.3.6-9996462-SNAP'
     implementation 'com.squareup.okhttp3:okhttp' // required by Sam client
     implementation "bio.terra:datarepo-client:2.13.0-SNAPSHOT"
     implementation "bio.terra:workspace-manager-client:0.254.983-SNAPSHOT"
-    implementation "bio.terra:java-pfb-library:0.29.0"
+    implementation "bio.terra:java-pfb-library:0.40.0"
     implementation project(path: ':client')
 
     // Parquet, used for TDR snapshot import
@@ -122,17 +122,17 @@ dependencies {
     implementation "org.glassfish.jersey.core:jersey-common"
 
     annotationProcessor 'org.springframework.boot:spring-boot-configuration-processor'
-    runtimeOnly 'org.webjars.npm:swagger-ui-dist:5.15.2'
+    runtimeOnly 'org.webjars.npm:swagger-ui-dist:5.17.2'
     testImplementation 'io.micrometer:micrometer-observation-test'
     testImplementation 'org.springframework.boot:spring-boot-starter-test'
     testImplementation 'org.junit.jupiter:junit-jupiter'
     testImplementation project(':client')
-    testImplementation 'au.com.dius.pact.provider:spring:4.6.8'
-    testImplementation 'au.com.dius.pact.consumer:junit5:4.6.8'
+    testImplementation 'au.com.dius.pact.provider:spring:4.6.9'
+    testImplementation 'au.com.dius.pact.consumer:junit5:4.6.9'
     testImplementation 'org.junit-pioneer:junit-pioneer:2.2.0'
 
     // google bucket mock
-    testImplementation 'com.google.cloud:google-cloud-nio:0.127.15'
+    testImplementation 'com.google.cloud:google-cloud-nio:0.127.16'
 
     constraints {
         implementation('org.json:json:20240303') {
@@ -249,13 +249,29 @@ test {
     systemProperties['user.timezone'] = "UTC"
 }
 
-tasks.register("pactTests", Test) {
+tasks.register("wdsPactTests", Test) {
+    environment "CONSUMER_NAME", "wds"
     useJUnitPlatform {
         includeTags "pact-test"
     }
     testLogging {
         showStandardStreams = true
     }
+}
+
+tasks.register("cwdsPactTests", Test) {
+    environment "CONSUMER_NAME", "cwds"
+    useJUnitPlatform {
+        includeTags "pact-test"
+    }
+    testLogging {
+        showStandardStreams = true
+    }
+}
+
+tasks.register("pactTests") {
+    dependsOn "wdsPactTests"
+    dependsOn "cwdsPactTests"
 }
 
 testing {

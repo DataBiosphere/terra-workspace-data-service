@@ -39,6 +39,7 @@ import java.util.regex.Pattern;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 import org.databiosphere.workspacedataservice.annotations.WithTestObservationRegistry;
+import org.databiosphere.workspacedataservice.dataimport.ImportValidator;
 import org.databiosphere.workspacedataservice.pubsub.PubSub;
 import org.databiosphere.workspacedataservice.rawls.RawlsClient;
 import org.databiosphere.workspacedataservice.rawls.SnapshotListResponse;
@@ -88,8 +89,6 @@ import org.springframework.util.StreamUtils;
     properties = {
       // turn off pubsub autoconfiguration for tests
       "spring.cloud.gcp.pubsub.enabled=false",
-      // Allow file imports to test with files from resources.
-      "twds.data-import.allowed-schemes=file",
       // Rawls url must be valid, else context initialization (Spring startup) will fail
       "rawlsUrl=https://localhost/",
       "management.prometheus.metrics.export.enabled=true"
@@ -108,6 +107,8 @@ class PfbQuartzJobControlPlaneE2ETest {
 
   @SpyBean PubSub pubSub;
   @SpyBean SamDao samDao;
+  // Mock ImportValidator to allow importing test data from a file:// URL.
+  @MockBean ImportValidator importValidator;
   @MockBean RawlsClient rawlsClient;
 
   /** ArgumentCaptor for the message passed to {@link PubSub#publishSync(Map)}. */

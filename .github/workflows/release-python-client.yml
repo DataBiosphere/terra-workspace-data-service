@@ -34,7 +34,7 @@ jobs:
           fetch-depth: 0
 
       - name: Set up Python 3.8
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@v5
         with:
           python-version: 3.8
 
@@ -91,7 +91,7 @@ jobs:
           export SPRING_PROFILES_ACTIVE=data-plane,local
           ./gradlew --build-cache build -x test
           # Allow http imports from localhost to test with files from resources served by the mock API server
-          ./gradlew bootRun --args='--twds.data-import.allowed-hosts=localhost --twds.data-import.allowed-schemes=http' &
+          ./gradlew bootRun --args='--twds.data-import.allowed-hosts=localhost --twds.data-import.require-validation=false' &
           count=20
           until $(curl --output /dev/null --silent --head --fail http://localhost:8080/status); do
             printf '.'

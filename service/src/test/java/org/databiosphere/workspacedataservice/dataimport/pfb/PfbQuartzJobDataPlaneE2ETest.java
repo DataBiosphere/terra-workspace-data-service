@@ -19,6 +19,7 @@ import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Collectors;
 import org.databiosphere.workspacedataservice.annotations.SingleTenant;
+import org.databiosphere.workspacedataservice.dataimport.ImportValidator;
 import org.databiosphere.workspacedataservice.sam.SamDao;
 import org.databiosphere.workspacedataservice.service.CollectionService;
 import org.databiosphere.workspacedataservice.service.RecordOrchestratorService;
@@ -52,17 +53,15 @@ import org.springframework.test.context.ActiveProfiles;
  */
 @ActiveProfiles(profiles = {"mock-sam", "noop-scheduler-dao", "data-plane"})
 @DirtiesContext
-@SpringBootTest(
-    properties = {
-      // Allow file imports to test with files from resources.
-      "twds.data-import.allowed-schemes=file"
-    })
+@SpringBootTest
 class PfbQuartzJobDataPlaneE2ETest {
   @Autowired @SingleTenant WorkspaceId workspaceId;
   @Autowired RecordOrchestratorService recordOrchestratorService;
   @Autowired CollectionService collectionService;
   @Autowired PfbTestSupport testSupport;
   @MockBean WorkspaceManagerDao wsmDao;
+  // Mock ImportValidator to allow importing test data from a file:// URL.
+  @MockBean ImportValidator importValidator;
   @SpyBean SamDao samDao;
 
   // test resources used below

@@ -62,7 +62,6 @@ public class PfbQuartzJob extends QuartzJob {
 
   private final Logger logger = LoggerFactory.getLogger(this.getClass());
 
-  private final JobDao jobDao;
   private final BatchWriteService batchWriteService;
   private final CollectionService collectionService;
   private final ActivityLogger activityLogger;
@@ -82,8 +81,7 @@ public class PfbQuartzJob extends QuartzJob {
       ObservationRegistry observationRegistry,
       SnapshotSupportFactory snapshotSupportFactory,
       DataImportProperties dataImportProperties) {
-    super(observationRegistry, dataImportProperties);
-    this.jobDao = jobDao;
+    super(jobDao, observationRegistry, dataImportProperties);
     this.recordSourceFactory = recordSourceFactory;
     this.recordSinkFactory = recordSinkFactory;
     this.batchWriteService = batchWriteService;
@@ -91,11 +89,6 @@ public class PfbQuartzJob extends QuartzJob {
     this.activityLogger = activityLogger;
     this.samDao = samDao;
     this.snapshotSupportFactory = snapshotSupportFactory;
-  }
-
-  @Override
-  protected JobDao getJobDao() {
-    return this.jobDao;
   }
 
   @Override
