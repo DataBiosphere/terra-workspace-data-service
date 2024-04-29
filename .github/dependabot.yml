@@ -7,6 +7,11 @@ updates:
   - package-ecosystem: "gradle"
     registries:
       - "broad-artifactory"
+    ignore:
+      - dependency-name: "bio.terra:datarepo-client"
+      - dependency-name: "bio.terra:workspace-manager-client"
+      - dependency-name: "org.broadinstitute.dsde.workbench:leonardo-client_*"
+      - dependency-name: "org.broadinstitute.dsde.workbench:sam-client_*"
     directory: "/"
     labels:
       - "dependencies"
