@@ -2,6 +2,7 @@ package org.databiosphere.workspacedataservice.controller;
 
 import static org.databiosphere.workspacedataservice.generated.GenericJobServerModel.StatusEnum;
 
+import jakarta.annotation.Nullable;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -15,6 +16,7 @@ import org.databiosphere.workspacedataservice.shared.model.job.JobStatus;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.server.ResponseStatusException;
 
 /** Controller for job-related APIs */
 @DataPlane
@@ -41,7 +43,7 @@ public class JobController implements JobApi {
 
   @Override
   public ResponseEntity<List<GenericJobServerModel>> jobsInInstanceV1(
-      UUID instanceUuid, List<String> statuses) {
+      UUID instanceUuid, @Nullable List<String> statuses) {
     // status is an optional parameter
     if (statuses != null) {
       try {
@@ -50,13 +52,14 @@ public class JobController implements JobApi {
           StatusEnum.fromValue(statusValue);
         }
       } catch (IllegalArgumentException e) {
-        throw new IllegalArgumentException("Invalid status type provided.", e);
+        throw new ResponseStatusException(
+            HttpStatus.BAD_REQUEST, "Invalid status type provided.", e);
       }
     }
     List<GenericJobServerModel> jobList =
         jobService.getJobsForCollection(
             CollectionId.of(instanceUuid),
-            statuses == null ? Optional.empty() : Optional.of(statuses));
+            statuses == null || statuses.isEmpty() ? Optional.empty() : Optional.of(statuses));
 
     return new ResponseEntity<>(jobList, HttpStatus.OK);
   }

@@ -17,6 +17,7 @@ import java.net.URISyntaxException;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import org.databiosphere.workspacedata.model.ErrorResponse;
 import org.databiosphere.workspacedata.model.ImportRequest.TypeEnum;
 import org.databiosphere.workspacedataservice.common.TestBase;
 import org.databiosphere.workspacedataservice.dao.CollectionDao;
@@ -29,6 +30,8 @@ import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
@@ -37,6 +40,7 @@ import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.test.annotation.DirtiesContext;
@@ -79,13 +83,14 @@ class JobControllerTest extends TestBase {
     namedTemplate.getJdbcTemplate().update("delete from sys_wds.job;");
   }
 
-  @Test
-  void instanceJobsReturnAll() {
+  @ParameterizedTest(name = "Return all jobs with a querystring of {0}")
+  @ValueSource(strings = {"", "?someOtherParam=whatever", "?statuses="})
+  void instanceJobsReturnAll(String queryString) {
     when(collectionDao.collectionSchemaExists(collectionId.id())).thenReturn(true);
     HttpHeaders headers = new HttpHeaders();
     ResponseEntity<List<GenericJobServerModel>> result =
         restTemplate.exchange(
-            "/job/v1/instance/{instanceUuid}",
+            "/job/v1/instance/{instanceUuid}" + queryString,
             HttpMethod.GET,
             new HttpEntity<>(headers),
             new ParameterizedTypeReference<List<GenericJobServerModel>>() {},
@@ -146,6 +151,22 @@ class JobControllerTest extends TestBase {
     assertEquals(2, jobList.size());
     assertEquals(StatusEnum.CREATED, jobList.get(0).getStatus());
     assertEquals(StatusEnum.CANCELLED, jobList.get(1).getStatus());
+  }
+
+  @ParameterizedTest(name = "Return Bad Request with ?statuses={0}")
+  @ValueSource(strings = {"xasdaf", "QUEUED,bad,RUNNING"})
+  void instanceJobsWithEmpStatuses(String statusValues) {
+    when(collectionDao.collectionSchemaExists(collectionId.id())).thenReturn(true);
+    HttpHeaders headers = new HttpHeaders();
+    ResponseEntity<ErrorResponse> result =
+        restTemplate.exchange(
+            "/job/v1/instance/{instanceUuid}?statuses={statusValues}",
+            HttpMethod.GET,
+            new HttpEntity<>(headers),
+            ErrorResponse.class,
+            collectionId,
+            statusValues);
+    assertEquals(HttpStatus.BAD_REQUEST, result.getStatusCode());
   }
 
   private static ImportJobInput makePfbJobInput() {
