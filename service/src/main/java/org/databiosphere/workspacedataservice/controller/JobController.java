@@ -2,7 +2,7 @@ package org.databiosphere.workspacedataservice.controller;
 
 import static org.databiosphere.workspacedataservice.generated.GenericJobServerModel.StatusEnum;
 
-import jakarta.annotation.Nullable;
+import org.springframework.lang.Nullable
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
