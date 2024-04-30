@@ -37,6 +37,7 @@ import org.springframework.stereotype.Service;
 @Service
 public class ImportService {
   public static final String ARG_TDR_SYNC_PERMISSION = "tdrSyncPermissions";
+  public static final String ARG_IS_UPSERT = "isUpsert";
   private final Logger logger = LoggerFactory.getLogger(this.getClass());
   private final CollectionService collectionService;
   private final SamDao samDao;
@@ -110,10 +111,9 @@ public class ImportService {
       arguments.put(ARG_TOKEN, petToken);
       arguments.put(ARG_URL, importRequest.getUrl().toString());
       arguments.put(ARG_COLLECTION, collectionId.toString());
-      // try to retrieve the tdrSyncPermissions option if available (first as string, then bool)
-      String tdrSyncPermissions =
-          importRequest.getOptions().getOrDefault(ARG_TDR_SYNC_PERMISSION, "false").toString();
-      arguments.put(ARG_TDR_SYNC_PERMISSION, Boolean.parseBoolean(tdrSyncPermissions));
+
+      // maybe pass through import-type specific options
+      maybePassThroughOptions(importRequest, arguments);
 
       // if we can find an MDC id, add it to the job context
       safeGetMdcId(createdJob.getJobId())
@@ -138,6 +138,23 @@ public class ImportService {
 
     // return the queued job
     return createdJob;
+  }
+
+  // TODO(AJ-1809): Handle opts passthrough more generically/effectively:
+  //   Ideally when creating Schedulable, it would have the correct args serialized through to
+  //   ImportJobInput.  Note: auth token should not be persisted to the database, but other args
+  //   are fair game.
+  private static void maybePassThroughOptions(
+      ImportRequestServerModel importRequest, Map<String, Serializable> arguments) {
+    // try to retrieve the tdrSyncPermissions option if available (first as string, then bool)
+    String tdrSyncPermissions =
+        importRequest.getOptions().getOrDefault(ARG_TDR_SYNC_PERMISSION, "false").toString();
+    arguments.put(ARG_TDR_SYNC_PERMISSION, Boolean.parseBoolean(tdrSyncPermissions));
+
+    // pass through isUpsert if available
+    String isUpsertString =
+        importRequest.getOptions().getOrDefault(ARG_IS_UPSERT, "true").toString();
+    arguments.put(ARG_IS_UPSERT, Boolean.parseBoolean(isUpsertString));
   }
 
   // attempt to get the requestId from MDC. We expect this to always succeed, but if it doesn't,

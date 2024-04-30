@@ -10,6 +10,7 @@ import com.google.common.collect.ImmutableMap;
 import io.micrometer.observation.ObservationRegistry;
 import java.io.Serializable;
 import java.net.URI;
+import java.util.Map;
 import java.util.UUID;
 import org.databiosphere.workspacedataservice.config.DataImportProperties;
 import org.databiosphere.workspacedataservice.dao.JobDao;
@@ -39,8 +40,12 @@ public class RawlsJsonTestSupport {
         dataImportProperties, observations, jobDao, importDetailsRetriever, storage, pubSub);
   }
 
+  static JobExecutionContext stubJobContext(UUID jobId, URI resourceUri, UUID collectionId) {
+    return stubJobContext(jobId, resourceUri, collectionId, Map.of());
+  }
+
   static JobExecutionContext stubJobContext(
-      UUID jobId, URI resourceUri, UUID collectionId, boolean isUpsert) {
+      UUID jobId, URI resourceUri, UUID collectionId, Map<String, String> extraArgs) {
     JobExecutionContext mockContext = mock(JobExecutionContext.class);
 
     var schedulable =
@@ -48,10 +53,10 @@ public class RawlsJsonTestSupport {
             ImportRequestServerModel.TypeEnum.RAWLSJSON,
             jobId,
             new ImmutableMap.Builder<String, Serializable>()
+                .putAll(extraArgs)
                 .put(ARG_TOKEN, "fake-bearer-token")
                 .put(ARG_URL, resourceUri.toString())
                 .put(ARG_COLLECTION, collectionId.toString())
-                .put("isUpsert", String.valueOf(isUpsert))
                 .build());
 
     JobDetail jobDetail = schedulable.getJobDetail();
@@ -59,5 +64,11 @@ public class RawlsJsonTestSupport {
     when(mockContext.getJobDetail()).thenReturn(jobDetail);
 
     return mockContext;
+  }
+
+  static JobExecutionContext stubJobContext(
+      UUID jobId, URI resourceUri, UUID collectionId, boolean isUpsert) {
+    return stubJobContext(
+        jobId, resourceUri, collectionId, Map.of("isUpsert", String.valueOf(isUpsert)));
   }
 }

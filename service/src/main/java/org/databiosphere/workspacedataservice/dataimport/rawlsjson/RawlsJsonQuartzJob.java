@@ -1,6 +1,7 @@
 package org.databiosphere.workspacedataservice.dataimport.rawlsjson;
 
 import static org.databiosphere.workspacedataservice.generated.ImportRequestServerModel.TypeEnum.RAWLSJSON;
+import static org.databiosphere.workspacedataservice.service.ImportService.ARG_IS_UPSERT;
 import static org.databiosphere.workspacedataservice.shared.model.Schedulable.ARG_URL;
 import static org.databiosphere.workspacedataservice.shared.model.job.JobType.DATA_IMPORT;
 
@@ -67,7 +68,10 @@ public class RawlsJsonQuartzJob extends QuartzJob {
 
   private void publishToRawls(UUID jobId, JobDataMapReader jobData, Blob destination) {
     new RawlsJsonPublisher(
-            pubSub, getImportDetails(jobId, jobData), destination, jobData.getBoolean("isUpsert"))
+            pubSub,
+            getImportDetails(jobId, jobData),
+            destination,
+            jobData.getBoolean(ARG_IS_UPSERT))
         .publish();
   }
 

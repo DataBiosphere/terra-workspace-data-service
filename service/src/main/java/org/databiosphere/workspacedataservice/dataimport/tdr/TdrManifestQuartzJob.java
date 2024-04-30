@@ -163,6 +163,7 @@ public class TdrManifestQuartzJob extends QuartzJob {
                               .withRecordType(entry.getKey())
                               .ofQuantity(entry.getValue())));
       // sync permissions if option is enabled and we're running in the control-plane
+      // TODO(AJ-1809): do defaulting here when we have a more generic way to handle passed options
       if (isTdrPermissionSyncingEnabled && jobData.getBoolean(ARG_TDR_SYNC_PERMISSION)) {
         syncPermissions(details.workspaceId(), snapshotId);
       }
