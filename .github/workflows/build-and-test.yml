@@ -110,7 +110,7 @@ jobs:
     needs: [build, tag]
     uses: ./.github/workflows/publish-docker.yml
     with:
-      new-tag: ${{ needs.tag-job.outputs.tag }}
+      new-tag: ${{ needs.tag-job.outputs.new-tag }}
     secrets:
       ACR_SP_PASSWORD: ${{ secrets.ACR_SP_PASSWORD }}
       ACR_SP_USER: ${{ secrets.ACR_SP_USER }}
