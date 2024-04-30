@@ -4,6 +4,7 @@ import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.cloud.spring.storage.GoogleStorageResource;
 import com.google.cloud.storage.Blob;
+import com.google.common.annotations.VisibleForTesting;
 import com.google.mu.util.stream.BiStream;
 import java.io.IOException;
 import java.io.OutputStream;
@@ -97,7 +98,7 @@ public class RawlsRecordSink implements RecordSink {
   public void close() {
     jsonWriter.close();
 
-    // TODO: add failure detection so we don't publish on failures
+    // TODO(AJ-1808): move this side effect to an appropriate after-success callback.
     publisher.publish();
   }
 
@@ -152,7 +153,8 @@ public class RawlsRecordSink implements RecordSink {
    * intended to encapsulate the logic to get an {@link OutputStream} set up to do that and ensure
    * the array of entities generated is properly initialized and terminated with "[" tokens.
    */
-  private static class JsonWriter implements AutoCloseable {
+  @VisibleForTesting
+  static class JsonWriter implements AutoCloseable {
     private final JsonGenerator jsonGenerator;
 
     // TODO: consider using a simple state machine here [enum INITIALIZED, WRITING, CLOSED] to
@@ -167,7 +169,8 @@ public class RawlsRecordSink implements RecordSink {
      * Initialize a new {@link JsonWriter} to write to the given {@link GoogleStorageResource} using
      * the provided {@link ObjectMapper}.
      */
-    private static JsonWriter create(OutputStream outputStream, ObjectMapper objectMapper) {
+    @VisibleForTesting
+    static JsonWriter create(OutputStream outputStream, ObjectMapper objectMapper) {
       try {
         return new JsonWriter(objectMapper.getFactory().createGenerator(outputStream));
       } catch (IOException e) {
@@ -176,7 +179,8 @@ public class RawlsRecordSink implements RecordSink {
     }
 
     /** Write a single entity to the JSON array in Google storage. */
-    private void writeEntity(Entity entity) {
+    @VisibleForTesting
+    void writeEntity(Entity entity) {
       if (!streamStarted) {
         writeJson(JsonGenerator::writeStartArray); // write a "[" to begin the array of entities
         streamStarted = true;
