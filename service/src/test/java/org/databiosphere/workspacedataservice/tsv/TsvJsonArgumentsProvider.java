@@ -1,14 +1,14 @@
 package org.databiosphere.workspacedataservice.tsv;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.util.Collections;
 import java.util.List;
-import java.util.Map;
 import java.util.stream.Stream;
-import org.junit.jupiter.api.extension.ExtensionContext;
+import org.databiosphere.workspacedataservice.common.TestBase;
 import org.junit.jupiter.params.provider.Arguments;
-import org.junit.jupiter.params.provider.ArgumentsProvider;
 
 /**
  * Test fixtures for use by TsvDeserializerTest and TsvJsonEquivalenceTest.
@@ -19,10 +19,11 @@ import org.junit.jupiter.params.provider.ArgumentsProvider;
  * @see TsvDeserializerTest
  * @see TsvJsonEquivalenceTest
  */
-public class TsvJsonArgumentsProvider implements ArgumentsProvider {
+public abstract class TsvJsonArgumentsProvider extends TestBase {
 
-  @Override
-  public Stream<? extends Arguments> provideArguments(ExtensionContext context) {
+  abstract ObjectMapper getMapper();
+
+  public Stream<? extends Arguments> tsvJsonArguments() throws JsonProcessingException {
     /* Arguments are sets:
     	- first value is the text that would be contained in a TSV cell or JSON value
     	- second value is the expected Java type that the TsvConverter or JSON deserializer would create for that cell
@@ -79,7 +80,9 @@ public class TsvJsonArgumentsProvider implements ArgumentsProvider {
 
         // json packet
         Arguments.of(
-            "{\"foo\":\"bar\", \"baz\": \"qux\"}", Map.of("foo", "bar", "baz", "qux"), false),
+            "{\"foo\":\"bar\", \"baz\": \"qux\"}",
+            getMapper().readTree("{\"foo\":\"bar\", \"baz\": \"qux\"}"),
+            false),
 
         // ========== arrays ==========
 
@@ -147,8 +150,11 @@ public class TsvJsonArgumentsProvider implements ArgumentsProvider {
 
         // array of JSON objects
         Arguments.of(
-            "[{\"value\":\"foo\"},{\"value\":\"bar\"},{\"value\":\"baz\"}]",
-            List.of(Map.of("value", "foo"), Map.of("value", "bar"), Map.of("value", "baz")),
+            "[{\"first\":\"foo\"},{\"second\":\"bar\"},{\"third\":\"baz\"}]",
+            List.of(
+                getMapper().readTree("{\"first\":\"foo\"}"),
+                getMapper().readTree("{\"second\":\"bar\"}"),
+                getMapper().readTree("{\"third\":\"baz\"}")),
             false),
 
         // mixed array (these deserialize as mixed lists, will be coerced to a single data type

@@ -14,7 +14,7 @@ public class JsonAttribute extends ScalarAttribute<JsonNode> {
     this.mapper = null;
   }
 
-  JsonAttribute(JsonNode value, ObjectMapper mapper) {
+  public JsonAttribute(JsonNode value, ObjectMapper mapper) {
     super(value);
     this.mapper = mapper;
   }

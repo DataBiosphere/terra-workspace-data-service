@@ -21,8 +21,10 @@ import static org.databiosphere.workspacedataservice.service.model.DataTypeMappi
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.mu.util.stream.BiStream;
+import jakarta.annotation.Nullable;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.net.URI;
@@ -192,6 +194,7 @@ public class DataTypeInferer {
     }
   }
 
+  @Nullable
   private JsonNode parseToJsonNode(String val) {
     try {
       // We call .toLowerCase() to ensure that WDS interprets all different inputted spellings of
@@ -203,6 +206,26 @@ public class DataTypeInferer {
     }
   }
 
+  /**
+   * Attempts to parse the input as json. If the input parsed as a valid json object (not array!),
+   * return that ObjectNode; else return null.
+   *
+   * @param val the input to be parsed
+   * @return the ObjectNode, or null if the input was not a json object
+   */
+  @Nullable
+  public ObjectNode tryJsonObject(String val) {
+    JsonNode jsonNode = parseToJsonNode(val);
+    if (jsonNode instanceof ObjectNode objectNode) {
+      return objectNode;
+    }
+    return null;
+  }
+
+  /**
+   * @deprecated use tryJsonObject instead
+   */
+  @Deprecated(since = "2024-04-30")
   public boolean isValidJson(String val) {
     JsonNode jsonNode = parseToJsonNode(val);
     return jsonNode != null && jsonNode.isObject();

@@ -2,7 +2,9 @@ package org.databiosphere.workspacedataservice.tsv;
 
 import static org.junit.jupiter.api.Assertions.*;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.BigIntegerNode;
 import com.fasterxml.jackson.databind.node.NullNode;
 import com.fasterxml.jackson.databind.node.TextNode;
@@ -10,22 +12,30 @@ import java.math.BigInteger;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import org.databiosphere.workspacedataservice.common.TestBase;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestInstance;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ArgumentsSource;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 
 /**
  * Tests that TSV uploads deserialize into the expected Java objects inside RecordAttributes.
  *
- * @see TsvJsonArgumentsProvider
+ * @see TsvOnlyArgumentsProvider
  */
+@TestInstance(TestInstance.Lifecycle.PER_CLASS)
 @SpringBootTest
-class TsvDeserializerTest extends TestBase {
+class TsvDeserializerTest extends TsvJsonArgumentsProvider {
 
   @Autowired TsvDeserializer tsvDeserializer;
+  @Autowired ObjectMapper mapper;
+
+  @Override
+  ObjectMapper getMapper() {
+    return mapper;
+  }
 
   // ===== nodeToObject tests:
   @Test
@@ -54,12 +64,12 @@ class TsvDeserializerTest extends TestBase {
   // ===== cellToAttribute tests:
 
   /**
-   * @see TsvJsonArgumentsProvider for arguments
+   * @see TsvOnlyArgumentsProvider for arguments
    */
   @ParameterizedTest(name = "cellToAttribute for input value <{0}> should return <{1}>")
-  @ArgumentsSource(TsvJsonArgumentsProvider.class)
+  @MethodSource("tsvJsonArguments")
   @ArgumentsSource(TsvOnlyArgumentsProvider.class)
-  void cellToAttributeTest(String input, Object expected) {
+  void cellToAttributeTest(String input, Object expected) throws JsonProcessingException {
     Object actual = tsvDeserializer.cellToAttribute(input);
 
     if (expected instanceof List<?> expectedList) {
@@ -67,12 +77,13 @@ class TsvDeserializerTest extends TestBase {
           expectedList,
           (List<?>) actual,
           "cellToAttribute for input value <%s> should return <%s>".formatted(input, expected));
-    } else if (expected instanceof Map) {
-      // map types can differ; don't check instanceof
-      assertEquals(
-          expected,
-          actual,
-          "cellToAttribute for input value <%s> should return <%s>".formatted(input, expected));
+      //    } else if (expected instanceof Map) {
+      //      // map types can differ; don't check instanceof
+      //            assertEquals(
+      //                expected,
+      //                actual,
+      //                "cellToAttribute for input value <%s> should return <%s>".formatted(input,
+      //       expected));
     } else {
       if (Objects.isNull(expected)) {
         assertNull(actual);

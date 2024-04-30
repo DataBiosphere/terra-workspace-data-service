@@ -2,7 +2,6 @@ package org.databiosphere.workspacedataservice.tsv;
 
 import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.DeserializationContext;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -28,6 +27,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.databiosphere.workspacedataservice.service.DataTypeInferer;
 import org.databiosphere.workspacedataservice.service.model.exception.UnexpectedTsvException;
 import org.databiosphere.workspacedataservice.shared.model.RecordAttributes;
+import org.databiosphere.workspacedataservice.shared.model.attributes.JsonAttribute;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -130,15 +130,9 @@ public class TsvDeserializer extends StdDeserializer<RecordAttributes> {
       }
     }
     // JSON objects
-    // TODO: change the "is*" methods in inferer to return their value so we don't parse twice?
-    if (inferer.isValidJson(val)) {
-      try {
-        return objectMapper.readValue(val, new TypeReference<Map<String, Object>>() {});
-      } catch (JsonProcessingException jpe) {
-        // this shouldn't happen; if inferer.isValidJson(val) passes, so should the .readValue
-        LOGGER.error("Unable to parse validated JSON: {}", val);
-        return val;
-      }
+    ObjectNode maybeJsonObject = inferer.tryJsonObject(val);
+    if (maybeJsonObject != null) {
+      return maybeJsonObject;
     }
 
     // arrays.
@@ -217,13 +211,7 @@ public class TsvDeserializer extends StdDeserializer<RecordAttributes> {
       return bn.asBoolean();
     }
     if (element instanceof ObjectNode on) {
-      try {
-        return objectMapper.readValue(on.toString(), new TypeReference<Map<String, Object>>() {});
-      } catch (JsonProcessingException jpe) {
-        // this shouldn't happen since we've already parsed the array into JSON
-        LOGGER.error("Unable to parse array element JSON: {}", on);
-        return on.toString();
-      }
+      return new JsonAttribute(on, objectMapper);
     }
     if (element instanceof TextNode strElement) {
       return cellToAttribute(strElement.toString());
