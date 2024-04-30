@@ -14,6 +14,12 @@ public class JsonAttribute extends ScalarAttribute<JsonNode> {
     this.mapper = mapper;
   }
 
+  /**
+   * When serializing the JsonAttribute class, what value should Jackson serialize? We should only
+   * serialize the underlying value, not the JsonAttribute wrapper itself.
+   *
+   * @return the value to use when serializing
+   */
   @JsonValue
   public JsonNode jsonValue() {
     return this.value;

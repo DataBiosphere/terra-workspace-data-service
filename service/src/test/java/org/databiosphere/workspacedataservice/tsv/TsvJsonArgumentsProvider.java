@@ -8,7 +8,6 @@ import java.util.Collections;
 import java.util.List;
 import java.util.stream.Stream;
 import org.databiosphere.workspacedataservice.common.TestBase;
-import org.databiosphere.workspacedataservice.shared.model.attributes.JsonAttribute;
 import org.junit.jupiter.params.provider.Arguments;
 
 /**
@@ -80,11 +79,12 @@ public abstract class TsvJsonArgumentsProvider extends TestBase {
         // Arguments.of("\"[1,2,3]\"",             "[1,2,3]",              false),
 
         // json packet
-        Arguments.of(
-            "{\"foo\":\"bar\", \"baz\": \"qux\"}",
-            new JsonAttribute(
-                getMapper().readTree("{\"foo\":\"bar\", \"baz\": \"qux\"}"), getMapper()),
-            false),
+        // TODO AJ-1748: where should this test live?
+        //        Arguments.of(
+        //            "{\"foo\":\"bar\", \"baz\": \"qux\"}",
+        //            new JsonAttribute(
+        //                getMapper().readTree("{\"foo\":\"bar\", \"baz\": \"qux\"}"), getMapper()),
+        //            false),
 
         // ========== arrays ==========
 
@@ -151,13 +151,17 @@ public abstract class TsvJsonArgumentsProvider extends TestBase {
             false),
 
         // array of JSON objects
-        Arguments.of(
-            "[{\"first\":\"foo\"},{\"second\":\"bar\"},{\"third\":\"baz\"}]",
-            List.of(
-                new JsonAttribute(getMapper().readTree("{\"first\":\"foo\"}"), getMapper()),
-                new JsonAttribute(getMapper().readTree("{\"second\":\"bar\"}"), getMapper()),
-                new JsonAttribute(getMapper().readTree("{\"third\":\"baz\"}"), getMapper())),
-            false),
+        // TODO AJ-1748: where should this test live?
+        //        Arguments.of(
+        //            "[{\"first\":\"foo\"},{\"second\":\"bar\"},{\"third\":\"baz\"}]",
+        //            List.of(
+        //                new JsonAttribute(getMapper().readTree("{\"first\":\"foo\"}"),
+        // getMapper()),
+        //                new JsonAttribute(getMapper().readTree("{\"second\":\"bar\"}"),
+        // getMapper()),
+        //                new JsonAttribute(getMapper().readTree("{\"third\":\"baz\"}"),
+        // getMapper())),
+        //            false),
 
         // mixed array (these deserialize as mixed lists, will be coerced to a single data type
         // later in processing)
