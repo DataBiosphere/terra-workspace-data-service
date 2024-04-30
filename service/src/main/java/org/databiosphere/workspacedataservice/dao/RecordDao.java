@@ -53,6 +53,7 @@ import org.databiosphere.workspacedataservice.shared.model.Record;
 import org.databiosphere.workspacedataservice.shared.model.RecordAttributes;
 import org.databiosphere.workspacedataservice.shared.model.RecordColumn;
 import org.databiosphere.workspacedataservice.shared.model.RecordType;
+import org.databiosphere.workspacedataservice.shared.model.attributes.JsonAttribute;
 import org.jetbrains.annotations.NotNull;
 import org.postgresql.jdbc.PgArray;
 import org.slf4j.Logger;
@@ -727,14 +728,17 @@ public class RecordDao {
         return LocalDateTime.parse(sVal, DateTimeFormatter.ISO_LOCAL_DATE_TIME);
       }
     }
-    if (attVal instanceof Map<?, ?>) {
-      try {
-        return objectMapper.writeValueAsString(attVal);
-      } catch (JsonProcessingException e) {
-        LOGGER.error("Could not serialize Map to json string", e);
-        throw new RuntimeException(e);
-      }
+    if (attVal instanceof JsonAttribute jsonAttribute) {
+      return jsonAttribute.sqlValue();
     }
+    //    if (attVal instanceof Map<?, ?>) {
+    //      try {
+    //        return objectMapper.writeValueAsString(attVal);
+    //      } catch (JsonProcessingException e) {
+    //        LOGGER.error("Could not serialize Map to json string", e);
+    //        throw new RuntimeException(e);
+    //      }
+    //    }
     if (typeMapping.isArrayType()) {
       return getArrayValues(attVal, typeMapping);
     }
@@ -1001,8 +1005,7 @@ public class RecordDao {
         return getArrayValue(pgArray.getArray(), typeMapping);
       }
       if (typeMapping == DataTypeMapping.JSON) {
-        return objectMapper.readValue(
-            object.toString(), new TypeReference<Map<String, Object>>() {});
+        return new JsonAttribute(objectMapper.readTree(object.toString()), objectMapper);
       }
       return object;
     }

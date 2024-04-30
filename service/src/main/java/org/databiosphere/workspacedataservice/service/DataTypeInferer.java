@@ -227,8 +227,7 @@ public class DataTypeInferer {
    */
   @Deprecated(since = "2024-04-30")
   public boolean isValidJson(String val) {
-    JsonNode jsonNode = parseToJsonNode(val);
-    return jsonNode != null && jsonNode.isObject();
+    return tryJsonObject(val) != null;
   }
 
   public boolean isArray(String val) {

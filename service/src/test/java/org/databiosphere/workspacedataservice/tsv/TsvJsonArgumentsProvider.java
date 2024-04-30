@@ -8,6 +8,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.stream.Stream;
 import org.databiosphere.workspacedataservice.common.TestBase;
+import org.databiosphere.workspacedataservice.shared.model.attributes.JsonAttribute;
 import org.junit.jupiter.params.provider.Arguments;
 
 /**
@@ -81,7 +82,8 @@ public abstract class TsvJsonArgumentsProvider extends TestBase {
         // json packet
         Arguments.of(
             "{\"foo\":\"bar\", \"baz\": \"qux\"}",
-            getMapper().readTree("{\"foo\":\"bar\", \"baz\": \"qux\"}"),
+            new JsonAttribute(
+                getMapper().readTree("{\"foo\":\"bar\", \"baz\": \"qux\"}"), getMapper()),
             false),
 
         // ========== arrays ==========
@@ -152,9 +154,9 @@ public abstract class TsvJsonArgumentsProvider extends TestBase {
         Arguments.of(
             "[{\"first\":\"foo\"},{\"second\":\"bar\"},{\"third\":\"baz\"}]",
             List.of(
-                getMapper().readTree("{\"first\":\"foo\"}"),
-                getMapper().readTree("{\"second\":\"bar\"}"),
-                getMapper().readTree("{\"third\":\"baz\"}")),
+                new JsonAttribute(getMapper().readTree("{\"first\":\"foo\"}"), getMapper()),
+                new JsonAttribute(getMapper().readTree("{\"second\":\"bar\"}"), getMapper()),
+                new JsonAttribute(getMapper().readTree("{\"third\":\"baz\"}"), getMapper())),
             false),
 
         // mixed array (these deserialize as mixed lists, will be coerced to a single data type

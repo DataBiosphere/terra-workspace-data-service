@@ -132,7 +132,7 @@ public class TsvDeserializer extends StdDeserializer<RecordAttributes> {
     // JSON objects
     ObjectNode maybeJsonObject = inferer.tryJsonObject(val);
     if (maybeJsonObject != null) {
-      return maybeJsonObject;
+      return new JsonAttribute(maybeJsonObject, objectMapper);
     }
 
     // arrays.
