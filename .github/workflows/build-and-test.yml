@@ -106,7 +106,7 @@ jobs:
 
   # Publish Docker image to Google and Azure Container Registries, also reports to sherlock
   docker-image-job:
-    if: always() && needs.bump-check.outputs.is-bump == 'no' && github.event_name == 'push' && github.ref == 'refs/heads/main'
+    if: always() && needs.bump-check.outputs.is-bump == 'no' && github.event_name == 'push'
     needs: [build, bump-check, tag]
     uses: ./.github/workflows/publish-docker.yml
     with:
