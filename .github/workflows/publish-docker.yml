@@ -10,7 +10,7 @@ on:
         required: true
       ACR_SP_USER:
         required: true
-  pull_request:
+  # pull_request:
 
 env:
   SERVICE_NAME: ${{ github.event.repository.name }}
