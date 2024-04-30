@@ -728,17 +728,20 @@ public class RecordDao {
         return LocalDateTime.parse(sVal, DateTimeFormatter.ISO_LOCAL_DATE_TIME);
       }
     }
+    // TSV-based uploads deserialize json as JsonAttribute.
     if (attVal instanceof JsonAttribute jsonAttribute) {
       return jsonAttribute.sqlValue();
     }
-    //    if (attVal instanceof Map<?, ?>) {
-    //      try {
-    //        return objectMapper.writeValueAsString(attVal);
-    //      } catch (JsonProcessingException e) {
-    //        LOGGER.error("Could not serialize Map to json string", e);
-    //        throw new RuntimeException(e);
-    //      }
-    //    }
+    // json-based APIs deserialize json as LinkedHashMap<String, Object>. Handle those here.
+    // TODO AJ-1748: how to deserialize json-based APIs into JsonAttribute instead?
+    if (attVal instanceof Map<?, ?>) {
+      try {
+        return objectMapper.writeValueAsString(attVal);
+      } catch (JsonProcessingException e) {
+        LOGGER.error("Could not serialize Map to json string", e);
+        throw new RuntimeException(e);
+      }
+    }
     if (typeMapping.isArrayType()) {
       return getArrayValues(attVal, typeMapping);
     }
