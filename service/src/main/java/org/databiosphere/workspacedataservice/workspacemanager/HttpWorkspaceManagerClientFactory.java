@@ -3,6 +3,7 @@ package org.databiosphere.workspacedataservice.workspacemanager;
 import bio.terra.workspace.api.ControlledAzureResourceApi;
 import bio.terra.workspace.api.ReferencedGcpResourceApi;
 import bio.terra.workspace.api.ResourceApi;
+import bio.terra.workspace.api.WorkspaceApi;
 import bio.terra.workspace.client.ApiClient;
 import jakarta.ws.rs.client.Client;
 import org.apache.commons.lang3.StringUtils;
@@ -58,5 +59,9 @@ public class HttpWorkspaceManagerClientFactory implements WorkspaceManagerClient
 
   public ControlledAzureResourceApi getAzureResourceApi(String authToken) {
     return new ControlledAzureResourceApi(getApiClient(authToken));
+  }
+
+  public WorkspaceApi getWorkspaceApi(String authToken) {
+    return new WorkspaceApi(getApiClient(authToken));
   }
 }
