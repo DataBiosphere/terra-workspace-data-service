@@ -35,4 +35,16 @@ public class JsonAttribute extends ScalarAttribute<JsonNode> {
       throw new RuntimeException(e);
     }
   }
+
+  @Override
+  public boolean equals(Object obj) {
+    // don't consider the mapper in equals
+    return super.equals(obj);
+  }
+
+  @Override
+  public int hashCode() {
+    // don't consider the mapper in hashcode
+    return super.hashCode();
+  }
 }
