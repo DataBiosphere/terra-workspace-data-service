@@ -2,7 +2,6 @@ package org.databiosphere.workspacedataservice.controller;
 
 import static org.databiosphere.workspacedataservice.generated.GenericJobServerModel.StatusEnum;
 
-import org.springframework.lang.Nullable
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -15,6 +14,7 @@ import org.databiosphere.workspacedataservice.shared.model.CollectionId;
 import org.databiosphere.workspacedataservice.shared.model.job.JobStatus;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.lang.Nullable;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.server.ResponseStatusException;
 
