@@ -8,7 +8,7 @@ import org.databiosphere.workspacedataservice.dataimport.AvroRecordConverter;
 import org.databiosphere.workspacedataservice.shared.model.Record;
 import org.databiosphere.workspacedataservice.shared.model.RecordAttributes;
 import org.databiosphere.workspacedataservice.shared.model.RecordType;
-import org.databiosphere.workspacedataservice.shared.model.RelationAttribute;
+import org.databiosphere.workspacedataservice.shared.model.attributes.RelationAttribute;
 
 /** Logic to convert a PFB's GenericRecord to WDS's Record */
 public class PfbRecordConverter extends AvroRecordConverter {

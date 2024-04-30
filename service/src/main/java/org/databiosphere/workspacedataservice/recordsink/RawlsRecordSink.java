@@ -30,7 +30,7 @@ import org.databiosphere.workspacedataservice.service.model.DataTypeMapping;
 import org.databiosphere.workspacedataservice.service.model.exception.DataImportException;
 import org.databiosphere.workspacedataservice.shared.model.Record;
 import org.databiosphere.workspacedataservice.shared.model.RecordType;
-import org.databiosphere.workspacedataservice.shared.model.RelationAttribute;
+import org.databiosphere.workspacedataservice.shared.model.attributes.RelationAttribute;
 import org.databiosphere.workspacedataservice.storage.GcsStorage;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

@@ -27,7 +27,7 @@ import com.google.common.annotations.VisibleForTesting;
 import java.io.IOException;
 import java.util.List;
 import org.databiosphere.workspacedataservice.shared.model.RecordType;
-import org.databiosphere.workspacedataservice.shared.model.RelationAttribute;
+import org.databiosphere.workspacedataservice.shared.model.attributes.RelationAttribute;
 import org.springframework.lang.Nullable;
 
 /**
@@ -188,7 +188,8 @@ public class RawlsModel {
    */
   public record EntityReference(RecordType entityType, String entityName) {
     public static EntityReference fromRelationAttribute(RelationAttribute relationAttribute) {
-      return new EntityReference(relationAttribute.targetType(), relationAttribute.targetId());
+      return new EntityReference(
+          relationAttribute.getTargetType(), relationAttribute.getTargetId());
     }
   }
 

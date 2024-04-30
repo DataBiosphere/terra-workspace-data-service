@@ -13,7 +13,7 @@ import org.databiosphere.workspacedataservice.service.model.TdrManifestImportTab
 import org.databiosphere.workspacedataservice.shared.model.Record;
 import org.databiosphere.workspacedataservice.shared.model.RecordAttributes;
 import org.databiosphere.workspacedataservice.shared.model.RecordType;
-import org.databiosphere.workspacedataservice.shared.model.RelationAttribute;
+import org.databiosphere.workspacedataservice.shared.model.attributes.RelationAttribute;
 
 /** Logic to convert a TDR Parquet's GenericRecord to WDS's Record */
 public class ParquetRecordConverter extends AvroRecordConverter {
