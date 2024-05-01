@@ -129,7 +129,7 @@ public class DataTypeInferer {
     if (isValidBoolean(sVal)) {
       return BOOLEAN;
     }
-    if (isValidJson(sVal)) {
+    if (tryJsonObject(sVal).isPresent()) {
       return JSON;
     }
     if (isFileType(sVal)) {
@@ -221,14 +221,6 @@ public class DataTypeInferer {
       return Optional.of(objectNode);
     }
     return Optional.empty();
-  }
-
-  /**
-   * @deprecated use tryJsonObject instead
-   */
-  @Deprecated(since = "2024-04-30")
-  public boolean isValidJson(String val) {
-    return tryJsonObject(val).isPresent();
   }
 
   public boolean isArray(String val) {

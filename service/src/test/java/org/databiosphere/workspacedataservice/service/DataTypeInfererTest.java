@@ -87,11 +87,11 @@ class DataTypeInfererTest extends TestBase {
 
   @Test
   void isValidJson() {
-    assertThat(inferer.isValidJson(RandomStringUtils.randomNumeric(10))).isFalse();
-    assertThat(inferer.isValidJson("Hello")).isFalse();
-    assertThat(inferer.isValidJson(Boolean.TRUE.toString())).isFalse();
-    assertThat(inferer.isValidJson("True")).isFalse();
-    assertThat(inferer.isValidJson("{\"foo\":\"bar\"}")).isTrue();
+    assertThat(inferer.tryJsonObject(RandomStringUtils.randomNumeric(10))).isEmpty();
+    assertThat(inferer.tryJsonObject("Hello")).isEmpty();
+    assertThat(inferer.tryJsonObject(Boolean.TRUE.toString())).isEmpty();
+    assertThat(inferer.tryJsonObject("True")).isEmpty();
+    assertThat(inferer.tryJsonObject("{\"foo\":\"bar\"}")).isPresent();
   }
 
   @Test
