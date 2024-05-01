@@ -3,16 +3,13 @@ package org.databiosphere.workspacedataservice.dataimport;
 import java.net.URI;
 import java.util.List;
 import java.util.regex.Pattern;
-import org.databiosphere.workspacedataservice.config.DataImportProperties;
 import org.databiosphere.workspacedataservice.config.DataImportProperties.ImportSourceConfig;
-import org.springframework.stereotype.Component;
 
-@Component
 public class ImportRequirementsFactory {
   private final List<ImportSourceConfig> sources;
 
-  public ImportRequirementsFactory(DataImportProperties dataImportProperties) {
-    this.sources = dataImportProperties.getSources();
+  public ImportRequirementsFactory(List<ImportSourceConfig> sources) {
+    this.sources = sources;
   }
 
   public ImportRequirements getRequirementsForImport(URI importUri) {

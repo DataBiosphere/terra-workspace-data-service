@@ -8,11 +8,13 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Sets;
 import io.micrometer.common.util.StringUtils;
 import java.net.URI;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import java.util.regex.Pattern;
+import org.databiosphere.workspacedataservice.config.DataImportProperties.ImportSourceConfig;
 import org.databiosphere.workspacedataservice.generated.ImportRequestServerModel;
 import org.databiosphere.workspacedataservice.generated.ImportRequestServerModel.TypeEnum;
 import org.databiosphere.workspacedataservice.service.model.exception.ValidationException;
@@ -43,9 +45,9 @@ public class DefaultImportValidator implements ImportValidator {
   private final WorkspaceManagerDao wsmDao;
 
   public DefaultImportValidator(
-      ImportRequirementsFactory importRequirementsFactory,
       WorkspaceManagerDao wsmDao,
       Set<Pattern> allowedHttpsHosts,
+      List<ImportSourceConfig> sources,
       @Nullable String allowedRawlsBucket) {
     var allowedHostsBuilder =
         ImmutableMap.<String, Set<Pattern>>builder()
@@ -58,7 +60,7 @@ public class DefaultImportValidator implements ImportValidator {
     }
 
     this.allowedHostsByScheme = allowedHostsBuilder.build();
-    this.importRequirementsFactory = importRequirementsFactory;
+    this.importRequirementsFactory = new ImportRequirementsFactory(sources);
     this.wsmDao = wsmDao;
   }
 

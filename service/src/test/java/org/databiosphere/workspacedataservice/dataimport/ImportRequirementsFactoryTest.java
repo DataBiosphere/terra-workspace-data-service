@@ -5,6 +5,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import java.net.URI;
 import java.util.stream.Stream;
 import org.databiosphere.workspacedataservice.common.TestBase;
+import org.databiosphere.workspacedataservice.config.DataImportProperties;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -13,12 +14,16 @@ import org.springframework.boot.test.context.SpringBootTest;
 
 @SpringBootTest
 class ImportRequirementsFactoryTest extends TestBase {
-  @Autowired ImportRequirementsFactory importRequirementsFactory;
+  @Autowired DataImportProperties dataImportProperties;
 
   @ParameterizedTest(name = "Imports from {0} should require protected data policy {1}")
   @MethodSource("requireProtectedDataPolicyTestCases")
   void configuredSourcesRequireAProtectedDataPolicy(
       URI importUri, boolean shouldRequireProtectedDataPolicy) {
+    // Arrange
+    ImportRequirementsFactory importRequirementsFactory =
+        new ImportRequirementsFactory(dataImportProperties.getSources());
+
     // Act
     ImportRequirements importRequirements =
         importRequirementsFactory.getRequirementsForImport(importUri);

@@ -14,6 +14,7 @@ import java.util.UUID;
 import java.util.regex.Pattern;
 import java.util.stream.Stream;
 import org.databiosphere.workspacedataservice.common.TestBase;
+import org.databiosphere.workspacedataservice.config.DataImportProperties.ImportSourceConfig;
 import org.databiosphere.workspacedataservice.generated.ImportRequestServerModel;
 import org.databiosphere.workspacedataservice.generated.ImportRequestServerModel.TypeEnum;
 import org.databiosphere.workspacedataservice.service.model.exception.ValidationException;
@@ -36,14 +37,12 @@ class DefaultImportValidatorTest extends TestBase {
   static class DefaultImportValidatorTestConfiguration {
     @Bean
     @Primary
-    DefaultImportValidator getDefaultImportValidatorForTest(
-        ImportRequirementsFactory importRequirementsFactory, WorkspaceManagerDao wsmDao) {
+    DefaultImportValidator getDefaultImportValidatorForTest(WorkspaceManagerDao wsmDao) {
       return new DefaultImportValidator(
-          importRequirementsFactory,
           wsmDao,
-          /* allowedHttpsHosts */ Set.of(
-              Pattern.compile(".*\\.terra\\.bio"),
-              Pattern.compile("gen3\\.biodatacatalyst\\.nhlbi\\.nih\\.gov")),
+          /* allowedHttpsHosts */ Set.of(Pattern.compile(".*\\.terra\\.bio")),
+          /* sources */ List.of(
+              new ImportSourceConfig(List.of(Pattern.compile("protected\\.pfb")), true)),
           /* allowedRawlsBucket */ "test-bucket");
     }
   }
@@ -177,7 +176,7 @@ class DefaultImportValidatorTest extends TestBase {
   }
 
   static Stream<Arguments> requireProtectedWorkspacesForImportsFromConfiguredSourcesTestCases() {
-    URI protectedImport = URI.create("https://gen3.biodatacatalyst.nhlbi.nih.gov/file.pfb");
+    URI protectedImport = URI.create("https://files.terra.bio/protected.pfb");
     URI unprotectedImport = URI.create("https://files.terra.bio/file.pfb");
 
     WorkspaceDescription workspaceWithoutProtectedDataPolicy = new WorkspaceDescription();

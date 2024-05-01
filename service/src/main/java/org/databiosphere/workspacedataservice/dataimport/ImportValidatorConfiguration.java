@@ -16,13 +16,11 @@ public class ImportValidatorConfiguration {
       havingValue = "true",
       matchIfMissing = true)
   ImportValidator getDefaultImportValidator(
-      ImportRequirementsFactory importRequirementsFactory,
-      WorkspaceManagerDao wsmDao,
-      DataImportProperties dataImportProperties) {
+      WorkspaceManagerDao wsmDao, DataImportProperties dataImportProperties) {
     return new DefaultImportValidator(
-        importRequirementsFactory,
         wsmDao,
         dataImportProperties.getAllowedHosts(),
+        dataImportProperties.getSources(),
         dataImportProperties.getRawlsBucketName());
   }
 
