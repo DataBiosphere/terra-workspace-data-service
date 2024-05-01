@@ -3,11 +3,16 @@ package org.databiosphere.workspacedataservice.dataimport;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.Mockito.when;
 
+import bio.terra.workspace.model.WorkspaceDescription;
+import bio.terra.workspace.model.WsmPolicyInput;
 import java.net.URI;
+import java.util.List;
 import java.util.Set;
 import java.util.UUID;
 import java.util.regex.Pattern;
+import java.util.stream.Stream;
 import org.databiosphere.workspacedataservice.common.TestBase;
 import org.databiosphere.workspacedataservice.generated.ImportRequestServerModel;
 import org.databiosphere.workspacedataservice.generated.ImportRequestServerModel.TypeEnum;
@@ -15,10 +20,13 @@ import org.databiosphere.workspacedataservice.service.model.exception.Validation
 import org.databiosphere.workspacedataservice.workspacemanager.WorkspaceManagerDao;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.TestConfiguration;
+import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Primary;
 
@@ -33,10 +41,14 @@ class DefaultImportValidatorTest extends TestBase {
       return new DefaultImportValidator(
           importRequirementsFactory,
           wsmDao,
-          /* allowedHttpsHosts */ Set.of(Pattern.compile(".*\\.terra\\.bio")),
+          /* allowedHttpsHosts */ Set.of(
+              Pattern.compile(".*\\.terra\\.bio"),
+              Pattern.compile("gen3\\.biodatacatalyst\\.nhlbi\\.nih\\.gov")),
           /* allowedRawlsBucket */ "test-bucket");
     }
   }
+
+  @MockBean WorkspaceManagerDao wsmDao;
 
   @Autowired DefaultImportValidator importValidator;
 
@@ -139,5 +151,47 @@ class DefaultImportValidatorTest extends TestBase {
             ValidationException.class,
             () -> importValidator.validateImport(importRequest, destinationWorkspaceId));
     assertEquals("Files may not be imported from rando-bucket.", err.getMessage());
+  }
+
+  @ParameterizedTest
+  @MethodSource("requireProtectedWorkspacesForImportsFromConfiguredSourcesTestCases")
+  void requireProtectedWorkspacesForImportsFromConfiguredSources(
+      URI importUri, WorkspaceDescription workspaceDescription, boolean shouldAllowImport) {
+    // Arrange
+    ImportRequestServerModel importRequest = new ImportRequestServerModel(TypeEnum.PFB, importUri);
+
+    when(wsmDao.getWorkspace(destinationWorkspaceId)).thenReturn(workspaceDescription);
+
+    // Act
+    if (shouldAllowImport) {
+      importValidator.validateImport(importRequest, destinationWorkspaceId);
+    } else {
+      ValidationException err =
+          assertThrows(
+              ValidationException.class,
+              () -> importValidator.validateImport(importRequest, destinationWorkspaceId));
+      assertEquals(
+          "Data from this source can only be imported into a protected workspace.",
+          err.getMessage());
+    }
+  }
+
+  static Stream<Arguments> requireProtectedWorkspacesForImportsFromConfiguredSourcesTestCases() {
+    URI protectedImport = URI.create("https://gen3.biodatacatalyst.nhlbi.nih.gov/file.pfb");
+    URI unprotectedImport = URI.create("https://files.terra.bio/file.pfb");
+
+    WorkspaceDescription workspaceWithoutProtectedDataPolicy = new WorkspaceDescription();
+
+    WorkspaceDescription workspaceWithProtectedDataPolicy = new WorkspaceDescription();
+    WsmPolicyInput policy = new WsmPolicyInput();
+    policy.setNamespace("terra");
+    policy.setName("protected-data");
+    workspaceWithProtectedDataPolicy.setPolicies(List.of(policy));
+
+    return Stream.of(
+        Arguments.of(protectedImport, workspaceWithoutProtectedDataPolicy, false),
+        Arguments.of(protectedImport, workspaceWithProtectedDataPolicy, true),
+        Arguments.of(unprotectedImport, workspaceWithoutProtectedDataPolicy, true),
+        Arguments.of(protectedImport, workspaceWithProtectedDataPolicy, true));
   }
 }

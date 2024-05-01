@@ -1,5 +1,6 @@
 package org.databiosphere.workspacedataservice.dataimport;
 
+import static java.util.Collections.emptyList;
 import static java.util.Collections.emptySet;
 
 import bio.terra.workspace.model.WorkspaceDescription;
@@ -8,6 +9,7 @@ import com.google.common.collect.Sets;
 import io.micrometer.common.util.StringUtils;
 import java.net.URI;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import java.util.regex.Pattern;
@@ -100,7 +102,7 @@ public class DefaultImportValidator implements ImportValidator {
   private boolean checkWorkspaceHasProtectedDataPolicy(UUID workspaceId) {
     try {
       WorkspaceDescription workspace = wsmDao.getWorkspace(workspaceId);
-      return workspace.getPolicies().stream()
+      return Optional.ofNullable(workspace.getPolicies()).orElse(emptyList()).stream()
           .anyMatch(
               wsmPolicyInput ->
                   wsmPolicyInput.getNamespace().equals("terra")
