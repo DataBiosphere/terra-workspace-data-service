@@ -58,6 +58,7 @@ public class RawlsRecordSink implements RecordSink {
    *
    * @param mapper used to generate the stream of JSON entities
    * @param storage where the JSON stream will be written
+   * @param pubSub to notify upon JSON stream completion
    * @param details to use for generating the message to send to PubSub
    */
   public static RawlsRecordSink create(
