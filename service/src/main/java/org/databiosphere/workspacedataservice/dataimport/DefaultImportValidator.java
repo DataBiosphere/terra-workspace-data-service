@@ -17,6 +17,7 @@ import java.util.regex.Pattern;
 import org.databiosphere.workspacedataservice.config.DataImportProperties.ImportSourceConfig;
 import org.databiosphere.workspacedataservice.generated.ImportRequestServerModel;
 import org.databiosphere.workspacedataservice.generated.ImportRequestServerModel.TypeEnum;
+import org.databiosphere.workspacedataservice.policy.PolicyUtils;
 import org.databiosphere.workspacedataservice.service.model.exception.ValidationException;
 import org.databiosphere.workspacedataservice.workspacemanager.WorkspaceManagerDao;
 import org.databiosphere.workspacedataservice.workspacemanager.WorkspaceManagerException;
@@ -107,8 +108,8 @@ public class DefaultImportValidator implements ImportValidator {
       return Optional.ofNullable(workspace.getPolicies()).orElse(emptyList()).stream()
           .anyMatch(
               wsmPolicyInput ->
-                  wsmPolicyInput.getNamespace().equals("terra")
-                      && wsmPolicyInput.getName().equals("protected-data"));
+                  wsmPolicyInput.getNamespace().equals(PolicyUtils.TERRA_NAMESPACE)
+                      && wsmPolicyInput.getName().equals(PolicyUtils.PROTECTED_DATA_POLICY_NAME));
     } catch (WorkspaceManagerException e) {
       if (e.getStatusCode().equals(HttpStatus.NOT_FOUND)) {
         return false;
