@@ -32,3 +32,4 @@ sentry:
   releasename: "cWDS"
   env: ${TERRA_ENV:}
   deploymentMode: control-plane
+  dsn: ${SENTRY_DSN:n/a}
