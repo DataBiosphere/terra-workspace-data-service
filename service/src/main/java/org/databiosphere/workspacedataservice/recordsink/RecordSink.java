@@ -49,5 +49,7 @@ public interface RecordSink extends AutoCloseable {
    *
    * @throws DataImportException if an error occurs while closing the sink
    */
-  void close() throws DataImportException;
+  default void close() throws DataImportException {
+    // no-op
+  }
 }

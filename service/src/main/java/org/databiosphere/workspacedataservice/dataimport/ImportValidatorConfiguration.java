@@ -15,7 +15,8 @@ public class ImportValidatorConfiguration {
       havingValue = "true",
       matchIfMissing = true)
   ImportValidator getDefaultImportValidator(DataImportProperties dataImportProperties) {
-    return new DefaultImportValidator(dataImportProperties.getAllowedHosts());
+    return new DefaultImportValidator(
+        dataImportProperties.getAllowedHosts(), dataImportProperties.getRawlsBucketName());
   }
 
   /** Allow import validation to be disabled for some test workflows. */

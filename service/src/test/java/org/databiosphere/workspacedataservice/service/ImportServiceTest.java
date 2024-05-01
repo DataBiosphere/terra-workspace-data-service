@@ -1,7 +1,10 @@
 package org.databiosphere.workspacedataservice.service;
 
+import static java.util.Collections.emptyMap;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.databiosphere.workspacedataservice.generated.ImportRequestServerModel.TypeEnum;
+import static org.databiosphere.workspacedataservice.service.ImportService.ARG_IS_UPSERT;
+import static org.databiosphere.workspacedataservice.service.ImportService.ARG_TDR_SYNC_PERMISSION;
 import static org.databiosphere.workspacedataservice.shared.model.Schedulable.ARG_COLLECTION;
 import static org.databiosphere.workspacedataservice.shared.model.Schedulable.ARG_TOKEN;
 import static org.databiosphere.workspacedataservice.shared.model.Schedulable.ARG_URL;
@@ -16,6 +19,7 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
+import com.google.common.collect.ImmutableMap;
 import java.io.Serializable;
 import java.net.URI;
 import java.util.Map;
@@ -47,6 +51,7 @@ import org.junit.jupiter.params.provider.EnumSource;
 import org.junit.jupiter.params.provider.EnumSource.Mode;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.mockito.ArgumentCaptor;
+import org.mockito.Captor;
 import org.mockito.Mockito;
 import org.quartz.Job;
 import org.quartz.JobDataMap;
@@ -69,6 +74,9 @@ class ImportServiceTest extends TestBase {
   @SpyBean JobDao jobDao;
   @MockBean SchedulerDao schedulerDao;
   @MockBean SamClientFactory mockSamClientFactory;
+
+  /** ArgumentCaptor for the Schedulable passed to {@link SchedulerDao#schedule(Schedulable)}. */
+  @Captor private ArgumentCaptor<Schedulable> schedulableCaptor;
 
   ResourcesApi mockSamResourcesApi = Mockito.mock(ResourcesApi.class);
   GoogleApi mockSamGoogleApi = Mockito.mock(GoogleApi.class);
@@ -179,9 +187,8 @@ class ImportServiceTest extends TestBase {
     GenericJobServerModel createdJob =
         importService.createImport(defaultCollectionId().id(), importRequest);
     // assert that importService.createImport properly calls schedulerDao
-    ArgumentCaptor<Schedulable> argument = ArgumentCaptor.forClass(Schedulable.class);
-    verify(schedulerDao).schedule(argument.capture());
-    Schedulable actual = argument.getValue();
+    verify(schedulerDao).schedule(schedulableCaptor.capture());
+    Schedulable actual = schedulableCaptor.getValue();
     assertEquals(createdJob.getJobId().toString(), actual.getId(), "scheduled job had wrong id");
     assertEquals(importType.name(), actual.getGroup(), "scheduled job had wrong group");
 
@@ -272,6 +279,59 @@ class ImportServiceTest extends TestBase {
 
     // No import job should be created.
     verify(jobDao, never()).createJob(any());
+  }
+
+  // TODO(AJ-1809): Replace this test with something that verifies generic behavior once
+  //   the defaulting is handled by the relevant subclasses of QuartzJob
+  @ParameterizedTest(
+      name = "Given {0} extra options in ImportRequest, passed through args should contain {1}")
+  @MethodSource("getOptionsMapArgs")
+  void passesThroughIsUpsert(
+      Map<String, String> inputOptions, Map<String, Serializable> expectedArguments) {
+    // Arrange
+    collectionService.createCollection(workspaceId, defaultCollectionId(), VERSION);
+    ImportRequestServerModel importRequest = new ImportRequestServerModel(TypeEnum.PFB, importUri);
+    importRequest.getOptions().putAll(inputOptions);
+
+    // Act
+    importService.createImport(defaultCollectionId().id(), importRequest);
+
+    // Assert
+    verify(schedulerDao).schedule(schedulableCaptor.capture());
+    Map<String, Serializable> actualArguments = schedulableCaptor.getValue().getArguments();
+
+    expectedArguments.forEach(
+        (key, value) -> {
+          assertThat(actualArguments).containsEntry(key, value);
+        });
+  }
+
+  private static Stream<Arguments> getOptionsMapArgs() {
+    return Stream.of(
+        Arguments.of(
+            /* inputOptions= */ emptyMap(),
+            /* expectedArguments= */ new ImmutableMap.Builder<String, Serializable>()
+                .put(ARG_IS_UPSERT, true) // default true
+                .put(ARG_TDR_SYNC_PERMISSION, false) // default false
+                .build()),
+        Arguments.of(
+            /* inputOptions= */ new ImmutableMap.Builder<String, String>()
+                .put(ARG_IS_UPSERT, "true")
+                .put(ARG_TDR_SYNC_PERMISSION, "true")
+                .build(),
+            /* expectedArguments= */ new ImmutableMap.Builder<String, Serializable>()
+                .put(ARG_IS_UPSERT, true) // pass through true
+                .put(ARG_TDR_SYNC_PERMISSION, true) // pass through true
+                .build()),
+        Arguments.of(
+            /* inputOptions= */ new ImmutableMap.Builder<String, String>()
+                .put(ARG_IS_UPSERT, "false")
+                .put(ARG_TDR_SYNC_PERMISSION, "false")
+                .build(),
+            /* expectedArguments= */ new ImmutableMap.Builder<String, Serializable>()
+                .put(ARG_IS_UPSERT, false) // pass through false
+                .put(ARG_TDR_SYNC_PERMISSION, false) // pass through false
+                .build()));
   }
 
   private CollectionId defaultCollectionId() {

@@ -3,14 +3,13 @@ on:
   workflow_call:
     inputs:
       new-tag:
-        required: false
+        required: true
         type: string
     secrets:
       ACR_SP_PASSWORD:
         required: true
       ACR_SP_USER:
         required: true
-  pull_request:
 
 env:
   SERVICE_NAME: ${{ github.event.repository.name }}
@@ -25,8 +24,6 @@ jobs:
       contents: 'read'
       id-token: 'write'
     runs-on: ubuntu-latest
-    outputs:
-      newVersion: ${{ steps.newVersion.outputs.newVersion }}
     steps:
       - uses: actions/checkout@v4
       - name: Set up JDK 17
@@ -43,10 +40,6 @@ jobs:
           git_short_sha=$(echo ${{ github.event.pull_request.head.sha || github.sha }} | cut -c1-7)
           echo $git_short_sha
           echo "git_short_sha=${git_short_sha}" >> $GITHUB_OUTPUT
-
-      - name: Determine new version
-        id: newVersion
-        run: echo "newVersion=${{ inputs.new-tag || steps.setHash.outputs.git_short_sha }}" >> "$GITHUB_OUTPUT"
 
       - name: Set up gcloud
         uses: google-github-actions/setup-gcloud@v2
@@ -85,7 +78,6 @@ jobs:
           -Djib.console=plain
 
       - name: Add version tag to GCR
-        if: ${{ inputs.new-tag != '' }}
         run: docker image tag ${{ steps.gcr-image-name.outputs.name }}:${{ steps.setHash.outputs.git_short_sha }} ${{ steps.gcr-image-name.outputs.name }}:${{ inputs.new-tag }}
 
       - name: Run Trivy vulnerability scanner
@@ -101,7 +93,6 @@ jobs:
         run: docker tag ${{ steps.gcr-image-name.outputs.name }}:${{ steps.setHash.outputs.git_short_sha }} ${{ steps.acr-image-name.outputs.name }}:${{ steps.setHash.outputs.git_short_sha }}
 
       - name: Add version tag to ACR
-        if: ${{ inputs.new-tag != '' }}
         run: docker image tag ${{ steps.acr-image-name.outputs.name }}:${{ steps.setHash.outputs.git_short_sha }} ${{ steps.acr-image-name.outputs.name }}:${{ inputs.new-tag }}
 
       - name: Push image to Azure
@@ -118,7 +109,7 @@ jobs:
     needs: publish-docker-job
     uses: broadinstitute/sherlock/.github/workflows/client-report-app-version.yaml@main
     with:
-      new-version: ${{ needs.publish-docker-job.outputs.newVersion }}
+      new-version: ${{ inputs.new-tag }}
       chart-name: 'cwds'
     permissions:
       contents: 'read'

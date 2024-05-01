@@ -10,7 +10,9 @@ twds:
   data-import:
     batch-write-record-sink: "rawls"
     succeed-on-completion: false
-    rawls-bucket-name: ${SERVICE_GOOGLE_BUCKET}
+    # Name of the Google Cloud Storage bucket where JSON files are uploaded for import and sent to
+    # Rawls for upserting.
+    rawls-bucket-name: ${SERVICE_GOOGLE_BUCKET:}
     enable-tdr-permission-sync: true
     # Name of PubSub topic to notify Rawls of JSON files ready for import.
     rawls-notifications-topic: ${RAWLS_NOTIFY_TOPIC}
@@ -32,3 +34,4 @@ sentry:
   releasename: "cWDS"
   env: ${TERRA_ENV:}
   deploymentMode: control-plane
+  dsn: ${SENTRY_DSN:n/a}

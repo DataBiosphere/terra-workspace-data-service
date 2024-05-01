@@ -5,6 +5,7 @@ import static java.util.stream.Collectors.counting;
 import static java.util.stream.Collectors.groupingBy;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.databiosphere.workspacedataservice.TestTags.SLOW;
+import static org.databiosphere.workspacedataservice.dataimport.rawlsjson.RawlsJsonQuartzJob.rawlsJsonBlobName;
 import static org.databiosphere.workspacedataservice.recordsink.RawlsModel.AttributeOperation;
 import static org.databiosphere.workspacedataservice.recordsink.RawlsModel.Entity;
 import static org.databiosphere.workspacedataservice.recordsink.RawlsModel.Op;
@@ -154,8 +155,8 @@ class PfbQuartzJobControlPlaneE2ETest {
 
     // Assert
     assertPubSubMessage(expectedPubSubMessageFor(jobId));
-    assertSingleBlobWritten(blobNameFor(jobId));
-    InputStream writtenJson = storage.getBlobContents(blobNameFor(jobId));
+    assertSingleBlobWritten(rawlsJsonBlobName(jobId));
+    InputStream writtenJson = storage.getBlobContents(rawlsJsonBlobName(jobId));
 
     var entities = assertRecordedEntitiesSerde(writtenJson, minimalDataExpectedJson);
     assertThat(entities.size()).isEqualTo(1);
@@ -212,9 +213,9 @@ class PfbQuartzJobControlPlaneE2ETest {
 
     // Assert
     assertPubSubMessage(expectedPubSubMessageFor(jobId));
-    assertSingleBlobWritten(blobNameFor(jobId));
+    assertSingleBlobWritten(rawlsJsonBlobName(jobId));
 
-    InputStream writtenJson = storage.getBlobContents(blobNameFor(jobId));
+    InputStream writtenJson = storage.getBlobContents(rawlsJsonBlobName(jobId));
     var entities = assertRecordedEntitiesSerde(writtenJson, dataWithArrayExpectedJson);
 
     assertThat(entities.size()).isEqualTo(1);
@@ -261,8 +262,8 @@ class PfbQuartzJobControlPlaneE2ETest {
 
     // Assert
     assertPubSubMessage(expectedPubSubMessageFor(jobId));
-    assertSingleBlobWritten(blobNameFor(jobId));
-    InputStream jsonStream = storage.getBlobContents(blobNameFor(jobId));
+    assertSingleBlobWritten(rawlsJsonBlobName(jobId));
+    InputStream jsonStream = storage.getBlobContents(rawlsJsonBlobName(jobId));
 
     List<Entity> entities = mapper.readValue(jsonStream, new TypeReference<>() {});
 
@@ -386,14 +387,10 @@ class PfbQuartzJobControlPlaneE2ETest {
         .put("workspaceId", collectionId.toString())
         .put("userEmail", MockSamUsersApi.MOCK_USER_EMAIL)
         .put("jobId", jobId.toString())
-        .put("upsertFile", storage.getBucketName() + "/" + blobNameFor(jobId))
+        .put("upsertFile", storage.getBucketName() + "/" + rawlsJsonBlobName(jobId))
         .put("isUpsert", "true")
         .put("isCWDS", "true")
         .build();
-  }
-
-  private static String blobNameFor(UUID jobId) {
-    return "%s.rawlsUpsert".formatted(jobId);
   }
 
   private void assertPubSubMessage(Map<String, String> expectedMessage) {

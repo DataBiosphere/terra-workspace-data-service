@@ -4,21 +4,18 @@ import static org.databiosphere.workspacedataservice.dataimport.pfb.PfbRecordCon
 import static org.databiosphere.workspacedataservice.generated.ImportRequestServerModel.TypeEnum.PFB;
 import static org.databiosphere.workspacedataservice.recordsource.RecordSource.ImportMode.BASE_ATTRIBUTES;
 import static org.databiosphere.workspacedataservice.recordsource.RecordSource.ImportMode.RELATIONS;
-import static org.databiosphere.workspacedataservice.shared.model.Schedulable.ARG_COLLECTION;
-import static org.databiosphere.workspacedataservice.shared.model.Schedulable.ARG_TOKEN;
 import static org.databiosphere.workspacedataservice.shared.model.Schedulable.ARG_URL;
 import static org.databiosphere.workspacedataservice.shared.model.job.JobType.DATA_IMPORT;
 
 import bio.terra.pfb.PfbReader;
 import io.micrometer.observation.Observation;
 import io.micrometer.observation.ObservationRegistry;
-import java.net.URL;
+import java.net.URI;
 import java.util.Objects;
 import java.util.Set;
 import java.util.Spliterator;
 import java.util.Spliterators;
 import java.util.UUID;
-import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
@@ -28,26 +25,23 @@ import org.databiosphere.workspacedataservice.activitylog.ActivityLogger;
 import org.databiosphere.workspacedataservice.config.DataImportProperties;
 import org.databiosphere.workspacedataservice.dao.JobDao;
 import org.databiosphere.workspacedataservice.dataimport.ImportDetails;
+import org.databiosphere.workspacedataservice.dataimport.ImportDetailsRetriever;
 import org.databiosphere.workspacedataservice.dataimport.snapshotsupport.SnapshotSupport;
 import org.databiosphere.workspacedataservice.dataimport.snapshotsupport.SnapshotSupportFactory;
+import org.databiosphere.workspacedataservice.jobexec.JobDataMapReader;
 import org.databiosphere.workspacedataservice.jobexec.QuartzJob;
 import org.databiosphere.workspacedataservice.recordsink.RawlsAttributePrefixer.PrefixStrategy;
 import org.databiosphere.workspacedataservice.recordsink.RecordSink;
 import org.databiosphere.workspacedataservice.recordsink.RecordSinkFactory;
 import org.databiosphere.workspacedataservice.recordsource.RecordSource.ImportMode;
 import org.databiosphere.workspacedataservice.recordsource.RecordSourceFactory;
-import org.databiosphere.workspacedataservice.sam.SamDao;
 import org.databiosphere.workspacedataservice.service.BatchWriteService;
-import org.databiosphere.workspacedataservice.service.CollectionService;
 import org.databiosphere.workspacedataservice.service.model.BatchWriteResult;
 import org.databiosphere.workspacedataservice.service.model.exception.DataImportException;
 import org.databiosphere.workspacedataservice.service.model.exception.PfbImportException;
 import org.databiosphere.workspacedataservice.service.model.exception.PfbParsingException;
-import org.databiosphere.workspacedataservice.shared.model.BearerToken;
-import org.databiosphere.workspacedataservice.shared.model.CollectionId;
 import org.databiosphere.workspacedataservice.shared.model.RecordType;
 import org.databiosphere.workspacedataservice.shared.model.WorkspaceId;
-import org.quartz.JobDataMap;
 import org.quartz.JobExecutionContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -63,32 +57,29 @@ public class PfbQuartzJob extends QuartzJob {
   private final Logger logger = LoggerFactory.getLogger(this.getClass());
 
   private final BatchWriteService batchWriteService;
-  private final CollectionService collectionService;
   private final ActivityLogger activityLogger;
   private final RecordSourceFactory recordSourceFactory;
   private final RecordSinkFactory recordSinkFactory;
   private final SnapshotSupportFactory snapshotSupportFactory;
-  private final SamDao samDao;
+  private final ImportDetailsRetriever importDetailsRetriever;
 
   public PfbQuartzJob(
       JobDao jobDao,
       RecordSourceFactory recordSourceFactory,
       RecordSinkFactory recordSinkFactory,
       BatchWriteService batchWriteService,
-      CollectionService collectionService,
       ActivityLogger activityLogger,
-      SamDao samDao,
       ObservationRegistry observationRegistry,
       SnapshotSupportFactory snapshotSupportFactory,
-      DataImportProperties dataImportProperties) {
+      DataImportProperties dataImportProperties,
+      ImportDetailsRetriever importDetailsRetriever) {
     super(jobDao, observationRegistry, dataImportProperties);
     this.recordSourceFactory = recordSourceFactory;
     this.recordSinkFactory = recordSinkFactory;
     this.batchWriteService = batchWriteService;
-    this.collectionService = collectionService;
     this.activityLogger = activityLogger;
-    this.samDao = samDao;
     this.snapshotSupportFactory = snapshotSupportFactory;
+    this.importDetailsRetriever = importDetailsRetriever;
   }
 
   @Override
@@ -99,22 +90,11 @@ public class PfbQuartzJob extends QuartzJob {
 
   @Override
   protected void executeInternal(UUID jobId, JobExecutionContext context) {
-    // Grab the PFB url from the job's data map
-    JobDataMap jobDataMap = context.getMergedJobDataMap();
-    URL url = getJobDataUrl(jobDataMap, ARG_URL);
+    // Grab the PFB uri from the job's data map
+    JobDataMapReader jobData = JobDataMapReader.fromContext(context);
+    URI uri = jobData.getURI(ARG_URL);
 
-    // Collect details needed for import
-    UUID targetCollection = getJobDataUUID(jobDataMap, ARG_COLLECTION);
-    String authToken = getJobDataString(jobDataMap, ARG_TOKEN);
-    Supplier<String> userEmailSupplier = () -> samDao.getUserEmail(BearerToken.of(authToken));
-
-    // Import all the tables and rows inside the PFB.
-    //
-    // determine the workspace for the target collection
-    CollectionId collectionId = CollectionId.of(targetCollection);
-    WorkspaceId workspaceId = collectionService.getWorkspaceId(collectionId);
-    ImportDetails importDetails =
-        new ImportDetails(jobId, userEmailSupplier, workspaceId, collectionId, PrefixStrategy.PFB);
+    ImportDetails details = importDetailsRetriever.fetch(jobId, jobData, PrefixStrategy.PFB);
 
     // Find all the snapshot ids in the PFB, then create or verify references from the
     // workspace to the snapshot for each of those snapshot ids.
@@ -123,24 +103,24 @@ public class PfbQuartzJob extends QuartzJob {
     //
     // This is HTTP connection #1 to the PFB.
     logger.info("Finding snapshots in this PFB...");
-    Set<UUID> snapshotIds = withPfbStream(url, this::findSnapshots);
+    Set<UUID> snapshotIds = withPfbStream(uri, this::findSnapshots);
 
     logger.info("Linking snapshots...");
-    linkSnapshots(snapshotIds, workspaceId);
+    linkSnapshots(snapshotIds, details.workspaceId());
 
     // Import all the tables and rows inside the PFB.
-    try (RecordSink recordSink = recordSinkFactory.buildRecordSink(importDetails)) {
+    try (RecordSink recordSink = recordSinkFactory.buildRecordSink(details)) {
       // This is HTTP connection #2 to the PFB.
       logger.info("Importing tables and rows from this PFB...");
       BatchWriteResult result =
-          withPfbStream(url, stream -> importTables(stream, recordSink, BASE_ATTRIBUTES));
+          withPfbStream(uri, stream -> importTables(stream, recordSink, BASE_ATTRIBUTES));
 
       // This is HTTP connection #3 to the PFB.
       logger.info("Updating tables and rows from this PFB with relations...");
       // TODO: merging batch results may have unexpected behavior until BatchWriteResult can
       //   group its merged results under import mode; most notably, relations will be double
       //   counted
-      result.merge(withPfbStream(url, stream -> importTables(stream, recordSink, RELATIONS)));
+      result.merge(withPfbStream(uri, stream -> importTables(stream, recordSink, RELATIONS)));
     } catch (DataImportException e) {
       throw new PfbImportException(e.getMessage(), e);
     }
@@ -157,15 +137,15 @@ public class PfbQuartzJob extends QuartzJob {
   }
 
   /**
-   * convenience wrapper function to execute a PfbStreamConsumer on a PFB at a given url, handling
+   * convenience wrapper function to execute a PfbStreamConsumer on a PFB at a given uri, handling
    * opening and closing of a DataFileStream for that PFB.
    *
-   * @param url location of the PFB
+   * @param uri location of the PFB
    * @param consumer code to execute against the PFB's contents
    */
-  <T> T withPfbStream(URL url, PfbStreamConsumer<T> consumer) {
+  <T> T withPfbStream(URI uri, PfbStreamConsumer<T> consumer) {
     try (DataFileStream<GenericRecord> dataStream =
-        PfbReader.getGenericRecordsStream(url.toString())) {
+        PfbReader.getGenericRecordsStream(uri.toString())) {
       return consumer.run(dataStream);
     } catch (Exception e) {
       throw new PfbParsingException("Error processing PFB: " + e.getMessage(), e);

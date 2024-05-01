@@ -1,22 +1,21 @@
 package org.databiosphere.workspacedataservice.recordsink;
 
-import static java.util.Objects.requireNonNull;
-
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.cloud.spring.storage.GoogleStorageResource;
 import com.google.cloud.storage.Blob;
-import com.google.common.collect.ImmutableMap;
+import com.google.common.annotations.VisibleForTesting;
 import com.google.mu.util.stream.BiStream;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.UUID;
 import java.util.stream.Stream;
 import org.databiosphere.workspacedataservice.dataimport.ImportDetails;
+import org.databiosphere.workspacedataservice.dataimport.rawlsjson.RawlsJsonQuartzJob;
 import org.databiosphere.workspacedataservice.pubsub.PubSub;
+import org.databiosphere.workspacedataservice.pubsub.RawlsJsonPublisher;
 import org.databiosphere.workspacedataservice.recordsink.RawlsModel.AddListMember;
 import org.databiosphere.workspacedataservice.recordsink.RawlsModel.AddUpdateAttribute;
 import org.databiosphere.workspacedataservice.recordsink.RawlsModel.AttributeOperation;
@@ -32,8 +31,6 @@ import org.databiosphere.workspacedataservice.shared.model.Record;
 import org.databiosphere.workspacedataservice.shared.model.RecordType;
 import org.databiosphere.workspacedataservice.shared.model.attributes.RelationAttribute;
 import org.databiosphere.workspacedataservice.storage.GcsStorage;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.util.function.ThrowingConsumer;
 
 /**
@@ -42,28 +39,17 @@ import org.springframework.util.function.ThrowingConsumer;
  */
 public class RawlsRecordSink implements RecordSink {
   private final RawlsAttributePrefixer attributePrefixer;
-  private final PubSub pubSub;
-  private final ImportDetails importDetails;
 
   private final JsonWriter jsonWriter;
-  private final Blob blob;
-
-  private static final Logger LOGGER = LoggerFactory.getLogger(RawlsRecordSink.class);
+  private final RawlsJsonPublisher publisher;
 
   RawlsRecordSink(
       RawlsAttributePrefixer attributePrefixer,
       JsonWriter jsonWriter,
-      PubSub pubSub,
-      ImportDetails importDetails,
-      Blob blob) {
+      RawlsJsonPublisher publisher) {
     this.attributePrefixer = attributePrefixer;
     this.jsonWriter = jsonWriter;
-
-    // TODO: These three instance variables are used exclusively for pubsub concerns; if we can
-    //   factor the pubsub responsibility out somehow, RawlsRecordSink can be a lot more focused.
-    this.pubSub = pubSub;
-    this.importDetails = importDetails;
-    this.blob = blob;
+    this.publisher = publisher;
   }
 
   /**
@@ -73,18 +59,15 @@ public class RawlsRecordSink implements RecordSink {
    * @param mapper used to generate the stream of JSON entities
    * @param storage where the JSON stream will be written
    * @param pubSub to notify upon JSON stream completion
-   * @param importDetails to use for generating the message to send to PubSub
+   * @param details to use for generating the message to send to PubSub
    */
   public static RawlsRecordSink create(
-      ObjectMapper mapper, GcsStorage storage, PubSub pubSub, ImportDetails importDetails) {
-    String blobName = getBlobName(requireNonNull(importDetails.jobId()));
-    Blob blob = storage.createBlob(blobName);
+      ObjectMapper mapper, GcsStorage storage, PubSub pubSub, ImportDetails details) {
+    Blob blob = storage.createBlob(RawlsJsonQuartzJob.rawlsJsonBlobName(details.jobId()));
     return new RawlsRecordSink(
-        new RawlsAttributePrefixer(importDetails.prefixStrategy()),
+        new RawlsAttributePrefixer(details.prefixStrategy()),
         JsonWriter.create(storage.getOutputStream(blob), mapper),
-        pubSub,
-        importDetails,
-        blob);
+        new RawlsJsonPublisher(pubSub, details, blob, /* isUpsert= */ true));
   }
 
   @Override
@@ -115,7 +98,9 @@ public class RawlsRecordSink implements RecordSink {
   @Override
   public void close() {
     jsonWriter.close();
-    publishToPubSub(importDetails);
+
+    // TODO(AJ-1808): move this side effect to an appropriate after-success callback.
+    publisher.publish();
   }
 
   private Entity toEntity(Record wdsRecord) {
@@ -164,37 +149,13 @@ public class RawlsRecordSink implements RecordSink {
     return AttributeValue.of(originalValue);
   }
 
-  static String getBlobName(UUID jobId) {
-    return "%s.rawlsUpsert".formatted(jobId.toString());
-  }
-
-  private void publishToPubSub(ImportDetails importDetails) {
-    UUID jobId = requireNonNull(importDetails.jobId());
-    String user =
-        requireNonNull(
-                importDetails.userEmailSupplier(),
-                "Expected ImportDetails.userEmailSupplier to be non-null for async imports")
-            .get();
-    Map<String, String> message =
-        new ImmutableMap.Builder<String, String>()
-            .put("workspaceId", importDetails.workspaceId().toString())
-            .put("userEmail", user)
-            .put("jobId", jobId.toString())
-            .put("upsertFile", blob.getBucket() + "/" + blob.getName())
-            .put("isUpsert", "true")
-            .put("isCWDS", "true")
-            .build();
-    LOGGER.info("Publishing message to pub/sub for job {} ...", jobId);
-    String publishResult = pubSub.publishSync(message);
-    LOGGER.info("Pub/sub publishing complete for job {}: {}", jobId, publishResult);
-  }
-
   /**
    * {@link JsonWriter} is responsible for writing JSON to a {@link GoogleStorageResource} and is
    * intended to encapsulate the logic to get an {@link OutputStream} set up to do that and ensure
    * the array of entities generated is properly initialized and terminated with "[" tokens.
    */
-  private static class JsonWriter implements AutoCloseable {
+  @VisibleForTesting
+  static class JsonWriter implements AutoCloseable {
     private final JsonGenerator jsonGenerator;
 
     // TODO: consider using a simple state machine here [enum INITIALIZED, WRITING, CLOSED] to
@@ -209,7 +170,8 @@ public class RawlsRecordSink implements RecordSink {
      * Initialize a new {@link JsonWriter} to write to the given {@link GoogleStorageResource} using
      * the provided {@link ObjectMapper}.
      */
-    private static JsonWriter create(OutputStream outputStream, ObjectMapper objectMapper) {
+    @VisibleForTesting
+    static JsonWriter create(OutputStream outputStream, ObjectMapper objectMapper) {
       try {
         return new JsonWriter(objectMapper.getFactory().createGenerator(outputStream));
       } catch (IOException e) {
@@ -218,7 +180,8 @@ public class RawlsRecordSink implements RecordSink {
     }
 
     /** Write a single entity to the JSON array in Google storage. */
-    private void writeEntity(Entity entity) {
+    @VisibleForTesting
+    void writeEntity(Entity entity) {
       if (!streamStarted) {
         writeJson(JsonGenerator::writeStartArray); // write a "[" to begin the array of entities
         streamStarted = true;
