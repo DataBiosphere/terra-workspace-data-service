@@ -1,14 +1,13 @@
 package org.databiosphere.workspacedataservice.tsv;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.util.Collections;
 import java.util.List;
 import java.util.stream.Stream;
-import org.databiosphere.workspacedataservice.common.TestBase;
+import org.junit.jupiter.api.extension.ExtensionContext;
 import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.ArgumentsProvider;
 
 /**
  * Test fixtures for use by TsvDeserializerTest and TsvJsonEquivalenceTest.
@@ -19,11 +18,10 @@ import org.junit.jupiter.params.provider.Arguments;
  * @see TsvDeserializerTest
  * @see TsvJsonEquivalenceTest
  */
-public abstract class TsvJsonArgumentsProvider extends TestBase {
+public class TsvJsonArgumentsProvider implements ArgumentsProvider {
 
-  abstract ObjectMapper getMapper();
-
-  public Stream<? extends Arguments> tsvJsonArguments() throws JsonProcessingException {
+  @Override
+  public Stream<? extends Arguments> provideArguments(ExtensionContext context) {
     /* Arguments are sets:
     	- first value is the text that would be contained in a TSV cell or JSON value
     	- second value is the expected Java type that the TsvConverter or JSON deserializer would create for that cell
@@ -78,14 +76,12 @@ public abstract class TsvJsonArgumentsProvider extends TestBase {
         // Arguments.of("\"false\"",               "false",                false),
         // Arguments.of("\"[1,2,3]\"",             "[1,2,3]",              false),
 
-        // json packet
         // TODO AJ-1748: where should this test live?
-        //        Arguments.of(
-        //            "{\"foo\":\"bar\", \"baz\": \"qux\"}",
-        //            new JsonAttribute(
-        //                getMapper().readTree("{\"foo\":\"bar\", \"baz\": \"qux\"}"), getMapper()),
-        //            false),
-
+        /*
+        // json packet
+        Arguments.of(
+            "{\"foo\":\"bar\", \"baz\": \"qux\"}", Map.of("foo", "bar", "baz", "qux"), false),
+         */
         // ========== arrays ==========
 
         // empty array
@@ -150,19 +146,14 @@ public abstract class TsvJsonArgumentsProvider extends TestBase {
             List.of("terra-wds:/type/id", "terra-wds:/type/id2"),
             false),
 
-        // array of JSON objects
         // TODO AJ-1748: where should this test live?
-        //        Arguments.of(
-        //            "[{\"first\":\"foo\"},{\"second\":\"bar\"},{\"third\":\"baz\"}]",
-        //            List.of(
-        //                new JsonAttribute(getMapper().readTree("{\"first\":\"foo\"}"),
-        // getMapper()),
-        //                new JsonAttribute(getMapper().readTree("{\"second\":\"bar\"}"),
-        // getMapper()),
-        //                new JsonAttribute(getMapper().readTree("{\"third\":\"baz\"}"),
-        // getMapper())),
-        //            false),
-
+        // array of JSON objects
+        /*
+        Arguments.of(
+            "[{\"value\":\"foo\"},{\"value\":\"bar\"},{\"value\":\"baz\"}]",
+            List.of(Map.of("value", "foo"), Map.of("value", "bar"), Map.of("value", "baz")),
+            false),
+         */
         // mixed array (these deserialize as mixed lists, will be coerced to a single data type
         // later in processing)
         Arguments.of(

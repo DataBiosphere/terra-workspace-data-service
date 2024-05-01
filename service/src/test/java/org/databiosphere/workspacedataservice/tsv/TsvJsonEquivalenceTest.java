@@ -11,11 +11,11 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.util.List;
+import org.databiosphere.workspacedataservice.common.TestBase;
 import org.databiosphere.workspacedataservice.shared.model.RecordAttributes;
 import org.databiosphere.workspacedataservice.shared.model.RecordRequest;
-import org.junit.jupiter.api.TestInstance;
 import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.MethodSource;
+import org.junit.jupiter.params.provider.ArgumentsSource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 
@@ -25,18 +25,12 @@ import org.springframework.boot.test.context.SpringBootTest;
  *
  * @see TsvJsonArgumentsProvider
  */
-@TestInstance(TestInstance.Lifecycle.PER_CLASS)
 @SpringBootTest
-class TsvJsonEquivalenceTest extends TsvJsonArgumentsProvider {
+class TsvJsonEquivalenceTest extends TestBase {
 
   @Autowired private ObjectReader tsvReader;
 
-  @Autowired ObjectMapper mapper;
-
-  @Override
-  ObjectMapper getMapper() {
-    return mapper;
-  }
+  @Autowired private ObjectMapper mapper;
 
   private RecordAttributes readTsv(String tsvContent) throws IOException {
     InputStream inputStream = new ByteArrayInputStream(tsvContent.getBytes());
@@ -54,7 +48,7 @@ class TsvJsonEquivalenceTest extends TsvJsonArgumentsProvider {
    */
   @ParameterizedTest(
       name = "TSV and JSON deserialization should be equal for input value <{0}>, returning <{1}>")
-  @MethodSource("tsvJsonArguments")
+  @ArgumentsSource(TsvJsonArgumentsProvider.class)
   void tsvAndJsonShouldDeserializeSame(String input, Object expected, boolean quoteJson)
       throws IOException {
     String tsv = RECORD_ID + "\tcol1\n123\t" + input + "\n";
