@@ -177,6 +177,11 @@ public class TsvDeserializer extends StdDeserializer<RecordAttributes> {
   public List<?> jsonStringToList(String input) throws JsonProcessingException {
     JsonNode node = objectMapper.readTree(input);
     if (node instanceof ArrayNode arrayNode) {
+      // TODO AJ-1748:
+      //  is any element of this array an ObjectNode or ArrayNode?
+      //    if so, return List<JsonAttribute>.
+      //  are element types homogenous? If so, return a homogenous list.
+      //  are element types heterogenous? If so, this should return a non-list JsonAttribute
       Stream<JsonNode> jsonElements =
           StreamSupport.stream(
               Spliterators.spliteratorUnknownSize(arrayNode.elements(), Spliterator.ORDERED),
