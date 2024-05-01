@@ -5,5 +5,11 @@ package org.databiosphere.workspacedataservice.shared.model.attributes;
  * RecordAttributes map.
  */
 public interface Attribute {
+  /**
+   * When WDS writes this Attribute value to the db, what object should it send as a parameter to
+   * the SQL statement?
+   *
+   * @return the SQL-compatible representation of this Attribute
+   */
   Object sqlValue();
 }

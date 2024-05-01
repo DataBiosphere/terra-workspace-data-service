@@ -27,8 +27,8 @@ public class JsonAttribute extends ScalarAttribute<JsonNode> {
 
   @Override
   public String toString() {
-    // if this JsonAttribute has an ObjectMapper reference, use that ObjectMapper
-    // to generate the toString value. Else, use the built-in toString.
+    // use the supplied ObjectMapper to generate the toString value. This ensures serialization is
+    // consistent with the settings configured on the ObjectMapper.
     try {
       return mapper.writeValueAsString(this.value);
     } catch (JsonProcessingException e) {
