@@ -1,17 +1,12 @@
 package org.databiosphere.workspacedataservice.shared.model.attributes;
 
 import com.fasterxml.jackson.annotation.JsonValue;
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
 
 public class JsonAttribute extends ScalarAttribute<JsonNode> {
 
-  private final ObjectMapper mapper;
-
-  public JsonAttribute(JsonNode value, ObjectMapper mapper) {
+  public JsonAttribute(JsonNode value) {
     super(value);
-    this.mapper = mapper;
   }
 
   /**
@@ -29,11 +24,7 @@ public class JsonAttribute extends ScalarAttribute<JsonNode> {
   public String toString() {
     // use the supplied ObjectMapper to generate the toString value. This ensures serialization is
     // consistent with the settings configured on the ObjectMapper.
-    try {
-      return mapper.writeValueAsString(this.value);
-    } catch (JsonProcessingException e) {
-      throw new RuntimeException(e);
-    }
+    return this.value.toString();
   }
 
   @Override

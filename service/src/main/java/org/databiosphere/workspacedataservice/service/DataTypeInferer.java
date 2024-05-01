@@ -44,6 +44,7 @@ import org.databiosphere.workspacedataservice.service.model.RelationCollection;
 import org.databiosphere.workspacedataservice.shared.model.Record;
 import org.databiosphere.workspacedataservice.shared.model.RecordAttributes;
 import org.databiosphere.workspacedataservice.shared.model.RecordType;
+import org.databiosphere.workspacedataservice.shared.model.attributes.JsonAttribute;
 import org.springframework.util.CollectionUtils;
 
 public class DataTypeInferer {
@@ -174,7 +175,7 @@ public class DataTypeInferer {
       return findArrayType(listVal);
     }
 
-    if (val instanceof Map) {
+    if (val instanceof Map || val instanceof JsonAttribute) {
       return JSON;
     }
 

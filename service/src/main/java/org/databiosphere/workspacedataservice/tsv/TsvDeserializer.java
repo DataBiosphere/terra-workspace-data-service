@@ -132,7 +132,7 @@ public class TsvDeserializer extends StdDeserializer<RecordAttributes> {
     // JSON objects
     ObjectNode maybeJsonObject = inferer.tryJsonObject(val);
     if (maybeJsonObject != null) {
-      return new JsonAttribute(maybeJsonObject, objectMapper);
+      return new JsonAttribute(maybeJsonObject);
     }
 
     // arrays.
@@ -211,7 +211,7 @@ public class TsvDeserializer extends StdDeserializer<RecordAttributes> {
       return bn.asBoolean();
     }
     if (element instanceof ObjectNode on) {
-      return new JsonAttribute(on, objectMapper);
+      return new JsonAttribute(on);
     }
     if (element instanceof TextNode strElement) {
       return cellToAttribute(strElement.toString());
