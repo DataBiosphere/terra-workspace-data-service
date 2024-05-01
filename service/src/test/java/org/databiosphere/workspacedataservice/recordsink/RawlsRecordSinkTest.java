@@ -5,8 +5,14 @@ import static java.util.Arrays.stream;
 import static java.util.Collections.emptyMap;
 import static java.util.stream.Stream.concat;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.databiosphere.workspacedataservice.dataimport.rawlsjson.RawlsJsonQuartzJob.rawlsJsonBlobName;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.doAnswer;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
@@ -16,6 +22,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Iterables;
 import java.io.IOException;
+import java.io.OutputStream;
 import java.nio.charset.StandardCharsets;
 import java.util.Collection;
 import java.util.HashMap;
@@ -28,6 +35,7 @@ import java.util.stream.Stream;
 import org.databiosphere.workspacedataservice.common.TestBase;
 import org.databiosphere.workspacedataservice.dataimport.ImportDetails;
 import org.databiosphere.workspacedataservice.pubsub.PubSub;
+import org.databiosphere.workspacedataservice.pubsub.RawlsJsonPublisher;
 import org.databiosphere.workspacedataservice.recordsink.RawlsAttributePrefixer.PrefixStrategy;
 import org.databiosphere.workspacedataservice.recordsink.RawlsModel.AddListMember;
 import org.databiosphere.workspacedataservice.recordsink.RawlsModel.AddUpdateAttribute;
@@ -38,6 +46,7 @@ import org.databiosphere.workspacedataservice.recordsink.RawlsModel.CreateAttrib
 import org.databiosphere.workspacedataservice.recordsink.RawlsModel.Entity;
 import org.databiosphere.workspacedataservice.recordsink.RawlsModel.EntityReference;
 import org.databiosphere.workspacedataservice.recordsink.RawlsModel.RemoveAttribute;
+import org.databiosphere.workspacedataservice.service.model.DataTypeMapping;
 import org.databiosphere.workspacedataservice.shared.model.CollectionId;
 import org.databiosphere.workspacedataservice.shared.model.Record;
 import org.databiosphere.workspacedataservice.shared.model.RecordAttributes;
@@ -46,6 +55,7 @@ import org.databiosphere.workspacedataservice.shared.model.WorkspaceId;
 import org.databiosphere.workspacedataservice.shared.model.attributes.RelationAttribute;
 import org.databiosphere.workspacedataservice.storage.GcsStorage;
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
@@ -330,7 +340,7 @@ class RawlsRecordSinkTest extends TestBase {
             .put("workspaceId", WORKSPACE_ID.toString())
             .put("userEmail", USER_EMAIL.get())
             .put("jobId", JOB_ID.toString())
-            .put("upsertFile", storage.getBucketName() + "/" + JOB_ID + ".rawlsUpsert")
+            .put("upsertFile", storage.getBucketName() + "/" + rawlsJsonBlobName(JOB_ID))
             .put("isUpsert", "true")
             .put("isCWDS", "true")
             .build();
@@ -338,6 +348,40 @@ class RawlsRecordSinkTest extends TestBase {
     verify(pubSub, times(1)).publishSync(pubSubMessageCaptor.capture());
 
     assertThat(pubSubMessageCaptor.getValue()).isEqualTo(expectedMessage);
+  }
+
+  @Disabled("AJ-1808: Don't publish to Rawls on failure.")
+  @Test
+  void doesNotSendPubSubOnFailure() throws IOException {
+    // Arrange
+    Record record = makeRecord(/* type= */ "widget", /* id= */ "id", emptyMap());
+
+    // partially mock JsonWriter to throw an exception when writeEntity() is called
+    var mockJsonWriter = spy(RawlsRecordSink.JsonWriter.create(mock(OutputStream.class), mapper));
+    doAnswer(
+            invocation -> {
+              throw new IOException("stubbed exception");
+            })
+        .when(mockJsonWriter)
+        .writeEntity(any(Entity.class));
+    var mockJsonPublisher = mock(RawlsJsonPublisher.class);
+
+    // Act / Assert
+    try (RecordSink recordSink =
+        new RawlsRecordSink(
+            new RawlsAttributePrefixer(PrefixStrategy.NONE), mockJsonWriter, mockJsonPublisher)) {
+
+      RecordType recordType = record.getRecordType();
+      Map<String, DataTypeMapping> ignoredSchema = Map.of();
+      List<Record> records = List.of(record);
+
+      assertThrows(
+          IOException.class,
+          () -> recordSink.upsertBatch(recordType, ignoredSchema, records, "ignoredPrimaryKey"));
+    }
+
+    // Assert
+    verify(mockJsonPublisher, never()).publish();
   }
 
   private Record makeRecord(String type, String id, Map<String, Object> attributes) {

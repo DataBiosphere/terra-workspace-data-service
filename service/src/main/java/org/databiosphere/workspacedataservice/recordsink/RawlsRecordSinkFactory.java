@@ -25,9 +25,6 @@ public class RawlsRecordSinkFactory implements RecordSinkFactory {
     this.pubSub = pubSub;
   }
 
-  // TODO(AJ-1589): make prefix assignment dynamic. However, of note: the prefix is currently
-  //   ignored for RecordSinkMode.WDS.  In this case, it might be worth adding support for omitting
-  //   the prefix as part of supporting the prefix assignment.
   public RecordSink buildRecordSink(ImportDetails importDetails) {
     return rawlsRecordSink(importDetails);
   }
