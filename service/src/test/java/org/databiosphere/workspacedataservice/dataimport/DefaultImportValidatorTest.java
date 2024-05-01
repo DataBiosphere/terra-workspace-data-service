@@ -6,20 +6,41 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import java.net.URI;
 import java.util.Set;
+import java.util.UUID;
 import java.util.regex.Pattern;
 import org.databiosphere.workspacedataservice.common.TestBase;
 import org.databiosphere.workspacedataservice.generated.ImportRequestServerModel;
 import org.databiosphere.workspacedataservice.generated.ImportRequestServerModel.TypeEnum;
 import org.databiosphere.workspacedataservice.service.model.exception.ValidationException;
+import org.databiosphere.workspacedataservice.workspacemanager.WorkspaceManagerDao;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.context.TestConfiguration;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Primary;
 
+@SpringBootTest
 class DefaultImportValidatorTest extends TestBase {
-  private final ImportValidator importValidator =
-      new DefaultImportValidator(
-          /* allowedHttpsHosts= */ Set.of(Pattern.compile(".*\\.terra\\.bio")),
-          /* allowedRawlsBucket= */ "test-bucket");
+  @TestConfiguration
+  static class DefaultImportValidatorTestConfiguration {
+    @Bean
+    @Primary
+    DefaultImportValidator getDefaultImportValidatorForTest(
+        ImportRequirementsFactory importRequirementsFactory, WorkspaceManagerDao wsmDao) {
+      return new DefaultImportValidator(
+          importRequirementsFactory,
+          wsmDao,
+          /* allowedHttpsHosts */ Set.of(Pattern.compile(".*\\.terra\\.bio")),
+          /* allowedRawlsBucket */ "test-bucket");
+    }
+  }
+
+  @Autowired DefaultImportValidator importValidator;
+
+  private final UUID destinationWorkspaceId = UUID.randomUUID();
 
   @Test
   void requiresHttpsImportUrls() {
@@ -31,7 +52,8 @@ class DefaultImportValidatorTest extends TestBase {
     // Act/Assert
     ValidationException err =
         assertThrows(
-            ValidationException.class, () -> importValidator.validateImport(importRequest));
+            ValidationException.class,
+            () -> importValidator.validateImport(importRequest, destinationWorkspaceId));
     assertEquals("Files may not be imported from http URLs.", err.getMessage());
   }
 
@@ -44,7 +66,8 @@ class DefaultImportValidatorTest extends TestBase {
     // Act/Assert
     ValidationException err =
         assertThrows(
-            ValidationException.class, () -> importValidator.validateImport(importRequest));
+            ValidationException.class,
+            () -> importValidator.validateImport(importRequest, destinationWorkspaceId));
     assertEquals("Files may not be imported from file URLs.", err.getMessage());
   }
 
@@ -65,7 +88,7 @@ class DefaultImportValidatorTest extends TestBase {
     ImportRequestServerModel importRequest = new ImportRequestServerModel(TypeEnum.PFB, importUri);
 
     // Act/Assert
-    assertDoesNotThrow(() -> importValidator.validateImport(importRequest));
+    assertDoesNotThrow(() -> importValidator.validateImport(importRequest, destinationWorkspaceId));
   }
 
   @Test
@@ -75,7 +98,7 @@ class DefaultImportValidatorTest extends TestBase {
     ImportRequestServerModel importRequest = new ImportRequestServerModel(TypeEnum.PFB, importUri);
 
     // Act/Assert
-    assertDoesNotThrow(() -> importValidator.validateImport(importRequest));
+    assertDoesNotThrow(() -> importValidator.validateImport(importRequest, destinationWorkspaceId));
   }
 
   @Test
@@ -87,7 +110,8 @@ class DefaultImportValidatorTest extends TestBase {
     // Act/Assert
     ValidationException err =
         assertThrows(
-            ValidationException.class, () -> importValidator.validateImport(importRequest));
+            ValidationException.class,
+            () -> importValidator.validateImport(importRequest, destinationWorkspaceId));
     assertEquals("Files may not be imported from example.com.", err.getMessage());
   }
 
@@ -99,7 +123,7 @@ class DefaultImportValidatorTest extends TestBase {
         new ImportRequestServerModel(TypeEnum.RAWLSJSON, importUri);
 
     // Act/Assert
-    assertDoesNotThrow(() -> importValidator.validateImport(importRequest));
+    assertDoesNotThrow(() -> importValidator.validateImport(importRequest, destinationWorkspaceId));
   }
 
   @Test
@@ -112,7 +136,8 @@ class DefaultImportValidatorTest extends TestBase {
     // Act/Assert
     ValidationException err =
         assertThrows(
-            ValidationException.class, () -> importValidator.validateImport(importRequest));
+            ValidationException.class,
+            () -> importValidator.validateImport(importRequest, destinationWorkspaceId));
     assertEquals("Files may not be imported from rando-bucket.", err.getMessage());
   }
 }

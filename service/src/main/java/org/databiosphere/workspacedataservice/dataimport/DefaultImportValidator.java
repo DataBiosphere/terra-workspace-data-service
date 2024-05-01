@@ -2,16 +2,21 @@ package org.databiosphere.workspacedataservice.dataimport;
 
 import static java.util.Collections.emptySet;
 
+import bio.terra.workspace.model.WorkspaceDescription;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Sets;
 import io.micrometer.common.util.StringUtils;
 import java.net.URI;
 import java.util.Map;
 import java.util.Set;
+import java.util.UUID;
 import java.util.regex.Pattern;
 import org.databiosphere.workspacedataservice.generated.ImportRequestServerModel;
 import org.databiosphere.workspacedataservice.generated.ImportRequestServerModel.TypeEnum;
 import org.databiosphere.workspacedataservice.service.model.exception.ValidationException;
+import org.databiosphere.workspacedataservice.workspacemanager.WorkspaceManagerDao;
+import org.databiosphere.workspacedataservice.workspacemanager.WorkspaceManagerException;
+import org.springframework.http.HttpStatus;
 import org.springframework.lang.Nullable;
 
 public class DefaultImportValidator implements ImportValidator {
@@ -32,9 +37,14 @@ public class DefaultImportValidator implements ImportValidator {
           Pattern.compile(".*\\.s3\\.amazonaws\\.com") // virtual host style legacy global endpoint
           );
   private final Map<String, Set<Pattern>> allowedHostsByScheme;
+  private final ImportRequirementsFactory importRequirementsFactory;
+  private final WorkspaceManagerDao wsmDao;
 
   public DefaultImportValidator(
-      Set<Pattern> allowedHttpsHosts, @Nullable String allowedRawlsBucket) {
+      ImportRequirementsFactory importRequirementsFactory,
+      WorkspaceManagerDao wsmDao,
+      Set<Pattern> allowedHttpsHosts,
+      @Nullable String allowedRawlsBucket) {
     var allowedHostsBuilder =
         ImmutableMap.<String, Set<Pattern>>builder()
             .put(SCHEME_HTTPS, Sets.union(ALWAYS_ALLOWED_HOSTS, allowedHttpsHosts));
@@ -46,13 +56,15 @@ public class DefaultImportValidator implements ImportValidator {
     }
 
     this.allowedHostsByScheme = allowedHostsBuilder.build();
+    this.importRequirementsFactory = importRequirementsFactory;
+    this.wsmDao = wsmDao;
   }
 
   private Set<Pattern> getAllowedHosts(ImportRequestServerModel importRequest) {
     return allowedHostsByScheme.get(importRequest.getUrl().getScheme());
   }
 
-  public void validateImport(ImportRequestServerModel importRequest) {
+  public void validateImport(ImportRequestServerModel importRequest, UUID destinatinoWorkspaceId) {
     TypeEnum importType = importRequest.getType();
     Set<String> schemesSupportedForImportType =
         SUPPORTED_URL_SCHEMES_BY_IMPORT_TYPE.getOrDefault(importType, emptySet());
@@ -67,6 +79,38 @@ public class DefaultImportValidator implements ImportValidator {
         .noneMatch(allowedHost -> allowedHost.matcher(importUrl.getHost()).matches())) {
       throw new ValidationException(
           "Files may not be imported from %s.".formatted(importUrl.getHost()));
+    }
+
+    validateDestinationWorkspace(importRequest, destinatinoWorkspaceId);
+  }
+
+  private void validateDestinationWorkspace(
+      ImportRequestServerModel importRequest, UUID destinationWorkspaceId) {
+    ImportRequirements requirements =
+        importRequirementsFactory.getRequirementsForImport(importRequest.getUrl());
+
+    if (requirements.protectedDataPolicy()) {
+      if (!checkWorkspaceHasProtectedDataPolicy(destinationWorkspaceId)) {
+        throw new ValidationException(
+            "Data from this source can only be imported into a protected workspace.");
+      }
+    }
+  }
+
+  private boolean checkWorkspaceHasProtectedDataPolicy(UUID workspaceId) {
+    try {
+      WorkspaceDescription workspace = wsmDao.getWorkspace(workspaceId);
+      return workspace.getPolicies().stream()
+          .anyMatch(
+              wsmPolicyInput ->
+                  wsmPolicyInput.getNamespace().equals("terra")
+                      && wsmPolicyInput.getName().equals("protected-data"));
+    } catch (WorkspaceManagerException e) {
+      if (e.getStatusCode().equals(HttpStatus.NOT_FOUND)) {
+        return false;
+      } else {
+        throw e;
+      }
     }
   }
 }
