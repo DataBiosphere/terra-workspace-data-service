@@ -94,11 +94,10 @@ public class DefaultImportValidator implements ImportValidator {
     ImportRequirements requirements =
         importRequirementsFactory.getRequirementsForImport(importRequest.getUrl());
 
-    if (requirements.protectedDataPolicy()) {
-      if (!checkWorkspaceHasProtectedDataPolicy(destinationWorkspaceId)) {
-        throw new ValidationException(
-            "Data from this source can only be imported into a protected workspace.");
-      }
+    if (requirements.protectedDataPolicy()
+        && !checkWorkspaceHasProtectedDataPolicy(destinationWorkspaceId)) {
+      throw new ValidationException(
+          "Data from this source can only be imported into a protected workspace.");
     }
   }
 
