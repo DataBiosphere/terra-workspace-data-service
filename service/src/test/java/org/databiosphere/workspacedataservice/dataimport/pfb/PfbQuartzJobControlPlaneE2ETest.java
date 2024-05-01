@@ -91,7 +91,8 @@ import org.springframework.util.StreamUtils;
       "spring.cloud.gcp.pubsub.enabled=false",
       // Rawls url must be valid, else context initialization (Spring startup) will fail
       "rawlsUrl=https://localhost/",
-      "management.prometheus.metrics.export.enabled=true"
+      "management.prometheus.metrics.export.enabled=true",
+      "sentry.dsn=https://ingest.sentry.io"
     })
 @WithTestObservationRegistry
 @AutoConfigureMockMvc

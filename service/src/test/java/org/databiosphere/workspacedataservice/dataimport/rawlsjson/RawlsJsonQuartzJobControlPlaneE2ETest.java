@@ -26,6 +26,7 @@ import org.springframework.test.context.TestPropertySource;
       "spring.cloud.gcp.pubsub.enabled=false",
       // Rawls url must be valid, else context initialization (Spring startup) will fail
       "rawlsUrl=https://localhost/",
+      "sentry.dsn=https://ingest.sentry.io"
     })
 @AutoConfigureMockMvc
 class RawlsJsonQuartzJobControlPlaneE2ETest {

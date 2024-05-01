@@ -20,9 +20,11 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.stereotype.Component;
 import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.context.TestPropertySource;
 
 @Component
 @DirtiesContext
+@TestPropertySource(properties = {"sentry.dsn=https://ingest.sentry.io"})
 @SpringBootTest
 // inheritProfiles = false to make sure data-plane is not active from TestBase
 @ActiveProfiles(value = "control-plane", inheritProfiles = false)

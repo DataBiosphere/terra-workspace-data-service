@@ -39,6 +39,7 @@ import org.springframework.web.client.HttpServerErrorException;
       "rest.retry.maxAttempts=3",
       // with aggressive delay settings so unit tests don't run too long
       "rest.retry.backoff.delay=3",
+      "sentry.dsn=https://ingest.sentry.io"
     })
 class RawlsClientRetryTest {
   // create mock for RawlsApi

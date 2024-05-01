@@ -23,7 +23,8 @@ import org.springframework.test.context.TestPropertySource;
       // turn off pubsub autoconfiguration for tests
       "spring.cloud.gcp.pubsub.enabled=false",
       // Rawls url must be valid, else context initialization (Spring startup) will fail
-      "rawlsUrl=https://localhost/"
+      "rawlsUrl=https://localhost/",
+      "sentry.dsn=https://ingest.sentry.io"
     })
 @DirtiesContext
 class TwdsPropertiesControlPlaneTest {
