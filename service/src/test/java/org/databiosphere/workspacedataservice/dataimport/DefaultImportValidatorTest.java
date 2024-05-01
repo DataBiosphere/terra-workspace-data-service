@@ -17,7 +17,9 @@ import org.junit.jupiter.params.provider.ValueSource;
 
 class DefaultImportValidatorTest extends TestBase {
   private final ImportValidator importValidator =
-      new DefaultImportValidator(Set.of(Pattern.compile(".*\\.terra\\.bio")));
+      new DefaultImportValidator(
+          /* allowedHttpsHosts= */ Set.of(Pattern.compile(".*\\.terra\\.bio")),
+          /* allowedRawlsBucket= */ "test-bucket");
 
   @Test
   void requiresHttpsImportUrls() {
@@ -98,5 +100,19 @@ class DefaultImportValidatorTest extends TestBase {
 
     // Act/Assert
     assertDoesNotThrow(() -> importValidator.validateImport(importRequest));
+  }
+
+  @Test
+  void rejectGsUrlsWithMismatchingBucketForJsonImports() {
+    // Arrange
+    URI importUri = URI.create("gs://rando-bucket/file");
+    ImportRequestServerModel importRequest =
+        new ImportRequestServerModel(TypeEnum.RAWLSJSON, importUri);
+
+    // Act/Assert
+    ValidationException err =
+        assertThrows(
+            ValidationException.class, () -> importValidator.validateImport(importRequest));
+    assertEquals("Files may not be imported from rando-bucket.", err.getMessage());
   }
 }

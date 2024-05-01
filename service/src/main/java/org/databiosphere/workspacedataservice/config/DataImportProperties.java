@@ -6,6 +6,7 @@ import static java.util.Collections.emptySet;
 import java.util.Set;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
+import org.springframework.lang.Nullable;
 
 /** Properties that dictate how data import processes should behave. */
 public class DataImportProperties {
@@ -29,6 +30,7 @@ public class DataImportProperties {
   }
 
   /** Where to write Rawls JSON files after import. */
+  @Nullable
   public String getRawlsBucketName() {
     return rawlsBucketName;
   }

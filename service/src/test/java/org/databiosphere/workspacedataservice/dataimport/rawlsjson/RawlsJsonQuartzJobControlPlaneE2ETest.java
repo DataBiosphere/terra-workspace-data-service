@@ -8,7 +8,6 @@ import static org.databiosphere.workspacedataservice.generated.ImportRequestServ
 import static org.mockito.Mockito.verify;
 
 import com.google.cloud.storage.Blob;
-import com.google.cloud.storage.contrib.nio.testing.LocalStorageHelper;
 import com.google.common.collect.ImmutableMap;
 import java.net.URI;
 import java.util.List;
@@ -54,19 +53,15 @@ import org.springframework.test.context.TestPropertySource;
     })
 @AutoConfigureMockMvc
 class RawlsJsonQuartzJobControlPlaneE2ETest {
-  static final String INCOMING_BUCKET = "allowed-bucket";
-
   @Autowired private RawlsJsonTestSupport testSupport;
   @Autowired private ImportService importService;
   @SpyBean private PubSub pubSub;
   // Mock ImportValidator to allow importing test data from a file:// URL.
   @MockBean ImportValidator importValidator;
 
-  GcsStorage incomingStorage;
-
   @Autowired
   @Qualifier("mockGcsStorage")
-  GcsStorage outgoingStorage;
+  GcsStorage storage;
 
   /** ArgumentCaptor for the message passed to {@link PubSub#publishSync(Map)}. */
   @Captor private ArgumentCaptor<Map<String, String>> pubSubMessageCaptor;
@@ -76,19 +71,18 @@ class RawlsJsonQuartzJobControlPlaneE2ETest {
   @BeforeEach
   void setup() {
     collectionId = UUID.randomUUID();
-    incomingStorage = new GcsStorage(LocalStorageHelper.getOptions().getService(), INCOMING_BUCKET);
   }
 
   @AfterEach
   void teardown() {
-    deleteAllBlobs(incomingStorage);
-    deleteAllBlobs(outgoingStorage);
+    deleteAllBlobs(storage);
   }
 
   @Test
   void rewritesBlobToOutgoingBucketOnSuccess() throws JobExecutionException {
     // Arrange
-    URI incomingBlobUri = getUri(createRandomBlob());
+    Blob randomBlob = createRandomBlob();
+    URI incomingBlobUri = getUri(randomBlob);
     var importRequest = new ImportRequestServerModel(RAWLSJSON, incomingBlobUri);
 
     var genericJobServerModel = importService.createImport(collectionId, importRequest);
@@ -103,7 +97,7 @@ class RawlsJsonQuartzJobControlPlaneE2ETest {
     // Assert
     assertPubSubMessage(expectedPubSubMessageFor(jobId, /* isUpsert= */ true));
     assertSingleBlobWritten(rawlsJsonBlobName(jobId));
-    assertThat(listBlobs(incomingStorage)).isEmpty(); // original blob should be deleted
+    assertThat(listBlobs(storage)).doesNotContain(randomBlob); // original blob should be deleted
   }
 
   private ImmutableMap<String, String> expectedPubSubMessageFor(UUID jobId, boolean isUpsert) {
@@ -111,7 +105,7 @@ class RawlsJsonQuartzJobControlPlaneE2ETest {
         .put("workspaceId", collectionId.toString())
         .put("userEmail", MockSamUsersApi.MOCK_USER_EMAIL)
         .put("jobId", jobId.toString())
-        .put("upsertFile", outgoingStorage.getBucketName() + "/" + rawlsJsonBlobName(jobId))
+        .put("upsertFile", storage.getBucketName() + "/" + rawlsJsonBlobName(jobId))
         .put("isUpsert", String.valueOf(isUpsert))
         .put("isCWDS", "true")
         .build();
@@ -123,7 +117,7 @@ class RawlsJsonQuartzJobControlPlaneE2ETest {
   }
 
   private void assertSingleBlobWritten(String expectedBlobName) {
-    List<Blob> blobsWritten = listBlobs(outgoingStorage);
+    List<Blob> blobsWritten = listBlobs(storage);
     assertThat(blobsWritten).hasSize(1);
     assertThat(blobsWritten.get(0).getName()).isEqualTo(expectedBlobName);
   }
@@ -133,7 +127,7 @@ class RawlsJsonQuartzJobControlPlaneE2ETest {
   }
 
   private Blob createRandomBlob() {
-    return incomingStorage.createBlob(UUID.randomUUID().toString());
+    return storage.createBlob(UUID.randomUUID().toString());
   }
 
   private URI getUri(Blob blob) {

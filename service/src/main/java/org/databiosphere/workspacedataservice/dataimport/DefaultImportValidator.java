@@ -2,7 +2,9 @@ package org.databiosphere.workspacedataservice.dataimport;
 
 import static java.util.Collections.emptySet;
 
+import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Sets;
+import io.micrometer.common.util.StringUtils;
 import java.net.URI;
 import java.util.Map;
 import java.util.Set;
@@ -10,6 +12,7 @@ import java.util.regex.Pattern;
 import org.databiosphere.workspacedataservice.generated.ImportRequestServerModel;
 import org.databiosphere.workspacedataservice.generated.ImportRequestServerModel.TypeEnum;
 import org.databiosphere.workspacedataservice.service.model.exception.ValidationException;
+import org.springframework.lang.Nullable;
 
 public class DefaultImportValidator implements ImportValidator {
   private static final Map<TypeEnum, Set<String>> SUPPORTED_URL_SCHEMES_BY_IMPORT_TYPE =
@@ -26,19 +29,25 @@ public class DefaultImportValidator implements ImportValidator {
           Pattern.compile("s3\\.amazonaws\\.com"), // path style legacy global endpoint
           Pattern.compile(".*\\.s3\\.amazonaws\\.com") // virtual host style legacy global endpoint
           );
-  private final Set<Pattern> allowedHosts;
+  private final Map<String, Set<Pattern>> allowedHostsByScheme;
 
-  public DefaultImportValidator(Set<Pattern> allowedHosts) {
-    this.allowedHosts = Sets.union(ALWAYS_ALLOWED_HOSTS, allowedHosts);
+  public DefaultImportValidator(
+      Set<Pattern> allowedHttpsHosts, @Nullable String allowedRawlsBucket) {
+    var allowedHostsBuilder =
+        ImmutableMap.<String, Set<Pattern>>builder()
+            .put("https", Sets.union(ALWAYS_ALLOWED_HOSTS, allowedHttpsHosts));
+
+    if (StringUtils.isNotBlank(allowedRawlsBucket)) {
+      allowedHostsBuilder.put("gs", Set.of(Pattern.compile(allowedRawlsBucket)));
+    } else {
+      allowedHostsBuilder.put("gs", emptySet());
+    }
+
+    this.allowedHostsByScheme = allowedHostsBuilder.build();
   }
 
   private Set<Pattern> getAllowedHosts(ImportRequestServerModel importRequest) {
-    // Allow imports from any GCS bucket.
-    if (importRequest.getUrl().getScheme().equals("gs")) {
-      return Set.of(Pattern.compile(".*"));
-    }
-
-    return allowedHosts;
+    return allowedHostsByScheme.get(importRequest.getUrl().getScheme());
   }
 
   public void validateImport(ImportRequestServerModel importRequest) {
