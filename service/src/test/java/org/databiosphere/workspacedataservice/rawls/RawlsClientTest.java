@@ -33,7 +33,6 @@ import org.springframework.test.context.TestPropertySource;
       "rawlsUrl=https://localhost/",
       // turn off pubsub autoconfiguration for tests
       "spring.cloud.gcp.pubsub.enabled=false",
-      "sentry.dsn=https://ingest.sentry.io"
     })
 class RawlsClientTest {
   @MockBean RawlsApi mockRawlsApi;

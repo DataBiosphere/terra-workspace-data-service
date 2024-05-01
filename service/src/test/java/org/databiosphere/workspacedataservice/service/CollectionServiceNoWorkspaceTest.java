@@ -26,11 +26,7 @@ import org.springframework.test.context.TestPropertySource;
     value = {"control-plane"},
     inheritProfiles = false)
 @TestPropertySource(
-    properties = {
-      "twds.instance.workspace-id=",
-      "twds.tenancy.allow-virtual-collections=true",
-      "sentry.dsn=https://ingest.sentry.io"
-    })
+    properties = {"twds.instance.workspace-id=", "twds.tenancy.allow-virtual-collections=true"})
 class CollectionServiceNoWorkspaceTest extends TestBase {
 
   @Autowired private CollectionService collectionService;

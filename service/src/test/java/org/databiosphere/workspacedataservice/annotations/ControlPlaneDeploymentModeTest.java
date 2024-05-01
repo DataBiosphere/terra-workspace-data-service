@@ -9,12 +9,10 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.springframework.beans.factory.NoSuchBeanDefinitionException;
 import org.springframework.test.context.ActiveProfiles;
-import org.springframework.test.context.TestPropertySource;
 
 @ActiveProfiles(
     profiles = {"control-plane"},
     inheritProfiles = false)
-@TestPropertySource(properties = {"sentry.dsn=https://ingest.sentry.io"})
 class ControlPlaneDeploymentModeTest extends DeploymentModeTestBase {
 
   @ParameterizedTest(name = "{0} is disabled for DeploymentMode control-plane")

@@ -34,7 +34,6 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.ActiveProfiles;
-import org.springframework.test.context.TestPropertySource;
 import org.springframework.util.StreamUtils;
 
 /**
@@ -44,7 +43,6 @@ import org.springframework.util.StreamUtils;
  * @see RawlsAttributePrefixerTest
  */
 @DirtiesContext
-@TestPropertySource(properties = {"sentry.dsn=https://ingest.sentry.io"})
 @SpringBootTest
 @ActiveProfiles(value = "control-plane", inheritProfiles = false)
 class RawlsRecordSinkPrefixingTest extends TestBase {

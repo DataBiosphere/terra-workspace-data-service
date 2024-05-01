@@ -24,11 +24,9 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.ActiveProfiles;
-import org.springframework.test.context.TestPropertySource;
 
 @DirtiesContext
 @ActiveProfiles(value = "control-plane", inheritProfiles = false)
-@TestPropertySource(properties = {"sentry.dsn=https://ingest.sentry.io"})
 @SpringBootTest
 class RawlsSnapshotSupportTest extends TestBase {
 
