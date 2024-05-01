@@ -20,22 +20,23 @@ public class JsonAttribute extends ScalarAttribute<JsonNode> {
     return this.value;
   }
 
+  /**
+   * Do not rely on toString() to return valid serialized JSON. Instead, call getValue() or
+   * sqlValue() to return a JsonNode, and serialize that yourself via your own ObjectMapper.
+   *
+   * @return a string representation of this JsonAttribute
+   */
   @Override
   public String toString() {
-    // use the supplied ObjectMapper to generate the toString value. This ensures serialization is
-    // consistent with the settings configured on the ObjectMapper.
-    return this.value.toString();
-  }
+    /* This calls JsonNode.toString(), which "will produce ... valid JSON using default settings"
+       and therefore can be DIFFERENT from the JSON produced by calling ObjectMapper.writeValueAsString
+       if the ObjectMapper has been configured with non-default flags. Such is the case in WDS; we
+       configure non-default flags in JsonConfig.
 
-  @Override
-  public boolean equals(Object obj) {
-    // don't consider the mapper in equals
-    return super.equals(obj);
-  }
-
-  @Override
-  public int hashCode() {
-    // don't consider the mapper in hashcode
-    return super.hashCode();
+       Because of these subtle differences in serialization, this toString() intentionally includes
+       a "JsonAttribute(...)" text surrounding the JSON value. This should be a breaking signal to
+       any callers who try to get JSON out of toString().
+    */
+    return "JsonAttribute(%s)".formatted(this.value.toString());
   }
 }
