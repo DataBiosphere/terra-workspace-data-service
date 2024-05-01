@@ -15,11 +15,13 @@ import org.databiosphere.workspacedataservice.service.model.exception.Validation
 import org.springframework.lang.Nullable;
 
 public class DefaultImportValidator implements ImportValidator {
+  private static final String SCHEME_HTTPS = "https";
+  private static final String SCHEME_GS = "gs";
   private static final Map<TypeEnum, Set<String>> SUPPORTED_URL_SCHEMES_BY_IMPORT_TYPE =
       Map.of(
-          TypeEnum.PFB, Set.of("https"),
-          TypeEnum.RAWLSJSON, Set.of("gs"),
-          TypeEnum.TDRMANIFEST, Set.of("https"));
+          TypeEnum.PFB, Set.of(SCHEME_HTTPS),
+          TypeEnum.RAWLSJSON, Set.of(SCHEME_GS),
+          TypeEnum.TDRMANIFEST, Set.of(SCHEME_HTTPS));
   private static final Set<Pattern> ALWAYS_ALLOWED_HOSTS =
       Set.of(
           Pattern.compile("storage\\.googleapis\\.com"),
@@ -35,12 +37,12 @@ public class DefaultImportValidator implements ImportValidator {
       Set<Pattern> allowedHttpsHosts, @Nullable String allowedRawlsBucket) {
     var allowedHostsBuilder =
         ImmutableMap.<String, Set<Pattern>>builder()
-            .put("https", Sets.union(ALWAYS_ALLOWED_HOSTS, allowedHttpsHosts));
+            .put(SCHEME_HTTPS, Sets.union(ALWAYS_ALLOWED_HOSTS, allowedHttpsHosts));
 
     if (StringUtils.isNotBlank(allowedRawlsBucket)) {
-      allowedHostsBuilder.put("gs", Set.of(Pattern.compile(allowedRawlsBucket)));
+      allowedHostsBuilder.put(SCHEME_GS, Set.of(Pattern.compile(allowedRawlsBucket)));
     } else {
-      allowedHostsBuilder.put("gs", emptySet());
+      allowedHostsBuilder.put(SCHEME_GS, emptySet());
     }
 
     this.allowedHostsByScheme = allowedHostsBuilder.build();
