@@ -48,6 +48,7 @@ import org.databiosphere.workspacedataservice.service.model.exception.BatchDelet
 import org.databiosphere.workspacedataservice.service.model.exception.ConflictException;
 import org.databiosphere.workspacedataservice.service.model.exception.InvalidRelationException;
 import org.databiosphere.workspacedataservice.service.model.exception.MissingObjectException;
+import org.databiosphere.workspacedataservice.service.model.exception.SerializationException;
 import org.databiosphere.workspacedataservice.shared.model.AttributeComparator;
 import org.databiosphere.workspacedataservice.shared.model.Record;
 import org.databiosphere.workspacedataservice.shared.model.RecordAttributes;
@@ -733,8 +734,7 @@ public class RecordDao {
       try {
         return objectMapper.writeValueAsString(jsonAttribute.sqlValue());
       } catch (JsonProcessingException e) {
-        LOGGER.error("Could not serialize JsonAttribute to json string", e);
-        throw new RuntimeException(e);
+        throw new SerializationException("Could not serialize JsonAttribute to json string", e);
       }
     }
     // json-based APIs deserialize json as LinkedHashMap<String, Object>. Handle those here.
@@ -743,8 +743,7 @@ public class RecordDao {
       try {
         return objectMapper.writeValueAsString(attVal);
       } catch (JsonProcessingException e) {
-        LOGGER.error("Could not serialize Map to json string", e);
-        throw new RuntimeException(e);
+        throw new SerializationException("Could not serialize Map to json string", e);
       }
     }
     if (typeMapping.isArrayType()) {
@@ -790,8 +789,8 @@ public class RecordDao {
                 try {
                   return objectMapper.writeValueAsString(el);
                 } catch (JsonProcessingException e) {
-                  LOGGER.error("Could not serialize array element to json string", e);
-                  throw new RuntimeException(e);
+                  throw new SerializationException(
+                      "Could not serialize array element to json string", e);
                 }
               })
           .toList()
