@@ -37,6 +37,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.Set;
 import org.databiosphere.workspacedataservice.service.model.DataTypeMapping;
 import org.databiosphere.workspacedataservice.service.model.Relation;
@@ -214,13 +215,12 @@ public class DataTypeInferer {
    * @param val the input to be parsed
    * @return the ObjectNode, or null if the input was not a json object
    */
-  @Nullable
-  public ObjectNode tryJsonObject(String val) {
+  public Optional<ObjectNode> tryJsonObject(String val) {
     JsonNode jsonNode = parseToJsonNode(val);
     if (jsonNode instanceof ObjectNode objectNode) {
-      return objectNode;
+      return Optional.of(objectNode);
     }
-    return null;
+    return Optional.empty();
   }
 
   /**
@@ -228,7 +228,7 @@ public class DataTypeInferer {
    */
   @Deprecated(since = "2024-04-30")
   public boolean isValidJson(String val) {
-    return tryJsonObject(val) != null;
+    return tryJsonObject(val).isPresent();
   }
 
   public boolean isArray(String val) {

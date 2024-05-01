@@ -66,14 +66,6 @@ class TsvDeserializerTest extends TestBase {
           expectedList,
           (List<?>) actual,
           "cellToAttribute for input value <%s> should return <%s>".formatted(input, expected));
-      /*
-      } else if (expected instanceof Map) {
-        // map types can differ; don't check instanceof
-        assertEquals(
-            expected,
-            actual,
-            "cellToAttribute for input value <%s> should return <%s>".formatted(input, expected));
-       */
     } else {
       if (Objects.isNull(expected)) {
         assertNull(actual);

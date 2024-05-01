@@ -19,6 +19,7 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Spliterator;
 import java.util.Spliterators;
 import java.util.stream.Stream;
@@ -130,9 +131,9 @@ public class TsvDeserializer extends StdDeserializer<RecordAttributes> {
       }
     }
     // JSON objects
-    ObjectNode maybeJsonObject = inferer.tryJsonObject(val);
-    if (maybeJsonObject != null) {
-      return new JsonAttribute(maybeJsonObject);
+    Optional<ObjectNode> maybeJsonObject = inferer.tryJsonObject(val);
+    if (maybeJsonObject.isPresent()) {
+      return new JsonAttribute(maybeJsonObject.get());
     }
 
     // arrays.
