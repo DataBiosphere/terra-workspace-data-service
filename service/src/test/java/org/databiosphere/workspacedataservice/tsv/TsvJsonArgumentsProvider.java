@@ -76,12 +76,6 @@ public class TsvJsonArgumentsProvider implements ArgumentsProvider {
         // Arguments.of("\"false\"",               "false",                false),
         // Arguments.of("\"[1,2,3]\"",             "[1,2,3]",              false),
 
-        // TODO AJ-1748: where should this test live?
-        /*
-        // json packet
-        Arguments.of(
-            "{\"foo\":\"bar\", \"baz\": \"qux\"}", Map.of("foo", "bar", "baz", "qux"), false),
-         */
         // ========== arrays ==========
 
         // empty array
@@ -146,14 +140,6 @@ public class TsvJsonArgumentsProvider implements ArgumentsProvider {
             List.of("terra-wds:/type/id", "terra-wds:/type/id2"),
             false),
 
-        // TODO AJ-1748: where should this test live?
-        // array of JSON objects
-        /*
-        Arguments.of(
-            "[{\"value\":\"foo\"},{\"value\":\"bar\"},{\"value\":\"baz\"}]",
-            List.of(Map.of("value", "foo"), Map.of("value", "bar"), Map.of("value", "baz")),
-            false),
-         */
         // mixed array (these deserialize as mixed lists, will be coerced to a single data type
         // later in processing)
         Arguments.of(
