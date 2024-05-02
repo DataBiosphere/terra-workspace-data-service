@@ -25,6 +25,7 @@ import org.databiosphere.workspacedataservice.service.model.exception.Authentica
 import org.databiosphere.workspacedataservice.service.model.exception.AuthenticationMaskableException;
 import org.databiosphere.workspacedataservice.shared.model.CollectionId;
 import org.databiosphere.workspacedataservice.shared.model.Schedulable;
+import org.databiosphere.workspacedataservice.shared.model.WorkspaceId;
 import org.databiosphere.workspacedataservice.shared.model.job.Job;
 import org.databiosphere.workspacedataservice.shared.model.job.JobInput;
 import org.databiosphere.workspacedataservice.shared.model.job.JobResult;
@@ -87,7 +88,8 @@ public class ImportService {
       }
     }
 
-    importValidator.validateImport(importRequest);
+    WorkspaceId workspaceId = collectionService.getWorkspaceId(CollectionId.of(collectionId));
+    importValidator.validateImport(importRequest, workspaceId);
 
     // get a token to execute the job
     String petToken = samDao.getPetToken();

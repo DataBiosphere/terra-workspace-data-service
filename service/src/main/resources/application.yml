@@ -145,6 +145,14 @@ twds:
       - .*\.singlecell\.gi\.ucsc\.edu,
       - .*gen3\.biodatacatalyst\.nhlbi\.nih\.gov
       - .*service\.azul\.data\.humancellatlas\.org
+    sources:
+      - urls:
+          - ^https:\/\/.*gen3\.biodatacatalyst\.nhlbi\.nih\.gov\/
+          - ^https:\/\/gen3-biodatacatalyst-nhlbi-nih-gov-pfb-export\.s3\.amazonaws\.com\/
+          - ^https:\/\/s3\.amazonaws.com\/gen3-biodatacatalyst-nhlbi-nih-gov-pfb-export\/
+          - ^https:\/\/gen3-theanvil-io-pfb-export\.s3\.amazonaws\.com\/
+          - ^https:\/\/s3\.amazonaws\.com\/gen3-theanvil-io-pfb-export\/
+        requireProtectedDataPolicy: true
 
   pg_dump:
     path: ${PGDUMP_PATH:/usr/bin/pg_dump}

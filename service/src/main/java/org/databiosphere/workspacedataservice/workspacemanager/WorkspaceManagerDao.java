@@ -4,6 +4,7 @@ import bio.terra.datarepo.model.SnapshotModel;
 import bio.terra.workspace.api.ControlledAzureResourceApi;
 import bio.terra.workspace.api.ReferencedGcpResourceApi;
 import bio.terra.workspace.api.ResourceApi;
+import bio.terra.workspace.api.WorkspaceApi;
 import bio.terra.workspace.model.*;
 import java.text.SimpleDateFormat;
 import java.util.UUID;
@@ -156,6 +157,17 @@ public class WorkspaceManagerDao {
                   workspaceId, offset, limit, resourceType, stewardshipType);
       return restClientRetry.withRetryAndErrorHandling(
           enumerateResourcesFunction, "WSM.enumerateResources");
+    } catch (RestException e) {
+      throw new WorkspaceManagerException(e);
+    }
+  }
+
+  public WorkspaceDescription getWorkspace(UUID workspaceId) {
+    WorkspaceApi workspaceApi = this.workspaceManagerClientFactory.getWorkspaceApi(null);
+    try {
+      RestCall<WorkspaceDescription> getWorkspaceFn =
+          () -> workspaceApi.getWorkspace(workspaceId, IamRole.READER);
+      return restClientRetry.withRetryAndErrorHandling(getWorkspaceFn, "WSM.getWorkspace");
     } catch (RestException e) {
       throw new WorkspaceManagerException(e);
     }

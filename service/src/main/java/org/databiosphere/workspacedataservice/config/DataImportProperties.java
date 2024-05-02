@@ -3,6 +3,8 @@ package org.databiosphere.workspacedataservice.config;
 import static java.util.Arrays.stream;
 import static java.util.Collections.emptySet;
 
+import java.net.URI;
+import java.util.List;
 import java.util.Set;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -19,6 +21,7 @@ public class DataImportProperties {
   private String rawlsNotificationsTopic;
   private String statusUpdatesTopic;
   private String statusUpdatesSubscription;
+  private List<ImportSourceConfig> sources;
 
   /** Where to write records after import, options are defined by {@link RecordSinkMode} */
   public RecordSinkMode getBatchWriteRecordSink() {
@@ -107,6 +110,14 @@ public class DataImportProperties {
     this.statusUpdatesSubscription = statusUpdatesSubscription;
   }
 
+  public List<ImportSourceConfig> getSources() {
+    return sources;
+  }
+
+  public void setSources(List<ImportSourceConfig> sources) {
+    this.sources = sources;
+  }
+
   /** Dictates the sink where BatchWriteService should write records after import. */
   public enum RecordSinkMode {
     WDS("wds"),
@@ -124,6 +135,13 @@ public class DataImportProperties {
         }
       }
       throw new RuntimeException("Unknown RecordSinkMode value: %s".formatted(value));
+    }
+  }
+
+  public record ImportSourceConfig(List<Pattern> urls, boolean requireProtectedDataPolicy) {
+    public boolean matchesUri(URI uri) {
+      String uriString = uri.toString();
+      return urls.stream().anyMatch(urlPattern -> urlPattern.matcher(uriString).find());
     }
   }
 }
