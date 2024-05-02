@@ -98,11 +98,35 @@ class TsvDeserializerTest extends TestBase {
         Arguments.of(
             "{\"foo\":\"bar\", \"baz\": \"qux\"}",
             new JsonAttribute(mapper.readTree("{\"foo\":\"bar\", \"baz\": \"qux\"}"))),
+        // array of json packets
         Arguments.of(
             "[{\"value\":\"foo\"},{\"value\":\"bar\"},{\"value\":\"baz\"}]",
             List.of(
                 new JsonAttribute(mapper.readTree("{\"value\":\"foo\"}")),
                 new JsonAttribute(mapper.readTree("{\"value\":\"bar\"}")),
-                new JsonAttribute(mapper.readTree("{\"value\":\"baz\"}")))));
+                new JsonAttribute(mapper.readTree("{\"value\":\"baz\"}")))),
+        // nested arrays: numbers
+        Arguments.of(
+            "[[1],[2,3],[4,5,6]]",
+            List.of(
+                new JsonAttribute(mapper.readTree("[1]")),
+                new JsonAttribute(mapper.readTree("[2,3]")),
+                new JsonAttribute(mapper.readTree("[4,5,6]")))),
+        // nested arrays: strings
+        Arguments.of(
+            "[[\"one\"],[\"two\",\"three\"],[\"four\",\"five\",\"six\"]]",
+            List.of(
+                new JsonAttribute(mapper.readTree("[\"one\"]")),
+                new JsonAttribute(mapper.readTree("[\"two\",\"three\"]")),
+                new JsonAttribute(mapper.readTree("[\"four\",\"five\",\"six\"]")))),
+        // array of mixed json types
+        Arguments.of(
+            "[[1,2,3],[\"four\",\"five\"],67,{\"some\":\"object\",\"with\":[\"nesting\"]}]",
+            List.of(
+                new JsonAttribute(mapper.readTree("[1,2,3]")),
+                new JsonAttribute(mapper.readTree("[\"four\",\"five\"]")),
+                new JsonAttribute(mapper.readTree("67")),
+                new JsonAttribute(
+                    mapper.readTree("{\"some\":\"object\",\"with\":[\"nesting\"]}")))));
   }
 }
