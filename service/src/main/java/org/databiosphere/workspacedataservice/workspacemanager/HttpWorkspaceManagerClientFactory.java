@@ -3,6 +3,7 @@ package org.databiosphere.workspacedataservice.workspacemanager;
 import bio.terra.workspace.api.ControlledAzureResourceApi;
 import bio.terra.workspace.api.ReferencedGcpResourceApi;
 import bio.terra.workspace.api.ResourceApi;
+import bio.terra.workspace.api.WorkspaceApi;
 import bio.terra.workspace.client.ApiClient;
 import jakarta.ws.rs.client.Client;
 import org.apache.commons.lang3.StringUtils;
@@ -10,6 +11,7 @@ import org.databiosphere.workspacedataservice.sam.TokenContextUtil;
 import org.databiosphere.workspacedataservice.shared.model.BearerToken;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.lang.Nullable;
 
 public class HttpWorkspaceManagerClientFactory implements WorkspaceManagerClientFactory {
 
@@ -23,7 +25,7 @@ public class HttpWorkspaceManagerClientFactory implements WorkspaceManagerClient
     this.commonHttpClient = new ApiClient().getHttpClient();
   }
 
-  private ApiClient getApiClient(String authToken) {
+  private ApiClient getApiClient(@Nullable String authToken) {
     // create a new data repo client
     ApiClient apiClient = new ApiClient();
     apiClient.setHttpClient(commonHttpClient);
@@ -48,15 +50,19 @@ public class HttpWorkspaceManagerClientFactory implements WorkspaceManagerClient
     return apiClient;
   }
 
-  public ReferencedGcpResourceApi getReferencedGcpResourceApi(String authToken) {
+  public ReferencedGcpResourceApi getReferencedGcpResourceApi(@Nullable String authToken) {
     return new ReferencedGcpResourceApi(getApiClient(authToken));
   }
 
-  public ResourceApi getResourceApi(String authToken) {
+  public ResourceApi getResourceApi(@Nullable String authToken) {
     return new ResourceApi(getApiClient(authToken));
   }
 
-  public ControlledAzureResourceApi getAzureResourceApi(String authToken) {
+  public ControlledAzureResourceApi getAzureResourceApi(@Nullable String authToken) {
     return new ControlledAzureResourceApi(getApiClient(authToken));
+  }
+
+  public WorkspaceApi getWorkspaceApi(@Nullable String authToken) {
+    return new WorkspaceApi(getApiClient(authToken));
   }
 }

@@ -2,6 +2,7 @@ package org.databiosphere.workspacedataservice.dataimport;
 
 import org.databiosphere.workspacedataservice.config.ConfigurationException;
 import org.databiosphere.workspacedataservice.config.DataImportProperties;
+import org.databiosphere.workspacedataservice.workspacemanager.WorkspaceManagerDao;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -14,9 +15,13 @@ public class ImportValidatorConfiguration {
       name = "twds.data-import.require-validation",
       havingValue = "true",
       matchIfMissing = true)
-  ImportValidator getDefaultImportValidator(DataImportProperties dataImportProperties) {
+  ImportValidator getDefaultImportValidator(
+      WorkspaceManagerDao wsmDao, DataImportProperties dataImportProperties) {
     return new DefaultImportValidator(
-        dataImportProperties.getAllowedHosts(), dataImportProperties.getRawlsBucketName());
+        wsmDao,
+        dataImportProperties.getAllowedHosts(),
+        dataImportProperties.getSources(),
+        dataImportProperties.getRawlsBucketName());
   }
 
   /** Allow import validation to be disabled for some test workflows. */
