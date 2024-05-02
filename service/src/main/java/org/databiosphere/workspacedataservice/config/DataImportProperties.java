@@ -3,6 +3,7 @@ package org.databiosphere.workspacedataservice.config;
 import static java.util.Arrays.stream;
 import static java.util.Collections.emptySet;
 
+import java.net.URI;
 import java.util.List;
 import java.util.Set;
 import java.util.regex.Pattern;
@@ -137,5 +138,10 @@ public class DataImportProperties {
     }
   }
 
-  public record ImportSourceConfig(List<Pattern> urls, boolean requireProtectedDataPolicy) {}
+  public record ImportSourceConfig(List<Pattern> urls, boolean requireProtectedDataPolicy) {
+    public boolean matchesUri(URI uri) {
+      String uriString = uri.toString();
+      return urls.stream().anyMatch(urlPattern -> urlPattern.matcher(uriString).find());
+    }
+  }
 }

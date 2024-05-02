@@ -2,7 +2,7 @@ package org.databiosphere.workspacedataservice.dataimport;
 
 import java.net.URI;
 import java.util.List;
-import java.util.regex.Pattern;
+import java.util.stream.Stream;
 import org.databiosphere.workspacedataservice.config.DataImportProperties.ImportSourceConfig;
 
 public class ImportRequirementsFactory {
@@ -13,18 +13,14 @@ public class ImportRequirementsFactory {
   }
 
   public ImportRequirements getRequirementsForImport(URI importUri) {
-    boolean requiresProtectedDataPolicy = false;
+    Stream<ImportSourceConfig> matchingSources =
+        sources.stream().filter(source -> source.matchesUri(importUri));
 
-    for (ImportSourceConfig source : sources) {
-      for (Pattern urlPattern : source.urls()) {
-        if (urlPattern.matcher(importUri.toString()).find()) {
-          if (source.requireProtectedDataPolicy()) {
-            requiresProtectedDataPolicy = true;
-          }
-          break;
-        }
-      }
-    }
+    boolean requiresProtectedDataPolicy =
+        matchingSources
+            .map(ImportSourceConfig::requireProtectedDataPolicy)
+            .reduce(Boolean::logicalOr)
+            .orElse(false);
 
     return new ImportRequirements(requiresProtectedDataPolicy);
   }
