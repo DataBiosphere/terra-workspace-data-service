@@ -56,7 +56,7 @@ public class DefaultImportValidator implements ImportValidator {
             .put(SCHEME_HTTPS, Sets.union(ALWAYS_ALLOWED_HOSTS, allowedHttpsHosts));
 
     if (StringUtils.isNotBlank(allowedRawlsBucket)) {
-      allowedHostsBuilder.put(SCHEME_GS, Set.of(Pattern.compile(allowedRawlsBucket)));
+      allowedHostsBuilder.put(SCHEME_GS, Set.of(Pattern.compile("import-service-batchupsert-qa")));
     } else {
       allowedHostsBuilder.put(SCHEME_GS, emptySet());
     }
