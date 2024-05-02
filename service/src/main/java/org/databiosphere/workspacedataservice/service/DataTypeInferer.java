@@ -21,8 +21,10 @@ import static org.databiosphere.workspacedataservice.service.model.DataTypeMappi
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.mu.util.stream.BiStream;
+import jakarta.annotation.Nullable;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.net.URI;
@@ -35,6 +37,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.Set;
 import org.databiosphere.workspacedataservice.service.model.DataTypeMapping;
 import org.databiosphere.workspacedataservice.service.model.Relation;
@@ -42,6 +45,7 @@ import org.databiosphere.workspacedataservice.service.model.RelationCollection;
 import org.databiosphere.workspacedataservice.shared.model.Record;
 import org.databiosphere.workspacedataservice.shared.model.RecordAttributes;
 import org.databiosphere.workspacedataservice.shared.model.RecordType;
+import org.databiosphere.workspacedataservice.shared.model.attributes.JsonAttribute;
 import org.springframework.util.CollectionUtils;
 
 public class DataTypeInferer {
@@ -125,7 +129,7 @@ public class DataTypeInferer {
     if (isValidBoolean(sVal)) {
       return BOOLEAN;
     }
-    if (isValidJson(sVal)) {
+    if (tryJsonObject(sVal).isPresent()) {
       return JSON;
     }
     if (isFileType(sVal)) {
@@ -172,7 +176,7 @@ public class DataTypeInferer {
       return findArrayType(listVal);
     }
 
-    if (val instanceof Map) {
+    if (val instanceof Map || val instanceof JsonAttribute) {
       return JSON;
     }
 
@@ -192,6 +196,7 @@ public class DataTypeInferer {
     }
   }
 
+  @Nullable
   private JsonNode parseToJsonNode(String val) {
     try {
       // We call .toLowerCase() to ensure that WDS interprets all different inputted spellings of
@@ -203,9 +208,19 @@ public class DataTypeInferer {
     }
   }
 
-  public boolean isValidJson(String val) {
+  /**
+   * Attempts to parse the input as json. If the input parsed as a valid json object (not array!),
+   * return an Optional containing that ObjectNode; else return an empty Optional.
+   *
+   * @param val the input to be parsed
+   * @return Optional of the ObjectNode, or empty if the input was not a json object
+   */
+  public Optional<ObjectNode> tryJsonObject(String val) {
     JsonNode jsonNode = parseToJsonNode(val);
-    return jsonNode != null && jsonNode.isObject();
+    if (jsonNode instanceof ObjectNode objectNode) {
+      return Optional.of(objectNode);
+    }
+    return Optional.empty();
   }
 
   public boolean isArray(String val) {

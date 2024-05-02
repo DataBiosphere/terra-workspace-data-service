@@ -13,6 +13,11 @@ public abstract class ScalarAttribute<T> implements Attribute {
   }
 
   @Override
+  public Object sqlValue() {
+    return this.value;
+  }
+
+  @Override
   public String toString() {
     return this.value.toString();
   }

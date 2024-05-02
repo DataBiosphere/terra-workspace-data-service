@@ -28,6 +28,7 @@ public class RecordAttributes {
    */
   @JsonCreator
   public RecordAttributes(Map<String, Object> attributes) {
+    // AJ-858: post-process the attributes map to look for JsonAttribute, dates, etc.
     this.attributes = new TreeMap<>(attributes);
   }
 

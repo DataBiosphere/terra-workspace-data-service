@@ -4,7 +4,6 @@ import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.util.Collections;
 import java.util.List;
-import java.util.Map;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.extension.ExtensionContext;
 import org.junit.jupiter.params.provider.Arguments;
@@ -77,10 +76,6 @@ public class TsvJsonArgumentsProvider implements ArgumentsProvider {
         // Arguments.of("\"false\"",               "false",                false),
         // Arguments.of("\"[1,2,3]\"",             "[1,2,3]",              false),
 
-        // json packet
-        Arguments.of(
-            "{\"foo\":\"bar\", \"baz\": \"qux\"}", Map.of("foo", "bar", "baz", "qux"), false),
-
         // ========== arrays ==========
 
         // empty array
@@ -143,12 +138,6 @@ public class TsvJsonArgumentsProvider implements ArgumentsProvider {
         Arguments.of(
             "[\"terra-wds:/type/id\", \"terra-wds:/type/id2\"]",
             List.of("terra-wds:/type/id", "terra-wds:/type/id2"),
-            false),
-
-        // array of JSON objects
-        Arguments.of(
-            "[{\"value\":\"foo\"},{\"value\":\"bar\"},{\"value\":\"baz\"}]",
-            List.of(Map.of("value", "foo"), Map.of("value", "bar"), Map.of("value", "baz")),
             false),
 
         // mixed array (these deserialize as mixed lists, will be coerced to a single data type

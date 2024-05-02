@@ -48,11 +48,13 @@ import org.databiosphere.workspacedataservice.service.model.exception.BatchDelet
 import org.databiosphere.workspacedataservice.service.model.exception.ConflictException;
 import org.databiosphere.workspacedataservice.service.model.exception.InvalidRelationException;
 import org.databiosphere.workspacedataservice.service.model.exception.MissingObjectException;
+import org.databiosphere.workspacedataservice.service.model.exception.SerializationException;
 import org.databiosphere.workspacedataservice.shared.model.AttributeComparator;
 import org.databiosphere.workspacedataservice.shared.model.Record;
 import org.databiosphere.workspacedataservice.shared.model.RecordAttributes;
 import org.databiosphere.workspacedataservice.shared.model.RecordColumn;
 import org.databiosphere.workspacedataservice.shared.model.RecordType;
+import org.databiosphere.workspacedataservice.shared.model.attributes.JsonAttribute;
 import org.jetbrains.annotations.NotNull;
 import org.postgresql.jdbc.PgArray;
 import org.slf4j.Logger;
@@ -727,12 +729,21 @@ public class RecordDao {
         return LocalDateTime.parse(sVal, DateTimeFormatter.ISO_LOCAL_DATE_TIME);
       }
     }
+    // TSV-based uploads deserialize json as JsonAttribute.
+    if (attVal instanceof JsonAttribute jsonAttribute) {
+      try {
+        return objectMapper.writeValueAsString(jsonAttribute.sqlValue());
+      } catch (JsonProcessingException e) {
+        throw new SerializationException("Could not serialize JsonAttribute to json string", e);
+      }
+    }
+    // json-based APIs deserialize json as LinkedHashMap<String, Object>. Handle those here.
+    // TODO AJ-1748: how to deserialize json-based APIs into JsonAttribute instead?
     if (attVal instanceof Map<?, ?>) {
       try {
         return objectMapper.writeValueAsString(attVal);
       } catch (JsonProcessingException e) {
-        LOGGER.error("Could not serialize Map to json string", e);
-        throw new RuntimeException(e);
+        throw new SerializationException("Could not serialize Map to json string", e);
       }
     }
     if (typeMapping.isArrayType()) {
@@ -778,8 +789,8 @@ public class RecordDao {
                 try {
                   return objectMapper.writeValueAsString(el);
                 } catch (JsonProcessingException e) {
-                  LOGGER.error("Could not serialize array element to json string", e);
-                  throw new RuntimeException(e);
+                  throw new SerializationException(
+                      "Could not serialize array element to json string", e);
                 }
               })
           .toList()
@@ -1001,8 +1012,7 @@ public class RecordDao {
         return getArrayValue(pgArray.getArray(), typeMapping);
       }
       if (typeMapping == DataTypeMapping.JSON) {
-        return objectMapper.readValue(
-            object.toString(), new TypeReference<Map<String, Object>>() {});
+        return new JsonAttribute(objectMapper.readTree(object.toString()));
       }
       return object;
     }
