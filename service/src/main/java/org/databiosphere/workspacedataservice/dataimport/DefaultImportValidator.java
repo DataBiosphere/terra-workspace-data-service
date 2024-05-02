@@ -4,6 +4,7 @@ import static java.util.Collections.emptyList;
 import static java.util.Collections.emptySet;
 
 import bio.terra.workspace.model.WorkspaceDescription;
+import bio.terra.workspace.model.WsmPolicyInput;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Sets;
 import io.micrometer.common.util.StringUtils;
@@ -105,11 +106,9 @@ public class DefaultImportValidator implements ImportValidator {
   private boolean checkWorkspaceHasProtectedDataPolicy(WorkspaceId workspaceId) {
     try {
       WorkspaceDescription workspace = wsmDao.getWorkspace(workspaceId.id());
-      return Optional.ofNullable(workspace.getPolicies()).orElse(emptyList()).stream()
-          .anyMatch(
-              wsmPolicyInput ->
-                  wsmPolicyInput.getNamespace().equals(PolicyUtils.TERRA_NAMESPACE)
-                      && wsmPolicyInput.getName().equals(PolicyUtils.PROTECTED_DATA_POLICY_NAME));
+      List<WsmPolicyInput> workspacePolicies =
+          Optional.ofNullable(workspace.getPolicies()).orElse(emptyList());
+      return workspacePolicies.stream().anyMatch(PolicyUtils::isProtectedDataPolicy);
     } catch (WorkspaceManagerException e) {
       if (e.getStatusCode().equals(HttpStatus.NOT_FOUND)) {
         return false;
