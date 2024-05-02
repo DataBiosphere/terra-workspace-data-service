@@ -210,10 +210,10 @@ public class DataTypeInferer {
 
   /**
    * Attempts to parse the input as json. If the input parsed as a valid json object (not array!),
-   * return that ObjectNode; else return null.
+   * return an Optional containing that ObjectNode; else return an empty Optional.
    *
    * @param val the input to be parsed
-   * @return the ObjectNode, or null if the input was not a json object
+   * @return Optional of the ObjectNode, or empty if the input was not a json object
    */
   public Optional<ObjectNode> tryJsonObject(String val) {
     JsonNode jsonNode = parseToJsonNode(val);
