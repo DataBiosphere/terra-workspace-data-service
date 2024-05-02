@@ -149,7 +149,7 @@ class TsvInputFormatsTest extends TestBase {
               new JsonAttribute(mapper.readTree("[\"two\",\"three\"]")),
               new JsonAttribute(mapper.readTree("[\"four\",\"five\",\"six\"]"))
             },
-            "[[1],[2,3],[4,5,6]]"),
+            "[[\"one\"],[\"two\",\"three\"],[\"four\",\"five\",\"six\"]]"),
         // array of mixed json types
         Arguments.of(
             "[[1,2,3],[\"four\",\"five\"],67,{\"some\":\"object\",\"with\":[\"nesting\"]}]",
