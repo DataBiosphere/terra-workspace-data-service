@@ -18,6 +18,7 @@ import org.databiosphere.workspacedataservice.config.DataImportProperties.Import
 import org.databiosphere.workspacedataservice.generated.ImportRequestServerModel;
 import org.databiosphere.workspacedataservice.generated.ImportRequestServerModel.TypeEnum;
 import org.databiosphere.workspacedataservice.service.model.exception.ValidationException;
+import org.databiosphere.workspacedataservice.shared.model.WorkspaceId;
 import org.databiosphere.workspacedataservice.workspacemanager.WorkspaceManagerDao;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -51,7 +52,7 @@ class DefaultImportValidatorTest extends TestBase {
 
   @Autowired DefaultImportValidator importValidator;
 
-  private final UUID destinationWorkspaceId = UUID.randomUUID();
+  private final WorkspaceId destinationWorkspaceId = WorkspaceId.of(UUID.randomUUID());
 
   @Test
   void requiresHttpsImportUrls() {
@@ -159,7 +160,7 @@ class DefaultImportValidatorTest extends TestBase {
     // Arrange
     ImportRequestServerModel importRequest = new ImportRequestServerModel(TypeEnum.PFB, importUri);
 
-    when(wsmDao.getWorkspace(destinationWorkspaceId)).thenReturn(workspaceDescription);
+    when(wsmDao.getWorkspace(destinationWorkspaceId.id())).thenReturn(workspaceDescription);
 
     // Act
     if (shouldAllowImport) {

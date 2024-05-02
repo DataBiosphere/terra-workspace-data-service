@@ -89,7 +89,7 @@ public class ImportService {
     }
 
     WorkspaceId workspaceId = collectionService.getWorkspaceId(CollectionId.of(collectionId));
-    importValidator.validateImport(importRequest, workspaceId.id());
+    importValidator.validateImport(importRequest, workspaceId);
 
     // get a token to execute the job
     String petToken = samDao.getPetToken();

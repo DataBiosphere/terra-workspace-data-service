@@ -1,8 +1,8 @@
 package org.databiosphere.workspacedataservice.dataimport;
 
-import java.util.UUID;
 import org.databiosphere.workspacedataservice.generated.ImportRequestServerModel;
+import org.databiosphere.workspacedataservice.shared.model.WorkspaceId;
 
 public interface ImportValidator {
-  void validateImport(ImportRequestServerModel importRequest, UUID destinationWorkspaceId);
+  void validateImport(ImportRequestServerModel importRequest, WorkspaceId destinationWorkspaceId);
 }

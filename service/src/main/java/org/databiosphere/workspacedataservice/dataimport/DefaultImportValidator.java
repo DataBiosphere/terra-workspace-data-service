@@ -12,13 +12,13 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
-import java.util.UUID;
 import java.util.regex.Pattern;
 import org.databiosphere.workspacedataservice.config.DataImportProperties.ImportSourceConfig;
 import org.databiosphere.workspacedataservice.generated.ImportRequestServerModel;
 import org.databiosphere.workspacedataservice.generated.ImportRequestServerModel.TypeEnum;
 import org.databiosphere.workspacedataservice.policy.PolicyUtils;
 import org.databiosphere.workspacedataservice.service.model.exception.ValidationException;
+import org.databiosphere.workspacedataservice.shared.model.WorkspaceId;
 import org.databiosphere.workspacedataservice.workspacemanager.WorkspaceManagerDao;
 import org.databiosphere.workspacedataservice.workspacemanager.WorkspaceManagerException;
 import org.springframework.http.HttpStatus;
@@ -69,7 +69,8 @@ public class DefaultImportValidator implements ImportValidator {
     return allowedHostsByScheme.get(importRequest.getUrl().getScheme());
   }
 
-  public void validateImport(ImportRequestServerModel importRequest, UUID destinatinoWorkspaceId) {
+  public void validateImport(
+      ImportRequestServerModel importRequest, WorkspaceId destinationWorkspaceId) {
     TypeEnum importType = importRequest.getType();
     Set<String> schemesSupportedForImportType =
         SUPPORTED_URL_SCHEMES_BY_IMPORT_TYPE.getOrDefault(importType, emptySet());
@@ -86,11 +87,11 @@ public class DefaultImportValidator implements ImportValidator {
           "Files may not be imported from %s.".formatted(importUrl.getHost()));
     }
 
-    validateDestinationWorkspace(importRequest, destinatinoWorkspaceId);
+    validateDestinationWorkspace(importRequest, destinationWorkspaceId);
   }
 
   private void validateDestinationWorkspace(
-      ImportRequestServerModel importRequest, UUID destinationWorkspaceId) {
+      ImportRequestServerModel importRequest, WorkspaceId destinationWorkspaceId) {
     ImportRequirements requirements =
         importRequirementsFactory.getRequirementsForImport(importRequest.getUrl());
 
@@ -101,9 +102,9 @@ public class DefaultImportValidator implements ImportValidator {
     }
   }
 
-  private boolean checkWorkspaceHasProtectedDataPolicy(UUID workspaceId) {
+  private boolean checkWorkspaceHasProtectedDataPolicy(WorkspaceId workspaceId) {
     try {
-      WorkspaceDescription workspace = wsmDao.getWorkspace(workspaceId);
+      WorkspaceDescription workspace = wsmDao.getWorkspace(workspaceId.id());
       return Optional.ofNullable(workspace.getPolicies()).orElse(emptyList()).stream()
           .anyMatch(
               wsmPolicyInput ->
