@@ -1,7 +1,9 @@
 package org.databiosphere.workspacedataservice.sam;
 
+import java.util.List;
 import java.util.UUID;
 import org.broadinstitute.dsde.workbench.client.sam.model.SystemStatus;
+import org.broadinstitute.dsde.workbench.client.sam.model.UserResourcesResponse;
 import org.databiosphere.workspacedataservice.shared.model.BearerToken;
 import org.databiosphere.workspacedataservice.shared.model.WorkspaceId;
 
@@ -27,4 +29,7 @@ public interface SamDao {
   /** Add reader policy to workspace. */
   void addWorkspacePoliciesAsSnapshotReader(
       WorkspaceId workspaceId, UUID snapshotId, String readerRole);
+
+  /** Get the user's workspaces and their roles and actions on them. */
+  public List<UserResourcesResponse> listWorkspaceResourcesAndPolicies();
 }

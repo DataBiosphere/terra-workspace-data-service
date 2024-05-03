@@ -7,6 +7,7 @@ import static org.databiosphere.workspacedataservice.sam.SamAuthorizationDao.RES
 import java.util.List;
 import java.util.UUID;
 import org.broadinstitute.dsde.workbench.client.sam.model.SystemStatus;
+import org.broadinstitute.dsde.workbench.client.sam.model.UserResourcesResponse;
 import org.broadinstitute.dsde.workbench.client.sam.model.UserStatusInfo;
 import org.databiosphere.workspacedataservice.retry.RestClientRetry;
 import org.databiosphere.workspacedataservice.retry.RestClientRetry.RestCall;
@@ -92,5 +93,12 @@ public class HttpSamDao implements SamDao {
                     readerRole,
                     null),
         "Sam.addWorkspacePoliciesAsSnapshotReader");
+  }
+
+  public List<UserResourcesResponse> listWorkspaceResourcesAndPolicies() {
+    return restClientRetry.withRetryAndErrorHandling(
+        () ->
+            samClientFactory.getResourcesApi().listResourcesAndPoliciesV2(RESOURCE_NAME_WORKSPACE),
+        "Sam.listResourcesAndPoliciesV2");
   }
 }
