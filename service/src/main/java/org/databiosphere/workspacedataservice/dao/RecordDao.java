@@ -53,6 +53,7 @@ import org.databiosphere.workspacedataservice.shared.model.Record;
 import org.databiosphere.workspacedataservice.shared.model.RecordAttributes;
 import org.databiosphere.workspacedataservice.shared.model.RecordColumn;
 import org.databiosphere.workspacedataservice.shared.model.RecordType;
+import org.databiosphere.workspacedataservice.shared.model.SearchFilter;
 import org.databiosphere.workspacedataservice.shared.model.attributes.JsonAttribute;
 import org.jetbrains.annotations.NotNull;
 import org.postgresql.jdbc.PgArray;
@@ -254,24 +255,50 @@ public class RecordDao {
       int offset,
       String sortDirection,
       @Nullable String sortAttribute, // this comes from SearchRequest, which might not be provided
+      Optional<SearchFilter> searchFilter,
       UUID collectionId) {
     LOGGER.info("queryForRecords: {}", recordType.getName());
-    return namedTemplate
-        .getJdbcTemplate()
-        .query(
-            "select * from "
-                + getQualifiedTableName(recordType, collectionId)
-                + " order by "
-                + (sortAttribute == null
-                    ? quote(primaryKeyDao.getPrimaryKeyColumn(recordType, collectionId))
-                    : quote(sortAttribute))
-                + " "
-                + sortDirection
-                + " limit "
-                + pageSize
-                + " offset "
-                + offset,
-            new RecordRowMapper(recordType, objectMapper, collectionId));
+
+    // extract potential record ids from the `filter` param
+    Optional<List<String>> filterIds = searchFilter.flatMap(SearchFilter::ids);
+
+    // fail fast: filter.ids is provided, but no ids were specified.
+    // Return an empty list of Records.
+    // Should this be a Bad Request instead?
+    if (filterIds.isPresent() && filterIds.get().isEmpty()) {
+      return List.of();
+    }
+
+    // init a where clause (as the empty string) and bind params (as an empty map)
+    String whereClause = "";
+    MapSqlParameterSource sqlParams = new MapSqlParameterSource();
+
+    // if this query has specified filter.ids, populate the where clause and bind params
+    if (filterIds.isPresent()) {
+      // we know ids is non-empty due to the check above
+      whereClause =
+          " where "
+              + quote(primaryKeyDao.getPrimaryKeyColumn(recordType, collectionId))
+              + " in (:filterIds) ";
+      sqlParams.addValue("filterIds", filterIds.get());
+    }
+
+    return namedTemplate.query(
+        "select * from "
+            + getQualifiedTableName(recordType, collectionId)
+            + whereClause
+            + " order by "
+            + (sortAttribute == null
+                ? quote(primaryKeyDao.getPrimaryKeyColumn(recordType, collectionId))
+                : quote(sortAttribute))
+            + " "
+            + sortDirection
+            + " limit "
+            + pageSize
+            + " offset "
+            + offset,
+        sqlParams,
+        new RecordRowMapper(recordType, objectMapper, collectionId));
   }
 
   public List<String> getAllAttributeNames(UUID collectionId, RecordType recordType) {

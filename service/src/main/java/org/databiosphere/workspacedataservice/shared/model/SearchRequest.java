@@ -59,7 +59,6 @@ public class SearchRequest {
     this.sortAttribute = sortAttribute;
   }
 
-  @Nullable
   public Optional<SearchFilter> getFilter() {
     return filter;
   }

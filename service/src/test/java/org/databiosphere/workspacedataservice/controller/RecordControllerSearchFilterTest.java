@@ -94,7 +94,7 @@ class RecordControllerSearchFilterTest extends MockMvcTestBase {
         """
 {"limit": 5, "sortAttribute": "sortByMe", "filter": {"ids": []}}
 """;
-    List<String> expected = List.of("000", "001", "002", "003", "004");
+    List<String> expected = List.of();
     executeTest(searchRequestPayload, expected, testCase);
   }
 
