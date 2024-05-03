@@ -4,6 +4,8 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import java.math.BigDecimal;
 import java.util.Arrays;
 import java.util.Optional;
@@ -14,8 +16,10 @@ import org.databiosphere.workspacedataservice.common.TestBase;
 import org.databiosphere.workspacedataservice.dao.RecordDao;
 import org.databiosphere.workspacedataservice.shared.model.Record;
 import org.databiosphere.workspacedataservice.shared.model.RecordType;
+import org.databiosphere.workspacedataservice.shared.model.attributes.JsonAttribute;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.TestInstance;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -29,6 +33,7 @@ import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.transaction.annotation.Transactional;
 
+@TestInstance(TestInstance.Lifecycle.PER_CLASS)
 @ActiveProfiles(profiles = "mock-sam")
 @DirtiesContext
 @SpringBootTest
@@ -37,6 +42,7 @@ class TsvInputFormatsTest extends TestBase {
 
   @Autowired private MockMvc mockMvc;
   @Autowired RecordDao recordDao;
+  @Autowired ObjectMapper mapper;
 
   private UUID instanceId;
 
@@ -82,7 +88,7 @@ class TsvInputFormatsTest extends TestBase {
     }
   }
 
-  private static Stream<Arguments> provideInputFormats() {
+  private Stream<Arguments> provideInputFormats() throws JsonProcessingException {
     /* Arguments are sets:
     - first value is the text that would be contained in a TSV cell
     - second value is the expected Java type that WDS would create, after saving the TSV and re-retrieving the record.
@@ -117,7 +123,43 @@ class TsvInputFormatsTest extends TestBase {
         Arguments.of(
             "[1,5.67]",
             new BigDecimal[] {BigDecimal.valueOf(1), BigDecimal.valueOf(5.67)},
-            "[1,5.67]")
+            "[1,5.67]"),
+        // array of json packets
+        Arguments.of(
+            "[{\"value\":\"foo\"},{\"value\":\"bar\"},{\"value\":\"baz\"}]",
+            new JsonAttribute[] {
+              new JsonAttribute(mapper.readTree("{\"value\":\"foo\"}")),
+              new JsonAttribute(mapper.readTree("{\"value\":\"bar\"}")),
+              new JsonAttribute(mapper.readTree("{\"value\":\"baz\"}"))
+            },
+            "[{\"value\":\"foo\"},{\"value\":\"bar\"},{\"value\":\"baz\"}]"),
+        // nested arrays
+        Arguments.of(
+            "[[1],[2,3],[4,5,6]]",
+            new JsonAttribute[] {
+              new JsonAttribute(mapper.readTree("[1]")),
+              new JsonAttribute(mapper.readTree("[2,3]")),
+              new JsonAttribute(mapper.readTree("[4,5,6]"))
+            },
+            "[[1],[2,3],[4,5,6]]"),
+        Arguments.of(
+            "[[\"one\"],[\"two\",\"three\"],[\"four\",\"five\",\"six\"]]",
+            new JsonAttribute[] {
+              new JsonAttribute(mapper.readTree("[\"one\"]")),
+              new JsonAttribute(mapper.readTree("[\"two\",\"three\"]")),
+              new JsonAttribute(mapper.readTree("[\"four\",\"five\",\"six\"]"))
+            },
+            "[[\"one\"],[\"two\",\"three\"],[\"four\",\"five\",\"six\"]]"),
+        // array of mixed json types
+        Arguments.of(
+            "[[1,2,3],[\"four\",\"five\"],67,{\"some\":\"object\",\"with\":[\"nesting\"]}]",
+            new JsonAttribute[] {
+              new JsonAttribute(mapper.readTree("[1,2,3]")),
+              new JsonAttribute(mapper.readTree("[\"four\",\"five\"]")),
+              new JsonAttribute(mapper.readTree("67")),
+              new JsonAttribute(mapper.readTree("{\"some\":\"object\",\"with\":[\"nesting\"]}"))
+            },
+            "[[1,2,3],[\"four\",\"five\"],67,{\"some\":\"object\",\"with\":[\"nesting\"]}]")
         // TODO: array of numbers with leading zeros
         // TODO: smart-quotes?
         // TODO: string-escaping for special characters

@@ -5,6 +5,7 @@ import static org.databiosphere.workspacedataservice.service.RelationUtils.getTy
 import static org.databiosphere.workspacedataservice.service.RelationUtils.getTypeValueForList;
 import static org.databiosphere.workspacedataservice.service.model.DataTypeMapping.ARRAY_OF_DATE;
 import static org.databiosphere.workspacedataservice.service.model.DataTypeMapping.ARRAY_OF_DATE_TIME;
+import static org.databiosphere.workspacedataservice.service.model.DataTypeMapping.ARRAY_OF_JSON;
 import static org.databiosphere.workspacedataservice.service.model.DataTypeMapping.ARRAY_OF_RELATION;
 import static org.databiosphere.workspacedataservice.service.model.DataTypeMapping.ARRAY_OF_STRING;
 import static org.databiosphere.workspacedataservice.service.model.DataTypeMapping.BOOLEAN;
@@ -232,6 +233,9 @@ public class DataTypeInferer {
     if (CollectionUtils.isEmpty(list)) {
       return EMPTY_ARRAY;
     }
+    if (isArrayOfJson(list)) {
+      return ARRAY_OF_JSON;
+    }
     List<DataTypeMapping> inferredTypes = list.stream().map(this::inferType).distinct().toList();
     DataTypeMapping bestMapping = inferredTypes.get(0);
     if (inferredTypes.size() > 1) {
@@ -240,6 +244,26 @@ public class DataTypeInferer {
       }
     }
     return DataTypeMapping.getArrayTypeForBase(bestMapping);
+  }
+
+  /**
+   * Should this List be treated by WDS as ARRAY_OF_JSON?
+   *
+   * @param list the input list
+   * @return whether WDS should consider this an ARRAY_OF_JSON
+   */
+  private boolean isArrayOfJson(List<?> list) {
+    // AJ-1748: here, we could also detect mixed arrays such as [1,"two",false] and treat those
+    // as json instead of stringify-ing them. We can accomplish this by checking the distinct
+    // classes of the list elements:
+    //     list.stream().map(Object::getClass).distinct().toList();
+    // and seeing if they are homogenous. If you do this, be careful of multiple
+    // classes which we treat the same, e.g. BigInteger and BigDecimal.
+
+    // is any element of this List itself a List or a Map? This indicates nested
+    // structures, so we should treat this as an array of json.
+    return list.stream()
+        .anyMatch(element -> element instanceof List<?> || element instanceof Map<?, ?>);
   }
 
   public <T> T[] getArrayOfType(String val, Class<T[]> clazz) {

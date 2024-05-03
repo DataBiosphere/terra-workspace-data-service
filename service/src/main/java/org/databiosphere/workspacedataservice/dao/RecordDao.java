@@ -7,7 +7,6 @@ import static org.databiosphere.workspacedataservice.service.model.ReservedNames
 import static org.databiosphere.workspacedataservice.service.model.exception.InvalidNameException.NameType.ATTRIBUTE;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.Maps;
@@ -1048,11 +1047,11 @@ public class RecordDao {
     }
 
     private Object[] convertToJson(Object object) throws JsonProcessingException {
+      // json arrays are returned from the db as String[]
       String[] jsonArray = (String[]) object;
-      Object[] result = new Object[jsonArray.length];
+      JsonAttribute[] result = new JsonAttribute[jsonArray.length];
       for (int i = 0; i < jsonArray.length; i++) {
-        result[i] =
-            objectMapper.readValue(jsonArray[i], new TypeReference<Map<String, Object>>() {});
+        result[i] = new JsonAttribute(objectMapper.readTree(jsonArray[i]));
       }
       return result;
     }
