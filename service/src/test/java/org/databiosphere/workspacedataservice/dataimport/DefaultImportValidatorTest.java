@@ -1,5 +1,6 @@
 package org.databiosphere.workspacedataservice.dataimport;
 
+import static java.util.Collections.emptyList;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -13,10 +14,13 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.regex.Pattern;
 import java.util.stream.Stream;
+import org.broadinstitute.dsde.workbench.client.sam.model.RolesAndActions;
+import org.broadinstitute.dsde.workbench.client.sam.model.UserResourcesResponse;
 import org.databiosphere.workspacedataservice.common.TestBase;
 import org.databiosphere.workspacedataservice.config.DataImportProperties.ImportSourceConfig;
 import org.databiosphere.workspacedataservice.generated.ImportRequestServerModel;
 import org.databiosphere.workspacedataservice.generated.ImportRequestServerModel.TypeEnum;
+import org.databiosphere.workspacedataservice.sam.SamDao;
 import org.databiosphere.workspacedataservice.service.model.exception.ValidationException;
 import org.databiosphere.workspacedataservice.shared.model.WorkspaceId;
 import org.databiosphere.workspacedataservice.workspacemanager.WorkspaceManagerDao;
@@ -38,21 +42,26 @@ class DefaultImportValidatorTest extends TestBase {
   static class DefaultImportValidatorTestConfiguration {
     @Bean
     @Primary
-    DefaultImportValidator getDefaultImportValidatorForTest(WorkspaceManagerDao wsmDao) {
+    DefaultImportValidator getDefaultImportValidatorForTest(
+        SamDao samDao, WorkspaceManagerDao wsmDao) {
       return new DefaultImportValidator(
+          samDao,
           wsmDao,
           /* allowedHttpsHosts */ Set.of(Pattern.compile(".*\\.terra\\.bio")),
           /* sources */ List.of(
-              new ImportSourceConfig(List.of(Pattern.compile("protected\\.pfb")), false, true)),
+              new ImportSourceConfig(List.of(Pattern.compile("protected\\.pfb")), false, true),
+              new ImportSourceConfig(List.of(Pattern.compile("private\\.pfb")), true, false)),
           /* allowedRawlsBucket */ "test-bucket");
     }
   }
+
+  @MockBean SamDao samDao;
 
   @MockBean WorkspaceManagerDao wsmDao;
 
   @Autowired DefaultImportValidator importValidator;
 
-  private final WorkspaceId destinationWorkspaceId = WorkspaceId.of(UUID.randomUUID());
+  private static final WorkspaceId destinationWorkspaceId = WorkspaceId.of(UUID.randomUUID());
 
   @Test
   void requiresHttpsImportUrls() {
@@ -193,5 +202,64 @@ class DefaultImportValidatorTest extends TestBase {
         Arguments.of(protectedImport, workspaceWithProtectedDataPolicy, true),
         Arguments.of(unprotectedImport, workspaceWithoutProtectedDataPolicy, true),
         Arguments.of(protectedImport, workspaceWithProtectedDataPolicy, true));
+  }
+
+  @ParameterizedTest
+  @MethodSource("requirePrivateWorkspacesForImportsFromConfiguredSourcesTestCases")
+  void requirePrivateWorkspacesForImportsFromConfiguredSources(
+      URI importUri,
+      List<UserResourcesResponse> workspaceResourcesAndPolicies,
+      boolean shouldAllowImport) {
+    // Arrange
+    ImportRequestServerModel importRequest = new ImportRequestServerModel(TypeEnum.PFB, importUri);
+
+    when(samDao.listWorkspaceResourcesAndPolicies()).thenReturn(workspaceResourcesAndPolicies);
+
+    // Act
+    if (shouldAllowImport) {
+      importValidator.validateImport(importRequest, destinationWorkspaceId);
+    } else {
+      ValidationException err =
+          assertThrows(
+              ValidationException.class,
+              () -> importValidator.validateImport(importRequest, destinationWorkspaceId));
+      assertEquals(
+          "Data from this source cannot be imported into a public workspace.", err.getMessage());
+    }
+  }
+
+  static Stream<Arguments> requirePrivateWorkspacesForImportsFromConfiguredSourcesTestCases() {
+    URI privateImport = URI.create("https://files.terra.bio/private.pfb");
+    URI otherImport = URI.create("https://files.terra.bio/file.pfb");
+
+    UserResourcesResponse publicWorkspaceResourcesAndPolicies =
+        buildUserResourcesResponse(destinationWorkspaceId.id());
+    publicWorkspaceResourcesAndPolicies.getPublic().setRoles(List.of("reader"));
+
+    UserResourcesResponse privateWorkspaceResourcesAndPolicies =
+        buildUserResourcesResponse(destinationWorkspaceId.id());
+
+    return Stream.of(
+        Arguments.of(privateImport, List.of(publicWorkspaceResourcesAndPolicies), false),
+        Arguments.of(privateImport, List.of(privateWorkspaceResourcesAndPolicies), true),
+        Arguments.of(otherImport, List.of(publicWorkspaceResourcesAndPolicies), true),
+        Arguments.of(otherImport, List.of(privateWorkspaceResourcesAndPolicies), true));
+  }
+
+  private static UserResourcesResponse buildUserResourcesResponse(UUID resourceId) {
+    UserResourcesResponse userResourcesResponse = new UserResourcesResponse();
+    userResourcesResponse.setResourceId(resourceId.toString());
+
+    RolesAndActions directRolesAndActions = new RolesAndActions();
+    directRolesAndActions.setActions(emptyList());
+    directRolesAndActions.setRoles(List.of("writer"));
+    userResourcesResponse.setDirect(directRolesAndActions);
+
+    RolesAndActions publicRolesAndActions = new RolesAndActions();
+    publicRolesAndActions.setActions(emptyList());
+    publicRolesAndActions.setRoles(emptyList());
+    userResourcesResponse.setPublic(publicRolesAndActions);
+
+    return userResourcesResponse;
   }
 }
