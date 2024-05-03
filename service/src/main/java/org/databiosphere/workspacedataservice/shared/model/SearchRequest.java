@@ -8,6 +8,7 @@ public class SearchRequest {
   private int offset = 0;
   private SortDirection sort = SortDirection.ASC;
   @Nullable private String sortAttribute = null;
+  @Nullable private SearchFilter filter = null;
 
   public SearchRequest(int limit, int offset, SortDirection sort) {
     this.limit = limit;
@@ -55,5 +56,14 @@ public class SearchRequest {
 
   public void setSortAttribute(String sortAttribute) {
     this.sortAttribute = sortAttribute;
+  }
+
+  @Nullable
+  public SearchFilter getFilter() {
+    return filter;
+  }
+
+  public void setFilter(@Nullable SearchFilter filter) {
+    this.filter = filter;
   }
 }
