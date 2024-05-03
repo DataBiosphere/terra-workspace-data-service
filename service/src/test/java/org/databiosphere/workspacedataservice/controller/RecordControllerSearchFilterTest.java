@@ -40,9 +40,11 @@ class RecordControllerSearchFilterTest extends MockMvcTestBase {
   @Autowired RecordOrchestratorService recordOrchestratorService;
   @Autowired ObjectMapper mapper;
 
-  // all tests in this class use the same set of data
+  // all tests in this class use the same set of data; all tests in this class are read-only.
+  // as setup, insert 20 records with ids "000" through "019". Each record has a "sortByMe"
+  // attribute using the same "000"-"019" value to ensure deterministic sorting.
   @BeforeAll
-  void beforeAll() throws Exception {
+  void beforeAll() {
     // create collection
     collectionDao.createSchema(COLLECTION_ID);
     // insert 20 records into the collection
@@ -61,7 +63,7 @@ class RecordControllerSearchFilterTest extends MockMvcTestBase {
   }
 
   @AfterAll
-  void deleteAllInstances() throws Exception {
+  void deleteAllInstances() {
     collectionDao.dropSchema(COLLECTION_ID);
   }
 
