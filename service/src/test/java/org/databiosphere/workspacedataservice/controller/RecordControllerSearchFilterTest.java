@@ -209,7 +209,7 @@ class RecordControllerSearchFilterTest extends MockMvcTestBase {
       List<String> actualRecordIds =
           recordResponseList.stream().map(RecordResponse::recordId).toList();
 
-      assertThat(actualRecordIds).isEqualTo(expectedRecordIds).describedAs(testCase);
+      assertThat(actualRecordIds).describedAs(testCase).isEqualTo(expectedRecordIds);
     } catch (Exception e) {
       throw new RuntimeException(e);
     }
