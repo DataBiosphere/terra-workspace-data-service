@@ -152,6 +152,17 @@ class RecordControllerSearchFilterTest extends MockMvcTestBase {
   }
 
   @Test
+  void offsetRespected() {
+    String testCase = "when filter.ids is over limit, offset is still respected";
+    String searchRequestPayload =
+        """
+{"limit": 2, "offset": 2, "sortAttribute": "sortByMe", "filter": {"ids": ["002", "004", "006", "008"]}}
+""";
+    List<String> expected = List.of("006", "008");
+    executeTest(searchRequestPayload, expected, testCase);
+  }
+
+  @Test
   void idOrderIsIgnored() {
     String testCase = "when filter.ids contains more matching ids than the query limit";
     String searchRequestPayload =
