@@ -24,7 +24,7 @@ public class TestUtils {
         + "\"array_of_file\":[\"https://lz1a2b345c67def8a91234bc.blob.core.windows.net/sc-7ad51c5d-eb4c-4685-bffe-62b861f7753f/file.bam\",\"drs://jade.datarepo-dev.broadinstitute.org/v1_9545e956-aa6a-4b84-a037-d0ed164c1890\"],"
         + "\"array_of_json\":[{\"value\":\"foo\"},{\"value\":\"bar\"},{\"value\":\"baz\"}],"
         + "\"array_of_relation\":[\"terra-wds:/target-record/record_0\",\"terra-wds:/target-record/record_1\"],"
-        + "\"array_of_string\":[\"a\",\"b\",\"c\",\"12\"],\"array-of-number\":[1,2,3],\"boolean\":false,\"date\":\"2021-11-03\","
+        + "\"array_of_string\":[\"a\",\"b\",\"c\",12],\"array-of-number\":[1,2,3],\"boolean\":false,\"date\":\"2021-11-03\","
         + "\"date-time\":\"2021-11-03T07:30:00\",\"empty-array\":[],"
         + "\"file\":\"https://lz1a2b345c67def8a91234bc.blob.core.windows.net/sc-7ad51c5d-eb4c-4685-bffe-62b861f7753f/file.fasta\","
         + "\"json\":{\"age\":22},"

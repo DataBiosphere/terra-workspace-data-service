@@ -200,17 +200,21 @@ public class TsvDeserializer extends StdDeserializer<RecordAttributes> {
    * @return whether WDS should consider this an ARRAY_OF_JSON
    */
   private boolean isArrayOfJson(ArrayNode arrayNode) {
-    // AJ-1748: here, we could also detect mixed arrays such as [1,"two",false] and treat those
-    // as json instead of stringify-ing them. We can accomplish this by checking the distinct
-    // classes of the array elements:
-    //     elementStream(arrayNode).map(JsonNode::getClass).distinct().toList();
-    // and seeing if they are homogenous. If you do this, be careful of multiple JsonNode
-    // subclasses which we treat the same, e.g. IntNode and DecimalNode.
-
     // is any element of this array itself an array or a json object? This indicates nested
     // structures, so we should treat this as an array of json.
-    return elementStream(arrayNode)
-        .anyMatch(element -> element instanceof ArrayNode || element instanceof ObjectNode);
+    if (elementStream(arrayNode)
+        .anyMatch(element -> element instanceof ArrayNode || element instanceof ObjectNode)) {
+      return true;
+    }
+
+    // here, also detect mixed arrays such as [1,"two",false] and treat those
+    // as json instead of stringify-ing them. We have to be careful of multiple JsonNode
+    // subclasses which we treat the same, e.g. IntNode and DecimalNode.
+    List<? extends Class<? extends JsonNode>> elementTypes =
+        elementStream(arrayNode).map(JsonNode::getClass).distinct().toList();
+    return elementTypes.size() > 1 // we have mixed element types
+        && !elementTypes.stream()
+            .allMatch(NumericNode.class::isAssignableFrom); // the mixed types are not all numbers
   }
 
   private Stream<JsonNode> elementStream(ArrayNode arrayNode) {

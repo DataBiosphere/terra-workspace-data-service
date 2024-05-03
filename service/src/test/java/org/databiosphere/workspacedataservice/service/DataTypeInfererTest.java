@@ -156,7 +156,7 @@ class DataTypeInfererTest extends TestBase {
         .isEqualTo(DataTypeMapping.ARRAY_OF_BOOLEAN);
     assertThat(inferer.inferType(List.of("11", "99"))).isEqualTo(DataTypeMapping.ARRAY_OF_STRING);
     assertThat(inferer.inferType(List.of("11", new BigDecimal("99"), "foo")))
-        .isEqualTo(DataTypeMapping.ARRAY_OF_STRING);
+        .isEqualTo(DataTypeMapping.ARRAY_OF_JSON);
     assertThat(inferer.inferType("")).isEqualTo(DataTypeMapping.STRING);
     assertThat(
             inferer.inferType(
@@ -165,7 +165,7 @@ class DataTypeInfererTest extends TestBase {
     assertThat(
             inferer.inferType(
                 List.of(new BigInteger("11"), new BigInteger("99"), new BigDecimal("-3.14"), "09")))
-        .isEqualTo(DataTypeMapping.ARRAY_OF_STRING);
+        .isEqualTo(DataTypeMapping.ARRAY_OF_JSON);
     assertThat(inferer.inferType(emptyList())).isEqualTo(DataTypeMapping.EMPTY_ARRAY);
     assertThat(inferer.inferType("[11, 99, -3.14, 09]")).isEqualTo(DataTypeMapping.STRING);
     assertThat(inferer.inferType("[a]")).isEqualTo(DataTypeMapping.STRING);

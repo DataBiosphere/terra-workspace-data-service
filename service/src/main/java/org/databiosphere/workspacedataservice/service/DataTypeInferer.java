@@ -230,20 +230,28 @@ public class DataTypeInferer {
   }
 
   private <T> DataTypeMapping findArrayType(List<T> list) {
+    // empty input arrays are EMPTY_ARRAY
     if (CollectionUtils.isEmpty(list)) {
       return EMPTY_ARRAY;
     }
+    // if this array contains nested arrays or json objects, use ARRAY_OF_JSON
     if (isArrayOfJson(list)) {
       return ARRAY_OF_JSON;
     }
+    // infer types for all elements; this includes WDS's custom logic for parsing dates,
+    // booleans, etc.
     List<DataTypeMapping> inferredTypes = list.stream().map(this::inferType).distinct().toList();
-    DataTypeMapping bestMapping = inferredTypes.get(0);
-    if (inferredTypes.size() > 1) {
-      for (DataTypeMapping type : inferredTypes) {
-        bestMapping = selectBestType(bestMapping, type);
-      }
+    // if we inferred a single type, use that.
+    if (inferredTypes.size() == 1) {
+      return DataTypeMapping.getArrayTypeForBase(inferredTypes.get(0));
     }
-    return DataTypeMapping.getArrayTypeForBase(bestMapping);
+    // if we inferred two types but one of them is NULL, use the non-null one
+    if (inferredTypes.size() == 2 && inferredTypes.contains(NULL)) {
+      return DataTypeMapping.getArrayTypeForBase(
+          selectBestType(inferredTypes.get(0), inferredTypes.get(1)));
+    }
+    // if we inferred multiple non-null types, use ARRAY_OF_JSON to preserve inbound data
+    return ARRAY_OF_JSON;
   }
 
   /**
@@ -253,13 +261,6 @@ public class DataTypeInferer {
    * @return whether WDS should consider this an ARRAY_OF_JSON
    */
   private boolean isArrayOfJson(List<?> list) {
-    // AJ-1748: here, we could also detect mixed arrays such as [1,"two",false] and treat those
-    // as json instead of stringify-ing them. We can accomplish this by checking the distinct
-    // classes of the list elements:
-    //     list.stream().map(Object::getClass).distinct().toList();
-    // and seeing if they are homogenous. If you do this, be careful of multiple
-    // classes which we treat the same, e.g. BigInteger and BigDecimal.
-
     // is any element of this List itself a List or a Map? This indicates nested
     // structures, so we should treat this as an array of json.
     return list.stream()
