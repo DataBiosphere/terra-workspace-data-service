@@ -10,7 +10,7 @@ import org.springframework.stereotype.Component;
 
 @Component
 public class AvailabilityListener {
-  private static Logger logger = LoggerFactory.getLogger(AvailabilityListener.class);
+  private static final Logger logger = LoggerFactory.getLogger(AvailabilityListener.class);
 
   @EventListener
   public void onLivenessEvent(AvailabilityChangeEvent<LivenessState> event) {
@@ -30,7 +30,7 @@ public class AvailabilityListener {
   public void onReadinessEvent(AvailabilityChangeEvent<ReadinessState> event) {
     switch (event.getState()) {
       case REFUSING_TRAFFIC:
-        logger.error("ReadinessState: {}", event.getState());
+        logger.warn("ReadinessState: {}", event.getState());
         break;
       case ACCEPTING_TRAFFIC:
         logger.info("ReadinessState: {}", event.getState());
