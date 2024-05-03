@@ -43,7 +43,7 @@ class DefaultImportValidatorTest extends TestBase {
           wsmDao,
           /* allowedHttpsHosts */ Set.of(Pattern.compile(".*\\.terra\\.bio")),
           /* sources */ List.of(
-              new ImportSourceConfig(List.of(Pattern.compile("protected\\.pfb")), true)),
+              new ImportSourceConfig(List.of(Pattern.compile("protected\\.pfb")), false, true)),
           /* allowedRawlsBucket */ "test-bucket");
     }
   }

@@ -2,7 +2,6 @@ package org.databiosphere.workspacedataservice.dataimport;
 
 import java.net.URI;
 import java.util.List;
-import java.util.stream.Stream;
 import org.databiosphere.workspacedataservice.config.DataImportProperties.ImportSourceConfig;
 
 public class ImportRequirementsFactory {
@@ -13,15 +12,20 @@ public class ImportRequirementsFactory {
   }
 
   public ImportRequirements getRequirementsForImport(URI importUri) {
-    Stream<ImportSourceConfig> matchingSources =
-        sources.stream().filter(source -> source.matchesUri(importUri));
+    boolean requiresPrivateWorkspace =
+        sources.stream()
+            .filter(source -> source.matchesUri(importUri))
+            .map(ImportSourceConfig::requirePrivateWorkspace)
+            .reduce(Boolean::logicalOr)
+            .orElse(false);
 
     boolean requiresProtectedDataPolicy =
-        matchingSources
+        sources.stream()
+            .filter(source -> source.matchesUri(importUri))
             .map(ImportSourceConfig::requireProtectedDataPolicy)
             .reduce(Boolean::logicalOr)
             .orElse(false);
 
-    return new ImportRequirements(requiresProtectedDataPolicy);
+    return new ImportRequirements(requiresPrivateWorkspace, requiresProtectedDataPolicy);
   }
 }

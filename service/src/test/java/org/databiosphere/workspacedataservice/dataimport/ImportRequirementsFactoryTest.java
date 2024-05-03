@@ -16,6 +16,30 @@ import org.springframework.boot.test.context.SpringBootTest;
 class ImportRequirementsFactoryTest extends TestBase {
   @Autowired DataImportProperties dataImportProperties;
 
+  @ParameterizedTest(name = "Imports from {0} should require a private workspace {1}")
+  @MethodSource("requirePrivateWorkspaceTestCases")
+  void configuredSourcesRequireAPrivateWorkspace(
+      URI importUri, boolean shouldRequireProtectedDataPolicy) {
+    // Arrange
+    ImportRequirementsFactory importRequirementsFactory =
+        new ImportRequirementsFactory(dataImportProperties.getSources());
+
+    // Act
+    ImportRequirements importRequirements =
+        importRequirementsFactory.getRequirementsForImport(importUri);
+
+    // Assert
+    assertEquals(shouldRequireProtectedDataPolicy, importRequirements.privateWorkspace());
+  }
+
+  private static Stream<Arguments> requirePrivateWorkspaceTestCases() {
+    return Stream.concat(
+        mockBioDataCatalystUrls().map(bdcUrl -> Arguments.of(bdcUrl, true)),
+        Stream.of(
+            Arguments.of(URI.create("https://storage.googleapis.com/test-bucket/file.pfb"), false),
+            Arguments.of(URI.create("https://files.terra.bio/file.pfb"), false)));
+  }
+
   @ParameterizedTest(name = "Imports from {0} should require protected data policy {1}")
   @MethodSource("requireProtectedDataPolicyTestCases")
   void configuredSourcesRequireAProtectedDataPolicy(
@@ -33,23 +57,22 @@ class ImportRequirementsFactoryTest extends TestBase {
   }
 
   private static Stream<Arguments> requireProtectedDataPolicyTestCases() {
+    return Stream.concat(
+        mockBioDataCatalystUrls().map(bdcUrl -> Arguments.of(bdcUrl, true)),
+        Stream.of(
+            Arguments.of(URI.create("https://storage.googleapis.com/test-bucket/file.pfb"), false),
+            Arguments.of(URI.create("https://files.terra.bio/file.pfb"), false)));
+  }
+
+  private static Stream<URI> mockBioDataCatalystUrls() {
     return Stream.of(
-        Arguments.of(URI.create("https://gen3.biodatacatalyst.nhlbi.nih.gov/file.pfb"), true),
-        Arguments.of(
-            URI.create("https://subdomain.gen3.biodatacatalyst.nhlbi.nih.gov/file.pfb"), true),
-        Arguments.of(
-            URI.create(
-                "https://gen3-biodatacatalyst-nhlbi-nih-gov-pfb-export.s3.amazonaws.com/file.pfb"),
-            true),
-        Arguments.of(
-            URI.create(
-                "https://s3.amazonaws.com/gen3-biodatacatalyst-nhlbi-nih-gov-pfb-export/file.pfb"),
-            true),
-        Arguments.of(
-            URI.create("https://gen3-theanvil-io-pfb-export.s3.amazonaws.com/file.pfb"), true),
-        Arguments.of(
-            URI.create("https://s3.amazonaws.com/gen3-theanvil-io-pfb-export/file.pfb"), true),
-        Arguments.of(URI.create("https://storage.googleapis.com/test-bucket/file.pfb"), false),
-        Arguments.of(URI.create("https://files.terra.bio/file.pfb"), false));
+        URI.create("https://gen3.biodatacatalyst.nhlbi.nih.gov/file.pfb"),
+        URI.create("https://subdomain.gen3.biodatacatalyst.nhlbi.nih.gov/file.pfb"),
+        URI.create(
+            "https://gen3-biodatacatalyst-nhlbi-nih-gov-pfb-export.s3.amazonaws.com/file.pfb"),
+        URI.create(
+            "https://s3.amazonaws.com/gen3-biodatacatalyst-nhlbi-nih-gov-pfb-export/file.pfb"),
+        URI.create("https://gen3-theanvil-io-pfb-export.s3.amazonaws.com/file.pfb"),
+        URI.create("https://s3.amazonaws.com/gen3-theanvil-io-pfb-export/file.pfb"));
   }
 }
