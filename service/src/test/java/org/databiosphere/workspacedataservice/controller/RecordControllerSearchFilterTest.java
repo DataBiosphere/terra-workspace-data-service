@@ -166,7 +166,7 @@ class RecordControllerSearchFilterTest extends MockMvcTestBase {
 
   @Test
   void idOrderIsIgnored() {
-    String testCase = "when filter.ids contains more matching ids than the query limit";
+    String testCase = "when filter.ids order conflicts with sortAttribute, sortAttribute wins";
     String searchRequestPayload =
         """
 {"limit": 3, "sortAttribute": "sortByMe", "sort": "DESC", "filter": {"ids": ["004", "006", "008"]}}
