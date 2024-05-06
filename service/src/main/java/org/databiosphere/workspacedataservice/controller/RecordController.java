@@ -6,7 +6,6 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 import org.databiosphere.workspacedataservice.annotations.DeploymentMode.DataPlane;
-import org.databiosphere.workspacedataservice.retry.RetryableApi;
 import org.databiosphere.workspacedataservice.service.CollectionService;
 import org.databiosphere.workspacedataservice.service.RecordOrchestratorService;
 import org.databiosphere.workspacedataservice.service.model.AttributeSchema;
@@ -50,7 +49,6 @@ public class RecordController {
   }
 
   @PatchMapping("/{instanceId}/records/{version}/{recordType}/{recordId}")
-  @RetryableApi
   public ResponseEntity<RecordResponse> updateSingleRecord(
       @PathVariable("instanceId") UUID instanceId,
       @PathVariable("version") String version,
@@ -64,7 +62,6 @@ public class RecordController {
   }
 
   @GetMapping("/{instanceId}/records/{version}/{recordType}/{recordId}")
-  @RetryableApi
   public ResponseEntity<RecordResponse> getSingleRecord(
       @PathVariable("instanceId") UUID instanceId,
       @PathVariable("version") String version,
@@ -86,7 +83,7 @@ public class RecordController {
     int recordsModified =
         recordOrchestratorService.tsvUpload(instanceId, version, recordType, primaryKey, records);
     return new ResponseEntity<>(
-        new TsvUploadResponse(recordsModified, "Updated " + recordType.toString()), HttpStatus.OK);
+        new TsvUploadResponse(recordsModified, "Updated " + recordType), HttpStatus.OK);
   }
 
   @GetMapping("/{instanceId}/tsv/{version}/{recordType}")
@@ -104,7 +101,6 @@ public class RecordController {
   }
 
   @PostMapping("/{instanceid}/search/{version}/{recordType}")
-  @RetryableApi
   public RecordQueryResponse queryForRecords(
       @PathVariable("instanceid") UUID instanceId,
       @PathVariable("recordType") RecordType recordType,
@@ -115,7 +111,6 @@ public class RecordController {
   }
 
   @PutMapping("/{instanceId}/records/{version}/{recordType}/{recordId}")
-  @RetryableApi
   public ResponseEntity<RecordResponse> upsertSingleRecord(
       @PathVariable("instanceId") UUID instanceId,
       @PathVariable("version") String version,
@@ -128,7 +123,6 @@ public class RecordController {
   }
 
   @GetMapping("/instances/{version}")
-  @RetryableApi
   public ResponseEntity<List<UUID>> listInstances(@PathVariable("version") String version) {
     List<UUID> schemaList = collectionService.listCollections(version);
     return new ResponseEntity<>(schemaList, HttpStatus.OK);
@@ -149,7 +143,6 @@ public class RecordController {
   }
 
   @DeleteMapping("/{instanceId}/records/{version}/{recordType}/{recordId}")
-  @RetryableApi
   public ResponseEntity<Void> deleteSingleRecord(
       @PathVariable("instanceId") UUID instanceId,
       @PathVariable("version") String version,
@@ -163,7 +156,6 @@ public class RecordController {
   }
 
   @DeleteMapping("/{instanceId}/types/{v}/{type}")
-  @RetryableApi
   public ResponseEntity<Void> deleteRecordType(
       @PathVariable("instanceId") UUID instanceId,
       @PathVariable("v") String version,
@@ -173,7 +165,6 @@ public class RecordController {
   }
 
   @PatchMapping("{instanceId}/types/{v}/{type}/{attribute}")
-  @RetryableApi
   public ResponseEntity<AttributeSchema> updateAttribute(
       @PathVariable("instanceId") UUID instanceId,
       @PathVariable("v") String version,
@@ -207,7 +198,6 @@ public class RecordController {
   }
 
   @DeleteMapping("{instanceId}/types/{v}/{type}/{attribute}")
-  @RetryableApi
   public ResponseEntity<Void> deleteAttribute(
       @PathVariable("instanceId") UUID instanceId,
       @PathVariable("v") String version,
@@ -218,7 +208,6 @@ public class RecordController {
   }
 
   @GetMapping("/{instanceId}/types/{v}/{type}")
-  @RetryableApi
   public ResponseEntity<RecordTypeSchema> describeRecordType(
       @PathVariable("instanceId") UUID instanceId,
       @PathVariable("v") String version,
@@ -229,7 +218,6 @@ public class RecordController {
   }
 
   @GetMapping("/{instanceId}/types/{v}")
-  @RetryableApi
   public ResponseEntity<List<RecordTypeSchema>> describeAllRecordTypes(
       @PathVariable("instanceId") UUID instanceId, @PathVariable("v") String version) {
     List<RecordTypeSchema> result =
