@@ -1047,6 +1047,14 @@ components:
         primaryKey:
           type: string
           description: Attribute name that contains the value to uniquely identify each record, defined as a primary key column in the underlying table.
+    SearchFilter:
+      type: object
+      properties:
+        ids:
+          description: Record ids by which to filter the query
+          type: array
+          items:
+            type: string
     SearchLimit:
       type: integer
       default: 10
@@ -1069,6 +1077,8 @@ components:
           $ref: '#/components/schemas/SearchSortDirection'
         sortAttribute:
           type: string
+        filter:
+          $ref: '#/components/schemas/SearchFilter'
     SearchSortDirection:
       type: string
       enum: [ ASC, DESC ]

@@ -1,5 +1,6 @@
 package org.databiosphere.workspacedataservice.shared.model;
 
+import java.util.Optional;
 import org.springframework.lang.Nullable;
 
 public class SearchRequest {
@@ -8,6 +9,7 @@ public class SearchRequest {
   private int offset = 0;
   private SortDirection sort = SortDirection.ASC;
   @Nullable private String sortAttribute = null;
+  private Optional<SearchFilter> filter = Optional.empty();
 
   public SearchRequest(int limit, int offset, SortDirection sort) {
     this.limit = limit;
@@ -55,5 +57,14 @@ public class SearchRequest {
 
   public void setSortAttribute(String sortAttribute) {
     this.sortAttribute = sortAttribute;
+  }
+
+  public Optional<SearchFilter> getFilter() {
+    return filter;
+  }
+
+  public void setFilter(
+      @SuppressWarnings("OptionalUsedAsFieldOrParameterType") Optional<SearchFilter> filter) {
+    this.filter = filter;
   }
 }

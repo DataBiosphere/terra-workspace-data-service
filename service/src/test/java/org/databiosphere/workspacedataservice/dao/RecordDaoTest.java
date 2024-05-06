@@ -193,7 +193,8 @@ class RecordDaoTest extends TestBase {
         Map.of("FOO", STRING, "foo", STRING, "Foo", STRING));
 
     // Act
-    List<Record> queryRes = recordDao.queryForRecords(recordType, 10, 0, "ASC", null, collectionId);
+    List<Record> queryRes =
+        recordDao.queryForRecords(recordType, 10, 0, "ASC", null, Optional.empty(), collectionId);
 
     // Assert
     Record returnedRecord = queryRes.get(0);
@@ -212,7 +213,8 @@ class RecordDaoTest extends TestBase {
         collectionId, Map.of("attr1", STRING), funkyPk, RelationCollection.empty(), sample_id);
     recordDao.batchUpsert(
         collectionId, funkyPk, Collections.singletonList(testRecord), emptyMap(), sample_id);
-    List<Record> queryRes = recordDao.queryForRecords(funkyPk, 10, 0, "ASC", null, collectionId);
+    List<Record> queryRes =
+        recordDao.queryForRecords(funkyPk, 10, 0, "ASC", null, Optional.empty(), collectionId);
     assertEquals(1, queryRes.size());
     assertTrue(recordDao.recordExists(collectionId, funkyPk, recordId));
     assertTrue(recordDao.getSingleRecord(collectionId, funkyPk, recordId).isPresent());

@@ -218,6 +218,7 @@ public class RecordOrchestratorService { // TODO give me a better name
             searchRequest.getOffset(),
             searchRequest.getSort().name().toLowerCase(),
             searchRequest.getSortAttribute(),
+            searchRequest.getFilter(),
             collectionId);
     List<RecordResponse> recordList =
         records.stream()
