@@ -1,11 +1,11 @@
 package org.databiosphere.workspacedataservice.config;
 
 import jakarta.servlet.*;
+import jakarta.servlet.annotation.WebFilter;
 import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
-import org.springframework.stereotype.Component;
 
-@Component
+@WebFilter(urlPatterns = {"/*"})
 public class CacheControlFilter implements Filter {
   @Override
   public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain)
