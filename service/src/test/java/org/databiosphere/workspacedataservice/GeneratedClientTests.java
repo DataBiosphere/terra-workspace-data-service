@@ -274,8 +274,8 @@ class GeneratedClientTests extends TestBase {
     // can read RecordAttributes; less about ensuring that the TSV upload was correct.
     RecordAttributes recordAttributes = recordResponse.getAttributes();
     assertThat(recordAttributes.entrySet()).hasSize(14);
-    assertThat(recordAttributes.get("greeting")).isEqualTo("hello");
-    assertThat(recordAttributes.get("double")).isEqualTo(-2.287);
+    assertThat(recordAttributes).containsEntry("greeting", "hello");
+    assertThat(recordAttributes).containsEntry("double", -2.287);
   }
 
   private void createNewCollection(UUID collectionId) throws ApiException {
