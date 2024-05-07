@@ -49,8 +49,14 @@ class DefaultImportValidatorTest extends TestBase {
           wsmDao,
           /* allowedHttpsHosts */ Set.of(Pattern.compile(".*\\.terra\\.bio")),
           /* sources */ List.of(
-              new ImportSourceConfig(List.of(Pattern.compile("protected\\.pfb")), false, true),
-              new ImportSourceConfig(List.of(Pattern.compile("private\\.pfb")), true, false)),
+              new ImportSourceConfig(
+                  /* urls */ List.of(Pattern.compile("protected\\.pfb")),
+                  /* requirePrivateWorkspace */ false,
+                  /* requireProtectedDataPolicy */ true),
+              new ImportSourceConfig(
+                  /* urls */ List.of(Pattern.compile("private\\.pfb")),
+                  /* requirePrivateWorkspace */ true,
+                  /* requireProtectedDataPolicy */ false)),
           /* allowedRawlsBucket */ "test-bucket");
     }
   }
@@ -198,10 +204,22 @@ class DefaultImportValidatorTest extends TestBase {
     workspaceWithProtectedDataPolicy.setPolicies(List.of(policy));
 
     return Stream.of(
-        Arguments.of(protectedImport, workspaceWithoutProtectedDataPolicy, false),
-        Arguments.of(protectedImport, workspaceWithProtectedDataPolicy, true),
-        Arguments.of(unprotectedImport, workspaceWithoutProtectedDataPolicy, true),
-        Arguments.of(protectedImport, workspaceWithProtectedDataPolicy, true));
+        Arguments.of(
+            /* importUri */ protectedImport,
+            /* workspaceDescription */ workspaceWithoutProtectedDataPolicy,
+            /* shouldAllowImport */ false),
+        Arguments.of(
+            /* importUri */ protectedImport,
+            /* workspaceDescription */ workspaceWithProtectedDataPolicy,
+            /* shouldAllowImport */ true),
+        Arguments.of(
+            /* importUri */ unprotectedImport,
+            /* workspaceDescription */ workspaceWithoutProtectedDataPolicy,
+            /* shouldAllowImport */ true),
+        Arguments.of(
+            /* importUri */ protectedImport,
+            /* workspaceDescription */ workspaceWithProtectedDataPolicy,
+            /* shouldAllowImport */ true));
   }
 
   @ParameterizedTest
@@ -240,10 +258,22 @@ class DefaultImportValidatorTest extends TestBase {
         buildUserResourcesResponse(destinationWorkspaceId.id());
 
     return Stream.of(
-        Arguments.of(privateImport, List.of(publicWorkspaceResourcesAndPolicies), false),
-        Arguments.of(privateImport, List.of(privateWorkspaceResourcesAndPolicies), true),
-        Arguments.of(otherImport, List.of(publicWorkspaceResourcesAndPolicies), true),
-        Arguments.of(otherImport, List.of(privateWorkspaceResourcesAndPolicies), true));
+        Arguments.of(
+            /* importUri */ privateImport,
+            /* workspaceResourcesAndPolicies */ List.of(publicWorkspaceResourcesAndPolicies),
+            /* shouldAllowImport */ false),
+        Arguments.of(
+            /* importUri */ privateImport,
+            /* workspaceResourcesAndPolicies */ List.of(privateWorkspaceResourcesAndPolicies),
+            /* shouldAllowImport */ true),
+        Arguments.of(
+            /* importUri */ otherImport,
+            /* workspaceResourcesAndPolicies */ List.of(publicWorkspaceResourcesAndPolicies),
+            /* shouldAllowImport */ true),
+        Arguments.of(
+            /* importUri */ otherImport,
+            /* workspaceResourcesAndPolicies */ List.of(privateWorkspaceResourcesAndPolicies),
+            /* shouldAllowImport */ true));
   }
 
   private static UserResourcesResponse buildUserResourcesResponse(UUID resourceId) {
