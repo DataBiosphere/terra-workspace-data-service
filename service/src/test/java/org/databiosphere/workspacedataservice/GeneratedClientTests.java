@@ -6,6 +6,7 @@ import java.io.File;
 import java.net.URISyntaxException;
 import java.util.List;
 import java.util.UUID;
+import java.util.stream.Stream;
 import org.databiosphere.workspacedata.api.GeneralWdsInformationApi;
 import org.databiosphere.workspacedata.api.InstancesApi;
 import org.databiosphere.workspacedata.api.RecordsApi;
@@ -17,6 +18,7 @@ import org.databiosphere.workspacedata.model.RecordQueryResponse;
 import org.databiosphere.workspacedata.model.RecordRequest;
 import org.databiosphere.workspacedata.model.RecordResponse;
 import org.databiosphere.workspacedata.model.RecordTypeSchema;
+import org.databiosphere.workspacedata.model.SearchFilter;
 import org.databiosphere.workspacedata.model.SearchRequest;
 import org.databiosphere.workspacedata.model.StatusResponse;
 import org.databiosphere.workspacedata.model.TsvUploadResponse;
@@ -24,8 +26,12 @@ import org.databiosphere.workspacedataservice.common.TestBase;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.web.server.LocalServerPort;
+import org.springframework.lang.Nullable;
 import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.ActiveProfiles;
 
@@ -180,6 +186,68 @@ class GeneratedClientTests extends TestBase {
     statusApi.setApiClient(apiClient);
     StatusResponse response = statusApi.statusGet();
     assertThat(response.getStatus().equals("UP"));
+  }
+
+  // the "small-test.tsv" file has two records, with ids "a" and "b"
+  // pairs of (input, expected)
+  private static Stream<Arguments> filterIdsProvider() {
+    return Stream.of(
+        Arguments.of(List.of("a"), List.of("a")),
+        Arguments.of(List.of("b"), List.of("b")),
+        Arguments.of(List.of("a", "b"), List.of("a", "b")),
+        Arguments.of(List.of("b", "c"), List.of("b")),
+        Arguments.of(List.of("c", "d"), List.of()),
+        Arguments.of(List.of(), List.of()),
+        Arguments.of(null, List.of("a", "b")));
+  }
+
+  @ParameterizedTest(name = "filter.ids of {0} will result in {1}")
+  @MethodSource("filterIdsProvider")
+  void filterIds(@Nullable List<String> filterIds, List<String> expected)
+      throws ApiException, URISyntaxException {
+    RecordsApi recordsApi = new RecordsApi(apiClient);
+
+    String recordType = "foo";
+
+    TsvUploadResponse tsvUploadResponse =
+        recordsApi.uploadTSV(
+            new File(this.getClass().getResource("/tsv/small-test.tsv").toURI()),
+            collectionId.toString(),
+            version,
+            recordType,
+            null);
+    assertThat(tsvUploadResponse.getRecordsModified()).isEqualTo(2);
+
+    SearchRequest searchRequest = new SearchRequest();
+
+    if (filterIds != null) {
+      SearchFilter searchFilter = new SearchFilter();
+      searchFilter.setIds(filterIds);
+      searchRequest.setFilter(searchFilter);
+    }
+    /*
+     Note: the Java client will throw an error if searchFilter.getIds() is null, which will happen
+     in the following code paths:
+       SearchFilter searchFilter = new SearchFilter();
+       searchRequest.setFilter(searchFilter);
+
+       ~ or ~
+
+       SearchFilter searchFilter = new SearchFilter();
+       searchFilter.setIds(null);
+       searchRequest.setFilter(searchFilter);
+
+     This looks to be an openapi-generator issue:
+     https://github.com/OpenAPITools/openapi-generator/issues/12549
+    */
+
+    RecordQueryResponse recordQueryResponse =
+        recordsApi.queryRecords(searchRequest, collectionId.toString(), version, recordType);
+
+    List<String> actual =
+        recordQueryResponse.getRecords().stream().map(RecordResponse::getId).toList();
+
+    assertThat(actual).isEqualTo(expected);
   }
 
   private void createNewCollection(UUID collectionId) throws ApiException {

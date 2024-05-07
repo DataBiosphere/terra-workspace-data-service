@@ -177,21 +177,45 @@ public class TsvDeserializer extends StdDeserializer<RecordAttributes> {
   public List<?> jsonStringToList(String input) throws JsonProcessingException {
     JsonNode node = objectMapper.readTree(input);
     if (node instanceof ArrayNode arrayNode) {
-      // TODO AJ-1748:
-      //  is any element of this array an ObjectNode or ArrayNode?
-      //    if so, return List<JsonAttribute>.
-      //  are element types homogenous? If so, return a homogenous list.
-      //  are element types heterogenous? If so, this should return a non-list JsonAttribute
-      Stream<JsonNode> jsonElements =
-          StreamSupport.stream(
-              Spliterators.spliteratorUnknownSize(arrayNode.elements(), Spliterator.ORDERED),
-              false);
+      // is this an empty array?
+      if (arrayNode.isEmpty()) {
+        return List.of();
+      }
 
-      return jsonElements.map(this::arrayElementToObject).toList();
+      if (isArrayOfJson(arrayNode)) {
+        return elementStream(arrayNode).map(JsonAttribute::new).toList();
+      } else {
+        return elementStream(arrayNode).map(this::arrayElementToObject).toList();
+      }
     } else {
       throw new UnexpectedTsvException(
           "DataTypeInferer.isArray returned true, but the parsed value did not resolve to ArrayNode");
     }
+  }
+
+  /**
+   * Should this ArrayNode be treated by WDS as ARRAY_OF_JSON?
+   *
+   * @param arrayNode the input array
+   * @return whether WDS should consider this an ARRAY_OF_JSON
+   */
+  private boolean isArrayOfJson(ArrayNode arrayNode) {
+    // AJ-1748: here, we could also detect mixed arrays such as [1,"two",false] and treat those
+    // as json instead of stringify-ing them. We can accomplish this by checking the distinct
+    // classes of the array elements:
+    //     elementStream(arrayNode).map(JsonNode::getClass).distinct().toList();
+    // and seeing if they are homogenous. If you do this, be careful of multiple JsonNode
+    // subclasses which we treat the same, e.g. IntNode and DecimalNode.
+
+    // is any element of this array itself an array or a json object? This indicates nested
+    // structures, so we should treat this as an array of json.
+    return elementStream(arrayNode)
+        .anyMatch(element -> element instanceof ArrayNode || element instanceof ObjectNode);
+  }
+
+  private Stream<JsonNode> elementStream(ArrayNode arrayNode) {
+    return StreamSupport.stream(
+        Spliterators.spliteratorUnknownSize(arrayNode.elements(), Spliterator.ORDERED), false);
   }
 
   /**

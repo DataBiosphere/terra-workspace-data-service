@@ -6,6 +6,7 @@ import static org.databiosphere.workspacedataservice.shared.model.Schedulable.AR
 import static org.databiosphere.workspacedataservice.shared.model.job.JobType.DATA_IMPORT;
 
 import com.google.cloud.storage.Blob;
+import com.google.cloud.storage.BlobId;
 import io.micrometer.observation.Observation;
 import io.micrometer.observation.ObservationRegistry;
 import java.net.URI;
@@ -59,7 +60,7 @@ public class RawlsJsonQuartzJob extends QuartzJob {
   }
 
   private Blob moveBlob(URI sourceUri, String desiredBlobName) {
-    return storage.moveBlob(sourceUri, storage.createBlob(desiredBlobName));
+    return storage.moveBlob(sourceUri, BlobId.of(storage.getBucketName(), desiredBlobName));
   }
 
   private ImportDetails getImportDetails(UUID jobId, JobDataMapReader jobData) {

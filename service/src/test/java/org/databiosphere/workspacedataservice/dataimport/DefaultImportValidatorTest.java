@@ -1,6 +1,7 @@
 package org.databiosphere.workspacedataservice.dataimport;
 
 import static java.util.Collections.emptyList;
+import static org.assertj.core.api.AssertionsForClassTypes.assertThatExceptionOfType;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -143,9 +144,10 @@ class DefaultImportValidatorTest extends TestBase {
   }
 
   @Test
-  void acceptsGsUrlsForRawlsJsonImports() {
+  void acceptsGsUrlsWithMatchingWorkspaceIdForRawlsJsonImports() {
     // Arrange
-    URI importUri = URI.create("gs://test-bucket/file");
+    URI importUri =
+        URI.create("gs://test-bucket/to-cwds/%s/random.json".formatted(destinationWorkspaceId));
     ImportRequestServerModel importRequest =
         new ImportRequestServerModel(TypeEnum.RAWLSJSON, importUri);
 
@@ -154,18 +156,48 @@ class DefaultImportValidatorTest extends TestBase {
   }
 
   @Test
-  void rejectGsUrlsWithMismatchingBucketForJsonImports() {
+  void rejectsGsUrlsWithCorrectBucketAndWorkspaceButUnexpectedFormat() {
     // Arrange
-    URI importUri = URI.create("gs://rando-bucket/file");
+    URI importUri =
+        URI.create("gs://test-bucket/random/%s/random.json".formatted(destinationWorkspaceId));
     ImportRequestServerModel importRequest =
         new ImportRequestServerModel(TypeEnum.RAWLSJSON, importUri);
 
     // Act/Assert
-    ValidationException err =
-        assertThrows(
-            ValidationException.class,
-            () -> importValidator.validateImport(importRequest, destinationWorkspaceId));
-    assertEquals("Files may not be imported from rando-bucket.", err.getMessage());
+    assertThatExceptionOfType(ValidationException.class)
+        .isThrownBy(() -> importValidator.validateImport(importRequest, destinationWorkspaceId))
+        .withMessageContaining("/to-cwds/%s/".formatted(destinationWorkspaceId));
+  }
+
+  @Test
+  void rejectGsUrlsWithMismatchingBucketForJsonImports() {
+    // Arrange
+    URI importUri =
+        URI.create("gs://rando-bucket/to-cwds/%s/random.json".formatted(destinationWorkspaceId));
+    ImportRequestServerModel importRequest =
+        new ImportRequestServerModel(TypeEnum.RAWLSJSON, importUri);
+
+    // Act/Assert
+    assertThatExceptionOfType(ValidationException.class)
+        .isThrownBy(
+            () -> importValidator.validateImport(importRequest, WorkspaceId.of(UUID.randomUUID())))
+        .withMessageContaining("Files may not be imported from rando-bucket.");
+  }
+
+  @Test
+  void rejectsGsUrlsWithMismatchingWorkspaceId() {
+    // Arrange
+    UUID otherWorkspaceId = UUID.randomUUID();
+    URI importUri =
+        URI.create(
+            "gs://test-bucket/to-cwds/%s/other-workspace-import.json".formatted(otherWorkspaceId));
+    ImportRequestServerModel importRequest =
+        new ImportRequestServerModel(TypeEnum.RAWLSJSON, importUri);
+
+    // Act/Assert
+    assertThatExceptionOfType(ValidationException.class)
+        .isThrownBy(() -> importValidator.validateImport(importRequest, destinationWorkspaceId))
+        .withMessageContaining("/to-cwds/%s/".formatted(destinationWorkspaceId));
   }
 
   @ParameterizedTest

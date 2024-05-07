@@ -9,6 +9,7 @@ import static org.assertj.core.util.Streams.stream;
 import static org.springframework.util.StreamUtils.copyToString;
 
 import com.google.cloud.storage.Blob;
+import com.google.cloud.storage.BlobId;
 import com.google.cloud.storage.StorageException;
 import java.io.IOException;
 import java.io.OutputStream;
@@ -161,8 +162,7 @@ class GcsStorageTest extends TestBase {
 
     // Act
     URI sourceUri = getUri(sourceBlob);
-    Blob targetBlob = storage.createBlob(newBlobName);
-    Blob movedBlob = storage.moveBlob(sourceUri, targetBlob);
+    Blob movedBlob = storage.moveBlob(sourceUri, BlobId.of(storage.getBucketName(), newBlobName));
 
     // Assert
     assertThat(movedBlob.getName()).isEqualTo(newBlobName);
@@ -179,8 +179,9 @@ class GcsStorageTest extends TestBase {
 
     // Act / Assert
     assertThatExceptionOfType(StorageException.class)
-        .isThrownBy(() -> storage.moveBlob(sourceUri, storage.createBlob("targetBlobName")))
-        .withMessageContaining("nonExistentBlob");
+        .isThrownBy(
+            () -> storage.moveBlob(sourceUri, BlobId.of(storage.getBucketName(), "targetBlobName")))
+        .withMessageContaining("nonExistent");
   }
 
   private String getContentsAsString(String blobName) throws IOException {

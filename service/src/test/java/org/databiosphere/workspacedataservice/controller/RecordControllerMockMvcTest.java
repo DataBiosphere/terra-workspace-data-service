@@ -3150,7 +3150,7 @@ class RecordControllerMockMvcTest extends MockMvcTestBase {
             .andReturn();
     RecordTypeSchema schema = fromJson(schemaResult, RecordTypeSchema.class);
 
-    assertEquals("ARRAY_OF_STRING", schema.getAttributeSchema(attributeName).datatype());
+    assertEquals("ARRAY_OF_JSON", schema.getAttributeSchema(attributeName).datatype());
 
     MvcResult mvcSingleResult =
         mockMvc
@@ -3165,7 +3165,8 @@ class RecordControllerMockMvcTest extends MockMvcTestBase {
             .andReturn();
     RecordResponse record = fromJson(mvcSingleResult, RecordResponse.class);
 
-    List<String> expectedValue = List.of("{value=foo}", "{value=bar}", "baz");
+    // note the mixed values here
+    List<Object> expectedValue = List.of(Map.of("value", "foo"), Map.of("value", "bar"), "baz");
     assertEquals(expectedValue, record.recordAttributes().getAttributeValue(attributeName));
   }
 }

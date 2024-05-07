@@ -9,6 +9,7 @@ import com.google.cloud.spring.storage.GoogleStorageResource;
 import com.google.cloud.storage.Blob;
 import com.google.cloud.storage.BlobId;
 import com.google.cloud.storage.Storage;
+import com.google.cloud.storage.Storage.BlobTargetOption;
 import com.google.cloud.storage.Storage.CopyRequest;
 import com.google.cloud.storage.StorageOptions;
 import com.google.common.annotations.VisibleForTesting;
@@ -17,6 +18,7 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.URI;
 import java.nio.channels.Channels;
+import java.util.Optional;
 import org.databiosphere.workspacedataservice.config.DataImportProperties;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -114,13 +116,20 @@ public class GcsStorage {
    *
    * @return Blob reference to the file's new location
    */
-  public Blob moveBlob(URI sourceUri, Blob target) {
+  public Blob moveBlob(URI sourceUri, BlobId target) {
     BlobId source = BlobId.fromGsUtilUri(sourceUri.toString());
-    storage.copy(CopyRequest.newBuilder().setSource(source).setTarget(target).build());
-    Blob copiedBlob = storage.get(target.getBlobId());
+    BlobTargetOption precondition =
+        Optional.ofNullable(storage.get(target))
+            .map(Blob::getGeneration)
+            .map(BlobTargetOption::generationMatch)
+            .orElseGet(BlobTargetOption::doesNotExist);
+    Blob copiedBlob =
+        storage
+            .copy(
+                CopyRequest.newBuilder().setSource(source).setTarget(target, precondition).build())
+            .getResult();
     storage.get(source).delete();
     logger.atInfo().log("Moved %s to %s".formatted(sourceUri, copiedBlob.getBlobId()));
-
     return copiedBlob;
   }
 

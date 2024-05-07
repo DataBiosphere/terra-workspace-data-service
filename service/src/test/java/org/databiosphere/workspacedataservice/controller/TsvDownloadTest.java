@@ -3,7 +3,9 @@ package org.databiosphere.workspacedataservice.controller;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.databiosphere.workspacedataservice.service.model.DataTypeMapping.*;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.MappingIterator;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectReader;
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -28,9 +30,11 @@ import org.databiosphere.workspacedataservice.shared.model.RecordRequest;
 import org.databiosphere.workspacedataservice.shared.model.RecordResponse;
 import org.databiosphere.workspacedataservice.shared.model.RecordType;
 import org.databiosphere.workspacedataservice.shared.model.TsvUploadResponse;
+import org.databiosphere.workspacedataservice.shared.model.attributes.JsonAttribute;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestInstance;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -49,6 +53,7 @@ import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.ActiveProfiles;
 
+@TestInstance(TestInstance.Lifecycle.PER_CLASS)
 @ActiveProfiles(profiles = "mock-sam")
 @DirtiesContext
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
@@ -58,6 +63,7 @@ class TsvDownloadTest extends TestBase {
 
   @Autowired private RecordController recordController;
   @Autowired private RecordDao recordDao;
+  @Autowired private ObjectMapper mapper;
   private String version;
   private UUID collectionId;
 
@@ -151,7 +157,7 @@ class TsvDownloadTest extends TestBase {
     reader.close();
   }
 
-  private static Stream<Arguments> tsvExemplarData() {
+  private Stream<Arguments> tsvExemplarData() throws JsonProcessingException {
     /* Arguments are sets:
        - first value is the Object to insert as an attribute
        - second value is the expected data type that the object creates
@@ -207,10 +213,44 @@ class TsvDownloadTest extends TestBase {
         Arguments.of(
             List.of("terra-wds:/target/1", "terra-wds:/target/1"),
             ARRAY_OF_RELATION,
-            "\"[\"\"terra-wds:/target/1\"\",\"\"terra-wds:/target/1\"\"]\""));
+            "\"[\"\"terra-wds:/target/1\"\",\"\"terra-wds:/target/1\"\"]\""),
+        // array of json packets
+        Arguments.of(
+            List.of(
+                new JsonAttribute(mapper.readTree("{\"value\":\"foo\"}")),
+                new JsonAttribute(mapper.readTree("{\"value\":\"bar\"}")),
+                new JsonAttribute(mapper.readTree("{\"value\":\"baz\"}"))),
+            ARRAY_OF_JSON,
+            "\"[{\"\"value\"\":\"\"foo\"\"},{\"\"value\"\":\"\"bar\"\"},{\"\"value\"\":\"\"baz\"\"}]\""),
+        // nested arrays
+        Arguments.of(
+            List.of(
+                new JsonAttribute(mapper.readTree("[1]")),
+                new JsonAttribute(mapper.readTree("[2,3]")),
+                new JsonAttribute(mapper.readTree("[4,5,6]"))),
+            ARRAY_OF_JSON,
+            "[[1],[2,3],[4,5,6]]"),
+        Arguments.of(
+            List.of(
+                new JsonAttribute(mapper.readTree("[\"one\"]")),
+                new JsonAttribute(mapper.readTree("[\"two\",\"three\"]")),
+                new JsonAttribute(mapper.readTree("[\"four\",\"five\",\"six\"]"))),
+            ARRAY_OF_JSON,
+            "\"[[\"\"one\"\"],[\"\"two\"\",\"\"three\"\"],[\"\"four\"\",\"\"five\"\",\"\"six\"\"]]\""),
+        // array of mixed json types
+        Arguments.of(
+            List.of(
+                new JsonAttribute(mapper.readTree("[1,2,3]")),
+                new JsonAttribute(mapper.readTree("[\"four\",\"five\"]")),
+                new JsonAttribute(mapper.readTree("67")),
+                new JsonAttribute(mapper.readTree("{\"some\":\"object\",\"with\":[\"nesting\"]}"))),
+            ARRAY_OF_JSON,
+            "\"[[1,2,3],[\"\"four\"\",\"\"five\"\"],67,{\"\"some\"\":\"\"object\"\",\"\"with\"\":[\"\"nesting\"\"]}]\""));
   }
 
-  @ParameterizedTest(name = "TSV download for a {1} should be correct")
+  // upload a given input value using the JSON APIs, and validate WDS created the expected datatype.
+  // download that column as a TSV and validate the download matches the expected value.
+  @ParameterizedTest(name = "{1} with val {2}")
   @MethodSource("tsvExemplarData")
   void tsvDownloadDataTypeFidelity(
       Object toUpload, DataTypeMapping expectedDataType, String expectedCellValue)
@@ -275,7 +315,9 @@ class TsvDownloadTest extends TestBase {
   }
 
   // TODO: this tsv upload test shouldn't be in a class named "TsvDownloadTest"
-  @ParameterizedTest(name = "TSV upload for a {1} should be correct")
+  // upload a given input value using the JSON APIs, and validate WDS created the expected datatype.
+  // then, upload a given TSV cell into the same column and validate the datatype did not change.
+  @ParameterizedTest(name = "{1} with val {2}")
   @MethodSource("tsvExemplarData")
   void tsvUploadDataTypeFidelity(
       Object toUpload, DataTypeMapping expectedDataType, String cellValue) throws IOException {

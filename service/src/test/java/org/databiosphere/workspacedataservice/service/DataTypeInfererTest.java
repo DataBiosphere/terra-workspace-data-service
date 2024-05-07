@@ -184,6 +184,45 @@ class DataTypeInfererTest extends TestBase {
         .isEqualTo(DataTypeMapping.ARRAY_OF_STRING);
   }
 
+  @Test
+  void inferArraysOfJson() {
+    // array of json objects
+    assertThat(inferer.inferType(Arrays.asList(Map.of("foo", "bar"), Map.of("num", 42))))
+        .isEqualTo(DataTypeMapping.ARRAY_OF_JSON);
+    // array of nested json objects
+    assertThat(
+            inferer.inferType(
+                Arrays.asList(
+                    Map.of("foo", Map.of("one", "two")), Map.of("bar", Map.of("three", "four")))))
+        .isEqualTo(DataTypeMapping.ARRAY_OF_JSON);
+  }
+
+  @Test
+  void inferMixedArrays() {
+    // array of mixed values, including a json object
+    assertThat(
+            inferer.inferType(
+                Arrays.asList(Map.of("foo", "bar"), new BigInteger("11"), "I'm a string")))
+        .isEqualTo(DataTypeMapping.ARRAY_OF_JSON);
+  }
+
+  @Test
+  void inferNestedArrays() {
+    // nested array of numbers
+    assertThat(
+            inferer.inferType(
+                Arrays.asList(List.of(1), Arrays.asList(2, 3), Arrays.asList(4, 5, 6))))
+        .isEqualTo(DataTypeMapping.ARRAY_OF_JSON);
+    // nested array of strings
+    assertThat(
+            inferer.inferType(
+                Arrays.asList(
+                    List.of("one"),
+                    Arrays.asList("two", "three"),
+                    Arrays.asList("four", "five", "six"))))
+        .isEqualTo(DataTypeMapping.ARRAY_OF_JSON);
+  }
+
   // Test for [AJ-1143]: TSV fails to upload if it has nulls in a relation column
   @Test
   void allowNullRelations() {
