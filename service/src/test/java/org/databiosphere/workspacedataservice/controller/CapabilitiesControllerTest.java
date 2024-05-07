@@ -32,6 +32,6 @@ class CapabilitiesControllerTest extends MockMvcTestBase {
     CapabilitiesServerModel actual =
         assertDoesNotThrow(() -> fromJson(mvcResult, CapabilitiesServerModel.class));
     // is the response non-empty?
-    assertThat(actual).isNotEmpty();
+    assertThat(actual.getAdditionalProperties()).isNotEmpty();
   }
 }
