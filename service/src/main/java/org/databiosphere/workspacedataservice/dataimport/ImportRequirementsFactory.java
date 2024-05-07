@@ -15,16 +15,12 @@ public class ImportRequirementsFactory {
     boolean requiresPrivateWorkspace =
         sources.stream()
             .filter(source -> source.matchesUri(importUri))
-            .map(ImportSourceConfig::requirePrivateWorkspace)
-            .reduce(Boolean::logicalOr)
-            .orElse(false);
+            .anyMatch(ImportSourceConfig::requirePrivateWorkspace);
 
     boolean requiresProtectedDataPolicy =
         sources.stream()
             .filter(source -> source.matchesUri(importUri))
-            .map(ImportSourceConfig::requireProtectedDataPolicy)
-            .reduce(Boolean::logicalOr)
-            .orElse(false);
+            .anyMatch(ImportSourceConfig::requireProtectedDataPolicy);
 
     return new ImportRequirements(requiresPrivateWorkspace, requiresProtectedDataPolicy);
   }
