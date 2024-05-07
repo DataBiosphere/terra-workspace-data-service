@@ -2,6 +2,7 @@ package org.databiosphere.workspacedataservice.dataimport;
 
 import static java.util.Collections.emptyList;
 import static java.util.Collections.emptySet;
+import static java.util.regex.Pattern.compile;
 
 import bio.terra.workspace.model.WorkspaceDescription;
 import bio.terra.workspace.model.WsmPolicyInput;
@@ -13,6 +14,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import org.databiosphere.workspacedataservice.config.DataImportProperties.ImportSourceConfig;
 import org.databiosphere.workspacedataservice.generated.ImportRequestServerModel;
@@ -35,12 +37,12 @@ public class DefaultImportValidator implements ImportValidator {
           TypeEnum.TDRMANIFEST, Set.of(SCHEME_HTTPS));
   private static final Set<Pattern> ALWAYS_ALLOWED_HOSTS =
       Set.of(
-          Pattern.compile("storage\\.googleapis\\.com"),
-          Pattern.compile(".*\\.core\\.windows\\.net"),
+          compile("storage\\.googleapis\\.com"),
+          compile(".*\\.core\\.windows\\.net"),
           // S3 allows multiple URL formats
           // https://docs.aws.amazon.com/AmazonS3/latest/userguide/VirtualHosting.html
-          Pattern.compile("s3\\.amazonaws\\.com"), // path style legacy global endpoint
-          Pattern.compile(".*\\.s3\\.amazonaws\\.com") // virtual host style legacy global endpoint
+          compile("s3\\.amazonaws\\.com"), // path style legacy global endpoint
+          compile(".*\\.s3\\.amazonaws\\.com") // virtual host style legacy global endpoint
           );
   private final Map<String, Set<Pattern>> allowedHostsByScheme;
   private final ImportRequirementsFactory importRequirementsFactory;
@@ -56,7 +58,7 @@ public class DefaultImportValidator implements ImportValidator {
             .put(SCHEME_HTTPS, Sets.union(ALWAYS_ALLOWED_HOSTS, allowedHttpsHosts));
 
     if (StringUtils.isNotBlank(allowedRawlsBucket)) {
-      allowedHostsBuilder.put(SCHEME_GS, Set.of(Pattern.compile(allowedRawlsBucket)));
+      allowedHostsBuilder.put(SCHEME_GS, Set.of(compile(allowedRawlsBucket)));
     } else {
       allowedHostsBuilder.put(SCHEME_GS, emptySet());
     }
@@ -88,7 +90,22 @@ public class DefaultImportValidator implements ImportValidator {
           "Files may not be imported from %s.".formatted(importUrl.getHost()));
     }
 
+    if (importType == TypeEnum.RAWLSJSON) {
+      validatePathBelongsToWorkspace(importRequest.getUrl().getPath(), destinationWorkspaceId);
+    }
     validateDestinationWorkspace(importRequest, destinationWorkspaceId);
+  }
+
+  private static final String URI_TEMPLATE = "^/to-cwds/%s/.*\\.json$";
+
+  private void validatePathBelongsToWorkspace(String path, WorkspaceId workspaceId) {
+    Pattern expectedPattern = compile(URI_TEMPLATE.formatted(workspaceId.toString()));
+    Matcher matcher = expectedPattern.matcher(path);
+
+    if (!matcher.matches()) {
+      throw new ValidationException(
+          "Expected URI with format %s".formatted(expectedPattern.toString()));
+    }
   }
 
   private void validateDestinationWorkspace(
