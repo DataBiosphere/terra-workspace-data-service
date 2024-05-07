@@ -250,6 +250,33 @@ class GeneratedClientTests extends TestBase {
     assertThat(actual).isEqualTo(expected);
   }
 
+  @Test
+  void recordAttributesAccess() throws URISyntaxException, ApiException {
+    // create the two records "a" and "b" from small-test.tsv
+    RecordsApi recordsApi = new RecordsApi(apiClient);
+
+    String recordType = "foo";
+
+    TsvUploadResponse tsvUploadResponse =
+        recordsApi.uploadTSV(
+            new File(this.getClass().getResource("/tsv/small-test.tsv").toURI()),
+            collectionId.toString(),
+            version,
+            recordType,
+            null);
+    assertThat(tsvUploadResponse.getRecordsModified()).isEqualTo(2);
+
+    // get record "a"
+    RecordResponse recordResponse =
+        recordsApi.getRecord(collectionId.toString(), version, recordType, "a");
+
+    // spot-check a couple attributes. These assertions are about validating that the Java client
+    // can read RecordAttributes; less about ensuring that the TSV upload was correct.
+    RecordAttributes recordAttributes = recordResponse.getAttributes();
+    assertThat(recordAttributes.entrySet()).hasSize(14);
+    assertThat(recordAttributes).containsEntry("greeting", "hello").containsEntry("double", -2.287);
+  }
+
   private void createNewCollection(UUID collectionId) throws ApiException {
     InstancesApi instancesApi = new InstancesApi(apiClient);
     instancesApi.createWDSInstance(collectionId.toString(), version);
