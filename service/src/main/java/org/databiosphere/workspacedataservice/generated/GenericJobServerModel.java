@@ -25,7 +25,7 @@ import jakarta.annotation.Generated;
 
 @Schema(name = "GenericJob", description = "Generic representation of a job, no opinion on inputs and result for the job. See individual APIs for more guidance on expected input and result payloads. ")
 @JsonTypeName("GenericJob")
-@Generated(value = "org.openapitools.codegen.languages.SpringCodegen")
+@Generated(value = "org.openapitools.codegen.languages.SpringCodegen", comments = "Generator version: 7.5.0")
 public class GenericJobServerModel {
 
   private UUID jobId;
@@ -128,11 +128,6 @@ public class GenericJobServerModel {
 
   private Object result;
 
-  /**
-   * Default constructor
-   * @deprecated Use {@link GenericJobServerModel#GenericJobServerModel(UUID, JobTypeEnum, UUID, StatusEnum, OffsetDateTime, OffsetDateTime)}
-   */
-  @Deprecated
   public GenericJobServerModel() {
     super();
   }
