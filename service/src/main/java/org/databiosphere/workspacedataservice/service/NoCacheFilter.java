@@ -8,9 +8,10 @@ public class NoCacheFilter implements Filter {
   @Override
   public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain)
       throws IOException, ServletException {
-    var servletResponse = (HttpServletResponse) response;
-    servletResponse.setHeader("Cache-Control", "no-store");
-    servletResponse.setHeader("Pragma", "no-cache");
+    if (response instanceof HttpServletResponse httpResponse) {
+      httpResponse.setHeader("Cache-Control", "no-store");
+      httpResponse.setHeader("Pragma", "no-cache");
+    }
     chain.doFilter(request, response);
   }
 }
