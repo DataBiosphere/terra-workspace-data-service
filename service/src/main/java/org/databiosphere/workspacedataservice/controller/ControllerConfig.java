@@ -1,7 +1,5 @@
 package org.databiosphere.workspacedataservice.controller;
 
-import org.databiosphere.workspacedataservice.service.NoCacheFilter;
-import org.springframework.boot.web.servlet.FilterRegistrationBean;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Profile;
@@ -45,17 +43,5 @@ public class ControllerConfig {
         configurer.setDefaultTimeout(-1);
       }
     };
-  }
-
-  /**
-   * API responses contain potentially sensitive data and thus should not be cached. This configures
-   * a filter that adds a "Cache-Control: no-store" header to API responses.
-   */
-  @Bean
-  public FilterRegistrationBean<NoCacheFilter> cacheControlNoStoreFilter() {
-    FilterRegistrationBean<NoCacheFilter> registrationBean = new FilterRegistrationBean<>();
-    registrationBean.setFilter(new NoCacheFilter());
-    registrationBean.addUrlPatterns("/*");
-    return registrationBean;
   }
 }
