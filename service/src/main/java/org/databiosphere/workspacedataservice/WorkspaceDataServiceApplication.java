@@ -6,7 +6,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
-import org.springframework.boot.web.servlet.ServletComponentScan;
 import org.springframework.cache.annotation.EnableCaching;
 import org.springframework.retry.annotation.EnableRetry;
 import org.springframework.transaction.annotation.EnableTransactionManagement;
@@ -18,7 +17,6 @@ import org.springframework.transaction.annotation.EnableTransactionManagement;
       // terra-common-lib transaction management and DB retry configuration
       "bio.terra.common.retry.transaction"
     })
-@ServletComponentScan(basePackages = {"org.databiosphere.workspacedataservice"})
 @EnableRetry
 @EnableTransactionManagement
 @EnableCaching

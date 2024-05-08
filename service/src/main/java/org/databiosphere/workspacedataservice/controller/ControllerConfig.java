@@ -1,5 +1,7 @@
 package org.databiosphere.workspacedataservice.controller;
 
+import org.databiosphere.workspacedataservice.service.CacheControlFilter;
+import org.springframework.boot.web.servlet.FilterRegistrationBean;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Profile;
@@ -43,5 +45,13 @@ public class ControllerConfig {
         configurer.setDefaultTimeout(-1);
       }
     };
+  }
+
+  @Bean
+  public FilterRegistrationBean<CacheControlFilter> cacheControlFilter() {
+    FilterRegistrationBean<CacheControlFilter> registrationBean = new FilterRegistrationBean<>();
+    registrationBean.setFilter(new CacheControlFilter());
+    registrationBean.addUrlPatterns("/*");
+    return registrationBean;
   }
 }
