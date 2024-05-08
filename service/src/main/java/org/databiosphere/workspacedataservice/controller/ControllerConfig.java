@@ -1,6 +1,6 @@
 package org.databiosphere.workspacedataservice.controller;
 
-import org.databiosphere.workspacedataservice.service.CacheControlNoStoreFilter;
+import org.databiosphere.workspacedataservice.service.NoCacheFilter;
 import org.springframework.boot.web.servlet.FilterRegistrationBean;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -52,10 +52,9 @@ public class ControllerConfig {
    * a filter that adds a "Cache-Control: no-store" header to API responses.
    */
   @Bean
-  public FilterRegistrationBean<CacheControlNoStoreFilter> cacheControlNoStoreFilter() {
-    FilterRegistrationBean<CacheControlNoStoreFilter> registrationBean =
-        new FilterRegistrationBean<>();
-    registrationBean.setFilter(new CacheControlNoStoreFilter());
+  public FilterRegistrationBean<NoCacheFilter> cacheControlNoStoreFilter() {
+    FilterRegistrationBean<NoCacheFilter> registrationBean = new FilterRegistrationBean<>();
+    registrationBean.setFilter(new NoCacheFilter());
     registrationBean.addUrlPatterns("/*");
     return registrationBean;
   }
