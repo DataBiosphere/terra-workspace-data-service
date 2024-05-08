@@ -10,6 +10,7 @@ public class CacheControlNoStoreFilter implements Filter {
       throws IOException, ServletException {
     var servletResponse = (HttpServletResponse) response;
     servletResponse.setHeader("Cache-Control", "no-store");
+    servletResponse.setHeader("Pragma", "no-cache");
     chain.doFilter(request, response);
   }
 }
