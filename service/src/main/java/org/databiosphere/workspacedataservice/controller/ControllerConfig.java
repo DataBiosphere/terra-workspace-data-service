@@ -1,6 +1,6 @@
 package org.databiosphere.workspacedataservice.controller;
 
-import org.databiosphere.workspacedataservice.service.CacheControlFilter;
+import org.databiosphere.workspacedataservice.service.CacheControlNoStoreFilter;
 import org.springframework.boot.web.servlet.FilterRegistrationBean;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -48,9 +48,10 @@ public class ControllerConfig {
   }
 
   @Bean
-  public FilterRegistrationBean<CacheControlFilter> cacheControlFilter() {
-    FilterRegistrationBean<CacheControlFilter> registrationBean = new FilterRegistrationBean<>();
-    registrationBean.setFilter(new CacheControlFilter());
+  public FilterRegistrationBean<CacheControlNoStoreFilter> cacheControlNoStoreFilter() {
+    FilterRegistrationBean<CacheControlNoStoreFilter> registrationBean =
+        new FilterRegistrationBean<>();
+    registrationBean.setFilter(new CacheControlNoStoreFilter());
     registrationBean.addUrlPatterns("/*");
     return registrationBean;
   }
