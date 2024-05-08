@@ -2,5 +2,36 @@
   "customDimensions": {
     "workspaceId": "${WORKSPACE_ID}",
     "service.version": "${RELEASE_NAME}"
+  },
+  "metricIntervalSeconds": 300,
+  "sampling": {
+    "percentage": 100
+  },
+  "instrumentation": {
+    "logging": {
+      "level": "WARN"
+    },
+    "azureSdk": {
+      "enabled": true
+    },
+    "jdbc": {
+      "enabled": true
+    },
+    "micrometer": {
+      "enabled": true
+    },
+    "quartz": {
+      "enabled": true
+    },
+    "springScheduling": {
+      "enabled": true
+    }
+  },
+  "preview": {
+    "instrumentation": {
+      "springIntegration": {
+        "enabled": true
+      }
+    }
   }
 }
