@@ -47,6 +47,10 @@ public class ControllerConfig {
     };
   }
 
+  /**
+   * API responses contain potentially sensitive data and thus should not be cached. This configures
+   * a filter that adds a "Cache-Control: no-store" header to API responses.
+   */
   @Bean
   public FilterRegistrationBean<CacheControlNoStoreFilter> cacheControlNoStoreFilter() {
     FilterRegistrationBean<CacheControlNoStoreFilter> registrationBean =
