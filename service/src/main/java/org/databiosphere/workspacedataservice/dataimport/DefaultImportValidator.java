@@ -2,6 +2,7 @@ package org.databiosphere.workspacedataservice.dataimport;
 
 import static java.util.Collections.emptyList;
 import static java.util.Collections.emptySet;
+import static java.util.regex.Pattern.compile;
 
 import bio.terra.workspace.model.WorkspaceDescription;
 import bio.terra.workspace.model.WsmPolicyInput;
@@ -13,11 +14,14 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import org.broadinstitute.dsde.workbench.client.sam.model.UserResourcesResponse;
 import org.databiosphere.workspacedataservice.config.DataImportProperties.ImportSourceConfig;
 import org.databiosphere.workspacedataservice.generated.ImportRequestServerModel;
 import org.databiosphere.workspacedataservice.generated.ImportRequestServerModel.TypeEnum;
 import org.databiosphere.workspacedataservice.policy.PolicyUtils;
+import org.databiosphere.workspacedataservice.sam.SamDao;
 import org.databiosphere.workspacedataservice.service.model.exception.ValidationException;
 import org.databiosphere.workspacedataservice.shared.model.WorkspaceId;
 import org.databiosphere.workspacedataservice.workspacemanager.WorkspaceManagerDao;
@@ -35,18 +39,20 @@ public class DefaultImportValidator implements ImportValidator {
           TypeEnum.TDRMANIFEST, Set.of(SCHEME_HTTPS));
   private static final Set<Pattern> ALWAYS_ALLOWED_HOSTS =
       Set.of(
-          Pattern.compile("storage\\.googleapis\\.com"),
-          Pattern.compile(".*\\.core\\.windows\\.net"),
+          compile("storage\\.googleapis\\.com"),
+          compile(".*\\.core\\.windows\\.net"),
           // S3 allows multiple URL formats
           // https://docs.aws.amazon.com/AmazonS3/latest/userguide/VirtualHosting.html
-          Pattern.compile("s3\\.amazonaws\\.com"), // path style legacy global endpoint
-          Pattern.compile(".*\\.s3\\.amazonaws\\.com") // virtual host style legacy global endpoint
+          compile("s3\\.amazonaws\\.com"), // path style legacy global endpoint
+          compile(".*\\.s3\\.amazonaws\\.com") // virtual host style legacy global endpoint
           );
   private final Map<String, Set<Pattern>> allowedHostsByScheme;
   private final ImportRequirementsFactory importRequirementsFactory;
+  private final SamDao samDao;
   private final WorkspaceManagerDao wsmDao;
 
   public DefaultImportValidator(
+      SamDao samDao,
       WorkspaceManagerDao wsmDao,
       Set<Pattern> allowedHttpsHosts,
       List<ImportSourceConfig> sources,
@@ -56,13 +62,14 @@ public class DefaultImportValidator implements ImportValidator {
             .put(SCHEME_HTTPS, Sets.union(ALWAYS_ALLOWED_HOSTS, allowedHttpsHosts));
 
     if (StringUtils.isNotBlank(allowedRawlsBucket)) {
-      allowedHostsBuilder.put(SCHEME_GS, Set.of(Pattern.compile(allowedRawlsBucket)));
+      allowedHostsBuilder.put(SCHEME_GS, Set.of(compile(allowedRawlsBucket)));
     } else {
       allowedHostsBuilder.put(SCHEME_GS, emptySet());
     }
 
     this.allowedHostsByScheme = allowedHostsBuilder.build();
     this.importRequirementsFactory = new ImportRequirementsFactory(sources);
+    this.samDao = samDao;
     this.wsmDao = wsmDao;
   }
 
@@ -88,7 +95,22 @@ public class DefaultImportValidator implements ImportValidator {
           "Files may not be imported from %s.".formatted(importUrl.getHost()));
     }
 
+    if (importType == TypeEnum.RAWLSJSON) {
+      validatePathBelongsToWorkspace(importRequest.getUrl().getPath(), destinationWorkspaceId);
+    }
     validateDestinationWorkspace(importRequest, destinationWorkspaceId);
+  }
+
+  private static final String URI_TEMPLATE = "^/to-cwds/%s/.*\\.json$";
+
+  private void validatePathBelongsToWorkspace(String path, WorkspaceId workspaceId) {
+    Pattern expectedPattern = compile(URI_TEMPLATE.formatted(workspaceId.toString()));
+    Matcher matcher = expectedPattern.matcher(path);
+
+    if (!matcher.matches()) {
+      throw new ValidationException(
+          "Expected URI with format %s".formatted(expectedPattern.toString()));
+    }
   }
 
   private void validateDestinationWorkspace(
@@ -101,6 +123,11 @@ public class DefaultImportValidator implements ImportValidator {
       throw new ValidationException(
           "Data from this source can only be imported into a protected workspace.");
     }
+
+    if (requirements.privateWorkspace() && !checkWorkspaceIsPrivate(destinationWorkspaceId)) {
+      throw new ValidationException(
+          "Data from this source cannot be imported into a public workspace.");
+    }
   }
 
   private boolean checkWorkspaceHasProtectedDataPolicy(WorkspaceId workspaceId) {
@@ -110,11 +137,29 @@ public class DefaultImportValidator implements ImportValidator {
           Optional.ofNullable(workspace.getPolicies()).orElse(emptyList());
       return workspacePolicies.stream().anyMatch(PolicyUtils::isProtectedDataPolicy);
     } catch (WorkspaceManagerException e) {
+      // GCP workspaces without a policy will not be present in Workspace Manager.
       if (e.getStatusCode().equals(HttpStatus.NOT_FOUND)) {
         return false;
       } else {
         throw e;
       }
     }
+  }
+
+  private boolean checkWorkspaceIsPrivate(WorkspaceId workspaceId) {
+    // It's inefficient to request _all_ workspaces here when we're only interested in
+    // one of them, but Sam does not provide a way to retrieve this information for
+    // only a specific resource.
+    List<UserResourcesResponse> resources = samDao.listWorkspaceResourcesAndPolicies();
+
+    // Before import validation, we've verified that the user can write to the destination
+    // workspace. So it's safe to assume the workspace is in this list.
+    UserResourcesResponse workspaceResource =
+        resources.stream()
+            .filter(resource -> resource.getResourceId().equals(workspaceId.toString()))
+            .findFirst()
+            .orElseThrow();
+    return workspaceResource.getPublic().getRoles().isEmpty()
+        && workspaceResource.getPublic().getActions().isEmpty();
   }
 }

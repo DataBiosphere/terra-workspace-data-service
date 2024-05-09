@@ -16,8 +16,34 @@ import org.springframework.boot.test.context.SpringBootTest;
 class ImportRequirementsFactoryTest extends TestBase {
   @Autowired DataImportProperties dataImportProperties;
 
+  @ParameterizedTest(name = "Imports from {0} should require a private workspace {1}")
+  @MethodSource({"requirePrivateWorkspaceTestCases", "bioDataCatalystTestCases"})
+  void configuredSourcesRequireAPrivateWorkspace(
+      URI importUri, boolean shouldRequirePrivateWorkspace) {
+    // Arrange
+    ImportRequirementsFactory importRequirementsFactory =
+        new ImportRequirementsFactory(dataImportProperties.getSources());
+
+    // Act
+    ImportRequirements importRequirements =
+        importRequirementsFactory.getRequirementsForImport(importUri);
+
+    // Assert
+    assertEquals(shouldRequirePrivateWorkspace, importRequirements.privateWorkspace());
+  }
+
+  private static Stream<Arguments> requirePrivateWorkspaceTestCases() {
+    return Stream.of(
+        Arguments.of(
+            /* importUri */ URI.create("https://storage.googleapis.com/test-bucket/file.pfb"),
+            /* shouldRequirePrivateWorkspace */ false),
+        Arguments.of(
+            /* importUri */ URI.create("https://files.terra.bio/file.pfb"),
+            /* shouldRequirePrivateWorkspace */ false));
+  }
+
   @ParameterizedTest(name = "Imports from {0} should require protected data policy {1}")
-  @MethodSource("requireProtectedDataPolicyTestCases")
+  @MethodSource({"requireProtectedDataPolicyTestCases", "bioDataCatalystTestCases"})
   void configuredSourcesRequireAProtectedDataPolicy(
       URI importUri, boolean shouldRequireProtectedDataPolicy) {
     // Arrange
@@ -34,22 +60,43 @@ class ImportRequirementsFactoryTest extends TestBase {
 
   private static Stream<Arguments> requireProtectedDataPolicyTestCases() {
     return Stream.of(
-        Arguments.of(URI.create("https://gen3.biodatacatalyst.nhlbi.nih.gov/file.pfb"), true),
         Arguments.of(
-            URI.create("https://subdomain.gen3.biodatacatalyst.nhlbi.nih.gov/file.pfb"), true),
+            /* importUri */ URI.create("https://storage.googleapis.com/test-bucket/file.pfb"),
+            /* shouldReuqireProtectedDataPolicy */ false),
         Arguments.of(
-            URI.create(
+            /* importUri */ URI.create("https://files.terra.bio/file.pfb"),
+            /* shouldReuqireProtectedDataPolicy */ false));
+  }
+
+  /*
+   * Imports from BioData Catalyst should require _both_ a private workspace and protected data policy.
+   * Thus, these test cases are valid for both configuredSourcesRequireAPrivateWorkspace and
+   * configuredSourcesRequireAProtectedDataPolicy.
+   */
+  private static Stream<Arguments> bioDataCatalystTestCases() {
+    return Stream.of(
+        Arguments.of(
+            /* importUri */ URI.create("https://gen3.biodatacatalyst.nhlbi.nih.gov/file.pfb"),
+            /* shouldRequirePrivateWorkspace/ProtectedDataPolicy */ true),
+        Arguments.of(
+            /* importUri */ URI.create(
+                "https://subdomain.gen3.biodatacatalyst.nhlbi.nih.gov/file.pfb"),
+            /* shouldRequirePrivateWorkspace/ProtectedDataPolicy */ true),
+        Arguments.of(
+            /* importUri */ URI.create(
                 "https://gen3-biodatacatalyst-nhlbi-nih-gov-pfb-export.s3.amazonaws.com/file.pfb"),
-            true),
+            /* shouldRequirePrivateWorkspace/ProtectedDataPolicy */ true),
         Arguments.of(
-            URI.create(
+            /* importUri */ URI.create(
                 "https://s3.amazonaws.com/gen3-biodatacatalyst-nhlbi-nih-gov-pfb-export/file.pfb"),
-            true),
+            /* shouldRequirePrivateWorkspace/ProtectedDataPolicy */ true),
         Arguments.of(
-            URI.create("https://gen3-theanvil-io-pfb-export.s3.amazonaws.com/file.pfb"), true),
+            /* importUri */ URI.create(
+                "https://gen3-theanvil-io-pfb-export.s3.amazonaws.com/file.pfb"),
+            /* shouldRequirePrivateWorkspace/ProtectedDataPolicy */ true),
         Arguments.of(
-            URI.create("https://s3.amazonaws.com/gen3-theanvil-io-pfb-export/file.pfb"), true),
-        Arguments.of(URI.create("https://storage.googleapis.com/test-bucket/file.pfb"), false),
-        Arguments.of(URI.create("https://files.terra.bio/file.pfb"), false));
+            /* importUri */ URI.create(
+                "https://s3.amazonaws.com/gen3-theanvil-io-pfb-export/file.pfb"),
+            /* shouldRequirePrivateWorkspace/ProtectedDataPolicy */ true));
   }
 }

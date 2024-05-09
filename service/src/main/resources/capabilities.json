@@ -3,5 +3,6 @@
   "dataimport.pfb": true,
   "dataimport.tdrmanifest": false,
   "edit.deleteAttribute": true,
-  "edit.renameAttribute": true
+  "edit.renameAttribute": true,
+  "search.filter.ids": true
 }

@@ -2,11 +2,11 @@ import org.springframework.boot.gradle.plugin.SpringBootPlugin
 
 plugins {
     id 'org.springframework.boot' version '3.2.5' apply false
-    id 'io.spring.dependency-management' version '1.1.4' apply false
+    id 'io.spring.dependency-management' version '1.1.5' apply false
     id 'com.google.cloud.tools.jib' version '3.2.1' apply false
     id "org.sonarqube" version "5.0.0.4638" apply false
     id 'idea'
-    id "org.openapi.generator" version "6.6.0" apply false
+    id "org.openapi.generator" version "7.5.0" apply false
     id 'java'
     id 'com.gorylenko.gradle-git-properties' version '2.4.2'
     id 'jacoco'
@@ -20,7 +20,7 @@ repositories {
 
 subprojects {
     group = 'org.databiosphere'
-    version = '0.2.162-SNAPSHOT'
+    version = '0.2.170-SNAPSHOT'
 
     apply plugin: 'idea'
     apply plugin: 'java'

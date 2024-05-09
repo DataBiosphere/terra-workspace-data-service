@@ -24,7 +24,7 @@ import jakarta.annotation.Generated;
  */
 
 @JsonTypeName("ImportRequest")
-@Generated(value = "org.openapitools.codegen.languages.SpringCodegen")
+@Generated(value = "org.openapitools.codegen.languages.SpringCodegen", comments = "Generator version: 7.5.0")
 public class ImportRequestServerModel {
 
   /**
@@ -71,11 +71,6 @@ public class ImportRequestServerModel {
   @Valid
   private Map<String, Object> options = new HashMap<>();
 
-  /**
-   * Default constructor
-   * @deprecated Use {@link ImportRequestServerModel#ImportRequestServerModel(TypeEnum, URI)}
-   */
-  @Deprecated
   public ImportRequestServerModel() {
     super();
   }
