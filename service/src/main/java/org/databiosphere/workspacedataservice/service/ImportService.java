@@ -23,6 +23,7 @@ import org.databiosphere.workspacedataservice.generated.ImportRequestServerModel
 import org.databiosphere.workspacedataservice.sam.SamDao;
 import org.databiosphere.workspacedataservice.service.model.exception.AuthenticationException;
 import org.databiosphere.workspacedataservice.service.model.exception.AuthenticationMaskableException;
+import org.databiosphere.workspacedataservice.service.model.exception.ValidationException;
 import org.databiosphere.workspacedataservice.shared.model.CollectionId;
 import org.databiosphere.workspacedataservice.shared.model.Schedulable;
 import org.databiosphere.workspacedataservice.shared.model.WorkspaceId;
@@ -64,6 +65,10 @@ public class ImportService {
       UUID collectionId, ImportRequestServerModel importRequest) {
     // validate collection exists
     collectionService.validateCollection(collectionId);
+
+    if (true) {
+      throw new ValidationException("Forced error.");
+    }
 
     // validate write permission
     boolean hasWriteCollectionPermission =
