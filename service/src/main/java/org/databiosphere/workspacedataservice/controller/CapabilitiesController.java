@@ -27,7 +27,7 @@ public class CapabilitiesController implements CapabilitiesApi {
     Logger logger = LoggerFactory.getLogger(this.getClass().getName());
     try {
       tempModel = objectMapper.readValue(inputStream, CapabilitiesServerModel.class);
-      logger.info("Capabilities initialized: {}", tempModel.entrySet());
+      logger.info("Capabilities initialized: {}", tempModel.getAdditionalProperties().entrySet());
     } catch (IOException e) {
       logger.error("Could not initialize capabilities: " + e.getMessage(), e);
       tempModel = new CapabilitiesServerModel();
