@@ -21,6 +21,8 @@ import org.databiosphere.workspacedataservice.service.model.exception.BadStreami
 import org.databiosphere.workspacedataservice.shared.model.OperationType;
 import org.databiosphere.workspacedataservice.shared.model.Record;
 import org.databiosphere.workspacedataservice.shared.model.RecordType;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.lang.Nullable;
 import org.springframework.stereotype.Service;
@@ -29,6 +31,8 @@ import org.springframework.stereotype.Service;
 public class BatchWriteService {
   private final DataTypeInferer inferer;
   private final int batchSize;
+
+  private static final Logger LOGGER = LoggerFactory.getLogger(BatchWriteService.class);
 
   public BatchWriteService(
       @Value("${twds.write.batch.size:5000}") int batchSize, DataTypeInferer inf) {
@@ -109,13 +113,22 @@ public class BatchWriteService {
               recordSource.importMode() == RELATIONS ? excludeEmptyRecords(records) : records;
 
           switch (opType) {
-            case UPSERT -> recordSink.upsertBatch(recType, schema, recordsToWrite, primaryKey);
+            case UPSERT -> {
+              LOGGER.info(
+                  "Upserting {} records as {} for record type {}",
+                  recordsToWrite.size(),
+                  recordSource.importMode().name(),
+                  recType.getName());
+              recordSink.upsertBatch(recType, schema, recordsToWrite, primaryKey);
+            }
             case DELETE -> recordSink.deleteBatch(recType, recordsToWrite);
             default -> throw new UnsupportedOperationException(
                 "OperationType " + opType + " is not supported");
           }
           // update the result counts
           result.increaseCount(recType, recordsToWrite.size());
+        } else {
+          LOGGER.info("Nothing to import for this batch in table '{}'", recType.getName());
         }
       }
     }

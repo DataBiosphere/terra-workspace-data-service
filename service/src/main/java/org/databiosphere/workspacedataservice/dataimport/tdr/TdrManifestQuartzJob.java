@@ -26,6 +26,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.avro.generic.GenericRecord;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.parquet.avro.AvroParquetReader;
@@ -121,7 +122,10 @@ public class TdrManifestQuartzJob extends QuartzJob {
     // get the snapshot id from the manifest
     UUID snapshotId = snapshotExportResponseModel.getSnapshot().getId();
     logger.info(
-        "Starting import of snapshot {} to collection {}", snapshotId, details.collectionId());
+        "Job {} starting import of snapshot {} to collection {}",
+        jobId,
+        snapshotId,
+        details.collectionId());
 
     // Create snapshot reference
     linkSnapshots(Set.of(snapshotId), details.workspaceId());
@@ -135,6 +139,7 @@ public class TdrManifestQuartzJob extends QuartzJob {
     FileDownloadHelper fileDownloadHelper = getFilesForImport(tdrManifestImportTables);
     try (RecordSink recordSink = recordSinkFactory.buildRecordSink(details)) {
       // loop through the tables to be imported and upsert base attributes
+      logger.info("Job {} starting write of base attributes  ...", jobId);
       var result =
           importTables(
               tdrManifestImportTables,
@@ -143,6 +148,7 @@ public class TdrManifestQuartzJob extends QuartzJob {
               recordSink);
 
       // add relations to the existing base attributes
+      logger.info("Job {} starting write of relations ...", jobId);
       result.merge(
           importTables(
               tdrManifestImportTables,
@@ -193,7 +199,10 @@ public class TdrManifestQuartzJob extends QuartzJob {
       ImportMode importMode) {
     // upsert this parquet file's contents
     try (ParquetReader<GenericRecord> avroParquetReader = readerForFile(inputFile)) {
-      logger.info("batch-writing records for file ...");
+      logger.debug(
+          "batch-writing records for file in table {} with mode {} ...",
+          table.recordType().getName(),
+          importMode.name());
       return batchWriteService.batchWrite(
           recordSourceFactory.forTdrImport(avroParquetReader, table, importMode),
           recordSink,
@@ -233,29 +242,50 @@ public class TdrManifestQuartzJob extends QuartzJob {
       ImportMode importMode,
       RecordSink recordSink) {
     var combinedResult = BatchWriteResult.empty();
+    var numTables = importTables.size();
+    AtomicInteger tableIdx = new AtomicInteger();
+
     // loop through the tables that have data files.
     importTables.forEach(
         importTable -> {
-          logger.info("Processing table '{}' ...", importTable.recordType().getName());
+          logger.info(
+              "Processing {} for table {}/{} '{}' ...",
+              importMode.name(),
+              tableIdx.incrementAndGet(),
+              numTables,
+              importTable.recordType().getName());
+
+          Collection<File> files = fileMap.get(importTable.recordType().getName());
+
+          if (files.isEmpty()) {
+            logger.info("Nothing to import for table '{}'", importTable.recordType().getName());
+            return; // skip the remainder of the forEach lambda for this table
+          }
+
+          var numFiles = files.size();
+          AtomicInteger fileIdx = new AtomicInteger();
 
           // loop through each parquet file
-          fileMap
-              .get(importTable.recordType().getName())
-              .forEach(
-                  file -> {
-                    try {
-                      org.apache.hadoop.fs.Path hadoopFilePath =
-                          new org.apache.hadoop.fs.Path(file.toString());
-                      Configuration configuration = new Configuration();
+          files.forEach(
+              file -> {
+                logger.info(
+                    "file {}/{} for '{}' ...",
+                    fileIdx.incrementAndGet(),
+                    numFiles,
+                    importTable.recordType().getName());
+                try {
+                  org.apache.hadoop.fs.Path hadoopFilePath =
+                      new org.apache.hadoop.fs.Path(file.toString());
+                  Configuration configuration = new Configuration();
 
-                      // generate the HadoopInputFile
-                      InputFile inputFile = HadoopInputFile.fromPath(hadoopFilePath, configuration);
-                      var result = importTable(inputFile, importTable, recordSink, importMode);
-                      combinedResult.merge(result);
-                    } catch (IOException e) {
-                      throw new TdrManifestImportException(e.getMessage(), e);
-                    }
-                  });
+                  // generate the HadoopInputFile
+                  InputFile inputFile = HadoopInputFile.fromPath(hadoopFilePath, configuration);
+                  var result = importTable(inputFile, importTable, recordSink, importMode);
+                  combinedResult.merge(result);
+                } catch (IOException e) {
+                  throw new TdrManifestImportException(e.getMessage(), e);
+                }
+              });
         });
     return combinedResult;
   }
@@ -275,14 +305,12 @@ public class TdrManifestQuartzJob extends QuartzJob {
       // loop through the tables that have data files.
       importTables.forEach(
           importTable -> {
-            logger.info("Fetching files for table '{}' ...", importTable.recordType().getName());
-
             // find all Parquet files for this table
             List<URL> paths = importTable.dataFiles();
-            logger.debug(
-                "Table '{}' has {} export file(s) ...",
-                importTable.recordType().getName(),
-                paths.size());
+            logger.info(
+                "Fetching {} files for table '{}' ...",
+                paths.size(),
+                importTable.recordType().getName());
 
             // loop through each parquet file
             paths.forEach(
