@@ -863,27 +863,26 @@ components:
     components:
       type: object
       properties:
+        Permissions:
+          $ref: '#/components/schemas/permissionsComponent'
         db:
           $ref: '#/components/schemas/dbComponent'
+        livenessState:
+          $ref: '#/components/schemas/component'
         ping:
           $ref: '#/components/schemas/component'
-        mainDb:
-          $ref: '#/components/schemas/dbValidationcomponent'
+        pubSub:
+          $ref: '#/components/schemas/component'
+        readinessState:
+          $ref: '#/components/schemas/component'
     dbComponent:
       type: object
       properties:
         status:
           type: string
-        components:
-          $ref: '#/components/schemas/component'
-    dbValidationcomponent:
-      type: object
-      properties:
-        status:
-          type: string
-        components:
-          $ref: '#/components/schemas/dbValidationcomponentDetails'
-    dbValidationcomponentDetails:
+        details:
+          $ref: '#/components/schemas/dbComponentDetails'
+    dbComponentDetails:
       type: object
       properties:
         database:
@@ -943,6 +942,18 @@ components:
           type: string
         errorMessage:
           type: string
+    permissionsComponent:
+      type: object
+      properties:
+        status:
+          type: string
+        details:
+          $ref: '#/components/schemas/permissionsComponentDetails'
+    permissionsComponentDetails:
+      type: object
+      properties:
+        samOk:
+          type: boolean
     RecordAttributes:
       type: object
       additionalProperties: true
