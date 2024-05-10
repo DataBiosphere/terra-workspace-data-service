@@ -7,8 +7,6 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.when;
 
-import bio.terra.workspace.model.WorkspaceDescription;
-import bio.terra.workspace.model.WsmPolicyInput;
 import java.net.URI;
 import java.util.List;
 import java.util.Set;
@@ -19,12 +17,12 @@ import org.broadinstitute.dsde.workbench.client.sam.model.RolesAndActions;
 import org.broadinstitute.dsde.workbench.client.sam.model.UserResourcesResponse;
 import org.databiosphere.workspacedataservice.common.TestBase;
 import org.databiosphere.workspacedataservice.config.DataImportProperties.ImportSourceConfig;
+import org.databiosphere.workspacedataservice.dataimport.protecteddatasupport.ProtectedDataSupport;
 import org.databiosphere.workspacedataservice.generated.ImportRequestServerModel;
 import org.databiosphere.workspacedataservice.generated.ImportRequestServerModel.TypeEnum;
 import org.databiosphere.workspacedataservice.sam.SamDao;
 import org.databiosphere.workspacedataservice.service.model.exception.ValidationException;
 import org.databiosphere.workspacedataservice.shared.model.WorkspaceId;
-import org.databiosphere.workspacedataservice.workspacemanager.WorkspaceManagerDao;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
@@ -39,15 +37,16 @@ import org.springframework.context.annotation.Primary;
 
 @SpringBootTest
 class DefaultImportValidatorTest extends TestBase {
+
   @TestConfiguration
   static class DefaultImportValidatorTestConfiguration {
     @Bean
     @Primary
     DefaultImportValidator getDefaultImportValidatorForTest(
-        SamDao samDao, WorkspaceManagerDao wsmDao) {
+        ProtectedDataSupport protectedDataSupport, SamDao samDao) {
       return new DefaultImportValidator(
+          protectedDataSupport,
           samDao,
-          wsmDao,
           /* allowedHttpsHosts */ Set.of(Pattern.compile(".*\\.terra\\.bio")),
           /* sources */ List.of(
               new ImportSourceConfig(
@@ -62,9 +61,9 @@ class DefaultImportValidatorTest extends TestBase {
     }
   }
 
-  @MockBean SamDao samDao;
+  @MockBean ProtectedDataSupport protectedDataSupport;
 
-  @MockBean WorkspaceManagerDao wsmDao;
+  @MockBean SamDao samDao;
 
   @Autowired DefaultImportValidator importValidator;
 
@@ -203,11 +202,12 @@ class DefaultImportValidatorTest extends TestBase {
   @ParameterizedTest
   @MethodSource("requireProtectedWorkspacesForImportsFromConfiguredSourcesTestCases")
   void requireProtectedWorkspacesForImportsFromConfiguredSources(
-      URI importUri, WorkspaceDescription workspaceDescription, boolean shouldAllowImport) {
+      URI importUri, boolean workspaceSupportsProtectedDataPolicy, boolean shouldAllowImport) {
     // Arrange
     ImportRequestServerModel importRequest = new ImportRequestServerModel(TypeEnum.PFB, importUri);
 
-    when(wsmDao.getWorkspace(destinationWorkspaceId.id())).thenReturn(workspaceDescription);
+    when(protectedDataSupport.workspaceSupportsProtectedDataPolicy(destinationWorkspaceId))
+        .thenReturn(workspaceSupportsProtectedDataPolicy);
 
     // Act
     if (shouldAllowImport) {
@@ -227,30 +227,22 @@ class DefaultImportValidatorTest extends TestBase {
     URI protectedImport = URI.create("https://files.terra.bio/protected.pfb");
     URI unprotectedImport = URI.create("https://files.terra.bio/file.pfb");
 
-    WorkspaceDescription workspaceWithoutProtectedDataPolicy = new WorkspaceDescription();
-
-    WorkspaceDescription workspaceWithProtectedDataPolicy = new WorkspaceDescription();
-    WsmPolicyInput policy = new WsmPolicyInput();
-    policy.setNamespace("terra");
-    policy.setName("protected-data");
-    workspaceWithProtectedDataPolicy.setPolicies(List.of(policy));
-
     return Stream.of(
         Arguments.of(
             /* importUri */ protectedImport,
-            /* workspaceDescription */ workspaceWithoutProtectedDataPolicy,
+            /* workspaceSupportsProtectedDataPolicy */ false,
             /* shouldAllowImport */ false),
         Arguments.of(
             /* importUri */ protectedImport,
-            /* workspaceDescription */ workspaceWithProtectedDataPolicy,
+            /* workspaceSupportsProtectedDataPolicy */ true,
             /* shouldAllowImport */ true),
         Arguments.of(
             /* importUri */ unprotectedImport,
-            /* workspaceDescription */ workspaceWithoutProtectedDataPolicy,
+            /* workspaceSupportsProtectedDataPolicy */ false,
             /* shouldAllowImport */ true),
         Arguments.of(
             /* importUri */ protectedImport,
-            /* workspaceDescription */ workspaceWithProtectedDataPolicy,
+            /* workspaceSupportsProtectedDataPolicy */ true,
             /* shouldAllowImport */ true));
   }
 

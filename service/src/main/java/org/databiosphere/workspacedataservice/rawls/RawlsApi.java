@@ -14,6 +14,17 @@ import org.springframework.web.service.annotation.PostExchange;
 public interface RawlsApi {
 
   /**
+   * Get a single workspace's details, optionally filtered to only the specified fields.
+   *
+   * @param workspaceId target workspace
+   * @param fields comma separated list of fields
+   * @return workspace details
+   */
+  @GetExchange("/api/workspaces/id/{workspaceId}")
+  RawlsWorkspaceDetails getWorkspaceDetails(
+      @PathVariable UUID workspaceId, @RequestParam String fields);
+
+  /**
    * List snapshot references in a workspace.
    *
    * @param workspaceId target workspace

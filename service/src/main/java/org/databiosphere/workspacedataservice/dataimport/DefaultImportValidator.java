@@ -1,32 +1,25 @@
 package org.databiosphere.workspacedataservice.dataimport;
 
-import static java.util.Collections.emptyList;
 import static java.util.Collections.emptySet;
 import static java.util.regex.Pattern.compile;
 
-import bio.terra.workspace.model.WorkspaceDescription;
-import bio.terra.workspace.model.WsmPolicyInput;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Sets;
 import io.micrometer.common.util.StringUtils;
 import java.net.URI;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import org.broadinstitute.dsde.workbench.client.sam.model.UserResourcesResponse;
 import org.databiosphere.workspacedataservice.config.DataImportProperties.ImportSourceConfig;
+import org.databiosphere.workspacedataservice.dataimport.protecteddatasupport.ProtectedDataSupport;
 import org.databiosphere.workspacedataservice.generated.ImportRequestServerModel;
 import org.databiosphere.workspacedataservice.generated.ImportRequestServerModel.TypeEnum;
-import org.databiosphere.workspacedataservice.policy.PolicyUtils;
 import org.databiosphere.workspacedataservice.sam.SamDao;
 import org.databiosphere.workspacedataservice.service.model.exception.ValidationException;
 import org.databiosphere.workspacedataservice.shared.model.WorkspaceId;
-import org.databiosphere.workspacedataservice.workspacemanager.WorkspaceManagerDao;
-import org.databiosphere.workspacedataservice.workspacemanager.WorkspaceManagerException;
-import org.springframework.http.HttpStatus;
 import org.springframework.lang.Nullable;
 
 public class DefaultImportValidator implements ImportValidator {
@@ -48,12 +41,12 @@ public class DefaultImportValidator implements ImportValidator {
           );
   private final Map<String, Set<Pattern>> allowedHostsByScheme;
   private final ImportRequirementsFactory importRequirementsFactory;
+  private final ProtectedDataSupport protectedDataSupport;
   private final SamDao samDao;
-  private final WorkspaceManagerDao wsmDao;
 
   public DefaultImportValidator(
+      ProtectedDataSupport protectedDataSupport,
       SamDao samDao,
-      WorkspaceManagerDao wsmDao,
       Set<Pattern> allowedHttpsHosts,
       List<ImportSourceConfig> sources,
       @Nullable String allowedRawlsBucket) {
@@ -69,8 +62,8 @@ public class DefaultImportValidator implements ImportValidator {
 
     this.allowedHostsByScheme = allowedHostsBuilder.build();
     this.importRequirementsFactory = new ImportRequirementsFactory(sources);
+    this.protectedDataSupport = protectedDataSupport;
     this.samDao = samDao;
-    this.wsmDao = wsmDao;
   }
 
   private Set<Pattern> getAllowedHosts(ImportRequestServerModel importRequest) {
@@ -119,7 +112,7 @@ public class DefaultImportValidator implements ImportValidator {
         importRequirementsFactory.getRequirementsForImport(importRequest.getUrl());
 
     if (requirements.protectedDataPolicy()
-        && !checkWorkspaceHasProtectedDataPolicy(destinationWorkspaceId)) {
+        && !protectedDataSupport.workspaceSupportsProtectedDataPolicy(destinationWorkspaceId)) {
       throw new ValidationException(
           "Data from this source can only be imported into a protected workspace.");
     }
@@ -127,22 +120,6 @@ public class DefaultImportValidator implements ImportValidator {
     if (requirements.privateWorkspace() && !checkWorkspaceIsPrivate(destinationWorkspaceId)) {
       throw new ValidationException(
           "Data from this source cannot be imported into a public workspace.");
-    }
-  }
-
-  private boolean checkWorkspaceHasProtectedDataPolicy(WorkspaceId workspaceId) {
-    try {
-      WorkspaceDescription workspace = wsmDao.getWorkspace(workspaceId.id());
-      List<WsmPolicyInput> workspacePolicies =
-          Optional.ofNullable(workspace.getPolicies()).orElse(emptyList());
-      return workspacePolicies.stream().anyMatch(PolicyUtils::isProtectedDataPolicy);
-    } catch (WorkspaceManagerException e) {
-      // GCP workspaces without a policy will not be present in Workspace Manager.
-      if (e.getStatusCode().equals(HttpStatus.NOT_FOUND)) {
-        return false;
-      } else {
-        throw e;
-      }
     }
   }
 

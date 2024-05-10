@@ -17,6 +17,21 @@ public class RawlsClient {
     this.restClientRetry = restClientRetry;
   }
 
+  public RawlsWorkspaceDetails getWorkspaceDetails(UUID workspaceId) {
+    try {
+      RestCall<RawlsWorkspaceDetails> restCall =
+          () ->
+              rawlsApi.getWorkspaceDetails(
+                  workspaceId,
+                  /* RawlsWorkspaceDetails only includes the subset of workspace fields needed by CWDS. */
+                  /* fields */ String.join(",", RawlsWorkspaceDetails.SUPPORTED_FIELDS));
+
+      return restClientRetry.withRetryAndErrorHandling(restCall, "Rawls.getWorkspaceDetails");
+    } catch (RestClientResponseException restException) {
+      throw new RawlsException(restException);
+    }
+  }
+
   public SnapshotListResponse enumerateDataRepoSnapshotReferences(
       UUID workspaceId, int offset, int limit) {
     try {
