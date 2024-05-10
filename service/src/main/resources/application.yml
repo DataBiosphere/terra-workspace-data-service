@@ -35,6 +35,16 @@ management:
         info: version
         health: status
         prometheus: prometheus
+  health:
+    defaults:
+      enabled: false
+    db:
+      enabled: true
+    ping:
+      enabled: true
+    pubsub:
+      enabled: true
+
   # additional keys to expose in the actuator info endpoint:
   info:
     env:

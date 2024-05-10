@@ -865,8 +865,6 @@ components:
       properties:
         db:
           $ref: '#/components/schemas/dbComponent'
-        diskSpace:
-          $ref: '#/components/schemas/diskSpaceComponent'
         ping:
           $ref: '#/components/schemas/component'
         mainDb:
@@ -892,24 +890,6 @@ components:
           type: string
         validationQuery:
           type: string
-    diskSpaceComponent:
-      type: object
-      properties:
-        status:
-          type: string
-        details:
-          $ref: '#/components/schemas/diskSpaceComponentDetails'
-    diskSpaceComponentDetails:
-      type: object
-      properties:
-        total:
-          type: string
-        free:
-          type: number
-        threshold:
-          type: number
-        exists:
-          type: boolean
     ErrorResponse:
       required:
         - status
