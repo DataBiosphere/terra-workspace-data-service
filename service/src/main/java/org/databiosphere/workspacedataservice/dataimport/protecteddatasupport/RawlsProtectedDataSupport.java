@@ -1,10 +1,5 @@
 package org.databiosphere.workspacedataservice.dataimport.protecteddatasupport;
 
-import static java.util.Collections.emptyList;
-
-import bio.terra.workspace.model.WsmPolicyInput;
-import java.util.List;
-import java.util.Optional;
 import org.databiosphere.workspacedataservice.annotations.DeploymentMode.ControlPlane;
 import org.databiosphere.workspacedataservice.policy.PolicyUtils;
 import org.databiosphere.workspacedataservice.rawls.RawlsClient;
@@ -26,15 +21,8 @@ public class RawlsProtectedDataSupport implements ProtectedDataSupport {
     RawlsWorkspaceDetails workspaceDetails = rawlsClient.getWorkspaceDetails(workspaceId.id());
     WorkspaceType workspaceType = workspaceDetails.workspace().workspaceType();
     return switch (workspaceType) {
-      case MC -> {
-        List<WsmPolicyInput> workspacePolicies =
-            Optional.ofNullable(workspaceDetails.policies()).orElse(emptyList());
-        yield workspacePolicies.stream().anyMatch(PolicyUtils::isProtectedDataPolicy);
-      }
-      case RAWLS -> {
-        String bucketName = workspaceDetails.workspace().bucketName();
-        yield bucketName.startsWith("fc-secure-");
-      }
+      case MC -> PolicyUtils.containsProtectedDataPolicy(workspaceDetails.policies());
+      case RAWLS -> workspaceDetails.workspace().bucketName().startsWith("fc-secure-");
     };
   }
 }

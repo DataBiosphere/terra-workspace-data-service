@@ -1,11 +1,6 @@
 package org.databiosphere.workspacedataservice.dataimport.protecteddatasupport;
 
-import static java.util.Collections.emptyList;
-
 import bio.terra.workspace.model.WorkspaceDescription;
-import bio.terra.workspace.model.WsmPolicyInput;
-import java.util.List;
-import java.util.Optional;
 import org.databiosphere.workspacedataservice.annotations.DeploymentMode.DataPlane;
 import org.databiosphere.workspacedataservice.policy.PolicyUtils;
 import org.databiosphere.workspacedataservice.shared.model.WorkspaceId;
@@ -23,8 +18,6 @@ public class WsmProtectedDataSupport implements ProtectedDataSupport {
 
   public boolean workspaceSupportsProtectedDataPolicy(WorkspaceId workspaceId) {
     WorkspaceDescription workspace = wsmDao.getWorkspace(workspaceId.id());
-    List<WsmPolicyInput> workspacePolicies =
-        Optional.ofNullable(workspace.getPolicies()).orElse(emptyList());
-    return workspacePolicies.stream().anyMatch(PolicyUtils::isProtectedDataPolicy);
+    return PolicyUtils.containsProtectedDataPolicy(workspace.getPolicies());
   }
 }
