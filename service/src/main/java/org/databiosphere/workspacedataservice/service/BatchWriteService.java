@@ -128,7 +128,7 @@ public class BatchWriteService {
           // update the result counts
           result.increaseCount(recType, recordsToWrite.size());
         } else {
-          LOGGER.info("Nothing to import for this batch in table '{}'", recType.getName());
+          LOGGER.info("Nothing to import for this batch for record type {}", recType.getName());
         }
       }
     }
