@@ -23,7 +23,7 @@ import org.springframework.test.context.ActiveProfiles;
 
 @SpringBootTest
 @ActiveProfiles(profiles = "control-plane", inheritProfiles = false)
-public class RawlsProtectedDataSupportTest extends TestBase {
+class RawlsProtectedDataSupportTest extends TestBase {
   @MockBean RawlsClient rawlsClient;
 
   @Autowired RawlsProtectedDataSupport rawlsProtectedDataSupport;

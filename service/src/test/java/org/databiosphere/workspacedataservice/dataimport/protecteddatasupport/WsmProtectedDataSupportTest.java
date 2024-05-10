@@ -19,7 +19,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 
 @SpringBootTest
-public class WsmProtectedDataSupportTest extends TestBase {
+class WsmProtectedDataSupportTest extends TestBase {
   @MockBean WorkspaceManagerDao wsmDao;
 
   @Autowired WsmProtectedDataSupport wsmProtectedDataSupport;
