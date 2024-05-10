@@ -34,7 +34,7 @@ public class FileDownloadHelper {
       Path tempFilePath =
           Files.createTempFile(
               tempFileDir, /* prefix= */ "tdr-", /* suffix= */ "download", permissions);
-      logger.info("downloading to temp file {} ...", tempFilePath);
+      logger.debug("downloading to temp file {} ...", tempFilePath);
       FileUtils.copyURLToFile(pathToRemoteFile, tempFilePath.toFile());
       // In the TDR manifest, for Azure snapshots only,
       // the first file in the list will always be a directory.
@@ -42,7 +42,7 @@ public class FileDownloadHelper {
       // will fail; it has no content. To avoid those failures,
       // check files for length and ignore any that are empty
       if (tempFilePath.toFile().length() == 0) {
-        logger.info("Empty file in parquet, skipping");
+        logger.debug("Empty file in parquet, skipping");
         Files.delete(tempFilePath);
       } else {
         // Once the remote file has been copied to the temp file, make it read-only
