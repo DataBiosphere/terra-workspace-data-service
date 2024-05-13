@@ -853,42 +853,6 @@ components:
         time:
           type: string
           format: date-time
-    component:
-      type: object
-      properties:
-        status:
-          type: string
-        details:
-          type: string
-    components:
-      type: object
-      properties:
-        Permissions:
-          $ref: '#/components/schemas/permissionsComponent'
-        db:
-          $ref: '#/components/schemas/dbComponent'
-        livenessState:
-          $ref: '#/components/schemas/component'
-        ping:
-          $ref: '#/components/schemas/component'
-        pubSub:
-          $ref: '#/components/schemas/component'
-        readinessState:
-          $ref: '#/components/schemas/component'
-    dbComponent:
-      type: object
-      properties:
-        status:
-          type: string
-        details:
-          $ref: '#/components/schemas/dbComponentDetails'
-    dbComponentDetails:
-      type: object
-      properties:
-        database:
-          type: string
-        validationQuery:
-          type: string
     ErrorResponse:
       required:
         - status
@@ -942,18 +906,6 @@ components:
           type: string
         errorMessage:
           type: string
-    permissionsComponent:
-      type: object
-      properties:
-        status:
-          type: string
-        details:
-          $ref: '#/components/schemas/permissionsComponentDetails'
-    permissionsComponentDetails:
-      type: object
-      properties:
-        samOk:
-          type: boolean
     RecordAttributes:
       type: object
       additionalProperties: true
@@ -1082,7 +1034,7 @@ components:
         status:
           type: string
         components:
-          $ref: '#/components/schemas/components'
+          type: object
     TsvUploadResponse:
       type: object
       required:
