@@ -77,6 +77,11 @@ public class DefaultImportValidator implements ImportValidator {
         SUPPORTED_URL_SCHEMES_BY_IMPORT_TYPE.getOrDefault(importType, emptySet());
 
     URI importUrl = importRequest.getUrl();
+
+    if (!importUrl.isAbsolute()) {
+      throw new ValidationException("Invalid import URL.");
+    }
+
     String urlScheme = importUrl.getScheme();
     if (!schemesSupportedForImportType.contains(urlScheme)) {
       throw new ValidationException("Files may not be imported from %s URLs.".formatted(urlScheme));

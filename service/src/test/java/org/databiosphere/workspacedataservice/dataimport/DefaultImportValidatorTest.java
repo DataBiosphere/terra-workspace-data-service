@@ -85,6 +85,20 @@ class DefaultImportValidatorTest extends TestBase {
   }
 
   @Test
+  void rejectsRelativeUrls() {
+    // Arrange
+    URI importUri = URI.create("/path/to/file");
+    ImportRequestServerModel importRequest = new ImportRequestServerModel(TypeEnum.PFB, importUri);
+
+    // Act/Assert
+    ValidationException err =
+        assertThrows(
+            ValidationException.class,
+            () -> importValidator.validateImport(importRequest, destinationWorkspaceId));
+    assertEquals("Invalid import URL.", err.getMessage());
+  }
+
+  @Test
   void rejectsFileImportUrls() {
     // Arrange
     URI importUri = URI.create("file:///path/to/file");
