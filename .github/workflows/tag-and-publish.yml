@@ -26,11 +26,12 @@ jobs:
 
       - name: Bump the tag to a new version
         # https://github.com/DataBiosphere/github-actions/tree/master/actions/bumper
-        uses: databiosphere/github-actions/actions/bumper@bumper-0.3.0
+        uses: databiosphere/github-actions/actions/bumper@bumper-0.4.0
         id: tag
         env:
           GITHUB_TOKEN: ${{ secrets.BROADBOT_TOKEN }}
           DEFAULT_BUMP: minor
+          FORCE_WITHOUT_CHANGES: true
           RELEASE_BRANCHES: main
           VERSION_FILE_PATH: build.gradle
           VERSION_LINE_MATCH: "^\\s*version\\s*=\\s*'.*'"

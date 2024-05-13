@@ -36,10 +36,10 @@ jib {
 }
 
 ext {
-    parquet_mr_version = "1.13.1"
+    parquet_mr_version = "1.14.0"
     hadoop_version = "3.4.0"
     prometheus_rsocket_version = "1.5.3"
-    spring_cloud_gcp_version = "5.1.2"
+    spring_cloud_gcp_version = "5.2.1"
 }
 
 dependencies {
@@ -62,11 +62,11 @@ dependencies {
     implementation "io.micrometer.prometheus:prometheus-rsocket-spring:$prometheus_rsocket_version"
     implementation 'org.springframework.integration:spring-integration-jdbc'
     implementation 'org.aspectj:aspectjweaver' // required by spring-retry, not used directly
-    implementation 'com.google.guava:guava:33.1.0-jre'
+    implementation 'com.google.guava:guava:33.2.0-jre'
     implementation 'org.postgresql:postgresql'
     implementation 'org.webjars:webjars-locator-core' // versioned by spring dependency management
     implementation 'com.fasterxml.jackson.dataformat:jackson-dataformat-csv'
-    implementation 'io.sentry:sentry-logback:7.8.0'
+    implementation 'io.sentry:sentry-logback:7.9.0'
     implementation 'net.logstash.logback:logstash-logback-encoder:7.4'
     implementation 'org.codehaus.janino:janino'
     implementation 'org.liquibase:liquibase-core'
@@ -86,7 +86,7 @@ dependencies {
     implementation 'com.squareup.okhttp3:okhttp' // required by Sam client
     implementation "bio.terra:datarepo-client:2.13.0-SNAPSHOT"
     implementation "bio.terra:workspace-manager-client:0.254.983-SNAPSHOT"
-    implementation "bio.terra:java-pfb-library:0.41.0"
+    implementation "bio.terra:java-pfb-library:0.42.0"
     implementation project(path: ':client')
 
     // Parquet, used for TDR snapshot import
@@ -122,7 +122,7 @@ dependencies {
     implementation "org.glassfish.jersey.core:jersey-common"
 
     annotationProcessor 'org.springframework.boot:spring-boot-configuration-processor'
-    runtimeOnly 'org.webjars.npm:swagger-ui-dist:5.17.2'
+    runtimeOnly 'org.webjars.npm:swagger-ui-dist:5.17.8'
     testImplementation 'io.micrometer:micrometer-observation-test'
     testImplementation 'org.springframework.boot:spring-boot-starter-test'
     testImplementation 'org.junit.jupiter:junit-jupiter'
@@ -132,7 +132,7 @@ dependencies {
     testImplementation 'org.junit-pioneer:junit-pioneer:2.2.0'
 
     // google bucket mock
-    testImplementation 'com.google.cloud:google-cloud-nio:0.127.16'
+    testImplementation 'com.google.cloud:google-cloud-nio:0.127.17'
 
     constraints {
         implementation('org.json:json:20240303') {

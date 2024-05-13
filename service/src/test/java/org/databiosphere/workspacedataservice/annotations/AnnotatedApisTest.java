@@ -8,6 +8,8 @@ import org.databiosphere.workspacedataservice.annotations.DeploymentMode.Control
 import org.databiosphere.workspacedataservice.annotations.DeploymentMode.DataPlane;
 import org.databiosphere.workspacedataservice.common.TestBase;
 import org.databiosphere.workspacedataservice.dao.RecordDao;
+import org.databiosphere.workspacedataservice.dataimport.protecteddatasupport.ProtectedDataSupport;
+import org.databiosphere.workspacedataservice.dataimport.protecteddatasupport.WsmProtectedDataSupport;
 import org.databiosphere.workspacedataservice.dataimport.snapshotsupport.SnapshotSupportFactory;
 import org.databiosphere.workspacedataservice.dataimport.snapshotsupport.WsmSnapshotSupportFactory;
 import org.databiosphere.workspacedataservice.recordsink.RecordSinkFactory;
@@ -57,6 +59,12 @@ class AnnotatedApisTest extends TestBase {
     SnapshotSupportFactory overrideSnapshotSupportFactory(
         ActivityLogger activityLogger, WorkspaceManagerDao wsmDao) {
       return new WsmSnapshotSupportFactory(activityLogger, wsmDao);
+    }
+
+    @Primary
+    @Bean("overrideProtectedDataSupport")
+    ProtectedDataSupport overrideProtectedDataSupport(WorkspaceManagerDao wsmDao) {
+      return new WsmProtectedDataSupport(wsmDao);
     }
   }
 

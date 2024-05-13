@@ -1,25 +1,28 @@
 package org.databiosphere.workspacedataservice.dataimport;
 
+import static java.util.Collections.emptyList;
+import static org.assertj.core.api.AssertionsForClassTypes.assertThatExceptionOfType;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.when;
 
-import bio.terra.workspace.model.WorkspaceDescription;
-import bio.terra.workspace.model.WsmPolicyInput;
 import java.net.URI;
 import java.util.List;
 import java.util.Set;
 import java.util.UUID;
 import java.util.regex.Pattern;
 import java.util.stream.Stream;
+import org.broadinstitute.dsde.workbench.client.sam.model.RolesAndActions;
+import org.broadinstitute.dsde.workbench.client.sam.model.UserResourcesResponse;
 import org.databiosphere.workspacedataservice.common.TestBase;
 import org.databiosphere.workspacedataservice.config.DataImportProperties.ImportSourceConfig;
+import org.databiosphere.workspacedataservice.dataimport.protecteddatasupport.ProtectedDataSupport;
 import org.databiosphere.workspacedataservice.generated.ImportRequestServerModel;
 import org.databiosphere.workspacedataservice.generated.ImportRequestServerModel.TypeEnum;
+import org.databiosphere.workspacedataservice.sam.SamDao;
 import org.databiosphere.workspacedataservice.service.model.exception.ValidationException;
 import org.databiosphere.workspacedataservice.shared.model.WorkspaceId;
-import org.databiosphere.workspacedataservice.workspacemanager.WorkspaceManagerDao;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
@@ -34,25 +37,37 @@ import org.springframework.context.annotation.Primary;
 
 @SpringBootTest
 class DefaultImportValidatorTest extends TestBase {
+
   @TestConfiguration
   static class DefaultImportValidatorTestConfiguration {
     @Bean
     @Primary
-    DefaultImportValidator getDefaultImportValidatorForTest(WorkspaceManagerDao wsmDao) {
+    DefaultImportValidator getDefaultImportValidatorForTest(
+        ProtectedDataSupport protectedDataSupport, SamDao samDao) {
       return new DefaultImportValidator(
-          wsmDao,
+          protectedDataSupport,
+          samDao,
           /* allowedHttpsHosts */ Set.of(Pattern.compile(".*\\.terra\\.bio")),
           /* sources */ List.of(
-              new ImportSourceConfig(List.of(Pattern.compile("protected\\.pfb")), true)),
+              new ImportSourceConfig(
+                  /* urls */ List.of(Pattern.compile("protected\\.pfb")),
+                  /* requirePrivateWorkspace */ false,
+                  /* requireProtectedDataPolicy */ true),
+              new ImportSourceConfig(
+                  /* urls */ List.of(Pattern.compile("private\\.pfb")),
+                  /* requirePrivateWorkspace */ true,
+                  /* requireProtectedDataPolicy */ false)),
           /* allowedRawlsBucket */ "test-bucket");
     }
   }
 
-  @MockBean WorkspaceManagerDao wsmDao;
+  @MockBean ProtectedDataSupport protectedDataSupport;
+
+  @MockBean SamDao samDao;
 
   @Autowired DefaultImportValidator importValidator;
 
-  private final WorkspaceId destinationWorkspaceId = WorkspaceId.of(UUID.randomUUID());
+  private static final WorkspaceId destinationWorkspaceId = WorkspaceId.of(UUID.randomUUID());
 
   @Test
   void requiresHttpsImportUrls() {
@@ -67,6 +82,20 @@ class DefaultImportValidatorTest extends TestBase {
             ValidationException.class,
             () -> importValidator.validateImport(importRequest, destinationWorkspaceId));
     assertEquals("Files may not be imported from http URLs.", err.getMessage());
+  }
+
+  @Test
+  void rejectsRelativeUrls() {
+    // Arrange
+    URI importUri = URI.create("/path/to/file");
+    ImportRequestServerModel importRequest = new ImportRequestServerModel(TypeEnum.PFB, importUri);
+
+    // Act/Assert
+    ValidationException err =
+        assertThrows(
+            ValidationException.class,
+            () -> importValidator.validateImport(importRequest, destinationWorkspaceId));
+    assertEquals("Invalid import URL.", err.getMessage());
   }
 
   @Test
@@ -128,9 +157,10 @@ class DefaultImportValidatorTest extends TestBase {
   }
 
   @Test
-  void acceptsGsUrlsForRawlsJsonImports() {
+  void acceptsGsUrlsWithMatchingWorkspaceIdForRawlsJsonImports() {
     // Arrange
-    URI importUri = URI.create("gs://test-bucket/file");
+    URI importUri =
+        URI.create("gs://test-bucket/to-cwds/%s/random.json".formatted(destinationWorkspaceId));
     ImportRequestServerModel importRequest =
         new ImportRequestServerModel(TypeEnum.RAWLSJSON, importUri);
 
@@ -139,28 +169,59 @@ class DefaultImportValidatorTest extends TestBase {
   }
 
   @Test
-  void rejectGsUrlsWithMismatchingBucketForJsonImports() {
+  void rejectsGsUrlsWithCorrectBucketAndWorkspaceButUnexpectedFormat() {
     // Arrange
-    URI importUri = URI.create("gs://rando-bucket/file");
+    URI importUri =
+        URI.create("gs://test-bucket/random/%s/random.json".formatted(destinationWorkspaceId));
     ImportRequestServerModel importRequest =
         new ImportRequestServerModel(TypeEnum.RAWLSJSON, importUri);
 
     // Act/Assert
-    ValidationException err =
-        assertThrows(
-            ValidationException.class,
-            () -> importValidator.validateImport(importRequest, destinationWorkspaceId));
-    assertEquals("Files may not be imported from rando-bucket.", err.getMessage());
+    assertThatExceptionOfType(ValidationException.class)
+        .isThrownBy(() -> importValidator.validateImport(importRequest, destinationWorkspaceId))
+        .withMessageContaining("/to-cwds/%s/".formatted(destinationWorkspaceId));
+  }
+
+  @Test
+  void rejectGsUrlsWithMismatchingBucketForJsonImports() {
+    // Arrange
+    URI importUri =
+        URI.create("gs://rando-bucket/to-cwds/%s/random.json".formatted(destinationWorkspaceId));
+    ImportRequestServerModel importRequest =
+        new ImportRequestServerModel(TypeEnum.RAWLSJSON, importUri);
+
+    // Act/Assert
+    assertThatExceptionOfType(ValidationException.class)
+        .isThrownBy(
+            () -> importValidator.validateImport(importRequest, WorkspaceId.of(UUID.randomUUID())))
+        .withMessageContaining("Files may not be imported from rando-bucket.");
+  }
+
+  @Test
+  void rejectsGsUrlsWithMismatchingWorkspaceId() {
+    // Arrange
+    UUID otherWorkspaceId = UUID.randomUUID();
+    URI importUri =
+        URI.create(
+            "gs://test-bucket/to-cwds/%s/other-workspace-import.json".formatted(otherWorkspaceId));
+    ImportRequestServerModel importRequest =
+        new ImportRequestServerModel(TypeEnum.RAWLSJSON, importUri);
+
+    // Act/Assert
+    assertThatExceptionOfType(ValidationException.class)
+        .isThrownBy(() -> importValidator.validateImport(importRequest, destinationWorkspaceId))
+        .withMessageContaining("/to-cwds/%s/".formatted(destinationWorkspaceId));
   }
 
   @ParameterizedTest
   @MethodSource("requireProtectedWorkspacesForImportsFromConfiguredSourcesTestCases")
   void requireProtectedWorkspacesForImportsFromConfiguredSources(
-      URI importUri, WorkspaceDescription workspaceDescription, boolean shouldAllowImport) {
+      URI importUri, boolean workspaceSupportsProtectedDataPolicy, boolean shouldAllowImport) {
     // Arrange
     ImportRequestServerModel importRequest = new ImportRequestServerModel(TypeEnum.PFB, importUri);
 
-    when(wsmDao.getWorkspace(destinationWorkspaceId.id())).thenReturn(workspaceDescription);
+    when(protectedDataSupport.workspaceSupportsProtectedDataPolicy(destinationWorkspaceId))
+        .thenReturn(workspaceSupportsProtectedDataPolicy);
 
     // Act
     if (shouldAllowImport) {
@@ -180,18 +241,93 @@ class DefaultImportValidatorTest extends TestBase {
     URI protectedImport = URI.create("https://files.terra.bio/protected.pfb");
     URI unprotectedImport = URI.create("https://files.terra.bio/file.pfb");
 
-    WorkspaceDescription workspaceWithoutProtectedDataPolicy = new WorkspaceDescription();
+    return Stream.of(
+        Arguments.of(
+            /* importUri */ protectedImport,
+            /* workspaceSupportsProtectedDataPolicy */ false,
+            /* shouldAllowImport */ false),
+        Arguments.of(
+            /* importUri */ protectedImport,
+            /* workspaceSupportsProtectedDataPolicy */ true,
+            /* shouldAllowImport */ true),
+        Arguments.of(
+            /* importUri */ unprotectedImport,
+            /* workspaceSupportsProtectedDataPolicy */ false,
+            /* shouldAllowImport */ true),
+        Arguments.of(
+            /* importUri */ protectedImport,
+            /* workspaceSupportsProtectedDataPolicy */ true,
+            /* shouldAllowImport */ true));
+  }
 
-    WorkspaceDescription workspaceWithProtectedDataPolicy = new WorkspaceDescription();
-    WsmPolicyInput policy = new WsmPolicyInput();
-    policy.setNamespace("terra");
-    policy.setName("protected-data");
-    workspaceWithProtectedDataPolicy.setPolicies(List.of(policy));
+  @ParameterizedTest
+  @MethodSource("requirePrivateWorkspacesForImportsFromConfiguredSourcesTestCases")
+  void requirePrivateWorkspacesForImportsFromConfiguredSources(
+      URI importUri,
+      List<UserResourcesResponse> workspaceResourcesAndPolicies,
+      boolean shouldAllowImport) {
+    // Arrange
+    ImportRequestServerModel importRequest = new ImportRequestServerModel(TypeEnum.PFB, importUri);
+
+    when(samDao.listWorkspaceResourcesAndPolicies()).thenReturn(workspaceResourcesAndPolicies);
+
+    // Act
+    if (shouldAllowImport) {
+      importValidator.validateImport(importRequest, destinationWorkspaceId);
+    } else {
+      ValidationException err =
+          assertThrows(
+              ValidationException.class,
+              () -> importValidator.validateImport(importRequest, destinationWorkspaceId));
+      assertEquals(
+          "Data from this source cannot be imported into a public workspace.", err.getMessage());
+    }
+  }
+
+  static Stream<Arguments> requirePrivateWorkspacesForImportsFromConfiguredSourcesTestCases() {
+    URI privateImport = URI.create("https://files.terra.bio/private.pfb");
+    URI otherImport = URI.create("https://files.terra.bio/file.pfb");
+
+    UserResourcesResponse publicWorkspaceResourcesAndPolicies =
+        buildUserResourcesResponse(destinationWorkspaceId.id());
+    publicWorkspaceResourcesAndPolicies.getPublic().setRoles(List.of("reader"));
+
+    UserResourcesResponse privateWorkspaceResourcesAndPolicies =
+        buildUserResourcesResponse(destinationWorkspaceId.id());
 
     return Stream.of(
-        Arguments.of(protectedImport, workspaceWithoutProtectedDataPolicy, false),
-        Arguments.of(protectedImport, workspaceWithProtectedDataPolicy, true),
-        Arguments.of(unprotectedImport, workspaceWithoutProtectedDataPolicy, true),
-        Arguments.of(protectedImport, workspaceWithProtectedDataPolicy, true));
+        Arguments.of(
+            /* importUri */ privateImport,
+            /* workspaceResourcesAndPolicies */ List.of(publicWorkspaceResourcesAndPolicies),
+            /* shouldAllowImport */ false),
+        Arguments.of(
+            /* importUri */ privateImport,
+            /* workspaceResourcesAndPolicies */ List.of(privateWorkspaceResourcesAndPolicies),
+            /* shouldAllowImport */ true),
+        Arguments.of(
+            /* importUri */ otherImport,
+            /* workspaceResourcesAndPolicies */ List.of(publicWorkspaceResourcesAndPolicies),
+            /* shouldAllowImport */ true),
+        Arguments.of(
+            /* importUri */ otherImport,
+            /* workspaceResourcesAndPolicies */ List.of(privateWorkspaceResourcesAndPolicies),
+            /* shouldAllowImport */ true));
+  }
+
+  private static UserResourcesResponse buildUserResourcesResponse(UUID resourceId) {
+    UserResourcesResponse userResourcesResponse = new UserResourcesResponse();
+    userResourcesResponse.setResourceId(resourceId.toString());
+
+    RolesAndActions directRolesAndActions = new RolesAndActions();
+    directRolesAndActions.setActions(emptyList());
+    directRolesAndActions.setRoles(List.of("writer"));
+    userResourcesResponse.setDirect(directRolesAndActions);
+
+    RolesAndActions publicRolesAndActions = new RolesAndActions();
+    publicRolesAndActions.setActions(emptyList());
+    publicRolesAndActions.setRoles(emptyList());
+    userResourcesResponse.setPublic(publicRolesAndActions);
+
+    return userResourcesResponse;
   }
 }

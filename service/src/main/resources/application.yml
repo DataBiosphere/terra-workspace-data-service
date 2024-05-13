@@ -35,6 +35,16 @@ management:
         info: version
         health: status
         prometheus: prometheus
+  health:
+    defaults:
+      enabled: false
+    db:
+      enabled: true
+    ping:
+      enabled: true
+    pubsub:
+      enabled: true
+
   # additional keys to expose in the actuator info endpoint:
   info:
     env:
@@ -152,6 +162,7 @@ twds:
           - ^https:\/\/s3\.amazonaws.com\/gen3-biodatacatalyst-nhlbi-nih-gov-pfb-export\/
           - ^https:\/\/gen3-theanvil-io-pfb-export\.s3\.amazonaws\.com\/
           - ^https:\/\/s3\.amazonaws\.com\/gen3-theanvil-io-pfb-export\/
+        requirePrivateWorkspace: true
         requireProtectedDataPolicy: true
 
   pg_dump:

@@ -24,7 +24,7 @@ import jakarta.annotation.Generated;
  */
 
 @JsonTypeName("JobV1")
-@Generated(value = "org.openapitools.codegen.languages.SpringCodegen")
+@Generated(value = "org.openapitools.codegen.languages.SpringCodegen", comments = "Generator version: 7.5.0")
 public class JobV1ServerModel {
 
   private UUID jobId;
@@ -123,11 +123,6 @@ public class JobV1ServerModel {
 
   private String errorMessage;
 
-  /**
-   * Default constructor
-   * @deprecated Use {@link JobV1ServerModel#JobV1ServerModel(UUID, JobTypeEnum, UUID, StatusEnum, OffsetDateTime, OffsetDateTime)}
-   */
-  @Deprecated
   public JobV1ServerModel() {
     super();
   }
