@@ -2,8 +2,8 @@ package org.databiosphere.workspacedataservice.dataimport;
 
 import org.databiosphere.workspacedataservice.config.ConfigurationException;
 import org.databiosphere.workspacedataservice.config.DataImportProperties;
+import org.databiosphere.workspacedataservice.dataimport.protecteddatasupport.ProtectedDataSupport;
 import org.databiosphere.workspacedataservice.sam.SamDao;
-import org.databiosphere.workspacedataservice.workspacemanager.WorkspaceManagerDao;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -17,10 +17,12 @@ public class ImportValidatorConfiguration {
       havingValue = "true",
       matchIfMissing = true)
   ImportValidator getDefaultImportValidator(
-      SamDao samDao, WorkspaceManagerDao wsmDao, DataImportProperties dataImportProperties) {
+      ProtectedDataSupport protectedDataSupport,
+      SamDao samDao,
+      DataImportProperties dataImportProperties) {
     return new DefaultImportValidator(
+        protectedDataSupport,
         samDao,
-        wsmDao,
         dataImportProperties.getAllowedHosts(),
         dataImportProperties.getSources(),
         dataImportProperties.getRawlsBucketName());

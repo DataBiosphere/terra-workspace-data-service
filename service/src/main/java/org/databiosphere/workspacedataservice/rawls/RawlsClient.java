@@ -9,12 +9,27 @@ import org.springframework.web.client.RestClientResponseException;
 
 /** Client to make REST calls to Rawls */
 public class RawlsClient {
+  /* RawlsWorkspaceDetails only includes the subset of workspace fields needed by CWDS.
+   * Thus, RawlsClient should request only those fields when getting workspace details. */
+  private final String GET_WORKSPACE_DETAILS_FIELDS_PARAM =
+      String.join(",", RawlsWorkspaceDetails.SUPPORTED_FIELDS);
   private final RawlsApi rawlsApi;
   private final RestClientRetry restClientRetry;
 
   public RawlsClient(RawlsApi rawlsApi, RestClientRetry restClientRetry) {
     this.rawlsApi = rawlsApi;
     this.restClientRetry = restClientRetry;
+  }
+
+  public RawlsWorkspaceDetails getWorkspaceDetails(UUID workspaceId) {
+    try {
+      RestCall<RawlsWorkspaceDetails> restCall =
+          () -> rawlsApi.getWorkspaceDetails(workspaceId, GET_WORKSPACE_DETAILS_FIELDS_PARAM);
+
+      return restClientRetry.withRetryAndErrorHandling(restCall, "Rawls.getWorkspaceDetails");
+    } catch (RestClientResponseException restException) {
+      throw new RawlsException(restException);
+    }
   }
 
   public SnapshotListResponse enumerateDataRepoSnapshotReferences(

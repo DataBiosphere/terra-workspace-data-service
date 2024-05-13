@@ -853,63 +853,6 @@ components:
         time:
           type: string
           format: date-time
-    component:
-      type: object
-      properties:
-        status:
-          type: string
-        details:
-          type: string
-    components:
-      type: object
-      properties:
-        db:
-          $ref: '#/components/schemas/dbComponent'
-        diskSpace:
-          $ref: '#/components/schemas/diskSpaceComponent'
-        ping:
-          $ref: '#/components/schemas/component'
-        mainDb:
-          $ref: '#/components/schemas/dbValidationcomponent'
-    dbComponent:
-      type: object
-      properties:
-        status:
-          type: string
-        components:
-          $ref: '#/components/schemas/component'
-    dbValidationcomponent:
-      type: object
-      properties:
-        status:
-          type: string
-        components:
-          $ref: '#/components/schemas/dbValidationcomponentDetails'
-    dbValidationcomponentDetails:
-      type: object
-      properties:
-        database:
-          type: string
-        validationQuery:
-          type: string
-    diskSpaceComponent:
-      type: object
-      properties:
-        status:
-          type: string
-        details:
-          $ref: '#/components/schemas/diskSpaceComponentDetails'
-    diskSpaceComponentDetails:
-      type: object
-      properties:
-        total:
-          type: string
-        free:
-          type: number
-        threshold:
-          type: number
-        exists:
-          type: boolean
     ErrorResponse:
       required:
         - status
@@ -1091,7 +1034,7 @@ components:
         status:
           type: string
         components:
-          $ref: '#/components/schemas/components'
+          type: object
     TsvUploadResponse:
       type: object
       required:
