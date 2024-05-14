@@ -13,6 +13,7 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.time.Duration;
 import java.time.InstantSource;
+import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
 import java.util.List;
 import java.util.Optional;
@@ -327,5 +328,19 @@ public class PostgresJobDao implements JobDao {
     }
 
     return tags;
+  }
+
+  // TODO: Genericize to a general get?
+  public List<GenericJobServerModel> getOldRunningJobs() {
+    OffsetDateTime sixHoursAgo = OffsetDateTime.now(ZoneOffset.UTC).minusHours(6);
+
+    return namedTemplate.query(
+        "SELECT id, type, status, created, updated, input, result, error, stacktrace, collection_id "
+            + "FROM sys_wds.job "
+            + "WHERE status = :status AND created < :sixHoursAgo",
+        new MapSqlParameterSource()
+            .addValue("status", StatusEnum.RUNNING.name())
+            .addValue("sixHoursAgo", sixHoursAgo),
+        new AsyncJobRowMapper(mapper));
   }
 }

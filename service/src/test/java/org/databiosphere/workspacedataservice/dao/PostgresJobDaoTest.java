@@ -6,6 +6,7 @@ import static org.databiosphere.workspacedataservice.generated.GenericJobServerM
 import static org.databiosphere.workspacedataservice.generated.GenericJobServerModel.StatusEnum;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
@@ -19,6 +20,7 @@ import io.micrometer.core.instrument.Timer;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.time.Duration;
+import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 import org.databiosphere.workspacedataservice.common.MockInstantSource;
@@ -341,6 +343,24 @@ class PostgresJobDaoTest extends TestBase {
 
     assertNotNull(actual.getInstanceId());
     // TODO: AJ-1011 as PostgresJobDao.mapRow evolves, add more assertions here
+  }
+
+  @Test
+  void getOldRunningJobs() {
+    // TODO plump up this test a bit
+    JobType jobType = JobType.DATA_IMPORT;
+    CollectionId collectionId = CollectionId.of(UUID.randomUUID());
+    ImportJobInput jobInput = makeJobInput(TEST_IMPORT_URI, TypeEnum.PFB);
+    Job<JobInput, JobResult> testJob = Job.newJob(collectionId, jobType, jobInput);
+
+    jobDao.createJob(testJob);
+
+    List<GenericJobServerModel> noJobs = jobDao.getOldRunningJobs();
+    assertThat(noJobs.isEmpty());
+    mockInstantSource.add(Duration.ofHours(6));
+
+    List<GenericJobServerModel> jobs = jobDao.getOldRunningJobs();
+    assertFalse(jobs.isEmpty());
   }
 
   private static ImportJobInput makeJobInput(String testImportUri, TypeEnum importType) {
