@@ -34,5 +34,5 @@ public interface JobDao {
   List<GenericJobServerModel> getJobsForCollection(
       CollectionId collectionId, Optional<List<String>> statuses);
 
-  List<GenericJobServerModel> getOldRunningJobs();
+  List<GenericJobServerModel> getOldNonTerminalJobs();
 }

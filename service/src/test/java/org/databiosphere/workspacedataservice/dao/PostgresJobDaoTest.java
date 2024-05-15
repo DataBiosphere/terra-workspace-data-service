@@ -6,7 +6,6 @@ import static org.databiosphere.workspacedataservice.generated.GenericJobServerM
 import static org.databiosphere.workspacedataservice.generated.GenericJobServerModel.StatusEnum;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
@@ -347,20 +346,34 @@ class PostgresJobDaoTest extends TestBase {
 
   @Test
   void getOldRunningJobs() {
-    // TODO plump up this test a bit
+    // Set up some jobs
     JobType jobType = JobType.DATA_IMPORT;
     CollectionId collectionId = CollectionId.of(UUID.randomUUID());
     ImportJobInput jobInput = makeJobInput(TEST_IMPORT_URI, TypeEnum.PFB);
-    Job<JobInput, JobResult> testJob = Job.newJob(collectionId, jobType, jobInput);
+    Job<JobInput, JobResult> job1 = Job.newJob(collectionId, jobType, jobInput);
 
-    jobDao.createJob(testJob);
+    // job1 - status CREATED
+    jobDao.createJob(job1);
 
-    List<GenericJobServerModel> noJobs = jobDao.getOldRunningJobs();
+    // job2 - status RUNNING
+    Job<JobInput, JobResult> job2 = Job.newJob(collectionId, jobType, jobInput);
+    GenericJobServerModel runningJob = jobDao.createJob(job2);
+    jobDao.running(runningJob.getJobId());
+
+    // job3 - status SUCCEEDED
+    Job<JobInput, JobResult> job3 = Job.newJob(collectionId, jobType, jobInput);
+    GenericJobServerModel finishedJob = jobDao.createJob(job3);
+    jobDao.succeeded(finishedJob.getJobId());
+
+    List<GenericJobServerModel> noJobs = jobDao.getOldNonTerminalJobs();
     assertThat(noJobs.isEmpty());
-    mockInstantSource.add(Duration.ofHours(6));
 
-    List<GenericJobServerModel> jobs = jobDao.getOldRunningJobs();
-    assertFalse(jobs.isEmpty());
+    // Let time pass without the job statuses updating
+    mockInstantSource.add(Duration.ofHours(7));
+
+    // Should fetch the CREATED and RUNNING jobs
+    List<GenericJobServerModel> jobs = jobDao.getOldNonTerminalJobs();
+    assertEquals(2, jobs.size());
   }
 
   private static ImportJobInput makeJobInput(String testImportUri, TypeEnum importType) {

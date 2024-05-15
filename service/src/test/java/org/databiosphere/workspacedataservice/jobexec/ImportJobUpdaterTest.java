@@ -55,8 +55,6 @@ public class ImportJobUpdaterTest extends TestBase {
     updater.updateImportJobs();
 
     // Assert
-    //    Mockito.verify(jobDao).getOldRunningJobs();
-    //    Mockito.verify(jobDao).fail(job.getJobId(), "Job failed to complete in 6 hours.");
     GenericJobServerModel updatedJob = jobDao.getJob(job.getJobId());
     assertEquals(StatusEnum.ERROR, updatedJob.getStatus());
   }

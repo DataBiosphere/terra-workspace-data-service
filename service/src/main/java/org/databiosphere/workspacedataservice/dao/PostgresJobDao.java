@@ -3,6 +3,7 @@ package org.databiosphere.workspacedataservice.dao;
 import static org.databiosphere.workspacedataservice.generated.GenericJobServerModel.JobTypeEnum;
 import static org.databiosphere.workspacedataservice.generated.GenericJobServerModel.JobTypeEnum.DATA_IMPORT;
 import static org.databiosphere.workspacedataservice.generated.GenericJobServerModel.StatusEnum;
+import static org.databiosphere.workspacedataservice.jobexec.ImportJobUpdater.UPDATE_JOB_FREQUENCY_IN_HOURS;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -331,16 +332,32 @@ public class PostgresJobDao implements JobDao {
   }
 
   // TODO: Genericize to a general get?
-  public List<GenericJobServerModel> getOldRunningJobs() {
-    OffsetDateTime sixHoursAgo = OffsetDateTime.now(ZoneOffset.UTC).minusHours(6);
+  public List<GenericJobServerModel> getOldNonTerminalJobs() {
+    OffsetDateTime lastUpdate =
+        //
+        // instantSource.instant().atOffset(ZoneOffset.UTC).minusHours(UPDATE_JOB_FREQUENCY_IN_HOURS);
+        instantSource
+            .instant()
+            .atOffset(ZoneOffset.UTC)
+            .minusMinutes(UPDATE_JOB_FREQUENCY_IN_HOURS);
+
+    // TODO should this be defined in JobService along with terminal job statuses?  Is there a way
+    // to
+    // programmatically make it anything that's not in terminal job statuses?
+    List<String> nonterminalJobStatuses =
+        List.of(
+            StatusEnum.CREATED.name(),
+            StatusEnum.QUEUED.name(),
+            StatusEnum.RUNNING.name(),
+            StatusEnum.UNKNOWN.name());
 
     return namedTemplate.query(
         "SELECT id, type, status, created, updated, input, result, error, stacktrace, collection_id "
             + "FROM sys_wds.job "
-            + "WHERE status = :status AND created < :sixHoursAgo",
+            + "WHERE status in (:statuses) AND updated < :lastUpdate",
         new MapSqlParameterSource()
-            .addValue("status", StatusEnum.RUNNING.name())
-            .addValue("sixHoursAgo", sixHoursAgo),
+            .addValue("statuses", nonterminalJobStatuses)
+            .addValue("lastUpdate", lastUpdate),
         new AsyncJobRowMapper(mapper));
   }
 }
