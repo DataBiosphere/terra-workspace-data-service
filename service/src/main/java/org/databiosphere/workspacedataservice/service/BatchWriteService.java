@@ -100,6 +100,11 @@ public class BatchWriteService {
         // `typeSchemas` map
         if (opType == OperationType.UPSERT) {
           Map<String, DataTypeMapping> inferredSchema = inferer.inferTypes(records);
+
+          // if the inferred schema says the primary key column is not a string, make it a string.
+          // WDS requires the pk column to be a string.
+          inferredSchema.computeIfPresent(primaryKey, (k, v) -> DataTypeMapping.STRING);
+
           Map<String, DataTypeMapping> finalSchema =
               recordSink.createOrModifyRecordType(recType, inferredSchema, records, primaryKey);
           typeSchemas.put(recType, finalSchema);
