@@ -194,6 +194,8 @@ class ParquetDataTypesTest extends TestBase {
                     .build()));
   }
 
+  // even though the source TDR manifest contains a column of ${entityType}_id, translation should
+  // include that column. The RawlsAttributePrefixer will later rename this to tdr:${entityType}_id.
   @Test
   void primaryKeyIsSkippedWhenMatchingTypeId() {
     // arrange
@@ -215,7 +217,8 @@ class ParquetDataTypesTest extends TestBase {
 
     // assert
     assertThat(result.getId()).isEqualTo("123");
-    assertThat(result.getAttributes()).isEqualTo(new RecordAttributes(Map.of("someField", "456")));
+    assertThat(result.getAttributes())
+        .isEqualTo(new RecordAttributes(Map.of("someField", "456", "someTable_id", "123")));
   }
 
   private TdrManifestImportTable makeTable(String recordTypeName, String primaryKey) {

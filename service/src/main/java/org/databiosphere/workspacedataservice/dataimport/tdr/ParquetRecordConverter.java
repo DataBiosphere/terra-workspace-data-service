@@ -38,12 +38,7 @@ public class ParquetRecordConverter extends AvroRecordConverter {
     // for base attributes, skip the id field and all relations
     List<String> relationNames =
         relationshipModels.stream().map(r -> r.getFrom().getColumn()).toList();
-    Set<String> allIgnores = new HashSet<>();
-
-    if (ignorableIdField().equalsIgnoreCase(idField)) {
-      allIgnores.add(idField);
-    }
-    allIgnores.addAll(relationNames);
+    Set<String> allIgnores = new HashSet<>(relationNames);
 
     record.setAttributes(extractBaseAttributes(genericRecord, allIgnores));
 
@@ -102,9 +97,5 @@ public class ParquetRecordConverter extends AvroRecordConverter {
     record.setAttributes(attributes);
 
     return record;
-  }
-
-  private String ignorableIdField() {
-    return "%s_id".formatted(recordType.getName());
   }
 }

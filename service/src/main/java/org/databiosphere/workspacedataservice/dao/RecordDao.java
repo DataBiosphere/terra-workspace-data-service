@@ -1,6 +1,5 @@
 package org.databiosphere.workspacedataservice.dao;
 
-import static java.util.stream.Collectors.toSet;
 import static org.databiosphere.workspacedataservice.dao.SqlUtils.getQualifiedTableName;
 import static org.databiosphere.workspacedataservice.dao.SqlUtils.quote;
 import static org.databiosphere.workspacedataservice.service.model.ReservedNames.RECORD_ID;
@@ -489,18 +488,13 @@ public class RecordDao {
 
   private List<RecordColumn> getSchemaWithRowId(
       Map<String, DataTypeMapping> schema, String recordIdColumnName) {
-    // make sure the id column is included; first check the schema for it, and if not found, assume
-    // it will be a string
-    RecordColumn idColumn =
-        schema.entrySet().stream()
-            .filter(e -> e.getKey().equals(recordIdColumnName))
-            .findAny()
-            .map(RecordDao::toColumn)
-            .orElse(new RecordColumn(recordIdColumnName, DataTypeMapping.STRING));
-    // ensure the id column occurs exactly once in the result
-    return Stream.concat(Stream.of(idColumn), schema.entrySet().stream().map(RecordDao::toColumn))
-        .collect(toSet())
-        .stream()
+    // Make sure the id column is included, and that it is a string.
+    // This will overwrite any other datatype the id column may have been set to.
+    // WDS requires the id column to be a string (see getPrimaryKeyDef), so we need to enforce that.
+    HashMap<String, DataTypeMapping> workingSchema = new HashMap<>(schema);
+    workingSchema.put(recordIdColumnName, DataTypeMapping.STRING);
+    return workingSchema.entrySet().stream()
+        .map(e -> new RecordColumn(e.getKey(), e.getValue()))
         .toList();
   }
 
