@@ -27,7 +27,8 @@ public class ImportJobUpdater {
       //      initialDelayString =
       //          "#{ T(java.util.concurrent.ThreadLocalRandom).current().nextInt(60*1000) }",
       //      fixedRate = UPDATE_FREQUENCY_IN_MILLISECONDS)
-      fixedRate = 1000 * 60 * 5)
+      //      fixedRate = 1000 * 60 * 5)
+      cron = "0 15 20 * * ?")
   //  @Scheduled(fixedRate = 21600000) // run every 6 hours
   public void updateImportJobs() {
     List<GenericJobServerModel> jobsToUpdate = jobDao.getOldNonTerminalJobs();
