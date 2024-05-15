@@ -197,7 +197,7 @@ class ParquetDataTypesTest extends TestBase {
   // even though the source TDR manifest contains a column of ${entityType}_id, translation should
   // include that column. The RawlsAttributePrefixer will later rename this to tdr:${entityType}_id.
   @Test
-  void primaryKeyIsSkippedWhenMatchingTypeId() {
+  void primaryKeyIsNotSkippedWhenMatchingTypeId() {
     // arrange
     TdrManifestImportTable testTable = makeTable("someTable", "someTable_id");
     ParquetRecordConverter converter = new ParquetRecordConverter(testTable, mapper);
