@@ -24,8 +24,8 @@ public class ImportJobUpdater {
 
   @Scheduled(
       //      initialDelayString = "${random.int(${MAX_INITIAL_DELAY_IN_MILLISECONDS})}",
-      initialDelayString =
-          "#{ T(java.util.concurrent.ThreadLocalRandom).current().nextInt(60*1000) }",
+      //      initialDelayString =
+      //          "#{ T(java.util.concurrent.ThreadLocalRandom).current().nextInt(60*1000) }",
       //      fixedRate = UPDATE_FREQUENCY_IN_MILLISECONDS)
       fixedRate = 1000 * 60 * 5)
   //  @Scheduled(fixedRate = 21600000) // run every 6 hours
