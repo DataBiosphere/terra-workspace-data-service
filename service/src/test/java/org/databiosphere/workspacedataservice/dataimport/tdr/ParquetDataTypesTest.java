@@ -4,12 +4,18 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.common.collect.ImmutableMap;
 import java.io.IOException;
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import org.apache.avro.Schema;
+import org.apache.avro.Schema.Field;
+import org.apache.avro.Schema.Type;
+import org.apache.avro.generic.GenericData;
 import org.apache.avro.generic.GenericRecord;
+import org.apache.avro.generic.GenericRecordBuilder;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.Path;
 import org.apache.parquet.hadoop.ParquetReader;
@@ -19,6 +25,7 @@ import org.databiosphere.workspacedataservice.common.TestBase;
 import org.databiosphere.workspacedataservice.recordsource.RecordSource;
 import org.databiosphere.workspacedataservice.service.model.TdrManifestImportTable;
 import org.databiosphere.workspacedataservice.shared.model.Record;
+import org.databiosphere.workspacedataservice.shared.model.RecordAttributes;
 import org.databiosphere.workspacedataservice.shared.model.RecordType;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -48,9 +55,7 @@ class ParquetDataTypesTest extends TestBase {
   @Test
   void numericPrecision() throws IOException {
     // ARRANGE - create all the objects we'll need to do the conversions below
-    TdrManifestImportTable testTable =
-        new TdrManifestImportTable(RecordType.valueOf("test"), "pk", List.of(), List.of());
-
+    TdrManifestImportTable testTable = makeTable("test", "pk");
     ParquetRecordConverter converter = new ParquetRecordConverter(testTable, mapper);
 
     InputFile numericsFile =
@@ -99,9 +104,7 @@ class ParquetDataTypesTest extends TestBase {
   @Test
   void arrays() throws IOException {
     // ARRANGE - create all the objects we'll need to do the conversions below
-    TdrManifestImportTable testTable =
-        new TdrManifestImportTable(RecordType.valueOf("person"), "id", List.of(), List.of());
-
+    TdrManifestImportTable testTable = makeTable("person", "id");
     ParquetRecordConverter converter = new ParquetRecordConverter(testTable, mapper);
 
     InputFile arraysFile =
@@ -158,6 +161,81 @@ class ParquetDataTypesTest extends TestBase {
             assertThat(actualList).containsExactlyElementsOf(expected);
           });
     }
+  }
+
+  // This is set up to replicate the scenario detected by AJ-1844
+  @Test
+  void primaryKeyIsNormallyIncluded() {
+    // arrange
+    TdrManifestImportTable testTable = makeTable("ArraysInputsTable", "chip_well_barcode");
+    ParquetRecordConverter converter = new ParquetRecordConverter(testTable, mapper);
+
+    GenericData.Record genericRecord =
+        new GenericRecordBuilder(
+                schema(
+                    "ArraysInputsTable",
+                    field("chip_well_barcode", Type.STRING),
+                    field("lab_batch", Type.STRING)))
+            .set("chip_well_barcode", "123")
+            .set("lab_batch", "456")
+            .build();
+
+    // act
+    Record result = converter.convertBaseAttributes(genericRecord);
+
+    // assert
+    assertThat(result.getId()).isEqualTo("123");
+    assertThat(result.getAttributes())
+        .isEqualTo(
+            new RecordAttributes(
+                new ImmutableMap.Builder<String, Object>()
+                    .put("chip_well_barcode", "123")
+                    .put("lab_batch", "456")
+                    .build()));
+  }
+
+  // even though the source TDR manifest contains a column of ${entityType}_id, translation should
+  // include that column. The RawlsAttributePrefixer will later rename this to tdr:${entityType}_id.
+  @Test
+  void primaryKeyIsNotSkippedWhenMatchingTypeId() {
+    // arrange
+    TdrManifestImportTable testTable = makeTable("someTable", "someTable_id");
+    ParquetRecordConverter converter = new ParquetRecordConverter(testTable, mapper);
+
+    GenericData.Record genericRecord =
+        new GenericRecordBuilder(
+                schema(
+                    "ArraysInputsTable",
+                    field("someTable_id", Type.STRING),
+                    field("someField", Type.STRING)))
+            .set("someTable_id", "123")
+            .set("someField", "456")
+            .build();
+
+    // act
+    Record result = converter.convertBaseAttributes(genericRecord);
+
+    // assert
+    assertThat(result.getId()).isEqualTo("123");
+    assertThat(result.getAttributes())
+        .isEqualTo(new RecordAttributes(Map.of("someField", "456", "someTable_id", "123")));
+  }
+
+  private TdrManifestImportTable makeTable(String recordTypeName, String primaryKey) {
+    return new TdrManifestImportTable(
+        RecordType.valueOf(recordTypeName),
+        primaryKey,
+        /* dataFiles= */ List.of(),
+        /* relations= */ List.of());
+  }
+
+  private Schema schema(String tableName, Field... fields) {
+    return Schema.createRecord(
+        tableName, "doc", "namespace", /* isError= */ false, List.of(fields));
+  }
+
+  private Field field(String name, Type type) {
+    return new Field(name, Schema.create(type));
   }
 
   private List<Object> getColumnValues(List<Record> records, String attributeName) {
