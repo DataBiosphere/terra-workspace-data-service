@@ -35,7 +35,7 @@ public class ParquetRecordConverter extends AvroRecordConverter {
   @Override
   protected final Record convertBaseAttributes(GenericRecord genericRecord) {
     Record record = createEmptyRecord(genericRecord);
-    // for base attributes, skip the id field and all relations
+    // for base attributes, skip all relations
     List<String> relationNames =
         relationshipModels.stream().map(r -> r.getFrom().getColumn()).toList();
     Set<String> allIgnores = new HashSet<>(relationNames);
