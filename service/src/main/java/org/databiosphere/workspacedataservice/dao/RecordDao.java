@@ -1,5 +1,6 @@
 package org.databiosphere.workspacedataservice.dao;
 
+import static java.util.stream.Collectors.toSet;
 import static org.databiosphere.workspacedataservice.dao.SqlUtils.getQualifiedTableName;
 import static org.databiosphere.workspacedataservice.dao.SqlUtils.quote;
 import static org.databiosphere.workspacedataservice.service.model.ReservedNames.RECORD_ID;
@@ -487,15 +488,24 @@ public class RecordDao {
   }
 
   private List<RecordColumn> getSchemaWithRowId(
-      Map<String, DataTypeMapping> schema, String recordIdColumn) {
-    // we collect to a set first to handle the case where the user has included their primary key
-    // data in attributes
-    return Stream.concat(
-            Stream.of(new RecordColumn(recordIdColumn, DataTypeMapping.STRING)),
-            schema.entrySet().stream().map(e -> new RecordColumn(e.getKey(), e.getValue())))
-        .collect(Collectors.toSet())
+      Map<String, DataTypeMapping> schema, String recordIdColumnName) {
+    // make sure the id column is included; first check the schema for it, and if not found, assume
+    // it will be a string
+    RecordColumn idColumn =
+        schema.entrySet().stream()
+            .filter(e -> e.getKey().equals(recordIdColumnName))
+            .findAny()
+            .map(RecordDao::toColumn)
+            .orElse(new RecordColumn(recordIdColumnName, DataTypeMapping.STRING));
+    // ensure the id column occurs exactly once in the result
+    return Stream.concat(Stream.of(idColumn), schema.entrySet().stream().map(RecordDao::toColumn))
+        .collect(toSet())
         .stream()
         .toList();
+  }
+
+  private static RecordColumn toColumn(Map.Entry<String, DataTypeMapping> entry) {
+    return new RecordColumn(entry.getKey(), entry.getValue());
   }
 
   public boolean deleteSingleRecord(UUID collectionId, RecordType recordType, String recordId) {
