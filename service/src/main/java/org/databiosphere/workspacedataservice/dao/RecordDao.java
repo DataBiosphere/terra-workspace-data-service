@@ -498,10 +498,6 @@ public class RecordDao {
         .toList();
   }
 
-  private static RecordColumn toColumn(Map.Entry<String, DataTypeMapping> entry) {
-    return new RecordColumn(entry.getKey(), entry.getValue());
-  }
-
   public boolean deleteSingleRecord(UUID collectionId, RecordType recordType, String recordId) {
     String recordTypePrimaryKey = primaryKeyDao.getPrimaryKeyColumn(recordType, collectionId);
     try {
