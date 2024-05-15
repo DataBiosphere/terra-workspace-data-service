@@ -33,7 +33,6 @@ import org.databiosphere.workspacedataservice.shared.model.job.Job;
 import org.databiosphere.workspacedataservice.shared.model.job.JobInput;
 import org.databiosphere.workspacedataservice.shared.model.job.JobResult;
 import org.databiosphere.workspacedataservice.shared.model.job.JobType;
-import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
@@ -63,16 +62,12 @@ class PostgresJobDaoTest extends TestBase {
   @Autowired MeterRegistry metrics;
   @Autowired MockInstantSource mockInstantSource;
 
-  @AfterAll
-  void afterAll() {
-    // cleanup: delete everything from the job table
-    namedTemplate.getJdbcTemplate().update("delete from sys_wds.job;");
-  }
-
   @AfterEach
   void afterEach() {
     metrics.clear();
     Metrics.globalRegistry.clear();
+    // cleanup: delete everything from the job table
+    namedTemplate.getJdbcTemplate().update("delete from sys_wds.job;");
   }
 
   private GenericJobServerModel assertJobCreation(JobType jobType) {
