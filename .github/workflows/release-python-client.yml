@@ -33,10 +33,10 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Set up Python 3.8
+      - name: Set up Python 3.11
         uses: actions/setup-python@v5
         with:
-          python-version: 3.8
+          python-version: 3.11
 
       - name: Use Node.js ${{matrix.node-version }}
         uses: actions/setup-node@v4
@@ -46,8 +46,8 @@ jobs:
       - name: Install openapi-generator-cli
         run: npm install @openapitools/openapi-generator-cli -g
 
-      - name: set version to 4.3.1
-        run: openapi-generator-cli version-manager set 4.3.1
+      - name: set version to 7.5.0
+        run: openapi-generator-cli version-manager set 7.5.0
 
       - name: Generate Python client
         run: |
@@ -55,7 +55,7 @@ jobs:
           -i service/src/main/resources/static/swagger/openapi-docs.yaml \
           -g python \
           -o wds-client \
-          --additional-properties=projectName=wds-client,packageName=wds_client,packageVersion=${{ inputs.new-tag }},httpUserAgent=wds-client/${{ inputs.new-tag }}/python \
+          --additional-properties=projectName=wds-client,packageName=wds_client,packageVersion=99.99.99,httpUserAgent=wds-client/99.99.99/python \
           --skip-validate-spec
 
       - name: Install python package locally
