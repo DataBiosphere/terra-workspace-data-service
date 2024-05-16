@@ -145,7 +145,8 @@ public class PostgresJobDao implements JobDao {
    */
   @Override
   public GenericJobServerModel fail(UUID jobId, String errorMessage) {
-    return fail(jobId, errorMessage, null);
+    logger.error("Job {} failed: {}", jobId, errorMessage);
+    return update(jobId, StatusEnum.ERROR, errorMessage, null);
   }
 
   /**
