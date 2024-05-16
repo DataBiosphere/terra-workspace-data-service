@@ -32,6 +32,10 @@ public class ImportJobUpdater {
     List<GenericJobServerModel> jobsToUpdate = jobDao.getOldNonTerminalJobs();
     logger.info("Updating {} stalled import jobs", jobsToUpdate.size());
     jobsToUpdate.stream()
-        .forEach(job -> jobDao.markError(job.getJobId(), "Job failed to complete in 6 hours."));
+        .forEach(
+            job ->
+                jobDao.markError(
+                    job.getJobId(),
+                    "Job failed to complete in " + UPDATE_JOB_FREQUENCY_IN_HOURS + " hours."));
   }
 }
