@@ -331,19 +331,12 @@ public class PostgresJobDao implements JobDao {
     return tags;
   }
 
-  // TODO: Genericize to a general get?
   public List<GenericJobServerModel> getOldNonTerminalJobs() {
     OffsetDateTime lastUpdate =
-        //
-        // instantSource.instant().atOffset(ZoneOffset.UTC).minusHours(UPDATE_JOB_FREQUENCY_IN_HOURS);
-        instantSource
-            .instant()
-            .atOffset(ZoneOffset.UTC)
-            .minusMinutes(UPDATE_JOB_FREQUENCY_IN_HOURS);
+        instantSource.instant().atOffset(ZoneOffset.UTC).minusHours(UPDATE_JOB_FREQUENCY_IN_HOURS);
 
     // TODO should this be defined in JobService along with terminal job statuses?  Is there a way
-    // to
-    // programmatically make it anything that's not in terminal job statuses?
+    // to programmatically make it anything that's not in terminal job statuses?
     List<String> nonterminalJobStatuses =
         List.of(
             StatusEnum.CREATED.name(),

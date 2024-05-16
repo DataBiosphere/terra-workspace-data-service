@@ -30,7 +30,7 @@ public class ImportJobUpdater {
       fixedRate = UPDATE_FREQUENCY_IN_MILLISECONDS)
   public void updateImportJobs() {
     List<GenericJobServerModel> jobsToUpdate = jobDao.getOldNonTerminalJobs();
-    logger.info("Updating " + jobsToUpdate.size() + " stalled import jobs");
+    logger.info("Updating {} stalled import jobs", jobsToUpdate.size());
     jobsToUpdate.stream()
         .forEach(job -> jobDao.fail(job.getJobId(), "Job failed to complete in 6 hours."));
   }

@@ -26,36 +26,48 @@ import org.springframework.context.annotation.Import;
 
 @SpringBootTest
 @Import(MockInstantSourceConfig.class)
-public class ImportJobUpdaterTest extends TestBase {
+class ImportJobUpdaterTest extends TestBase {
 
   @Autowired PostgresJobDao jobDao;
   @Autowired MockInstantSource mockInstantSource;
 
   @Test
-  public void testUpdateImportJobs() throws URISyntaxException {
+  void testUpdateImportJobs() throws URISyntaxException {
     // Arrange
     JobType jobType = JobType.DATA_IMPORT;
     CollectionId collectionId = CollectionId.of(UUID.randomUUID());
     ImportJobInput jobInput =
         new ImportJobInput(new URI("http://some/uri"), ImportRequestServerModel.TypeEnum.PFB);
 
+    // A running job
     Job<JobInput, JobResult> testJob = Job.newJob(collectionId, jobType, jobInput);
-
     GenericJobServerModel job = jobDao.createJob(testJob);
-    // TODO will import job updater only do running or also queued and created jobs?
     jobDao.running(job.getJobId());
 
-    GenericJobServerModel createdJob = jobDao.getJob(job.getJobId());
-    assertEquals(StatusEnum.RUNNING, createdJob.getStatus());
-    mockInstantSource.add(Duration.ofHours(7));
+    // A queued job
+    Job<JobInput, JobResult> testJob2 = Job.newJob(collectionId, jobType, jobInput);
+    GenericJobServerModel job2 = jobDao.createJob(testJob2);
+    jobDao.queued(job2.getJobId());
 
-    ImportJobUpdater updater = new ImportJobUpdater(jobDao);
+    // An errored job
+    Job<JobInput, JobResult> testJob3 = Job.newJob(collectionId, jobType, jobInput);
+    GenericJobServerModel job3 = jobDao.createJob(testJob3);
+    jobDao.fail(job3.getJobId(), "Failing job for test");
 
     // Act
+    // Let time pass, then run job updater
+    mockInstantSource.add(Duration.ofHours(7));
+    ImportJobUpdater updater = new ImportJobUpdater(jobDao);
+
     updater.updateImportJobs();
 
     // Assert
-    GenericJobServerModel updatedJob = jobDao.getJob(job.getJobId());
-    assertEquals(StatusEnum.ERROR, updatedJob.getStatus());
+    GenericJobServerModel updatedJob1 = jobDao.getJob(job.getJobId());
+    assertEquals(StatusEnum.ERROR, updatedJob1.getStatus());
+    GenericJobServerModel updatedJob2 = jobDao.getJob(job2.getJobId());
+    assertEquals(StatusEnum.ERROR, updatedJob2.getStatus());
+    // The already-errored job should not have been updated
+    GenericJobServerModel updatedJob3 = jobDao.getJob(job3.getJobId());
+    assertEquals("Failing job for test", updatedJob3.getErrorMessage());
   }
 }
