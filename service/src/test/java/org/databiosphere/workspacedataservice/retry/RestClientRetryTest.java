@@ -362,7 +362,7 @@ class RestClientRetryTest extends TestBase {
         .hasNumberOfObservationsWithNameEqualTo("wds.outbound", 1)
         .hasObservationWithNameEqualTo("wds.outbound")
         .that()
-        .doesNotHaveLowCardinalityKeyValue("retryAttempt", "0") // don't bother counting 0th attempt
+        .doesNotHaveLowCardinalityKeyValue("retryCount", "0")
         .hasBeenStarted()
         .hasBeenStopped();
   }

@@ -1,5 +1,7 @@
 package org.databiosphere.workspacedataservice.retry;
 
+import static java.util.Objects.requireNonNull;
+
 import io.micrometer.observation.Observation;
 import io.micrometer.observation.ObservationRegistry;
 import java.util.Objects;
@@ -71,16 +73,16 @@ public class RestClientRetry {
       switch (exceptionHttpCode) {
           // retryable http codes
         case 0:
-          LOGGER.error(loggerHint + " REST request resulted in connection failure", e);
+          LOGGER.warn(loggerHint + " REST request resulted in connection failure", e);
           throw new RestConnectionException();
         case 500:
         case 502:
         case 503:
         case 504:
-          LOGGER.error(
+          LOGGER.warn(
               loggerHint + " REST request resulted in ApiException(" + exceptionHttpCode + ")", e);
           throw new RestServerException(
-              HttpStatus.resolve(exceptionHttpCode), e.getMessage()); // retryable
+              requireNonNull(HttpStatus.resolve(exceptionHttpCode)), e.getMessage()); // retryable
 
           // non-retryable http codes
         case 401:
@@ -101,7 +103,9 @@ public class RestClientRetry {
           .ifPresent(
               context -> {
                 int retryCount = context.getRetryCount();
-                observation.lowCardinalityKeyValue("retryCount", Integer.toString(retryCount));
+                if (retryCount > 0) {
+                  observation.lowCardinalityKeyValue("retryCount", Integer.toString(retryCount));
+                }
               });
       observation.stop();
     }
