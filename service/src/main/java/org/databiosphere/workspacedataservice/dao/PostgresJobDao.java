@@ -145,8 +145,7 @@ public class PostgresJobDao implements JobDao {
    */
   @Override
   public GenericJobServerModel fail(UUID jobId, String errorMessage) {
-    logger.error("Job {} failed: {}", jobId, errorMessage);
-    return update(jobId, StatusEnum.ERROR, errorMessage, null);
+    return fail(jobId, errorMessage, null);
   }
 
   /**
@@ -173,6 +172,19 @@ public class PostgresJobDao implements JobDao {
   public GenericJobServerModel fail(UUID jobId, String errorMessage, Exception e) {
     logger.error("Job {} failed: {}", jobId, errorMessage, e);
     return update(jobId, StatusEnum.ERROR, errorMessage, e.getStackTrace());
+  }
+
+  /**
+   * Mark a job as error without logging at the error level
+   *
+   * @param jobId id of the job to update
+   * @param errorMessage a short error message, if the job is in error
+   * @return the updated job
+   */
+  @Override
+  public GenericJobServerModel markError(UUID jobId, String errorMessage) {
+    logger.info("Marking job {} as errored: {}", jobId, errorMessage);
+    return update(jobId, StatusEnum.ERROR, errorMessage, null);
   }
 
   private GenericJobServerModel update(
