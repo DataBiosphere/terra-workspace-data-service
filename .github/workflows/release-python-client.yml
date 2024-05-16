@@ -7,7 +7,6 @@ on:
       new-tag:
         required: true
         type: string
-        default: '0.0.0'
     secrets:
       PYPI_API_TOKEN:
         required: true
@@ -56,7 +55,7 @@ jobs:
           -i service/src/main/resources/static/swagger/openapi-docs.yaml \
           -g python \
           -o wds-client \
-          --additional-properties=projectName=wds-client,packageName=wds_client,packageVersion=${{ inputs.new-tag }},httpUserAgent=wds-client/${{ inputs.new-tag }}/python \
+          --additional-properties=projectName=wds-client,packageName=wds_client,packageVersion=${{ inputs.new-tag || '0.0.0' }},httpUserAgent=wds-client/${{ inputs.new-tag || '0.0.0'}}/python \
           --skip-validate-spec
 
       - name: Install python package locally
