@@ -23,13 +23,11 @@ public class ImportJobUpdater {
   }
 
   @Scheduled(
-      //      initialDelayString = "${random.int(${MAX_INITIAL_DELAY_IN_MILLISECONDS})}",
-      //      initialDelayString =
-      //          "#{ T(java.util.concurrent.ThreadLocalRandom).current().nextInt(60*1000) }",
-      //      fixedRate = UPDATE_FREQUENCY_IN_MILLISECONDS)
-      //      fixedRate = 1000 * 60 * 5)
-      cron = "0 15 20 * * ?")
-  //  @Scheduled(fixedRate = 21600000) // run every 6 hours
+      initialDelayString =
+          "#{ T(java.util.concurrent.ThreadLocalRandom).current().nextInt("
+              + MAX_INITIAL_DELAY_IN_MILLISECONDS
+              + ") }",
+      fixedRate = UPDATE_FREQUENCY_IN_MILLISECONDS)
   public void updateImportJobs() {
     List<GenericJobServerModel> jobsToUpdate = jobDao.getOldNonTerminalJobs();
     logger.info("Updating " + jobsToUpdate.size() + " stalled import jobs");
