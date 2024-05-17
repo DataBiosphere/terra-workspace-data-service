@@ -24,6 +24,8 @@ task hello {
     #specify runtime attributes
     runtime {
         docker: "ubuntu:latest"
-        azure_vm_size: "Standard_D2s_v3"
+        cpu: 8
+        memory: "7 GB"
+        disk: "10 GB"
     }
 }
