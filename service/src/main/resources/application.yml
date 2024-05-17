@@ -112,10 +112,6 @@ spring:
     # always run on the replica where they were created.
     job-store-type: memory
     wait-for-jobs-to-complete-on-shutdown: true
-  task:
-    scheduling:
-      pool:
-        size: 5
 
 #   # activate the "local" profile to turn on CORS response headers,
 #   # which may be necessary for local development.

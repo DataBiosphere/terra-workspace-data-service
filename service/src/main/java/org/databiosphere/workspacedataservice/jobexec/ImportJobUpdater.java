@@ -15,7 +15,7 @@ public class ImportJobUpdater {
   public static final long UPDATE_JOB_FREQUENCY_IN_HOURS = 6;
   private static final long UPDATE_FREQUENCY_IN_MILLISECONDS =
       UPDATE_JOB_FREQUENCY_IN_HOURS * 3600 * 1000;
-  private static final long MAX_INITIAL_DELAY_IN_MILLISECONDS = 60 * 1000; // delay up to 1 minute
+  private static final long MAX_INITIAL_DELAY_IN_MILLISECONDS = 3600 * 1000; // delay up to 1 hour
   private static final Logger logger = LoggerFactory.getLogger(ImportJobUpdater.class);
 
   public ImportJobUpdater(JobDao jobDao) {
@@ -34,7 +34,7 @@ public class ImportJobUpdater {
     jobsToUpdate.stream()
         .forEach(
             job ->
-                jobDao.markError(
+                jobDao.fail(
                     job.getJobId(),
                     "Job failed to complete in " + UPDATE_JOB_FREQUENCY_IN_HOURS + " hours."));
   }

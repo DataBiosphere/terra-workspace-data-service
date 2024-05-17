@@ -29,8 +29,6 @@ public interface JobDao {
 
   GenericJobServerModel fail(UUID jobId, Exception e);
 
-  GenericJobServerModel markError(UUID jobId, String errorMessage);
-
   GenericJobServerModel getJob(UUID jobId);
 
   List<GenericJobServerModel> getJobsForCollection(

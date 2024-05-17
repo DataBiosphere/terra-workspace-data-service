@@ -4,6 +4,7 @@ import static org.databiosphere.workspacedataservice.generated.GenericJobServerM
 import static org.databiosphere.workspacedataservice.generated.GenericJobServerModel.JobTypeEnum.DATA_IMPORT;
 import static org.databiosphere.workspacedataservice.generated.GenericJobServerModel.StatusEnum;
 import static org.databiosphere.workspacedataservice.jobexec.ImportJobUpdater.UPDATE_JOB_FREQUENCY_IN_HOURS;
+import static org.databiosphere.workspacedataservice.service.JobService.NONTERMINAL_JOB_STATUSES;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -175,19 +176,6 @@ public class PostgresJobDao implements JobDao {
     return update(jobId, StatusEnum.ERROR, errorMessage, e.getStackTrace());
   }
 
-  /**
-   * Mark a job as error without logging at the error level
-   *
-   * @param jobId id of the job to update
-   * @param errorMessage a short error message, if the job is in error
-   * @return the updated job
-   */
-  @Override
-  public GenericJobServerModel markError(UUID jobId, String errorMessage) {
-    logger.info("Marking job {} as errored: {}", jobId, errorMessage);
-    return update(jobId, StatusEnum.ERROR, errorMessage, null);
-  }
-
   private GenericJobServerModel update(
       UUID jobId,
       StatusEnum status,
@@ -349,11 +337,7 @@ public class PostgresJobDao implements JobDao {
         instantSource.instant().atOffset(ZoneOffset.UTC).minusHours(UPDATE_JOB_FREQUENCY_IN_HOURS);
 
     List<String> nonterminalJobStatuses =
-        List.of(
-            StatusEnum.CREATED.name(),
-            StatusEnum.QUEUED.name(),
-            StatusEnum.RUNNING.name(),
-            StatusEnum.UNKNOWN.name());
+        NONTERMINAL_JOB_STATUSES.stream().map(status -> status.name()).toList();
 
     return namedTemplate.query(
         "SELECT id, type, status, created, updated, input, result, error, stacktrace, collection_id "
