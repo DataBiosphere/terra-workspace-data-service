@@ -55,8 +55,9 @@ def generate_csv(numRecords, fileName):
 
 def compare_csv(file1, file2Contents):
     differences = []
-    with open(file1, 'r') as csv1, file2Contents as import2:  # Import CSV files
+    with open(file1, 'r') as csv1:  # Import CSV files
         import1 = csv1.readlines()
+        import2 = file2Contents.splitlines()
         for row in import2:
             if row not in import1:
                 differences.append(row)
