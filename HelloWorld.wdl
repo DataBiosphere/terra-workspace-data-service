@@ -23,6 +23,7 @@ task hello {
 
     #specify runtime attributes
     runtime {
+        docker: "ubuntu:latest"
         azure_vm_size: "Standard_D2s_v3"
     }
 }
