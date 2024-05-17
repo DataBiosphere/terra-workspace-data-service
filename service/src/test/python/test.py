@@ -60,6 +60,7 @@ def compare_csv(file1, file2Contents):
         import2 = file2Contents.splitlines()
         for row in import2:
             if row not in import1:
+                print(row)
                 differences.append(row)
     return differences
 
