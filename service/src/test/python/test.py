@@ -53,11 +53,10 @@ def generate_csv(numRecords, fileName):
             ('city', random.choice(cities)),
             ('name', random.choice(names))]))
 
-def compare_csv(file1, file2):
+def compare_csv(file1, file2Contents):
     differences = []
-    with open(file1, 'r') as csv1, open(file2, 'r') as csv2:  # Import CSV files
+    with open(file1, 'r') as csv1, file2Contents as import2:  # Import CSV files
         import1 = csv1.readlines()
-        import2 = csv2.readlines()
         for row in import2:
             if row not in import1:
                 differences.append(row)
@@ -232,9 +231,8 @@ class WdsTests(TestCase):
         ent_types = self.schema_client.describe_record_type(self.current_workspaceId, self.version, self.cvsUpload_test)
         self.assertEqual(ent_types.count, num_records)
 
-        # read tsv back into a variable from data table and verify it matches what was originally created
-        tsv_path = self.records_client.get_records_as_tsv(self.current_workspaceId, self.version, self.cvsUpload_test)
-        diff = compare_csv(self.generatedCvs_name, tsv_path)
+        tsv_records = self.records_client.get_records_as_tsv(self.current_workspaceId, self.version, self.cvsUpload_test)
+        diff = compare_csv(self.generatedCvs_name, tsv_records)
         self.assertTrue(len(diff) == 0)
 
         # clean up
