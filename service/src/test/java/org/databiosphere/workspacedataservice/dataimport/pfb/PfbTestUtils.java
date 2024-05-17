@@ -2,7 +2,8 @@ package org.databiosphere.workspacedataservice.dataimport.pfb;
 
 import static org.databiosphere.workspacedataservice.dataimport.pfb.PfbRecordConverter.RELATIONS_ID;
 import static org.databiosphere.workspacedataservice.dataimport.pfb.PfbRecordConverter.RELATIONS_NAME;
-import static org.databiosphere.workspacedataservice.service.ImportService.ARG_TDR_SYNC_PERMISSION;
+import static org.databiosphere.workspacedataservice.dataimport.tdr.TdrManifestQuartzJob.OPTION_TDR_SYNC_PERMISSIONS;
+import static org.databiosphere.workspacedataservice.service.ImportService.ARG_IMPORT_JOB_INPUT;
 import static org.databiosphere.workspacedataservice.shared.model.Schedulable.ARG_COLLECTION;
 import static org.databiosphere.workspacedataservice.shared.model.Schedulable.ARG_TOKEN;
 import static org.databiosphere.workspacedataservice.shared.model.Schedulable.ARG_URL;
@@ -24,7 +25,10 @@ import org.apache.avro.file.DataFileStream;
 import org.apache.avro.generic.GenericData;
 import org.apache.avro.generic.GenericRecord;
 import org.apache.avro.generic.GenericRecordBuilder;
+import org.databiosphere.workspacedataservice.common.JsonUtils;
+import org.databiosphere.workspacedataservice.dataimport.ImportJobInput;
 import org.databiosphere.workspacedataservice.generated.ImportRequestServerModel;
+import org.databiosphere.workspacedataservice.generated.ImportRequestServerModel.TypeEnum;
 import org.databiosphere.workspacedataservice.service.ImportService;
 import org.mockito.Mockito;
 import org.quartz.JobDetail;
@@ -173,6 +177,12 @@ public class PfbTestUtils {
       UUID jobId, URI resourceUri, UUID collectionId, boolean shouldPermissionSync) {
     JobExecutionContext mockContext = mock(JobExecutionContext.class);
 
+    ImportJobInput importJobInput =
+        new ImportJobInput(
+            URI.create("https://data.terra.bio/manifest.json"),
+            TypeEnum.PFB,
+            Map.of(OPTION_TDR_SYNC_PERMISSIONS, shouldPermissionSync));
+
     var schedulable =
         ImportService.createSchedulable(
             ImportRequestServerModel.TypeEnum.PFB,
@@ -181,7 +191,7 @@ public class PfbTestUtils {
                 .put(ARG_TOKEN, BEARER_TOKEN)
                 .put(ARG_URL, resourceUri.toString())
                 .put(ARG_COLLECTION, collectionId.toString())
-                .put(ARG_TDR_SYNC_PERMISSION, shouldPermissionSync)
+                .put(ARG_IMPORT_JOB_INPUT, JsonUtils.stringify(importJobInput))
                 .build());
 
     JobDetail jobDetail = schedulable.getJobDetail();

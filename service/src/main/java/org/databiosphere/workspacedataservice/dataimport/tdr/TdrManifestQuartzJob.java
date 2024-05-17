@@ -3,7 +3,6 @@ package org.databiosphere.workspacedataservice.dataimport.tdr;
 import static org.apache.parquet.avro.AvroReadSupport.READ_INT96_AS_FIXED;
 import static org.databiosphere.workspacedataservice.generated.ImportRequestServerModel.TypeEnum.TDRMANIFEST;
 import static org.databiosphere.workspacedataservice.sam.SamAuthorizationDao.WORKSPACE_ROLES;
-import static org.databiosphere.workspacedataservice.service.ImportService.ARG_TDR_SYNC_PERMISSION;
 import static org.databiosphere.workspacedataservice.shared.model.Schedulable.ARG_URL;
 import static org.databiosphere.workspacedataservice.shared.model.job.JobType.DATA_IMPORT;
 
@@ -64,6 +63,7 @@ import org.springframework.stereotype.Component;
 
 @Component
 public class TdrManifestQuartzJob extends QuartzJob {
+  public static final String OPTION_TDR_SYNC_PERMISSIONS = "tdrSyncPermissions";
   private final Logger logger = LoggerFactory.getLogger(this.getClass());
 
   private final RecordSinkFactory recordSinkFactory;
@@ -168,9 +168,16 @@ public class TdrManifestQuartzJob extends QuartzJob {
                               .record()
                               .withRecordType(entry.getKey())
                               .ofQuantity(entry.getValue())));
+
       // sync permissions if option is enabled and we're running in the control-plane
-      // TODO(AJ-1809): do defaulting here when we have a more generic way to handle passed options
-      if (isTdrPermissionSyncingEnabled && jobData.getBoolean(ARG_TDR_SYNC_PERMISSION)) {
+      boolean requestedPermissionSync =
+          Boolean.parseBoolean(
+              details
+                  .importJobInput()
+                  .options()
+                  .getOrDefault(OPTION_TDR_SYNC_PERMISSIONS, "false")
+                  .toString());
+      if (requestedPermissionSync && isTdrPermissionSyncingEnabled) {
         syncPermissions(details.workspaceId(), snapshotId);
       }
     } catch (Exception e) {

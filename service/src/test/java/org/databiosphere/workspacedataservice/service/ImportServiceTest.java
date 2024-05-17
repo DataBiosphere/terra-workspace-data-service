@@ -2,9 +2,10 @@ package org.databiosphere.workspacedataservice.service;
 
 import static java.util.Collections.emptyMap;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.databiosphere.workspacedataservice.dataimport.rawlsjson.RawlsJsonQuartzJob.OPTION_IS_UPSERT;
+import static org.databiosphere.workspacedataservice.dataimport.tdr.TdrManifestQuartzJob.OPTION_TDR_SYNC_PERMISSIONS;
 import static org.databiosphere.workspacedataservice.generated.ImportRequestServerModel.TypeEnum;
-import static org.databiosphere.workspacedataservice.service.ImportService.ARG_IS_UPSERT;
-import static org.databiosphere.workspacedataservice.service.ImportService.ARG_TDR_SYNC_PERMISSION;
+import static org.databiosphere.workspacedataservice.service.ImportService.ARG_IMPORT_JOB_INPUT;
 import static org.databiosphere.workspacedataservice.shared.model.Schedulable.ARG_COLLECTION;
 import static org.databiosphere.workspacedataservice.shared.model.Schedulable.ARG_TOKEN;
 import static org.databiosphere.workspacedataservice.shared.model.Schedulable.ARG_URL;
@@ -29,11 +30,13 @@ import org.broadinstitute.dsde.workbench.client.sam.ApiException;
 import org.broadinstitute.dsde.workbench.client.sam.api.GoogleApi;
 import org.broadinstitute.dsde.workbench.client.sam.api.ResourcesApi;
 import org.databiosphere.workspacedataservice.annotations.SingleTenant;
+import org.databiosphere.workspacedataservice.common.JsonUtils;
 import org.databiosphere.workspacedataservice.common.TestBase;
 import org.databiosphere.workspacedataservice.dao.CollectionDao;
 import org.databiosphere.workspacedataservice.dao.JobDao;
 import org.databiosphere.workspacedataservice.dao.MockCollectionDao;
 import org.databiosphere.workspacedataservice.dao.SchedulerDao;
+import org.databiosphere.workspacedataservice.dataimport.ImportJobInput;
 import org.databiosphere.workspacedataservice.dataimport.pfb.PfbQuartzJob;
 import org.databiosphere.workspacedataservice.dataimport.tdr.TdrManifestQuartzJob;
 import org.databiosphere.workspacedataservice.generated.GenericJobServerModel;
@@ -281,13 +284,9 @@ class ImportServiceTest extends TestBase {
     verify(jobDao, never()).createJob(any());
   }
 
-  // TODO(AJ-1809): Replace this test with something that verifies generic behavior once
-  //   the defaulting is handled by the relevant subclasses of QuartzJob
-  @ParameterizedTest(
-      name = "Given {0} extra options in ImportRequest, passed through args should contain {1}")
+  @ParameterizedTest(name = "Options from import request should be passed through to job {0}")
   @MethodSource("getOptionsMapArgs")
-  void passesThroughIsUpsert(
-      Map<String, String> inputOptions, Map<String, Serializable> expectedArguments) {
+  void passesThroughIsUpsert(Map<String, Object> inputOptions) {
     // Arrange
     collectionService.createCollection(workspaceId, defaultCollectionId(), VERSION);
     ImportRequestServerModel importRequest = new ImportRequestServerModel(TypeEnum.PFB, importUri);
@@ -300,37 +299,26 @@ class ImportServiceTest extends TestBase {
     verify(schedulerDao).schedule(schedulableCaptor.capture());
     Map<String, Serializable> actualArguments = schedulableCaptor.getValue().getArguments();
 
-    expectedArguments.forEach(
+    ImportJobInput importJobInput =
+        JsonUtils.parse((String) actualArguments.get(ARG_IMPORT_JOB_INPUT), ImportJobInput.class);
+    inputOptions.forEach(
         (key, value) -> {
-          assertThat(actualArguments).containsEntry(key, value);
+          assertThat(importJobInput.options()).containsEntry(key, value);
         });
   }
 
   private static Stream<Arguments> getOptionsMapArgs() {
     return Stream.of(
+        Arguments.of(/* inputOptions= */ emptyMap()),
         Arguments.of(
-            /* inputOptions= */ emptyMap(),
-            /* expectedArguments= */ new ImmutableMap.Builder<String, Serializable>()
-                .put(ARG_IS_UPSERT, true) // default true
-                .put(ARG_TDR_SYNC_PERMISSION, false) // default false
+            /* inputOptions= */ new ImmutableMap.Builder<String, Object>()
+                .put(OPTION_IS_UPSERT, true)
+                .put(OPTION_TDR_SYNC_PERMISSIONS, false)
                 .build()),
         Arguments.of(
-            /* inputOptions= */ new ImmutableMap.Builder<String, String>()
-                .put(ARG_IS_UPSERT, "true")
-                .put(ARG_TDR_SYNC_PERMISSION, "true")
-                .build(),
-            /* expectedArguments= */ new ImmutableMap.Builder<String, Serializable>()
-                .put(ARG_IS_UPSERT, true) // pass through true
-                .put(ARG_TDR_SYNC_PERMISSION, true) // pass through true
-                .build()),
-        Arguments.of(
-            /* inputOptions= */ new ImmutableMap.Builder<String, String>()
-                .put(ARG_IS_UPSERT, "false")
-                .put(ARG_TDR_SYNC_PERMISSION, "false")
-                .build(),
-            /* expectedArguments= */ new ImmutableMap.Builder<String, Serializable>()
-                .put(ARG_IS_UPSERT, false) // pass through false
-                .put(ARG_TDR_SYNC_PERMISSION, false) // pass through false
+            /* inputOptions= */ new ImmutableMap.Builder<String, Object>()
+                .put(OPTION_IS_UPSERT, false)
+                .put(OPTION_TDR_SYNC_PERMISSIONS, true)
                 .build()));
   }
 

@@ -20,7 +20,6 @@ import org.databiosphere.workspacedataservice.shared.model.CollectionId;
 import org.databiosphere.workspacedataservice.storage.GcsStorage;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
@@ -91,10 +90,6 @@ class RawlsJsonQuartzJobTest extends TestBase {
     assertPubSubMessage(expectedPubSubMessageFor(jobId, isUpsert));
   }
 
-  //    This test can't be run until RawlsJsonQuartzJob is updated to handle defaulting isUpsert.
-  //    However, this is difficult due to how the JobInput map is represented, and JobDataReader
-  //    needs improvements to deal with null values without crashing.
-  @Disabled("TODO(AJ-1809): defaulting should be handled by RawlsJsonQuartzJob")
   @Test
   void isUpsertTrueByDefault() throws JobExecutionException {
     // arrange
