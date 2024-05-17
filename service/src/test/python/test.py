@@ -59,9 +59,6 @@ def compare_csv(file1, file2Contents):
         import1 = csv1.read().splitlines()
         file2Contents = file2Contents.decode("utf-8")
         import2 = file2Contents.splitlines()
-        print(import1)
-        print("THE OTHE ONE")
-        print(import2)
         for row in import2:
             if row not in import1:
                 differences.append(row)
