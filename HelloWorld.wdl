@@ -27,7 +27,6 @@ task hello {
         cpu: 8
         memory: "7 GB"
         disk: "10 GB"
-        maxRetries: 1
-        timeout: "1 minute"
+        maxRetries: 0
     }
 }
