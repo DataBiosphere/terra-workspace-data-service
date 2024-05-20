@@ -74,6 +74,11 @@ pytest service/src/test/python/test.py
 
 Note: Make sure your local WDS database does not have data in it before running these tests, as its presence may cause the tests to fail.
 
+Another note: For the [import test (scneario 6)](https://github.com/DataBiosphere/terra-workspace-data-service/blob/3224b416f758bb6a7a6574697fee914da335d782/service/src/test/python/test.py#L247) to work correctly when run locally, you need to run gradle with the following params: 
+```
+./gradlew bootRun --args='--twds.data-import.allowed-hosts=localhost --twds.data-import.require-validation=false'
+```
+
 To debug tests, you may want to try out python's [pdb debugger](https://realpython.com/python-debugging-pdb/).
 
 In case you get frustrated with python, go [here](https://xkcd.com/1987/) for a quick laugh. 
