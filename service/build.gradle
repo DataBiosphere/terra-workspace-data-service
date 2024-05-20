@@ -39,7 +39,7 @@ ext {
     parquet_mr_version = "1.14.0"
     hadoop_version = "3.4.0"
     prometheus_rsocket_version = "1.5.3"
-    spring_cloud_gcp_version = "5.2.1"
+    spring_cloud_gcp_version = "5.3.0"
 }
 
 dependencies {
@@ -48,7 +48,7 @@ dependencies {
 
     // Azure libraries
     implementation 'com.microsoft.azure:applicationinsights-runtime-attach:3.4.19'
-    implementation 'com.azure:azure-storage-blob:12.25.4'
+    implementation 'com.azure:azure-storage-blob:12.26.0'
     implementation 'com.azure:azure-identity-extensions:1.1.15' // postgres password plugin
 
     implementation 'org.springframework.boot:spring-boot-starter'
@@ -78,7 +78,7 @@ dependencies {
 
     // required by openapi-generated models and api interfaces
     implementation 'jakarta.validation:jakarta.validation-api'
-    implementation 'io.swagger.core.v3:swagger-annotations:2.2.21'
+    implementation 'io.swagger.core.v3:swagger-annotations:2.2.22'
 
     // Terra libraries
     implementation group: 'org.broadinstitute.dsde.workbench', name: 'sam-client_2.13', version: '0.1-752b4f3'
@@ -122,7 +122,7 @@ dependencies {
     implementation "org.glassfish.jersey.core:jersey-common"
 
     annotationProcessor 'org.springframework.boot:spring-boot-configuration-processor'
-    runtimeOnly 'org.webjars.npm:swagger-ui-dist:5.17.8'
+    runtimeOnly 'org.webjars.npm:swagger-ui-dist:5.17.10'
     testImplementation 'io.micrometer:micrometer-observation-test'
     testImplementation 'org.springframework.boot:spring-boot-starter-test'
     testImplementation 'org.junit.jupiter:junit-jupiter'
