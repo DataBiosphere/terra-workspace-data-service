@@ -19,6 +19,7 @@ import java.util.function.Supplier;
 import org.databiosphere.workspacedataservice.common.TestBase;
 import org.databiosphere.workspacedataservice.dataimport.ImportDetails;
 import org.databiosphere.workspacedataservice.dataimport.ImportJobInput;
+import org.databiosphere.workspacedataservice.dataimport.rawlsjson.RawlsJsonImportOptions;
 import org.databiosphere.workspacedataservice.generated.ImportRequestServerModel.TypeEnum;
 import org.databiosphere.workspacedataservice.pubsub.PubSub;
 import org.databiosphere.workspacedataservice.recordsink.RawlsAttributePrefixer.PrefixStrategy;
@@ -157,7 +158,10 @@ class RawlsRecordSinkPrefixingTest extends TestBase {
     var recordType = recordList.stream().map(Record::getRecordType).collect(onlyElement());
     var blobName = "";
     var importJobInput =
-        new ImportJobInput(URI.create("gs://test-bucket/rawls-import.json"), TypeEnum.RAWLSJSON);
+        new ImportJobInput(
+            URI.create("gs://test-bucket/rawls-import.json"),
+            TypeEnum.RAWLSJSON,
+            new RawlsJsonImportOptions(false));
 
     // RecordSink gets its own try block because we need close() to be called before moving to the
     // assert part of the test.

@@ -15,6 +15,7 @@ import org.databiosphere.workspacedataservice.config.DataImportProperties;
 import org.databiosphere.workspacedataservice.dao.JobDao;
 import org.databiosphere.workspacedataservice.dataimport.ImportDetails;
 import org.databiosphere.workspacedataservice.dataimport.ImportDetailsRetriever;
+import org.databiosphere.workspacedataservice.dataimport.ImportJobInput;
 import org.databiosphere.workspacedataservice.jobexec.JobDataMapReader;
 import org.databiosphere.workspacedataservice.jobexec.QuartzJob;
 import org.databiosphere.workspacedataservice.pubsub.PubSub;
@@ -27,7 +28,6 @@ import org.springframework.stereotype.Component;
 @ControlPlane
 @Component
 public class RawlsJsonQuartzJob extends QuartzJob {
-  public static final String OPTION_IS_UPSERT = "isUpsert";
   private final ImportDetailsRetriever importDetailsRetriever;
   private final GcsStorage storage;
   private final PubSub pubSub;
@@ -55,12 +55,11 @@ public class RawlsJsonQuartzJob extends QuartzJob {
   protected void executeInternal(UUID jobId, JobExecutionContext context) {
     JobDataMapReader jobData = JobDataMapReader.fromContext(context);
     ImportDetails details = importDetailsRetriever.fetch(jobId, jobData, PrefixStrategy.NONE);
+    ImportJobInput jobInput = details.importJobInput();
+    RawlsJsonImportOptions options = (RawlsJsonImportOptions) jobInput.options();
     URI sourceUri = jobData.getURI(ARG_URL);
     Blob destination = moveBlob(sourceUri, rawlsJsonBlobName(jobId));
-    boolean isUpsert =
-        Boolean.parseBoolean(
-            details.importJobInput().options().getOrDefault(OPTION_IS_UPSERT, "true").toString());
-    publishToRawls(jobId, jobData, destination, isUpsert);
+    publishToRawls(jobId, jobData, destination, options.isUpsert());
   }
 
   private Blob moveBlob(URI sourceUri, String desiredBlobName) {

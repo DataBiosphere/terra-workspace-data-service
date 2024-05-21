@@ -38,6 +38,7 @@ import org.databiosphere.workspacedataservice.dao.JobDao;
 import org.databiosphere.workspacedataservice.dataimport.FileDownloadHelper;
 import org.databiosphere.workspacedataservice.dataimport.ImportDetails;
 import org.databiosphere.workspacedataservice.dataimport.ImportDetailsRetriever;
+import org.databiosphere.workspacedataservice.dataimport.ImportJobInput;
 import org.databiosphere.workspacedataservice.dataimport.snapshotsupport.SnapshotSupport;
 import org.databiosphere.workspacedataservice.dataimport.snapshotsupport.SnapshotSupportFactory;
 import org.databiosphere.workspacedataservice.jobexec.JobDataMapReader;
@@ -63,7 +64,6 @@ import org.springframework.stereotype.Component;
 
 @Component
 public class TdrManifestQuartzJob extends QuartzJob {
-  public static final String OPTION_TDR_SYNC_PERMISSIONS = "tdrSyncPermissions";
   private final Logger logger = LoggerFactory.getLogger(this.getClass());
 
   private final RecordSinkFactory recordSinkFactory;
@@ -115,6 +115,8 @@ public class TdrManifestQuartzJob extends QuartzJob {
 
     // Collect details needed for import
     ImportDetails details = importDetailsRetriever.fetch(jobId, jobData, PrefixStrategy.TDR);
+    ImportJobInput jobInput = details.importJobInput();
+    TdrManifestImportOptions options = (TdrManifestImportOptions) jobInput.options();
 
     // read manifest
     SnapshotExportResponseModel snapshotExportResponseModel = parseManifest(uri);
@@ -170,14 +172,7 @@ public class TdrManifestQuartzJob extends QuartzJob {
                               .ofQuantity(entry.getValue())));
 
       // sync permissions if option is enabled and we're running in the control-plane
-      boolean requestedPermissionSync =
-          Boolean.parseBoolean(
-              details
-                  .importJobInput()
-                  .options()
-                  .getOrDefault(OPTION_TDR_SYNC_PERMISSIONS, "false")
-                  .toString());
-      if (requestedPermissionSync && isTdrPermissionSyncingEnabled) {
+      if (options.syncPermissions() && isTdrPermissionSyncingEnabled) {
         syncPermissions(details.workspaceId(), snapshotId);
       }
     } catch (Exception e) {

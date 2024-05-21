@@ -20,7 +20,6 @@ import org.databiosphere.workspacedataservice.shared.model.CollectionId;
 import org.databiosphere.workspacedataservice.storage.GcsStorage;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.ArgumentCaptor;
@@ -88,21 +87,6 @@ class RawlsJsonQuartzJobTest extends TestBase {
     // assert
     assertSingleBlobWritten(rawlsJsonBlobName(jobId));
     assertPubSubMessage(expectedPubSubMessageFor(jobId, isUpsert));
-  }
-
-  @Test
-  void isUpsertTrueByDefault() throws JobExecutionException {
-    // arrange
-    UUID jobId = UUID.randomUUID();
-    Blob incoming = createRandomBlob();
-    JobExecutionContext mockContext = stubJobContext(jobId, getUri(incoming), collectionId.id());
-
-    // act
-    testSupport.buildRawlsJsonQuartzJob().execute(mockContext);
-
-    // assert
-    assertSingleBlobWritten(rawlsJsonBlobName(jobId));
-    assertPubSubMessage(expectedPubSubMessageFor(jobId, /* isUpsert= */ true));
   }
 
   private ImmutableMap<String, String> expectedPubSubMessageFor(UUID jobId, boolean isUpsert) {

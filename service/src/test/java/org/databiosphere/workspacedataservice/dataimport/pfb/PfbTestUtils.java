@@ -2,7 +2,6 @@ package org.databiosphere.workspacedataservice.dataimport.pfb;
 
 import static org.databiosphere.workspacedataservice.dataimport.pfb.PfbRecordConverter.RELATIONS_ID;
 import static org.databiosphere.workspacedataservice.dataimport.pfb.PfbRecordConverter.RELATIONS_NAME;
-import static org.databiosphere.workspacedataservice.dataimport.tdr.TdrManifestQuartzJob.OPTION_TDR_SYNC_PERMISSIONS;
 import static org.databiosphere.workspacedataservice.service.ImportService.ARG_IMPORT_JOB_INPUT;
 import static org.databiosphere.workspacedataservice.shared.model.Schedulable.ARG_COLLECTION;
 import static org.databiosphere.workspacedataservice.shared.model.Schedulable.ARG_TOKEN;
@@ -160,28 +159,17 @@ public class PfbTestUtils {
 
   public static JobExecutionContext stubJobContext(UUID jobId, Resource resource, UUID collectionId)
       throws IOException {
-    return stubJobContext(jobId, resource, collectionId, /* shouldPermissionSync= */ false);
+    return stubJobContext(jobId, resource.getURI(), collectionId);
   }
 
-  public static JobExecutionContext stubJobContext(UUID jobId, URI uri, UUID collectionId) {
-    return stubJobContext(jobId, uri, collectionId, /* shouldPermissionSync= */ false);
-  }
-
-  public static JobExecutionContext stubJobContext(
-      UUID jobId, Resource resource, UUID collectionId, boolean shouldPermissionSync)
-      throws IOException {
-    return stubJobContext(jobId, resource.getURI(), collectionId, shouldPermissionSync);
-  }
-
-  public static JobExecutionContext stubJobContext(
-      UUID jobId, URI resourceUri, UUID collectionId, boolean shouldPermissionSync) {
+  public static JobExecutionContext stubJobContext(UUID jobId, URI resourceUri, UUID collectionId) {
     JobExecutionContext mockContext = mock(JobExecutionContext.class);
 
     ImportJobInput importJobInput =
         new ImportJobInput(
             URI.create("https://data.terra.bio/manifest.json"),
             TypeEnum.PFB,
-            Map.of(OPTION_TDR_SYNC_PERMISSIONS, shouldPermissionSync));
+            new PfbImportOptions());
 
     var schedulable =
         ImportService.createSchedulable(

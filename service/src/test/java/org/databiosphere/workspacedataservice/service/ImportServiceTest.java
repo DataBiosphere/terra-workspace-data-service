@@ -1,9 +1,7 @@
 package org.databiosphere.workspacedataservice.service;
 
-import static java.util.Collections.emptyMap;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.databiosphere.workspacedataservice.dataimport.rawlsjson.RawlsJsonQuartzJob.OPTION_IS_UPSERT;
-import static org.databiosphere.workspacedataservice.dataimport.tdr.TdrManifestQuartzJob.OPTION_TDR_SYNC_PERMISSIONS;
+import static org.databiosphere.workspacedataservice.dataimport.tdr.TdrManifestImportOptions.OPTION_TDR_SYNC_PERMISSIONS;
 import static org.databiosphere.workspacedataservice.generated.ImportRequestServerModel.TypeEnum;
 import static org.databiosphere.workspacedataservice.service.ImportService.ARG_IMPORT_JOB_INPUT;
 import static org.databiosphere.workspacedataservice.shared.model.Schedulable.ARG_COLLECTION;
@@ -20,7 +18,6 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
-import com.google.common.collect.ImmutableMap;
 import java.io.Serializable;
 import java.net.URI;
 import java.util.Map;
@@ -38,6 +35,7 @@ import org.databiosphere.workspacedataservice.dao.MockCollectionDao;
 import org.databiosphere.workspacedataservice.dao.SchedulerDao;
 import org.databiosphere.workspacedataservice.dataimport.ImportJobInput;
 import org.databiosphere.workspacedataservice.dataimport.pfb.PfbQuartzJob;
+import org.databiosphere.workspacedataservice.dataimport.tdr.TdrManifestImportOptions;
 import org.databiosphere.workspacedataservice.dataimport.tdr.TdrManifestQuartzJob;
 import org.databiosphere.workspacedataservice.generated.GenericJobServerModel;
 import org.databiosphere.workspacedataservice.generated.ImportRequestServerModel;
@@ -53,6 +51,7 @@ import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.EnumSource;
 import org.junit.jupiter.params.provider.EnumSource.Mode;
 import org.junit.jupiter.params.provider.MethodSource;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
 import org.mockito.Mockito;
@@ -285,12 +284,13 @@ class ImportServiceTest extends TestBase {
   }
 
   @ParameterizedTest(name = "Options from import request should be passed through to job {0}")
-  @MethodSource("getOptionsMapArgs")
-  void passesThroughIsUpsert(Map<String, Object> inputOptions) {
+  @ValueSource(booleans = {true, false})
+  void passesThroughIsUpsert(boolean syncPermissions) {
     // Arrange
     collectionService.createCollection(workspaceId, defaultCollectionId(), VERSION);
-    ImportRequestServerModel importRequest = new ImportRequestServerModel(TypeEnum.PFB, importUri);
-    importRequest.getOptions().putAll(inputOptions);
+    ImportRequestServerModel importRequest =
+        new ImportRequestServerModel(TypeEnum.TDRMANIFEST, importUri);
+    importRequest.getOptions().put(OPTION_TDR_SYNC_PERMISSIONS, syncPermissions);
 
     // Act
     importService.createImport(defaultCollectionId().id(), importRequest);
@@ -301,25 +301,8 @@ class ImportServiceTest extends TestBase {
 
     ImportJobInput importJobInput =
         JsonUtils.parse((String) actualArguments.get(ARG_IMPORT_JOB_INPUT), ImportJobInput.class);
-    inputOptions.forEach(
-        (key, value) -> {
-          assertThat(importJobInput.options()).containsEntry(key, value);
-        });
-  }
-
-  private static Stream<Arguments> getOptionsMapArgs() {
-    return Stream.of(
-        Arguments.of(/* inputOptions= */ emptyMap()),
-        Arguments.of(
-            /* inputOptions= */ new ImmutableMap.Builder<String, Object>()
-                .put(OPTION_IS_UPSERT, true)
-                .put(OPTION_TDR_SYNC_PERMISSIONS, false)
-                .build()),
-        Arguments.of(
-            /* inputOptions= */ new ImmutableMap.Builder<String, Object>()
-                .put(OPTION_IS_UPSERT, false)
-                .put(OPTION_TDR_SYNC_PERMISSIONS, true)
-                .build()));
+    TdrManifestImportOptions options = (TdrManifestImportOptions) importJobInput.options();
+    assertEquals(syncPermissions, options.syncPermissions());
   }
 
   private CollectionId defaultCollectionId() {

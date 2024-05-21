@@ -2,22 +2,77 @@ package org.databiosphere.workspacedataservice.dataimport;
 
 import static java.util.Collections.emptyMap;
 
+import com.fasterxml.jackson.core.JsonParser;
+import com.fasterxml.jackson.databind.DeserializationContext;
+import com.fasterxml.jackson.databind.JsonDeserializer;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import java.io.IOException;
 import java.net.URI;
 import java.util.Map;
+import org.databiosphere.workspacedataservice.dataimport.pfb.PfbImportOptions;
+import org.databiosphere.workspacedataservice.dataimport.rawlsjson.RawlsJsonImportOptions;
+import org.databiosphere.workspacedataservice.dataimport.tdr.TdrManifestImportOptions;
 import org.databiosphere.workspacedataservice.generated.ImportRequestServerModel;
+import org.databiosphere.workspacedataservice.generated.ImportRequestServerModel.TypeEnum;
 import org.databiosphere.workspacedataservice.shared.model.job.JobInput;
+import org.springframework.lang.Nullable;
 
 /** User-supplied input arguments for a data import job */
-public record ImportJobInput(
-    URI uri, ImportRequestServerModel.TypeEnum importType, Map<String, Object> options)
+@JsonDeserialize(using = ImportJobInput.ImportJobInputDeserializer.class)
+public record ImportJobInput(URI uri, TypeEnum importType, ImportOptions options)
     implements JobInput {
 
-  public ImportJobInput(URI uri, ImportRequestServerModel.TypeEnum importType) {
-    this(uri, importType, emptyMap());
+  public ImportJobInput(URI uri, TypeEnum importType) {
+    this(uri, importType, defaultOptionsForType(importType));
+  }
+
+  private static ImportOptions defaultOptionsForType(TypeEnum type) {
+    return optionsForType(type, emptyMap());
+  }
+
+  private static ImportOptions optionsForType(TypeEnum type, Map<String, Object> inputOptions) {
+    return switch (type) {
+      case PFB -> PfbImportOptions.from(inputOptions);
+      case RAWLSJSON -> RawlsJsonImportOptions.from(inputOptions);
+      case TDRMANIFEST -> TdrManifestImportOptions.from(inputOptions);
+    };
   }
 
   public static ImportJobInput from(ImportRequestServerModel importRequest) {
-    return new ImportJobInput(
-        importRequest.getUrl(), importRequest.getType(), importRequest.getOptions());
+    ImportOptions options =
+        switch (importRequest.getType()) {
+          case PFB -> PfbImportOptions.from(importRequest.getOptions());
+          case RAWLSJSON -> RawlsJsonImportOptions.from(importRequest.getOptions());
+          case TDRMANIFEST -> TdrManifestImportOptions.from(importRequest.getOptions());
+        };
+
+    return new ImportJobInput(importRequest.getUrl(), importRequest.getType(), options);
+  }
+
+  public static class ImportJobInputDeserializer extends JsonDeserializer<ImportJobInput> {
+    @Override
+    @Nullable
+    public ImportJobInput deserialize(JsonParser parser, DeserializationContext context)
+        throws IOException {
+
+      JsonNode node = parser.readValueAsTree();
+
+      URI uri = URI.create(node.get("uri").asText());
+      TypeEnum type = TypeEnum.fromValue(node.get("importType").asText());
+
+      ObjectMapper mapper = new ObjectMapper();
+      ImportOptions options =
+          switch (type) {
+            case PFB -> mapper.convertValue(node.get("options"), PfbImportOptions.class);
+            case RAWLSJSON -> mapper.convertValue(
+                node.get("options"), RawlsJsonImportOptions.class);
+            case TDRMANIFEST -> mapper.convertValue(
+                node.get("options"), TdrManifestImportOptions.class);
+          };
+
+      return new ImportJobInput(uri, type, options);
+    }
   }
 }

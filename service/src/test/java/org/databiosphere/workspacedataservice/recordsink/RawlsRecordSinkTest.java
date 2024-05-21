@@ -36,6 +36,7 @@ import java.util.stream.Stream;
 import org.databiosphere.workspacedataservice.common.TestBase;
 import org.databiosphere.workspacedataservice.dataimport.ImportDetails;
 import org.databiosphere.workspacedataservice.dataimport.ImportJobInput;
+import org.databiosphere.workspacedataservice.dataimport.rawlsjson.RawlsJsonImportOptions;
 import org.databiosphere.workspacedataservice.generated.ImportRequestServerModel.TypeEnum;
 import org.databiosphere.workspacedataservice.pubsub.PubSub;
 import org.databiosphere.workspacedataservice.pubsub.RawlsJsonPublisher;
@@ -431,7 +432,10 @@ class RawlsRecordSinkTest extends TestBase {
 
   private RawlsRecordSink newRecordSink() {
     ImportJobInput importJobInput =
-        new ImportJobInput(URI.create("gs://test-bucket/rawls-import.json"), TypeEnum.RAWLSJSON);
+        new ImportJobInput(
+            URI.create("gs://test-bucket/rawls-import.json"),
+            TypeEnum.RAWLSJSON,
+            new RawlsJsonImportOptions(false));
     return RawlsRecordSink.create(
         mapper,
         storage,
