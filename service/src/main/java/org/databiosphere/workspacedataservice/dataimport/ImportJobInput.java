@@ -38,14 +38,13 @@ public record ImportJobInput(URI uri, TypeEnum importType, ImportOptions options
     @Nullable
     public ImportJobInput deserialize(JsonParser parser, DeserializationContext context)
         throws IOException {
-
+      ObjectMapper mapper = (ObjectMapper) parser.getCodec();
       JsonNode node = parser.readValueAsTree();
 
       URI uri = URI.create(node.get("uri").asText());
       TypeEnum type = TypeEnum.fromValue(node.get("importType").asText());
 
       JsonNode optionsNode = node.get("options");
-      ObjectMapper mapper = new ObjectMapper();
       ImportOptions options =
           switch (type) {
             case PFB -> mapper.convertValue(optionsNode, PfbImportOptions.class);
