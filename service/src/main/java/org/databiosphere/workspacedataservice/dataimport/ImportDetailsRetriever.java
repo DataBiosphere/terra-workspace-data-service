@@ -37,7 +37,7 @@ public class ImportDetailsRetriever {
     CollectionId collectionId = CollectionId.of(targetCollection);
     WorkspaceId workspaceId = collectionService.getWorkspaceId(collectionId);
 
-    ImportJobInput importJobInput = (ImportJobInput) jobData.get(ARG_IMPORT_JOB_INPUT);
+    ImportJobInput importJobInput = jobData.get(ARG_IMPORT_JOB_INPUT);
 
     return new ImportDetails(
         jobId, userEmailSupplier, workspaceId, collectionId, prefixStrategy, importJobInput);

@@ -90,9 +90,10 @@ public class JobDataMapReader {
    * Retrieve a value from a JobDataMap. Throws a JobExecutionException if the value is not
    * found/null.
    */
-  public Object get(String key) {
+  @SuppressWarnings("unchecked")
+  public <T> T get(String key) {
     try {
-      return Objects.requireNonNull(jobDataMap.get(key));
+      return (T) Objects.requireNonNull(jobDataMap.get(key));
     } catch (Exception e) {
       throw new JobExecutionException(
           "Error retrieving key %s from JobDataMap: %s".formatted(key, e.getMessage()), e);
