@@ -62,14 +62,13 @@ public record ImportJobInput(URI uri, TypeEnum importType, ImportOptions options
       URI uri = URI.create(node.get("uri").asText());
       TypeEnum type = TypeEnum.fromValue(node.get("importType").asText());
 
+      JsonNode optionsNode = node.get("options");
       ObjectMapper mapper = new ObjectMapper();
       ImportOptions options =
           switch (type) {
-            case PFB -> mapper.convertValue(node.get("options"), PfbImportOptions.class);
-            case RAWLSJSON -> mapper.convertValue(
-                node.get("options"), RawlsJsonImportOptions.class);
-            case TDRMANIFEST -> mapper.convertValue(
-                node.get("options"), TdrManifestImportOptions.class);
+            case PFB -> mapper.convertValue(optionsNode, PfbImportOptions.class);
+            case RAWLSJSON -> mapper.convertValue(optionsNode, RawlsJsonImportOptions.class);
+            case TDRMANIFEST -> mapper.convertValue(optionsNode, TdrManifestImportOptions.class);
           };
 
       return new ImportJobInput(uri, type, options);
