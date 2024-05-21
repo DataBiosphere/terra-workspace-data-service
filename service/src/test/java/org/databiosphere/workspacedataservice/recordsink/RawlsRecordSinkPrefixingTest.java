@@ -9,6 +9,7 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.Iterables;
 import java.io.IOException;
+import java.net.URI;
 import java.nio.charset.StandardCharsets;
 import java.util.Collection;
 import java.util.List;
@@ -17,6 +18,9 @@ import java.util.UUID;
 import java.util.function.Supplier;
 import org.databiosphere.workspacedataservice.common.TestBase;
 import org.databiosphere.workspacedataservice.dataimport.ImportDetails;
+import org.databiosphere.workspacedataservice.dataimport.ImportJobInput;
+import org.databiosphere.workspacedataservice.dataimport.rawlsjson.RawlsJsonImportOptions;
+import org.databiosphere.workspacedataservice.generated.ImportRequestServerModel.TypeEnum;
 import org.databiosphere.workspacedataservice.pubsub.PubSub;
 import org.databiosphere.workspacedataservice.recordsink.RawlsAttributePrefixer.PrefixStrategy;
 import org.databiosphere.workspacedataservice.recordsink.RawlsModel.AddUpdateAttribute;
@@ -153,6 +157,11 @@ class RawlsRecordSinkPrefixingTest extends TestBase {
     var recordList = List.of(record);
     var recordType = recordList.stream().map(Record::getRecordType).collect(onlyElement());
     var blobName = "";
+    var importJobInput =
+        new ImportJobInput(
+            URI.create("gs://test-bucket/rawls-import.json"),
+            TypeEnum.RAWLSJSON,
+            new RawlsJsonImportOptions(false));
 
     // RecordSink gets its own try block because we need close() to be called before moving to the
     // assert part of the test.
@@ -168,7 +177,8 @@ class RawlsRecordSinkPrefixingTest extends TestBase {
                 USER_EMAIL,
                 WorkspaceId.of(WORKSPACE_ID),
                 CollectionId.of(WORKSPACE_ID),
-                prefixStrategy))) {
+                prefixStrategy,
+                importJobInput))) {
 
       recordSink.upsertBatch(
           recordType,

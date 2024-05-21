@@ -2,7 +2,7 @@ package org.databiosphere.workspacedataservice.dataimport.tdr;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.databiosphere.workspacedataservice.TestTags.SLOW;
-import static org.databiosphere.workspacedataservice.dataimport.pfb.PfbTestUtils.stubJobContext;
+import static org.databiosphere.workspacedataservice.dataimport.tdr.TdrManifestTestUtils.stubJobContext;
 import static org.databiosphere.workspacedataservice.sam.SamAuthorizationDao.WORKSPACE_ROLES;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -22,6 +22,7 @@ import bio.terra.datarepo.model.SnapshotExportResponseModel;
 import bio.terra.workspace.model.ResourceList;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.io.IOException;
+import java.net.URI;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -37,7 +38,9 @@ import org.databiosphere.workspacedataservice.dao.JobDao;
 import org.databiosphere.workspacedataservice.dao.RecordDao;
 import org.databiosphere.workspacedataservice.dataimport.FileDownloadHelper;
 import org.databiosphere.workspacedataservice.dataimport.ImportDetails;
+import org.databiosphere.workspacedataservice.dataimport.ImportJobInput;
 import org.databiosphere.workspacedataservice.dataimport.tdr.TdrManifestExemplarData.AzureSmall;
+import org.databiosphere.workspacedataservice.generated.ImportRequestServerModel;
 import org.databiosphere.workspacedataservice.recordsink.RawlsAttributePrefixer.PrefixStrategy;
 import org.databiosphere.workspacedataservice.recordsink.RecordSink;
 import org.databiosphere.workspacedataservice.recordsink.RecordSinkFactory;
@@ -215,7 +218,11 @@ class TdrManifestQuartzJobTest extends TestBase {
             emailSupplier,
             WorkspaceId.of(workspaceId),
             CollectionId.of(workspaceId),
-            PrefixStrategy.TDR);
+            PrefixStrategy.TDR,
+            new ImportJobInput(
+                URI.create("https://data.terra.bio/test.manifest"),
+                ImportRequestServerModel.TypeEnum.TDRMANIFEST,
+                new TdrManifestImportOptions(false)));
     try (RecordSink recordSink = recordSinkFactory.buildRecordSink(importDetails)) {
 
       // Make sure real errors on parsing parquets are not swallowed
@@ -281,8 +288,7 @@ class TdrManifestQuartzJobTest extends TestBase {
     // set up the job
     TdrManifestQuartzJob tdrManifestQuartzJob = testSupport.buildTdrManifestQuartzJob();
     JobExecutionContext mockContext =
-        stubJobContext(
-            jobId, v2fManifestResource, collectionId.id(), /* shouldPermissionSync= */ true);
+        stubJobContext(jobId, v2fManifestResource, collectionId.id(), /* syncPermissions= */ true);
 
     // ACT
     // execute the job

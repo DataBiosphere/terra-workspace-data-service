@@ -23,6 +23,7 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Iterables;
 import java.io.IOException;
 import java.io.OutputStream;
+import java.net.URI;
 import java.nio.charset.StandardCharsets;
 import java.util.Collection;
 import java.util.HashMap;
@@ -34,6 +35,9 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.databiosphere.workspacedataservice.common.TestBase;
 import org.databiosphere.workspacedataservice.dataimport.ImportDetails;
+import org.databiosphere.workspacedataservice.dataimport.ImportJobInput;
+import org.databiosphere.workspacedataservice.dataimport.rawlsjson.RawlsJsonImportOptions;
+import org.databiosphere.workspacedataservice.generated.ImportRequestServerModel.TypeEnum;
 import org.databiosphere.workspacedataservice.pubsub.PubSub;
 import org.databiosphere.workspacedataservice.pubsub.RawlsJsonPublisher;
 import org.databiosphere.workspacedataservice.recordsink.RawlsAttributePrefixer.PrefixStrategy;
@@ -427,6 +431,11 @@ class RawlsRecordSinkTest extends TestBase {
   }
 
   private RawlsRecordSink newRecordSink() {
+    ImportJobInput importJobInput =
+        new ImportJobInput(
+            URI.create("gs://test-bucket/rawls-import.json"),
+            TypeEnum.RAWLSJSON,
+            new RawlsJsonImportOptions(false));
     return RawlsRecordSink.create(
         mapper,
         storage,
@@ -436,7 +445,8 @@ class RawlsRecordSinkTest extends TestBase {
             USER_EMAIL,
             WorkspaceId.of(WORKSPACE_ID),
             CollectionId.of(WORKSPACE_ID),
-            PrefixStrategy.NONE));
+            PrefixStrategy.NONE,
+            importJobInput));
   }
 
   // assert that the given collection has exactly one item, then return it

@@ -1,5 +1,6 @@
 package org.databiosphere.workspacedataservice.dataimport;
 
+import static org.databiosphere.workspacedataservice.service.ImportService.ARG_IMPORT_JOB_INPUT;
 import static org.databiosphere.workspacedataservice.shared.model.Schedulable.ARG_COLLECTION;
 import static org.databiosphere.workspacedataservice.shared.model.Schedulable.ARG_TOKEN;
 
@@ -35,6 +36,10 @@ public class ImportDetailsRetriever {
     // determine the workspace for the target collection
     CollectionId collectionId = CollectionId.of(targetCollection);
     WorkspaceId workspaceId = collectionService.getWorkspaceId(collectionId);
-    return new ImportDetails(jobId, userEmailSupplier, workspaceId, collectionId, prefixStrategy);
+
+    ImportJobInput importJobInput = jobData.get(ARG_IMPORT_JOB_INPUT);
+
+    return new ImportDetails(
+        jobId, userEmailSupplier, workspaceId, collectionId, prefixStrategy, importJobInput);
   }
 }
