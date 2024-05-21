@@ -26,6 +26,7 @@ import org.databiosphere.workspacedataservice.common.MockInstantSourceConfig;
 import org.databiosphere.workspacedataservice.common.TestBase;
 import org.databiosphere.workspacedataservice.dataimport.ImportJobInput;
 import org.databiosphere.workspacedataservice.generated.GenericJobServerModel;
+import org.databiosphere.workspacedataservice.generated.ImportRequestServerModel;
 import org.databiosphere.workspacedataservice.generated.ImportRequestServerModel.TypeEnum;
 import org.databiosphere.workspacedataservice.shared.model.CollectionId;
 import org.databiosphere.workspacedataservice.shared.model.job.Job;
@@ -345,7 +346,7 @@ class PostgresJobDaoTest extends TestBase {
 
   private static ImportJobInput makeJobInput(String testImportUri, TypeEnum importType) {
     try {
-      return new ImportJobInput(new URI(testImportUri), importType);
+      return ImportJobInput.from(new ImportRequestServerModel(importType, new URI(testImportUri)));
     } catch (URISyntaxException e) {
       throw new RuntimeException(e);
     }

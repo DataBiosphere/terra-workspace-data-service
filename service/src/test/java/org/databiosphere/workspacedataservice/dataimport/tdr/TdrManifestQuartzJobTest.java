@@ -221,7 +221,8 @@ class TdrManifestQuartzJobTest extends TestBase {
             PrefixStrategy.TDR,
             new ImportJobInput(
                 URI.create("https://data.terra.bio/test.manifest"),
-                ImportRequestServerModel.TypeEnum.TDRMANIFEST));
+                ImportRequestServerModel.TypeEnum.TDRMANIFEST,
+                new TdrManifestImportOptions(false)));
     try (RecordSink recordSink = recordSinkFactory.buildRecordSink(importDetails)) {
 
       // Make sure real errors on parsing parquets are not swallowed

@@ -1,7 +1,5 @@
 package org.databiosphere.workspacedataservice.dataimport;
 
-import static java.util.Collections.emptyMap;
-
 import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.databind.DeserializationContext;
 import com.fasterxml.jackson.databind.JsonDeserializer;
@@ -10,7 +8,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import java.io.IOException;
 import java.net.URI;
-import java.util.Map;
 import org.databiosphere.workspacedataservice.dataimport.pfb.PfbImportOptions;
 import org.databiosphere.workspacedataservice.dataimport.rawlsjson.RawlsJsonImportOptions;
 import org.databiosphere.workspacedataservice.dataimport.tdr.TdrManifestImportOptions;
@@ -23,22 +20,6 @@ import org.springframework.lang.Nullable;
 @JsonDeserialize(using = ImportJobInput.ImportJobInputDeserializer.class)
 public record ImportJobInput(URI uri, TypeEnum importType, ImportOptions options)
     implements JobInput {
-
-  public ImportJobInput(URI uri, TypeEnum importType) {
-    this(uri, importType, defaultOptionsForType(importType));
-  }
-
-  private static ImportOptions defaultOptionsForType(TypeEnum type) {
-    return optionsForType(type, emptyMap());
-  }
-
-  private static ImportOptions optionsForType(TypeEnum type, Map<String, Object> inputOptions) {
-    return switch (type) {
-      case PFB -> PfbImportOptions.from(inputOptions);
-      case RAWLSJSON -> RawlsJsonImportOptions.from(inputOptions);
-      case TDRMANIFEST -> TdrManifestImportOptions.from(inputOptions);
-    };
-  }
 
   public static ImportJobInput from(ImportRequestServerModel importRequest) {
     ImportOptions options =
