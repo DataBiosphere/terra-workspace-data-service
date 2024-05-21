@@ -12,7 +12,6 @@ import java.io.IOException;
 import java.io.Serializable;
 import java.net.URI;
 import java.util.UUID;
-import org.databiosphere.workspacedataservice.common.JsonUtils;
 import org.databiosphere.workspacedataservice.dataimport.ImportJobInput;
 import org.databiosphere.workspacedataservice.generated.ImportRequestServerModel.TypeEnum;
 import org.databiosphere.workspacedataservice.service.ImportService;
@@ -56,7 +55,7 @@ public class TdrManifestTestUtils {
                 .put(ARG_TOKEN, BEARER_TOKEN)
                 .put(ARG_URL, resourceUri.toString())
                 .put(ARG_COLLECTION, collectionId.toString())
-                .put(ARG_IMPORT_JOB_INPUT, JsonUtils.stringify(importJobInput))
+                .put(ARG_IMPORT_JOB_INPUT, importJobInput)
                 .build());
 
     JobDetail jobDetail = schedulable.getJobDetail();

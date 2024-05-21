@@ -2,6 +2,11 @@ package org.databiosphere.workspacedataservice.dataimport;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.stream.Stream;
@@ -34,7 +39,24 @@ class ImportJobInputTest extends TestBase {
 
   @ParameterizedTest(name = "serializes {0}")
   @MethodSource("serializeTestCases")
-  void serializes(ImportJobInput importJobInput) {
+  void serializes(ImportJobInput importJobInput) throws ClassNotFoundException, IOException {
+    ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+    ObjectOutputStream objectOutputStream = new ObjectOutputStream(outputStream);
+    objectOutputStream.writeObject(importJobInput);
+    objectOutputStream.flush();
+    objectOutputStream.close();
+
+    ByteArrayInputStream inputStream = new ByteArrayInputStream(outputStream.toByteArray());
+    ObjectInputStream objectInputStream = new ObjectInputStream(inputStream);
+    ImportJobInput output = (ImportJobInput) objectInputStream.readObject();
+    objectInputStream.close();
+
+    assertEquals(importJobInput, output);
+  }
+
+  @ParameterizedTest(name = "serializes to JSON {0}")
+  @MethodSource("serializeTestCases")
+  void serializesToJson(ImportJobInput importJobInput) {
     ImportJobInput output =
         JsonUtils.parse(JsonUtils.stringify(importJobInput), ImportJobInput.class);
     assertEquals(importJobInput, output);

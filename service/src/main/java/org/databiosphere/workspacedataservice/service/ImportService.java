@@ -4,7 +4,6 @@ import static org.databiosphere.workspacedataservice.shared.model.Schedulable.AR
 import static org.databiosphere.workspacedataservice.shared.model.Schedulable.ARG_TOKEN;
 import static org.databiosphere.workspacedataservice.shared.model.Schedulable.ARG_URL;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.annotations.VisibleForTesting;
 import java.io.Serializable;
 import java.util.HashMap;
@@ -45,21 +44,18 @@ public class ImportService {
   private final JobDao jobDao;
   private final SchedulerDao schedulerDao;
   private final ImportValidator importValidator;
-  private final ObjectMapper objectMapper;
 
   public ImportService(
       CollectionService collectionService,
       SamDao samDao,
       JobDao jobDao,
       SchedulerDao schedulerDao,
-      ImportValidator importValidator,
-      ObjectMapper objectMapper) {
+      ImportValidator importValidator) {
     this.collectionService = collectionService;
     this.samDao = samDao;
     this.jobDao = jobDao;
     this.schedulerDao = schedulerDao;
     this.importValidator = importValidator;
-    this.objectMapper = objectMapper;
   }
 
   public GenericJobServerModel createImport(
@@ -115,7 +111,7 @@ public class ImportService {
       arguments.put(ARG_TOKEN, petToken);
       arguments.put(ARG_URL, importRequest.getUrl().toString());
       arguments.put(ARG_COLLECTION, collectionId.toString());
-      arguments.put(ARG_IMPORT_JOB_INPUT, objectMapper.writeValueAsString(importJobInput));
+      arguments.put(ARG_IMPORT_JOB_INPUT, importJobInput);
 
       // if we can find an MDC id, add it to the job context
       safeGetMdcId(createdJob.getJobId())

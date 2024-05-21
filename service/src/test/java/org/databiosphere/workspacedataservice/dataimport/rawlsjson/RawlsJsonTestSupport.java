@@ -12,7 +12,6 @@ import io.micrometer.observation.ObservationRegistry;
 import java.io.Serializable;
 import java.net.URI;
 import java.util.UUID;
-import org.databiosphere.workspacedataservice.common.JsonUtils;
 import org.databiosphere.workspacedataservice.config.DataImportProperties;
 import org.databiosphere.workspacedataservice.dao.JobDao;
 import org.databiosphere.workspacedataservice.dataimport.ImportDetailsRetriever;
@@ -65,7 +64,7 @@ public class RawlsJsonTestSupport {
                 .put(ARG_TOKEN, "fake-bearer-token")
                 .put(ARG_URL, resourceUri.toString())
                 .put(ARG_COLLECTION, collectionId.toString())
-                .put(ARG_IMPORT_JOB_INPUT, JsonUtils.stringify(importJobInput))
+                .put(ARG_IMPORT_JOB_INPUT, importJobInput)
                 .build());
 
     JobDetail jobDetail = schedulable.getJobDetail();

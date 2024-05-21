@@ -1,6 +1,7 @@
 package org.databiosphere.workspacedataservice.jobexec;
 
 import java.net.URI;
+import java.util.Objects;
 import java.util.UUID;
 import org.quartz.JobDataMap;
 import org.quartz.JobExecutionContext;
@@ -82,6 +83,19 @@ public class JobDataMapReader {
       throw new JobExecutionException(
           "Error retrieving key %s as Boolean from JobDataMap: %s".formatted(key, e.getMessage()),
           e);
+    }
+  }
+
+  /**
+   * Retrieve a value from a JobDataMap. Throws a JobExecutionException if the value is not
+   * found/null.
+   */
+  public Object get(String key) {
+    try {
+      return Objects.requireNonNull(jobDataMap.get(key));
+    } catch (Exception e) {
+      throw new JobExecutionException(
+          "Error retrieving key %s from JobDataMap: %s".formatted(key, e.getMessage()), e);
     }
   }
 }

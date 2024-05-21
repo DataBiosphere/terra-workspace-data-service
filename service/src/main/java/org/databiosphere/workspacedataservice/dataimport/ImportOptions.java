@@ -1,3 +1,5 @@
 package org.databiosphere.workspacedataservice.dataimport;
 
-public interface ImportOptions {}
+import java.io.Serializable;
+
+public interface ImportOptions extends Serializable {}

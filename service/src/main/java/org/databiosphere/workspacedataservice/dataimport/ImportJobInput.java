@@ -7,6 +7,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import java.io.IOException;
+import java.io.Serializable;
 import java.net.URI;
 import org.databiosphere.workspacedataservice.dataimport.pfb.PfbImportOptions;
 import org.databiosphere.workspacedataservice.dataimport.rawlsjson.RawlsJsonImportOptions;
@@ -19,7 +20,7 @@ import org.springframework.lang.Nullable;
 /** User-supplied input arguments for a data import job */
 @JsonDeserialize(using = ImportJobInput.ImportJobInputDeserializer.class)
 public record ImportJobInput(URI uri, TypeEnum importType, ImportOptions options)
-    implements JobInput {
+    implements JobInput, Serializable {
 
   public static ImportJobInput from(ImportRequestServerModel importRequest) {
     ImportOptions options =

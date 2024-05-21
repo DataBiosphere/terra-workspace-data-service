@@ -27,7 +27,6 @@ import org.broadinstitute.dsde.workbench.client.sam.ApiException;
 import org.broadinstitute.dsde.workbench.client.sam.api.GoogleApi;
 import org.broadinstitute.dsde.workbench.client.sam.api.ResourcesApi;
 import org.databiosphere.workspacedataservice.annotations.SingleTenant;
-import org.databiosphere.workspacedataservice.common.JsonUtils;
 import org.databiosphere.workspacedataservice.common.TestBase;
 import org.databiosphere.workspacedataservice.dao.CollectionDao;
 import org.databiosphere.workspacedataservice.dao.JobDao;
@@ -299,8 +298,7 @@ class ImportServiceTest extends TestBase {
     verify(schedulerDao).schedule(schedulableCaptor.capture());
     Map<String, Serializable> actualArguments = schedulableCaptor.getValue().getArguments();
 
-    ImportJobInput importJobInput =
-        JsonUtils.parse((String) actualArguments.get(ARG_IMPORT_JOB_INPUT), ImportJobInput.class);
+    ImportJobInput importJobInput = (ImportJobInput) actualArguments.get(ARG_IMPORT_JOB_INPUT);
     TdrManifestImportOptions options = (TdrManifestImportOptions) importJobInput.options();
     assertEquals(syncPermissions, options.syncPermissions());
   }
