@@ -3,6 +3,8 @@ package org.databiosphere.workspacedataservice.dao;
 import static org.databiosphere.workspacedataservice.generated.GenericJobServerModel.JobTypeEnum;
 import static org.databiosphere.workspacedataservice.generated.GenericJobServerModel.JobTypeEnum.DATA_IMPORT;
 import static org.databiosphere.workspacedataservice.generated.GenericJobServerModel.StatusEnum;
+import static org.databiosphere.workspacedataservice.jobexec.ImportJobUpdater.UPDATE_JOB_FREQUENCY_IN_HOURS;
+import static org.databiosphere.workspacedataservice.service.JobService.NONTERMINAL_JOB_STATUSES;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -13,6 +15,7 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.time.Duration;
 import java.time.InstantSource;
+import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
 import java.util.List;
 import java.util.Optional;
@@ -327,5 +330,22 @@ public class PostgresJobDao implements JobDao {
     }
 
     return tags;
+  }
+
+  public List<GenericJobServerModel> getOldNonTerminalJobs() {
+    OffsetDateTime lastUpdate =
+        instantSource.instant().atOffset(ZoneOffset.UTC).minusHours(UPDATE_JOB_FREQUENCY_IN_HOURS);
+
+    List<String> nonterminalJobStatuses =
+        NONTERMINAL_JOB_STATUSES.stream().map(status -> status.name()).toList();
+
+    return namedTemplate.query(
+        "SELECT id, type, status, created, updated, input, result, error, stacktrace, collection_id "
+            + "FROM sys_wds.job "
+            + "WHERE status in (:statuses) AND updated < :lastUpdate",
+        new MapSqlParameterSource()
+            .addValue("statuses", nonterminalJobStatuses)
+            .addValue("lastUpdate", lastUpdate),
+        new AsyncJobRowMapper(mapper));
   }
 }

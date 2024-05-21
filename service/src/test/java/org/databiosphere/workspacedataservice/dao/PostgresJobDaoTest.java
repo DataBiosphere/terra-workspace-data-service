@@ -19,6 +19,7 @@ import io.micrometer.core.instrument.Timer;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.time.Duration;
+import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 import org.databiosphere.workspacedataservice.common.MockInstantSource;
@@ -33,7 +34,6 @@ import org.databiosphere.workspacedataservice.shared.model.job.Job;
 import org.databiosphere.workspacedataservice.shared.model.job.JobInput;
 import org.databiosphere.workspacedataservice.shared.model.job.JobResult;
 import org.databiosphere.workspacedataservice.shared.model.job.JobType;
-import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
@@ -63,16 +63,12 @@ class PostgresJobDaoTest extends TestBase {
   @Autowired MeterRegistry metrics;
   @Autowired MockInstantSource mockInstantSource;
 
-  @AfterAll
-  void afterAll() {
-    // cleanup: delete everything from the job table
-    namedTemplate.getJdbcTemplate().update("delete from sys_wds.job;");
-  }
-
   @AfterEach
   void afterEach() {
     metrics.clear();
     Metrics.globalRegistry.clear();
+    // cleanup: delete everything from the job table
+    namedTemplate.getJdbcTemplate().update("delete from sys_wds.job;");
   }
 
   private GenericJobServerModel assertJobCreation(JobType jobType) {
@@ -342,6 +338,38 @@ class PostgresJobDaoTest extends TestBase {
 
     assertNotNull(actual.getInstanceId());
     // TODO: AJ-1011 as PostgresJobDao.mapRow evolves, add more assertions here
+  }
+
+  @Test
+  void getOldRunningJobs() {
+    // Set up some jobs
+    JobType jobType = JobType.DATA_IMPORT;
+    CollectionId collectionId = CollectionId.of(UUID.randomUUID());
+    ImportJobInput jobInput = makeJobInput(TEST_IMPORT_URI, TypeEnum.PFB);
+    Job<JobInput, JobResult> job1 = Job.newJob(collectionId, jobType, jobInput);
+
+    // job1 - status CREATED
+    jobDao.createJob(job1);
+
+    // job2 - status RUNNING
+    Job<JobInput, JobResult> job2 = Job.newJob(collectionId, jobType, jobInput);
+    GenericJobServerModel runningJob = jobDao.createJob(job2);
+    jobDao.running(runningJob.getJobId());
+
+    // job3 - status SUCCEEDED
+    Job<JobInput, JobResult> job3 = Job.newJob(collectionId, jobType, jobInput);
+    GenericJobServerModel finishedJob = jobDao.createJob(job3);
+    jobDao.succeeded(finishedJob.getJobId());
+
+    List<GenericJobServerModel> noJobs = jobDao.getOldNonTerminalJobs();
+    assertThat(noJobs.isEmpty());
+
+    // Let time pass without the job statuses updating
+    mockInstantSource.add(Duration.ofHours(7));
+
+    // Should fetch the CREATED and RUNNING jobs
+    List<GenericJobServerModel> jobs = jobDao.getOldNonTerminalJobs();
+    assertEquals(2, jobs.size());
   }
 
   private static ImportJobInput makeJobInput(String testImportUri, TypeEnum importType) {
