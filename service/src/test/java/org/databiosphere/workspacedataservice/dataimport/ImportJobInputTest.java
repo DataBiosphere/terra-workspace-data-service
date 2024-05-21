@@ -36,8 +36,8 @@ class ImportJobInputTest extends TestBase {
     ImportRequestServerModel importRequest = new ImportRequestServerModel(type, testUri);
 
     ImportJobInput actual = ImportJobInput.from(importRequest);
-    assertEquals(testUri, actual.uri());
-    assertEquals(type, actual.importType());
+    assertEquals(testUri, actual.getUri());
+    assertEquals(type, actual.getImportType());
   }
 
   @ParameterizedTest(name = "serializes {0}")

@@ -1,6 +1,5 @@
 package org.databiosphere.workspacedataservice.dataimport;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.databind.DeserializationContext;
 import com.fasterxml.jackson.databind.JsonDeserializer;
@@ -45,18 +44,15 @@ public final class ImportJobInput implements JobInput, Serializable {
     return new ImportJobInput(importRequest.getUrl(), importRequest.getType(), options);
   }
 
-  @JsonProperty("uri")
-  public URI uri() {
+  public URI getUri() {
     return uri;
   }
 
-  @JsonProperty("importType")
-  public TypeEnum importType() {
+  public TypeEnum getImportType() {
     return importType;
   }
 
-  @JsonProperty("options")
-  public ImportOptions options() {
+  public ImportOptions getOptions() {
     return options;
   }
 
