@@ -20,7 +20,7 @@ import org.springframework.lang.Nullable;
 
 /** User-supplied input arguments for a data import job */
 @JsonDeserialize(using = ImportJobInput.ImportJobInputDeserializer.class)
-public final class ImportJobInput implements JobInput, Serializable {
+public class ImportJobInput implements JobInput, Serializable {
   // TODO: decide what to do about serialVersionUID
   // @Serial private static final long serialVersionUID = 0L;
   private final URI uri;
