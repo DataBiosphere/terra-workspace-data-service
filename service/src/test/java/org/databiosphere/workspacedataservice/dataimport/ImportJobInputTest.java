@@ -2,6 +2,8 @@ package org.databiosphere.workspacedataservice.dataimport;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -11,7 +13,6 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.stream.Stream;
 import org.apache.commons.lang3.RandomStringUtils;
-import org.databiosphere.workspacedataservice.common.JsonUtils;
 import org.databiosphere.workspacedataservice.common.TestBase;
 import org.databiosphere.workspacedataservice.dataimport.pfb.PfbImportOptions;
 import org.databiosphere.workspacedataservice.dataimport.rawlsjson.RawlsJsonImportOptions;
@@ -21,10 +22,12 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.EnumSource;
 import org.junit.jupiter.params.provider.MethodSource;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 
 @SpringBootTest
 class ImportJobInputTest extends TestBase {
+  @Autowired ObjectMapper objectMapper;
 
   @ParameterizedTest(name = "with type {0}")
   @EnumSource(ImportRequestServerModel.TypeEnum.class)
@@ -56,9 +59,9 @@ class ImportJobInputTest extends TestBase {
 
   @ParameterizedTest(name = "serializes to JSON {0}")
   @MethodSource("serializeTestCases")
-  void serializesToJson(ImportJobInput importJobInput) {
-    ImportJobInput output =
-        JsonUtils.parse(JsonUtils.stringify(importJobInput), ImportJobInput.class);
+  void serializesToJson(ImportJobInput importJobInput) throws JsonProcessingException {
+    String json = objectMapper.writeValueAsString(importJobInput);
+    ImportJobInput output = objectMapper.readValue(json, ImportJobInput.class);
     assertEquals(importJobInput, output);
   }
 
