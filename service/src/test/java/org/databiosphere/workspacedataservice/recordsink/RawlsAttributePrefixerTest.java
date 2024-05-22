@@ -37,7 +37,14 @@ class RawlsAttributePrefixerTest {
 
   static List<String> noPrefixTestCases() {
     return List.of(
-        "name", "entityType", RECTYPE + "_id", "notrectype_id", "someattr", "name_and_other_stuff");
+        "name",
+        "entityType",
+        RECTYPE + "_id",
+        "notrectype_id",
+        "someattr",
+        "name_and_other_stuff",
+        "import:timestamp",
+        "import:snapshot_id");
   }
 
   @ParameterizedTest(name = "RawlsAttributePrefixer(TDR) should prefix {0} to {1}")

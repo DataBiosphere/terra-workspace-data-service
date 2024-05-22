@@ -1,5 +1,7 @@
 package org.databiosphere.workspacedataservice.recordsink;
 
+import static org.databiosphere.workspacedataservice.dataimport.tdr.TdrManifestImportMetadata.IMPORT_METADATA_PREFIX;
+
 /**
  * Utility to conditionally rename attributes that originate in a PFB or TDR snapshot; renaming
  * ensures that names are legal for consumption by Rawls. The renaming logic is not consistent
@@ -39,11 +41,24 @@ public class RawlsAttributePrefixer {
    * @return the potentially prefixed/renamed attribute
    */
   public String prefix(String attributeName, String recordType) {
+    if (!shouldPrefix(attributeName)) {
+      return attributeName;
+    }
     return switch (prefixStrategy) {
       case PFB -> pfbPrefix(attributeName, recordType);
       case TDR -> tdrPrefix(attributeName, recordType);
       default -> attributeName; // TSV, JSON strategy:
     };
+  }
+
+  /**
+   * Import metadata attributes already have a prefix. Do not add another one.
+   *
+   * @param attributeName the inbound original attribute name
+   * @return whether or not to add a prefix to this attribute name
+   */
+  private boolean shouldPrefix(String attributeName) {
+    return !attributeName.startsWith(IMPORT_METADATA_PREFIX);
   }
 
   /*
