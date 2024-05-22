@@ -1,5 +1,6 @@
 package org.databiosphere.workspacedataservice.controller;
 
+import static java.util.Collections.emptyMap;
 import static java.util.UUID.randomUUID;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.databiosphere.workspacedataservice.generated.GenericJobServerModel.JobTypeEnum;
@@ -23,8 +24,9 @@ import org.databiosphere.workspacedataservice.common.TestBase;
 import org.databiosphere.workspacedataservice.dao.CollectionDao;
 import org.databiosphere.workspacedataservice.dao.JobDao;
 import org.databiosphere.workspacedataservice.dataimport.ImportJobInput;
+import org.databiosphere.workspacedataservice.dataimport.pfb.PfbImportOptions;
+import org.databiosphere.workspacedataservice.dataimport.pfb.PfbJobInput;
 import org.databiosphere.workspacedataservice.generated.GenericJobServerModel;
-import org.databiosphere.workspacedataservice.generated.ImportRequestServerModel;
 import org.databiosphere.workspacedataservice.shared.model.CollectionId;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
@@ -171,9 +173,7 @@ class JobControllerTest extends TestBase {
 
   private static ImportJobInput makePfbJobInput() {
     try {
-      return ImportJobInput.from(
-          new ImportRequestServerModel(
-              ImportRequestServerModel.TypeEnum.PFB, new URI(TEST_IMPORT_URI)));
+      return new PfbJobInput(new URI(TEST_IMPORT_URI), PfbImportOptions.from(emptyMap()));
     } catch (URISyntaxException e) {
       throw new RuntimeException(e);
     }

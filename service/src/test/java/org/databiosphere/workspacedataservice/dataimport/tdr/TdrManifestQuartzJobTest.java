@@ -39,7 +39,6 @@ import org.databiosphere.workspacedataservice.dao.RecordDao;
 import org.databiosphere.workspacedataservice.dataimport.FileDownloadHelper;
 import org.databiosphere.workspacedataservice.dataimport.ImportDetails;
 import org.databiosphere.workspacedataservice.dataimport.tdr.TdrManifestExemplarData.AzureSmall;
-import org.databiosphere.workspacedataservice.generated.ImportRequestServerModel;
 import org.databiosphere.workspacedataservice.recordsink.RawlsAttributePrefixer.PrefixStrategy;
 import org.databiosphere.workspacedataservice.recordsink.RecordSink;
 import org.databiosphere.workspacedataservice.recordsink.RecordSinkFactory;
@@ -220,7 +219,6 @@ class TdrManifestQuartzJobTest extends TestBase {
             PrefixStrategy.TDR,
             new TdrManifestJobInput(
                 URI.create("https://data.terra.bio/test.manifest"),
-                ImportRequestServerModel.TypeEnum.TDRMANIFEST,
                 new TdrManifestImportOptions(false)));
     try (RecordSink recordSink = recordSinkFactory.buildRecordSink(importDetails)) {
 

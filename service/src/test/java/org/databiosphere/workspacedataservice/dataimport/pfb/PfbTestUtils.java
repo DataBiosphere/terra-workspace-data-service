@@ -26,7 +26,6 @@ import org.apache.avro.generic.GenericRecord;
 import org.apache.avro.generic.GenericRecordBuilder;
 import org.databiosphere.workspacedataservice.dataimport.ImportJobInput;
 import org.databiosphere.workspacedataservice.generated.ImportRequestServerModel;
-import org.databiosphere.workspacedataservice.generated.ImportRequestServerModel.TypeEnum;
 import org.databiosphere.workspacedataservice.service.ImportService;
 import org.mockito.Mockito;
 import org.quartz.JobDetail;
@@ -165,10 +164,7 @@ public class PfbTestUtils {
     JobExecutionContext mockContext = mock(JobExecutionContext.class);
 
     ImportJobInput importJobInput =
-        new PfbJobInput(
-            URI.create("https://data.terra.bio/manifest.json"),
-            TypeEnum.PFB,
-            new PfbImportOptions());
+        new PfbJobInput(URI.create("https://data.terra.bio/manifest.json"), new PfbImportOptions());
 
     var schedulable =
         ImportService.createSchedulable(

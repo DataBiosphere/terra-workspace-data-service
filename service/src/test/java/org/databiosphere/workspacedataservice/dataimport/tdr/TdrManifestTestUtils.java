@@ -44,7 +44,6 @@ public class TdrManifestTestUtils {
     ImportJobInput importJobInput =
         new TdrManifestJobInput(
             URI.create("https://data.terra.bio/manifest.json"),
-            TypeEnum.TDRMANIFEST,
             new TdrManifestImportOptions(syncPermissions));
 
     var schedulable =

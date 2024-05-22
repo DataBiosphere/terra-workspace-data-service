@@ -6,17 +6,18 @@ import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import java.io.Serializable;
 import java.net.URI;
 import java.util.Objects;
-import org.databiosphere.workspacedataservice.dataimport.pfb.PfbImportOptions;
 import org.databiosphere.workspacedataservice.dataimport.pfb.PfbJobInput;
-import org.databiosphere.workspacedataservice.dataimport.rawlsjson.RawlsJsonImportOptions;
 import org.databiosphere.workspacedataservice.dataimport.rawlsjson.RawlsJsonJobInput;
-import org.databiosphere.workspacedataservice.dataimport.tdr.TdrManifestImportOptions;
 import org.databiosphere.workspacedataservice.dataimport.tdr.TdrManifestJobInput;
 import org.databiosphere.workspacedataservice.generated.ImportRequestServerModel;
 import org.databiosphere.workspacedataservice.generated.ImportRequestServerModel.TypeEnum;
 import org.databiosphere.workspacedataservice.shared.model.job.JobInput;
 
-/** User-supplied input arguments for a data import job */
+/**
+ * Abstract base class representing user-supplied input arguments for a data import job.
+ *
+ * <p>Each type of import (pfb, tdrmanifest, etc.) has a concrete subclass.
+ */
 @JsonTypeInfo(
     use = JsonTypeInfo.Id.NAME,
     property = "importType",
@@ -28,32 +29,28 @@ import org.databiosphere.workspacedataservice.shared.model.job.JobInput;
   @Type(value = TdrManifestJobInput.class, name = "TDRMANIFEST"),
 })
 public abstract class ImportJobInput implements JobInput, Serializable {
-  // TODO: decide what to do about serialVersionUID
-  // @Serial private static final long serialVersionUID = 0L;
   private final URI uri;
   private final TypeEnum importType;
   private final ImportOptions options;
 
-  public ImportJobInput(URI uri, TypeEnum importType, ImportOptions options) {
+  // protected constructor; should only be used by subclasses
+  protected ImportJobInput(URI uri, TypeEnum importType, ImportOptions options) {
     this.uri = uri;
     this.importType = importType;
     this.options = options;
   }
 
+  /**
+   * Convenience method to create a concrete subclass based on user input
+   *
+   * @param importRequest the user-supplied input
+   * @return the subclass for this input
+   */
   public static ImportJobInput from(ImportRequestServerModel importRequest) {
     return switch (importRequest.getType()) {
-      case PFB -> new PfbJobInput(
-          importRequest.getUrl(),
-          importRequest.getType(),
-          PfbImportOptions.from(importRequest.getOptions()));
-      case RAWLSJSON -> new RawlsJsonJobInput(
-          importRequest.getUrl(),
-          importRequest.getType(),
-          RawlsJsonImportOptions.from(importRequest.getOptions()));
-      case TDRMANIFEST -> new TdrManifestJobInput(
-          importRequest.getUrl(),
-          importRequest.getType(),
-          TdrManifestImportOptions.from(importRequest.getOptions()));
+      case PFB -> PfbJobInput.from(importRequest);
+      case RAWLSJSON -> RawlsJsonJobInput.from(importRequest);
+      case TDRMANIFEST -> TdrManifestJobInput.from(importRequest);
     };
   }
 
@@ -86,7 +83,8 @@ public abstract class ImportJobInput implements JobInput, Serializable {
 
   @Override
   public String toString() {
-    return "ImportJobInput["
+    return this.getClass().getName()
+        + "["
         + "uri="
         + uri
         + ", "
@@ -97,28 +95,4 @@ public abstract class ImportJobInput implements JobInput, Serializable {
         + options
         + ']';
   }
-
-  //  public static class ImportJobInputDeserializer extends JsonDeserializer<ImportJobInput> {
-  //    @Override
-  //    @Nullable
-  //    public ImportJobInput deserialize(JsonParser parser, DeserializationContext context)
-  //        throws IOException {
-  //      ObjectMapper mapper = (ObjectMapper) parser.getCodec();
-  //      JsonNode node = parser.readValueAsTree();
-  //
-  //      URI uri = URI.create(node.get("uri").asText());
-  //      TypeEnum type = TypeEnum.fromValue(node.get("importType").asText());
-  //
-  //      JsonNode optionsNode = node.get("options");
-  //      ImportOptions options =
-  //          switch (type) {
-  //            case PFB -> mapper.convertValue(optionsNode, PfbImportOptions.class);
-  //            case RAWLSJSON -> mapper.convertValue(optionsNode, RawlsJsonImportOptions.class);
-  //            case TDRMANIFEST -> mapper.convertValue(optionsNode,
-  // TdrManifestImportOptions.class);
-  //          };
-  //
-  //      return new ImportJobInput(uri, type, options);
-  //    }
-  //  }
 }

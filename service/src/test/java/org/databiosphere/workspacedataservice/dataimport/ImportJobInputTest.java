@@ -73,27 +73,18 @@ class ImportJobInputTest extends TestBase {
         Arguments.of(
             new TdrManifestJobInput(
                 URI.create("https://data.terra.bio/manifest.json"),
-                ImportRequestServerModel.TypeEnum.TDRMANIFEST,
                 new TdrManifestImportOptions(true))),
         Arguments.of(
             new TdrManifestJobInput(
                 URI.create("https://data.terra.bio/manifest.json"),
-                ImportRequestServerModel.TypeEnum.TDRMANIFEST,
                 new TdrManifestImportOptions(true))),
         Arguments.of(
-            new PfbJobInput(
-                URI.create("https://example.com/file.pfb"),
-                ImportRequestServerModel.TypeEnum.PFB,
-                new PfbImportOptions())),
+            new PfbJobInput(URI.create("https://example.com/file.pfb"), new PfbImportOptions())),
         Arguments.of(
             new RawlsJsonJobInput(
-                URI.create("gs://test-bucket/entities.json"),
-                ImportRequestServerModel.TypeEnum.RAWLSJSON,
-                new RawlsJsonImportOptions(true))),
+                URI.create("gs://test-bucket/entities.json"), new RawlsJsonImportOptions(true))),
         Arguments.of(
             new RawlsJsonJobInput(
-                URI.create("gs://test-bucket/entities.json"),
-                ImportRequestServerModel.TypeEnum.RAWLSJSON,
-                new RawlsJsonImportOptions(false))));
+                URI.create("gs://test-bucket/entities.json"), new RawlsJsonImportOptions(false))));
   }
 }
