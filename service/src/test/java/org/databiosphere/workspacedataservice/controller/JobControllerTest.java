@@ -171,7 +171,9 @@ class JobControllerTest extends TestBase {
 
   private static ImportJobInput makePfbJobInput() {
     try {
-      return new ImportJobInput(new URI(TEST_IMPORT_URI), ImportRequestServerModel.TypeEnum.PFB);
+      return ImportJobInput.from(
+          new ImportRequestServerModel(
+              ImportRequestServerModel.TypeEnum.PFB, new URI(TEST_IMPORT_URI)));
     } catch (URISyntaxException e) {
       throw new RuntimeException(e);
     }

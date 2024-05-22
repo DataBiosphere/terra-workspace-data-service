@@ -3,7 +3,6 @@ package org.databiosphere.workspacedataservice.dataimport.tdr;
 import static org.apache.parquet.avro.AvroReadSupport.READ_INT96_AS_FIXED;
 import static org.databiosphere.workspacedataservice.generated.ImportRequestServerModel.TypeEnum.TDRMANIFEST;
 import static org.databiosphere.workspacedataservice.sam.SamAuthorizationDao.WORKSPACE_ROLES;
-import static org.databiosphere.workspacedataservice.service.ImportService.ARG_TDR_SYNC_PERMISSION;
 import static org.databiosphere.workspacedataservice.shared.model.Schedulable.ARG_URL;
 import static org.databiosphere.workspacedataservice.shared.model.job.JobType.DATA_IMPORT;
 
@@ -39,6 +38,7 @@ import org.databiosphere.workspacedataservice.dao.JobDao;
 import org.databiosphere.workspacedataservice.dataimport.FileDownloadHelper;
 import org.databiosphere.workspacedataservice.dataimport.ImportDetails;
 import org.databiosphere.workspacedataservice.dataimport.ImportDetailsRetriever;
+import org.databiosphere.workspacedataservice.dataimport.ImportJobInput;
 import org.databiosphere.workspacedataservice.dataimport.snapshotsupport.SnapshotSupport;
 import org.databiosphere.workspacedataservice.dataimport.snapshotsupport.SnapshotSupportFactory;
 import org.databiosphere.workspacedataservice.jobexec.JobDataMapReader;
@@ -115,6 +115,8 @@ public class TdrManifestQuartzJob extends QuartzJob {
 
     // Collect details needed for import
     ImportDetails details = importDetailsRetriever.fetch(jobId, jobData, PrefixStrategy.TDR);
+    ImportJobInput jobInput = details.importJobInput();
+    TdrManifestImportOptions options = (TdrManifestImportOptions) jobInput.options();
 
     // read manifest
     SnapshotExportResponseModel snapshotExportResponseModel = parseManifest(uri);
@@ -168,9 +170,9 @@ public class TdrManifestQuartzJob extends QuartzJob {
                               .record()
                               .withRecordType(entry.getKey())
                               .ofQuantity(entry.getValue())));
+
       // sync permissions if option is enabled and we're running in the control-plane
-      // TODO(AJ-1809): do defaulting here when we have a more generic way to handle passed options
-      if (isTdrPermissionSyncingEnabled && jobData.getBoolean(ARG_TDR_SYNC_PERMISSION)) {
+      if (options.syncPermissions() && isTdrPermissionSyncingEnabled) {
         syncPermissions(details.workspaceId(), snapshotId);
       }
     } catch (Exception e) {
