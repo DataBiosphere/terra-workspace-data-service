@@ -17,8 +17,11 @@ import org.databiosphere.workspacedataservice.generated.ImportRequestServerModel
 import org.databiosphere.workspacedataservice.shared.model.job.JobInput;
 
 /** User-supplied input arguments for a data import job */
-@JsonTypeInfo(use = JsonTypeInfo.Id.NAME, property = "importType", visible = true)
-//    defaultImpl = ImportJobInput.class)
+@JsonTypeInfo(
+    use = JsonTypeInfo.Id.NAME,
+    property = "importType",
+    include = JsonTypeInfo.As.EXISTING_PROPERTY,
+    visible = true)
 @JsonSubTypes({
   @Type(value = PfbJobInput.class, name = "PFB"),
   @Type(value = RawlsJsonJobInput.class, name = "RAWLSJSON"),
@@ -38,14 +41,23 @@ public class ImportJobInput implements JobInput, Serializable {
   }
 
   public static ImportJobInput from(ImportRequestServerModel importRequest) {
-    ImportOptions options =
-        switch (importRequest.getType()) {
-          case PFB -> PfbImportOptions.from(importRequest.getOptions());
-          case RAWLSJSON -> RawlsJsonImportOptions.from(importRequest.getOptions());
-          case TDRMANIFEST -> TdrManifestImportOptions.from(importRequest.getOptions());
-        };
-
-    return new ImportJobInput(importRequest.getUrl(), importRequest.getType(), options);
+    return switch (importRequest.getType()) {
+      case PFB ->
+          new PfbJobInput(
+              importRequest.getUrl(),
+              importRequest.getType(),
+              PfbImportOptions.from(importRequest.getOptions()));
+      case RAWLSJSON ->
+          new RawlsJsonJobInput(
+              importRequest.getUrl(),
+              importRequest.getType(),
+              RawlsJsonImportOptions.from(importRequest.getOptions()));
+      case TDRMANIFEST ->
+          new TdrManifestJobInput(
+              importRequest.getUrl(),
+              importRequest.getType(),
+              TdrManifestImportOptions.from(importRequest.getOptions()));
+    };
   }
 
   public URI getUri() {

@@ -15,8 +15,11 @@ import java.util.stream.Stream;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.databiosphere.workspacedataservice.common.TestBase;
 import org.databiosphere.workspacedataservice.dataimport.pfb.PfbImportOptions;
+import org.databiosphere.workspacedataservice.dataimport.pfb.PfbJobInput;
 import org.databiosphere.workspacedataservice.dataimport.rawlsjson.RawlsJsonImportOptions;
+import org.databiosphere.workspacedataservice.dataimport.rawlsjson.RawlsJsonJobInput;
 import org.databiosphere.workspacedataservice.dataimport.tdr.TdrManifestImportOptions;
+import org.databiosphere.workspacedataservice.dataimport.tdr.TdrManifestJobInput;
 import org.databiosphere.workspacedataservice.generated.ImportRequestServerModel;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
@@ -68,27 +71,27 @@ class ImportJobInputTest extends TestBase {
   public static Stream<Arguments> serializeTestCases() {
     return Stream.of(
         Arguments.of(
-            new ImportJobInput(
+            new TdrManifestJobInput(
                 URI.create("https://data.terra.bio/manifest.json"),
                 ImportRequestServerModel.TypeEnum.TDRMANIFEST,
                 new TdrManifestImportOptions(true))),
         Arguments.of(
-            new ImportJobInput(
+            new TdrManifestJobInput(
                 URI.create("https://data.terra.bio/manifest.json"),
                 ImportRequestServerModel.TypeEnum.TDRMANIFEST,
                 new TdrManifestImportOptions(true))),
         Arguments.of(
-            new ImportJobInput(
+            new PfbJobInput(
                 URI.create("https://example.com/file.pfb"),
                 ImportRequestServerModel.TypeEnum.PFB,
                 new PfbImportOptions())),
         Arguments.of(
-            new ImportJobInput(
+            new RawlsJsonJobInput(
                 URI.create("gs://test-bucket/entities.json"),
                 ImportRequestServerModel.TypeEnum.RAWLSJSON,
                 new RawlsJsonImportOptions(true))),
         Arguments.of(
-            new ImportJobInput(
+            new RawlsJsonJobInput(
                 URI.create("gs://test-bucket/entities.json"),
                 ImportRequestServerModel.TypeEnum.RAWLSJSON,
                 new RawlsJsonImportOptions(false))));
