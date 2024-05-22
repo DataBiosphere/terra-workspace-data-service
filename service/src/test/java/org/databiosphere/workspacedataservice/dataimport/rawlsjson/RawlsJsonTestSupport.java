@@ -51,7 +51,7 @@ public class RawlsJsonTestSupport {
     JobExecutionContext mockContext = mock(JobExecutionContext.class);
 
     ImportJobInput importJobInput =
-        new ImportJobInput(
+        new RawlsJsonJobInput(
             URI.create("gs://test-bucket/rawls-import.json"),
             TypeEnum.RAWLSJSON,
             new RawlsJsonImportOptions(isUpsert));

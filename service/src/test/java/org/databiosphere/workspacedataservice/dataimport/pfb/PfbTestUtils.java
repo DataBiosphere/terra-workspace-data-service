@@ -165,7 +165,7 @@ public class PfbTestUtils {
     JobExecutionContext mockContext = mock(JobExecutionContext.class);
 
     ImportJobInput importJobInput =
-        new ImportJobInput(
+        new PfbJobInput(
             URI.create("https://data.terra.bio/manifest.json"),
             TypeEnum.PFB,
             new PfbImportOptions());

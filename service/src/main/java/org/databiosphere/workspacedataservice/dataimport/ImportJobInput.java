@@ -27,7 +27,7 @@ import org.databiosphere.workspacedataservice.shared.model.job.JobInput;
   @Type(value = RawlsJsonJobInput.class, name = "RAWLSJSON"),
   @Type(value = TdrManifestJobInput.class, name = "TDRMANIFEST"),
 })
-public class ImportJobInput implements JobInput, Serializable {
+public abstract class ImportJobInput implements JobInput, Serializable {
   // TODO: decide what to do about serialVersionUID
   // @Serial private static final long serialVersionUID = 0L;
   private final URI uri;
@@ -42,21 +42,18 @@ public class ImportJobInput implements JobInput, Serializable {
 
   public static ImportJobInput from(ImportRequestServerModel importRequest) {
     return switch (importRequest.getType()) {
-      case PFB ->
-          new PfbJobInput(
-              importRequest.getUrl(),
-              importRequest.getType(),
-              PfbImportOptions.from(importRequest.getOptions()));
-      case RAWLSJSON ->
-          new RawlsJsonJobInput(
-              importRequest.getUrl(),
-              importRequest.getType(),
-              RawlsJsonImportOptions.from(importRequest.getOptions()));
-      case TDRMANIFEST ->
-          new TdrManifestJobInput(
-              importRequest.getUrl(),
-              importRequest.getType(),
-              TdrManifestImportOptions.from(importRequest.getOptions()));
+      case PFB -> new PfbJobInput(
+          importRequest.getUrl(),
+          importRequest.getType(),
+          PfbImportOptions.from(importRequest.getOptions()));
+      case RAWLSJSON -> new RawlsJsonJobInput(
+          importRequest.getUrl(),
+          importRequest.getType(),
+          RawlsJsonImportOptions.from(importRequest.getOptions()));
+      case TDRMANIFEST -> new TdrManifestJobInput(
+          importRequest.getUrl(),
+          importRequest.getType(),
+          TdrManifestImportOptions.from(importRequest.getOptions()));
     };
   }
 

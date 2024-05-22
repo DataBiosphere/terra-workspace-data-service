@@ -42,7 +42,7 @@ public class TdrManifestTestUtils {
     JobExecutionContext mockContext = mock(JobExecutionContext.class);
 
     ImportJobInput importJobInput =
-        new ImportJobInput(
+        new TdrManifestJobInput(
             URI.create("https://data.terra.bio/manifest.json"),
             TypeEnum.TDRMANIFEST,
             new TdrManifestImportOptions(syncPermissions));
