@@ -250,9 +250,23 @@ public class DataTypeInferer {
       return DataTypeMapping.getArrayTypeForBase(
           selectBestType(inferredTypes.get(0), inferredTypes.get(1)));
     }
-    // if we inferred multiple non-null types, use ARRAY_OF_JSON to preserve inbound data
+    // look for known combinations of datatypes
+    Set<DataTypeMapping> inferredSet = new HashSet<>(inferredTypes);
+    // if we inferred string+relation, save as array of strings; relations are specialized strings
+    if (STRING_AND_RELATION.equals(inferredSet)) {
+      return ARRAY_OF_STRING;
+    }
+    // if we inferred file+relation, save as array of strings; files are specialized strings
+    if (STRING_AND_FILE.equals(inferredSet)) {
+      return ARRAY_OF_STRING;
+    }
+
+    // finally, if we inferred multiple non-null types, use ARRAY_OF_JSON to preserve inbound data
     return ARRAY_OF_JSON;
   }
+
+  private static final Set<DataTypeMapping> STRING_AND_RELATION = Set.of(STRING, RELATION);
+  private static final Set<DataTypeMapping> STRING_AND_FILE = Set.of(STRING, FILE);
 
   /**
    * Should this List be treated by WDS as ARRAY_OF_JSON?

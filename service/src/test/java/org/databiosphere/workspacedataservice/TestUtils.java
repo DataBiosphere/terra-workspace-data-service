@@ -17,6 +17,7 @@ public class TestUtils {
 
   private TestUtils() {}
 
+  // TODO AJ-1839: json and TSV no longer handle the `array_of_boolean` equally
   public static String getExpectedAllAttributesJsonText() {
     return "{\"id\":\"newRecordId\",\"type\":\"all-types\",\"attributes\":{\"sys_name\":\"newRecordId\","
         + "\"array_of_boolean\":[true,false,true,true],\"array_of_date\":[\"2021-11-03\",\"2021-11-04\"],"

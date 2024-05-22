@@ -142,6 +142,7 @@ public class TsvJsonArgumentsProvider implements ArgumentsProvider {
 
         // mixed array (these deserialize as mixed lists, will be coerced to a single data type
         // later in processing)
+        // TODO AJ-1839: json and TSV no longer deserialize mixed lists equally
         Arguments.of(
             "[\"hello\", 123, true]", List.of("hello", BigInteger.valueOf(123), true), false),
         Arguments.of("end of test cases", "end of test cases", true));
