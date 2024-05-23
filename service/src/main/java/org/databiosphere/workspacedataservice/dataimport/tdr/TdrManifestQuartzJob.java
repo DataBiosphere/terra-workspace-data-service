@@ -175,7 +175,7 @@ public class TdrManifestQuartzJob extends QuartzJob {
               fileDownloadHelper.getFileMap(),
               ImportMode.RELATIONS,
               recordSink,
-              maybeMapRecord));
+              Optional.empty()));
 
       // activity logging for import status
       // no specific activity logging for relations since main import is a superset
