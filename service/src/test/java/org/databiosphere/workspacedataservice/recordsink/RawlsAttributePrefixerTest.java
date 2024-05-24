@@ -44,7 +44,8 @@ class RawlsAttributePrefixerTest {
         "someattr",
         "name_and_other_stuff",
         "import:timestamp",
-        "import:snapshot_id");
+        "import:snapshot_id",
+        "somePrefix:attribute");
   }
 
   @ParameterizedTest(name = "RawlsAttributePrefixer(TDR) should prefix {0} to {1}")
