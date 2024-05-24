@@ -24,6 +24,7 @@ import bio.terra.workspace.model.ResourceList;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.io.IOException;
 import java.net.URI;
+import java.time.Instant;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
@@ -386,5 +387,35 @@ class TdrManifestQuartzJobTest extends TestBase {
                   });
       assertThat(hasImportMetadata).isFalse();
     }
+  }
+
+  @Test
+  void getAddImportMetadataToRecordFunction() {
+    // Arrange
+    var recordType = RecordType.valueOf("thing");
+    var record = new Record("1", recordType, new RecordAttributes(Map.of("value", 1)));
+
+    var snapshotId = UUID.randomUUID();
+    var importTime = Instant.ofEpochSecond(1716335100);
+
+    // Act
+    var mapRecord =
+        TdrManifestQuartzJob.getAddImportMetadataToRecordFunction(snapshotId, importTime);
+    var annotatedRecord = mapRecord.apply(record);
+
+    // Assert
+    assertThat(annotatedRecord)
+        .isEqualTo(
+            new Record(
+                "1",
+                recordType,
+                new RecordAttributes(
+                    Map.of(
+                        "value",
+                        1,
+                        "import:snapshot_id",
+                        snapshotId.toString(),
+                        "import:timestamp",
+                        "05-21-2024T23:45:00"))));
   }
 }

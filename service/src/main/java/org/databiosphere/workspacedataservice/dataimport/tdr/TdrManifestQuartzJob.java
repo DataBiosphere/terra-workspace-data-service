@@ -20,7 +20,11 @@ import java.io.IOException;
 import java.net.MalformedURLException;
 import java.net.URI;
 import java.net.URL;
+import java.time.Instant;
 import java.time.InstantSource;
+import java.time.ZoneId;
+import java.time.ZonedDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
@@ -61,6 +65,7 @@ import org.databiosphere.workspacedataservice.service.model.TdrManifestImportTab
 import org.databiosphere.workspacedataservice.service.model.exception.RestException;
 import org.databiosphere.workspacedataservice.service.model.exception.TdrManifestImportException;
 import org.databiosphere.workspacedataservice.shared.model.Record;
+import org.databiosphere.workspacedataservice.shared.model.RecordAttributes;
 import org.databiosphere.workspacedataservice.shared.model.RecordType;
 import org.databiosphere.workspacedataservice.shared.model.WorkspaceId;
 import org.quartz.JobExecutionContext;
@@ -70,6 +75,7 @@ import org.springframework.stereotype.Component;
 
 @Component
 public class TdrManifestQuartzJob extends QuartzJob {
+  public static final String IMPORT_METADATA_PREFIX = "import:";
   private final Logger logger = LoggerFactory.getLogger(this.getClass());
 
   private final RecordSinkFactory recordSinkFactory;
@@ -140,11 +146,9 @@ public class TdrManifestQuartzJob extends QuartzJob {
         snapshotId,
         details.collectionId());
 
-    TdrManifestImportMetadata importMetadata =
-        new TdrManifestImportMetadata(snapshotId, instantSource.instant());
     Optional<UnaryOperator<Record>> maybeMapRecord =
         shouldAddImportMetadata
-            ? Optional.of(importMetadata.getAddToRecordFunction())
+            ? Optional.of(getAddImportMetadataToRecordFunction(snapshotId, instantSource.instant()))
             : Optional.empty();
 
     // Create snapshot reference
@@ -487,5 +491,21 @@ public class TdrManifestQuartzJob extends QuartzJob {
             e);
       }
     }
+  }
+
+  @VisibleForTesting
+  protected static UnaryOperator<Record> getAddImportMetadataToRecordFunction(
+      UUID snapshotId, Instant importTime) {
+    DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss");
+    String timestamp = ZonedDateTime.ofInstant(importTime, ZoneId.of("UTC")).format(formatter);
+
+    Map<String, Object> attributes =
+        Map.of(
+            "%stimestamp".formatted(IMPORT_METADATA_PREFIX),
+            timestamp,
+            "%ssnapshot_id".formatted(IMPORT_METADATA_PREFIX),
+            snapshotId.toString());
+
+    return record -> record.putAllAttributes(new RecordAttributes(attributes));
   }
 }
