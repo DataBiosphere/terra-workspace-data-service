@@ -32,8 +32,13 @@ public class RecordAttributes {
     this.attributes = new TreeMap<>(attributes);
   }
 
-  public RecordAttributes(Map<String, Object> attributes, String primaryKey) {
-    AttributeComparator comparator = new AttributeComparator(primaryKey);
+  /**
+   * @param attributes the map of attribute names->values to use for this RecordAttributes.
+   * @param primaryKeyAttributeName name of the attribute used as the primary key for the associated
+   *     record's record type.
+   */
+  public RecordAttributes(Map<String, Object> attributes, String primaryKeyAttributeName) {
+    AttributeComparator comparator = new AttributeComparator(primaryKeyAttributeName);
     this.attributes = new TreeMap<>(comparator);
     this.attributes.putAll(attributes);
   }
@@ -47,8 +52,15 @@ public class RecordAttributes {
     return new RecordAttributes(Collections.emptyMap());
   }
 
-  public static RecordAttributes empty(String primaryKeyColumn) {
-    return new RecordAttributes(Collections.emptyMap(), primaryKeyColumn);
+  /**
+   * creates a RecordAttributes with no keys/values
+   *
+   * @param primaryKeyAttributeName name of the attribute used as the primary key for the associated
+   *     record's record type.
+   * @return the empty RecordAttributes object
+   */
+  public static RecordAttributes empty(String primaryKeyAttributeName) {
+    return new RecordAttributes(Collections.emptyMap(), primaryKeyAttributeName);
   }
 
   // ========== accessors
