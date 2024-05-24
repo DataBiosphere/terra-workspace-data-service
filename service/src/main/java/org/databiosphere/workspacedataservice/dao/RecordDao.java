@@ -54,6 +54,7 @@ import org.databiosphere.workspacedataservice.shared.model.RecordAttributes;
 import org.databiosphere.workspacedataservice.shared.model.RecordColumn;
 import org.databiosphere.workspacedataservice.shared.model.RecordType;
 import org.databiosphere.workspacedataservice.shared.model.SearchFilter;
+import org.databiosphere.workspacedataservice.shared.model.attributes.Attribute;
 import org.databiosphere.workspacedataservice.shared.model.attributes.JsonAttribute;
 import org.jetbrains.annotations.NotNull;
 import org.postgresql.jdbc.PgArray;
@@ -734,6 +735,9 @@ public class RecordDao {
     if (Objects.isNull(attVal)) {
       return null;
     }
+    if (attVal instanceof Attribute attr) {
+      return attr.sqlValue();
+    }
     if (RelationUtils.isRelationValue(attVal) && typeMapping == DataTypeMapping.RELATION) {
       return RelationUtils.getRelationValue(attVal);
     }
@@ -839,7 +843,7 @@ public class RecordDao {
       if (colName.equals(recordTypeRowIdentifier)) {
         row[i++] = toInsert.getId();
       } else {
-        row[i++] = getValueForSql(toInsert.getAttributeValue(colName), col.typeMapping());
+        row[i++] = getValueForSql(toInsert.getAttribute(colName), col.typeMapping());
       }
     }
     return row;

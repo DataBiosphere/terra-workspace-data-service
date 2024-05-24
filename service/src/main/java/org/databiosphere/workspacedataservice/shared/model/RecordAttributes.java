@@ -2,18 +2,22 @@ package org.databiosphere.workspacedataservice.shared.model;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonValue;
+import java.util.AbstractMap;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.TreeMap;
+import java.util.stream.Collectors;
+import org.databiosphere.workspacedataservice.shared.model.attributes.Attribute;
 
 /** Represents the attributes of a Record. */
 public class RecordAttributes {
 
   // internal representation is a sorted map, so json serialization
   // is nicely sorted without additional work upon render
-  private final TreeMap<String, Object> attributes;
+  private final TreeMap<String, Attribute> attributes;
 
   // want to use Guava ImmutableMap, or even Java unmodifiable maps, but they
   // don't allow null values
@@ -22,20 +26,26 @@ public class RecordAttributes {
   // ========== members and constructors
 
   /**
-   * Generic constructor, also used as the JsonCreator.
+   * Generic constructor
    *
    * @param attributes the map of attribute names->values to use for this RecordAttributes.
    */
   @JsonCreator
   public RecordAttributes(Map<String, Object> attributes) {
     // AJ-858: post-process the attributes map to look for JsonAttribute, dates, etc.
-    this.attributes = new TreeMap<>(attributes);
+    this.attributes = new TreeMap<>(toAttributes(attributes));
   }
 
   public RecordAttributes(Map<String, Object> attributes, String primaryKey) {
     AttributeComparator comparator = new AttributeComparator(primaryKey);
     this.attributes = new TreeMap<>(comparator);
-    this.attributes.putAll(attributes);
+    this.attributes.putAll(toAttributes(attributes));
+  }
+
+  private static Map<String, Attribute> toAttributes(Map<String, Object> input) {
+    return input.entrySet().stream()
+        .map(e -> new AbstractMap.SimpleEntry<>(e.getKey(), Attribute.create(e.getValue())))
+        .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
   }
 
   /**
@@ -58,7 +68,11 @@ public class RecordAttributes {
   @SuppressWarnings("unused") // used by JsonValue but nothing else, intentionally
   @JsonValue
   private Map<String, Object> getAttributes() {
-    return attributes;
+    Comparator<? super String> comparator = this.attributes.comparator();
+    TreeMap<String, Object> rawValueMap = new TreeMap<>(comparator);
+    // extract the underlying values from each Attribute
+    this.attributes.forEach((key, value) -> rawValueMap.put(key, value.getValue()));
+    return rawValueMap;
   }
 
   /**
@@ -68,6 +82,10 @@ public class RecordAttributes {
    * @return the value of the named attribute
    */
   public Object getAttributeValue(String attributeName) {
+    return getAttributes().get(attributeName);
+  }
+
+  public Attribute getAttribute(String attributeName) {
     return this.attributes.get(attributeName);
   }
 
@@ -76,7 +94,7 @@ public class RecordAttributes {
   }
 
   public Set<Map.Entry<String, Object>> attributeSet() {
-    return this.attributes.entrySet();
+    return getAttributes().entrySet();
   }
 
   // ========== mutators
@@ -87,12 +105,12 @@ public class RecordAttributes {
   }
 
   public RecordAttributes putAttribute(String key, Object value) {
-    this.attributes.put(key, value);
+    this.attributes.put(key, Attribute.create(value));
     return this;
   }
 
   public RecordAttributes putAttributeIfAbsent(String key, Object value) {
-    this.attributes.putIfAbsent(key, value);
+    this.attributes.putIfAbsent(key, Attribute.create(value));
     return this;
   }
 

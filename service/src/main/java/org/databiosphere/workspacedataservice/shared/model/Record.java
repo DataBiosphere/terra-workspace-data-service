@@ -6,6 +6,7 @@ import com.google.common.base.Preconditions;
 import java.util.Map;
 import java.util.Set;
 import org.apache.commons.lang3.StringUtils;
+import org.databiosphere.workspacedataservice.shared.model.attributes.Attribute;
 
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class Record {
@@ -57,6 +58,10 @@ public class Record {
 
   public Object getAttributeValue(String attributeName) {
     return this.attributes.getAttributeValue(attributeName);
+  }
+
+  public Attribute getAttribute(String attributeName) {
+    return this.attributes.getAttribute(attributeName);
   }
 
   public Set<Map.Entry<String, Object>> attributeSet() {
