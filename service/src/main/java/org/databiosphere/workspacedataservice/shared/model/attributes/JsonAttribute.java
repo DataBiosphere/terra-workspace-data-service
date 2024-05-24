@@ -2,6 +2,7 @@ package org.databiosphere.workspacedataservice.shared.model.attributes;
 
 import com.fasterxml.jackson.annotation.JsonValue;
 import com.fasterxml.jackson.databind.JsonNode;
+import org.databiosphere.workspacedataservice.service.model.DataTypeMapping;
 
 public class JsonAttribute extends ScalarAttribute<JsonNode> {
 
@@ -38,5 +39,10 @@ public class JsonAttribute extends ScalarAttribute<JsonNode> {
        any callers who try to get JSON out of toString().
     */
     return "JsonAttribute(%s)".formatted(this.value.toString());
+  }
+
+  @Override
+  public DataTypeMapping getDataTypeMapping() {
+    return DataTypeMapping.JSON;
   }
 }

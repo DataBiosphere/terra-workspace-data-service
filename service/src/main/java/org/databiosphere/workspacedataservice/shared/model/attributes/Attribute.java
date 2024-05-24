@@ -2,6 +2,7 @@ package org.databiosphere.workspacedataservice.shared.model.attributes;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import java.util.List;
+import org.databiosphere.workspacedataservice.service.model.DataTypeMapping;
 
 /**
  * Base interface for an attribute of a WDS Record. This Attribute will be part of the
@@ -17,6 +18,8 @@ public interface Attribute {
   Object sqlValue();
 
   Object getValue();
+
+  DataTypeMapping getDataTypeMapping();
 
   Class<?> getBaseType();
 

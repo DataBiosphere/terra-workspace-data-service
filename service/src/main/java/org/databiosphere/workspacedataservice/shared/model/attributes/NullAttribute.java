@@ -1,6 +1,7 @@
 package org.databiosphere.workspacedataservice.shared.model.attributes;
 
 import java.util.Objects;
+import org.databiosphere.workspacedataservice.service.model.DataTypeMapping;
 
 public class NullAttribute extends ScalarAttribute<Object> {
 
@@ -34,5 +35,10 @@ public class NullAttribute extends ScalarAttribute<Object> {
   public Object getValue() {
     // don't return an actual null; return this wrapper
     return null;
+  }
+
+  @Override
+  public DataTypeMapping getDataTypeMapping() {
+    return DataTypeMapping.NULL;
   }
 }
