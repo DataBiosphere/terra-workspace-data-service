@@ -30,6 +30,6 @@ public class TdrManifestImportMetadata {
             "%ssnapshot_id".formatted(IMPORT_METADATA_PREFIX),
             snapshotId.toString());
 
-    return record -> record.putAllAttributes(new RecordAttributes(attributes, record.getId()));
+    return record -> record.putAllAttributes(new RecordAttributes(attributes));
   }
 }

@@ -19,9 +19,9 @@ class MappedRecordSourceTest {
     var recordType = RecordType.valueOf("record");
     var records =
         List.of(
-            new Record("1", recordType, new RecordAttributes(Map.of("foo", 1, "bar", 2), "1")),
-            new Record("2", recordType, new RecordAttributes(Map.of("foo", 2, "bar", 4), "2")),
-            new Record("3", recordType, new RecordAttributes(Map.of("foo", 3, "bar", 6), "3")));
+            new Record("1", recordType, new RecordAttributes(Map.of("foo", 1, "bar", 2))),
+            new Record("2", recordType, new RecordAttributes(Map.of("foo", 2, "bar", 4))),
+            new Record("3", recordType, new RecordAttributes(Map.of("foo", 3, "bar", 6))));
 
     MapRecordFunction mapRecord =
         record ->
@@ -39,17 +39,11 @@ class MappedRecordSourceTest {
         .isEqualTo(
             List.of(
                 new Record(
-                    "1",
-                    recordType,
-                    new RecordAttributes(Map.of("foo", 1, "bar", 2, "baz", 3), "1")),
+                    "1", recordType, new RecordAttributes(Map.of("foo", 1, "bar", 2, "baz", 3))),
                 new Record(
-                    "2",
-                    recordType,
-                    new RecordAttributes(Map.of("foo", 2, "bar", 4, "baz", 6), "2")),
+                    "2", recordType, new RecordAttributes(Map.of("foo", 2, "bar", 4, "baz", 6))),
                 new Record(
-                    "3",
-                    recordType,
-                    new RecordAttributes(Map.of("foo", 3, "bar", 6, "baz", 9), "3"))));
+                    "3", recordType, new RecordAttributes(Map.of("foo", 3, "bar", 6, "baz", 9)))));
   }
 
   private static class StaticRecordSource implements RecordSource {

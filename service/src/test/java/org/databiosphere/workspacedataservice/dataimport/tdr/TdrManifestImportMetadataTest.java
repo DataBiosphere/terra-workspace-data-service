@@ -15,7 +15,7 @@ class TdrManifestImportMetadataTest {
   void getAddToRecordFunction() {
     // Arrange
     var recordType = RecordType.valueOf("thing");
-    var record = new Record("1", recordType, new RecordAttributes(Map.of("value", 1), "1"));
+    var record = new Record("1", recordType, new RecordAttributes(Map.of("value", 1)));
 
     var snapshotId = UUID.randomUUID();
     var importTime = Instant.ofEpochSecond(1716335100);
@@ -39,7 +39,6 @@ class TdrManifestImportMetadataTest {
                         "import:snapshot_id",
                         snapshotId.toString(),
                         "import:timestamp",
-                        "05-21-2024T23:45:00"),
-                    "1")));
+                        "05-21-2024T23:45:00"))));
   }
 }
