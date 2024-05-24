@@ -30,6 +30,7 @@ import org.databiosphere.workspacedataservice.service.model.exception.InvalidRel
 import org.databiosphere.workspacedataservice.shared.model.Record;
 import org.databiosphere.workspacedataservice.shared.model.RecordAttributes;
 import org.databiosphere.workspacedataservice.shared.model.RecordType;
+import org.databiosphere.workspacedataservice.shared.model.RelationTarget;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -345,8 +346,8 @@ class RecordDaoTest extends TestBase {
     Record testRecordFetched = recordDao.getSingleRecord(collectionId, recordType, recordId).get();
     // Relation attribute should be in the form of "terra-wds:/recordType/recordId"
     assertEquals(
-        RelationUtils.createRelationString(recordType, refRecordId),
-        testRecordFetched.getAttributeValue("relationAttr").toString());
+        new RelationTarget(recordType, refRecordId),
+        testRecordFetched.getAttributeValue("relationAttr"));
 
     Record referencedRecordFetched =
         recordDao.getSingleRecord(collectionId, recordType, refRecordId).get();

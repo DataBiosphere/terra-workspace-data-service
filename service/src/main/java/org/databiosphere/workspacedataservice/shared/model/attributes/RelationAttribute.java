@@ -26,6 +26,6 @@ public class RelationAttribute extends ScalarAttribute<RelationTarget> {
 
   @Override
   public Object sqlValue() {
-    return toString();
+    return RelationUtils.getRelationValue(toString());
   }
 }

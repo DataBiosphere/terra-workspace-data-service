@@ -736,6 +736,13 @@ public class RecordDao {
       return null;
     }
     if (attVal instanceof Attribute attr) {
+      LOGGER.warn(
+          "******************* sqlValue <"
+              + attr.sqlValue()
+              + "> of class "
+              + attr.sqlValue().getClass().getName()
+              + " for known datatype "
+              + typeMapping.name());
       return attr.sqlValue();
     }
     if (RelationUtils.isRelationValue(attVal) && typeMapping == DataTypeMapping.RELATION) {

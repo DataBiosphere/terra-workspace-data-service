@@ -11,6 +11,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.math.BigDecimal;
 import java.math.BigInteger;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -195,9 +196,9 @@ class FullStackRecordControllerTest extends TestBase {
 
     assertThat(body.records().get(0).recordAttributes().getAttributeValue("attr-dt"))
         .as("Record with attr-dt 2022-04-25 should be first record in descending order")
-        .isEqualTo("2022-04-25T12:00:01");
+        .isEqualTo(LocalDateTime.parse("2022-04-25T12:00:01"));
     assertThat(body.records().get(4).recordAttributes().getAttributeValue("attr-dt"))
-        .isEqualTo("2002-03-23T12:00:01");
+        .isEqualTo(LocalDateTime.parse("2002-03-23T12:00:01"));
   }
 
   @Test

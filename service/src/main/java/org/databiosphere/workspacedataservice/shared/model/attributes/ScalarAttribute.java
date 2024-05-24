@@ -4,7 +4,10 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
+import java.time.format.DateTimeParseException;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import org.apache.commons.lang3.StringUtils;
 import org.databiosphere.workspacedataservice.service.RelationUtils;
@@ -36,11 +39,19 @@ public abstract class ScalarAttribute<T> implements Attribute {
     if (input instanceof Boolean booleanInput) {
       return new BooleanAttribute(booleanInput);
     }
+    if (input instanceof LocalDateTime dateTimeInput) {
+      return new DateTimeAttribute(dateTimeInput);
+    }
     if (input instanceof LocalDate dateInput) {
       return new DateAttribute(dateInput);
     }
-    if (input instanceof LocalDateTime dateTimeInput) {
-      return new DateTimeAttribute(dateTimeInput);
+    var optDt = maybeValidDateTime(input.toString());
+    if (optDt.isPresent()) {
+      return new DateTimeAttribute(optDt.get());
+    }
+    var optD = maybeValidDate(input.toString());
+    if (optD.isPresent()) {
+      return new DateAttribute(optD.get());
     }
     if (input instanceof Number numberInput) {
       return new NumberAttribute(numberInput);
@@ -59,7 +70,7 @@ public abstract class ScalarAttribute<T> implements Attribute {
           RecordType.valueOf(mapInput.get("targetType").toString()),
           mapInput.get("targetId").toString());
     }
-    // ---------- relations
+    // ---------- files
     if (input instanceof String stringInput && isFileType(stringInput)) {
       return new FileAttribute(stringInput);
     }
@@ -88,6 +99,22 @@ public abstract class ScalarAttribute<T> implements Attribute {
     return fileUri.getScheme().equalsIgnoreCase("drs")
         || (fileUri.getScheme().equalsIgnoreCase("https")
             && fileUri.getHost().toLowerCase().endsWith(".blob.core.windows.net"));
+  }
+
+  public static Optional<LocalDateTime> maybeValidDateTime(String val) {
+    try {
+      return Optional.of(LocalDateTime.parse(val, DateTimeFormatter.ISO_LOCAL_DATE_TIME));
+    } catch (DateTimeParseException e) {
+      return Optional.empty();
+    }
+  }
+
+  public static Optional<LocalDate> maybeValidDate(String val) {
+    try {
+      return Optional.of(LocalDate.parse(val, DateTimeFormatter.ISO_LOCAL_DATE));
+    } catch (DateTimeParseException e) {
+      return Optional.empty();
+    }
   }
 
   public Class<?> getBaseType() {
