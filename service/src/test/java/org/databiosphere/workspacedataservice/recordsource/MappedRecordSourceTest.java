@@ -6,6 +6,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import java.io.IOException;
 import java.util.List;
 import java.util.Map;
+import java.util.function.UnaryOperator;
 import org.databiosphere.workspacedataservice.shared.model.OperationType;
 import org.databiosphere.workspacedataservice.shared.model.Record;
 import org.databiosphere.workspacedataservice.shared.model.RecordAttributes;
@@ -23,7 +24,7 @@ class MappedRecordSourceTest {
             new Record("2", recordType, new RecordAttributes(Map.of("foo", 2, "bar", 4))),
             new Record("3", recordType, new RecordAttributes(Map.of("foo", 3, "bar", 6))));
 
-    MapRecordFunction mapRecord =
+    UnaryOperator<Record> mapRecord =
         record ->
             record.putAllAttributes(
                 new RecordAttributes(Map.of("baz", (int) record.getAttributeValue("foo") * 3)));

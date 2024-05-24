@@ -28,6 +28,7 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.UnaryOperator;
 import org.apache.avro.generic.GenericRecord;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.parquet.avro.AvroParquetReader;
@@ -49,7 +50,6 @@ import org.databiosphere.workspacedataservice.jobexec.QuartzJob;
 import org.databiosphere.workspacedataservice.recordsink.RawlsAttributePrefixer.PrefixStrategy;
 import org.databiosphere.workspacedataservice.recordsink.RecordSink;
 import org.databiosphere.workspacedataservice.recordsink.RecordSinkFactory;
-import org.databiosphere.workspacedataservice.recordsource.MapRecordFunction;
 import org.databiosphere.workspacedataservice.recordsource.MappedRecordSource;
 import org.databiosphere.workspacedataservice.recordsource.RecordSource;
 import org.databiosphere.workspacedataservice.recordsource.RecordSource.ImportMode;
@@ -60,6 +60,7 @@ import org.databiosphere.workspacedataservice.service.model.BatchWriteResult;
 import org.databiosphere.workspacedataservice.service.model.TdrManifestImportTable;
 import org.databiosphere.workspacedataservice.service.model.exception.RestException;
 import org.databiosphere.workspacedataservice.service.model.exception.TdrManifestImportException;
+import org.databiosphere.workspacedataservice.shared.model.Record;
 import org.databiosphere.workspacedataservice.shared.model.RecordType;
 import org.databiosphere.workspacedataservice.shared.model.WorkspaceId;
 import org.quartz.JobExecutionContext;
@@ -141,7 +142,7 @@ public class TdrManifestQuartzJob extends QuartzJob {
 
     TdrManifestImportMetadata importMetadata =
         new TdrManifestImportMetadata(snapshotId, instantSource.instant());
-    Optional<MapRecordFunction> maybeMapRecord =
+    Optional<UnaryOperator<Record>> maybeMapRecord =
         shouldAddImportMetadata
             ? Optional.of(importMetadata.getAddToRecordFunction())
             : Optional.empty();
@@ -218,7 +219,7 @@ public class TdrManifestQuartzJob extends QuartzJob {
       TdrManifestImportTable table,
       RecordSink recordSink,
       ImportMode importMode,
-      Optional<MapRecordFunction> maybeMapRecord) {
+      Optional<UnaryOperator<Record>> maybeMapRecord) {
     // upsert this parquet file's contents
     try (ParquetReader<GenericRecord> avroParquetReader = readerForFile(inputFile)) {
       logger.debug(
@@ -267,7 +268,7 @@ public class TdrManifestQuartzJob extends QuartzJob {
       Multimap<String, File> fileMap,
       ImportMode importMode,
       RecordSink recordSink,
-      Optional<MapRecordFunction> maybeMapRecord) {
+      Optional<UnaryOperator<Record>> maybeMapRecord) {
     var combinedResult = BatchWriteResult.empty();
     var numTables = importTables.size();
     AtomicInteger tableIdx = new AtomicInteger();

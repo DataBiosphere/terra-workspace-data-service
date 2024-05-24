@@ -6,7 +6,8 @@ import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.Map;
 import java.util.UUID;
-import org.databiosphere.workspacedataservice.recordsource.MapRecordFunction;
+import java.util.function.UnaryOperator;
+import org.databiosphere.workspacedataservice.shared.model.Record;
 import org.databiosphere.workspacedataservice.shared.model.RecordAttributes;
 
 public class TdrManifestImportMetadata {
@@ -19,7 +20,7 @@ public class TdrManifestImportMetadata {
     this.importTime = importTime;
   }
 
-  public MapRecordFunction getAddToRecordFunction() {
+  public UnaryOperator<Record> getAddToRecordFunction() {
     DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss");
     String timestamp = ZonedDateTime.ofInstant(importTime, ZoneId.of("UTC")).format(formatter);
 
