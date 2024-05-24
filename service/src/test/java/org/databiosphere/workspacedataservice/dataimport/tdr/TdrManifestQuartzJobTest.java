@@ -11,6 +11,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.atLeastOnce;
 import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -23,15 +24,24 @@ import bio.terra.workspace.model.ResourceList;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.io.IOException;
 import java.net.URI;
+import java.time.Instant;
+import java.time.ZoneId;
+import java.time.ZonedDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
 import java.util.function.Supplier;
+import java.util.stream.Collectors;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.Path;
 import org.apache.parquet.hadoop.util.HadoopInputFile;
 import org.apache.parquet.io.InputFile;
 import org.databiosphere.workspacedataservice.activitylog.ActivityLogger;
+import org.databiosphere.workspacedataservice.common.MockInstantSource;
+import org.databiosphere.workspacedataservice.common.MockInstantSourceConfig;
 import org.databiosphere.workspacedataservice.common.TestBase;
 import org.databiosphere.workspacedataservice.config.DataImportProperties;
 import org.databiosphere.workspacedataservice.dao.JobDao;
@@ -50,18 +60,23 @@ import org.databiosphere.workspacedataservice.service.RecordService;
 import org.databiosphere.workspacedataservice.service.model.TdrManifestImportTable;
 import org.databiosphere.workspacedataservice.service.model.exception.TdrManifestImportException;
 import org.databiosphere.workspacedataservice.shared.model.CollectionId;
+import org.databiosphere.workspacedataservice.shared.model.Record;
+import org.databiosphere.workspacedataservice.shared.model.RecordAttributes;
 import org.databiosphere.workspacedataservice.shared.model.RecordType;
 import org.databiosphere.workspacedataservice.shared.model.WorkspaceId;
 import org.databiosphere.workspacedataservice.workspacemanager.WorkspaceManagerDao;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.ArgumentCaptor;
 import org.quartz.JobExecutionContext;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.context.annotation.Import;
 import org.springframework.core.io.Resource;
 import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.ActiveProfiles;
@@ -69,6 +84,7 @@ import org.springframework.test.context.ActiveProfiles;
 @DirtiesContext
 @SpringBootTest
 @ActiveProfiles(profiles = {"mock-sam"})
+@Import(MockInstantSourceConfig.class)
 class TdrManifestQuartzJobTest extends TestBase {
 
   @MockBean JobDao jobDao;
@@ -84,6 +100,7 @@ class TdrManifestQuartzJobTest extends TestBase {
   @Autowired RestClientRetry restClientRetry;
   @Autowired ObjectMapper objectMapper;
   @Autowired TdrTestSupport testSupport;
+  @Autowired MockInstantSource mockInstantSource;
 
   // test resources used below
   @Value("classpath:tdrmanifest/azure_small.json")
@@ -227,7 +244,7 @@ class TdrManifestQuartzJobTest extends TestBase {
           TdrManifestImportException.class,
           () ->
               tdrManifestQuartzJob.importTable(
-                  malformedFile, table, recordSink, ImportMode.BASE_ATTRIBUTES));
+                  malformedFile, table, recordSink, ImportMode.BASE_ATTRIBUTES, Optional.empty()));
     }
   }
 
@@ -301,5 +318,101 @@ class TdrManifestQuartzJobTest extends TestBase {
     assertThat(roleCaptor.getAllValues()).containsExactlyInAnyOrder(WORKSPACE_ROLES);
     assertThat(workspaceCaptor.getAllValues()).containsOnly(workspaceId).hasSize(4);
     assertThat(snapshotIdCaptor.getAllValues()).containsOnly(snapshotId).hasSize(4);
+  }
+
+  @ParameterizedTest(name = "addImportMetadata ({0})")
+  @ValueSource(booleans = {true, false})
+  @Tag(SLOW)
+  void addImportMetadata(boolean shouldAddImportMetadata) throws IOException {
+    // Arrange
+    // Enable control plane configuration.
+    when(dataImportProperties.shouldAddImportMetadata()).thenReturn(shouldAddImportMetadata);
+
+    // Set up IDs
+    WorkspaceId workspaceId = WorkspaceId.of(UUID.randomUUID());
+    CollectionId collectionId = CollectionId.of(UUID.randomUUID());
+    UUID jobId = UUID.randomUUID();
+
+    // Mock collection service to return this workspace ID for this collection ID
+    when(collectionService.getWorkspaceId(collectionId)).thenReturn(workspaceId);
+
+    // WSM should report no snapshots already linked to this workspace
+    // note that if enumerateDataRepoSnapshotReferences is called with the wrong workspaceId,
+    // this test will fail
+    when(wsmDao.enumerateDataRepoSnapshotReferences(eq(workspaceId.id()), anyInt(), anyInt()))
+        .thenReturn(new ResourceList());
+
+    // Set up the job
+    TdrManifestQuartzJob tdrManifestQuartzJob = testSupport.buildTdrManifestQuartzJob();
+    JobExecutionContext mockContext = stubJobContext(jobId, v2fManifestResource, collectionId.id());
+
+    // Act
+    // Execute the job
+    tdrManifestQuartzJob.executeInternal(jobId, mockContext);
+
+    // ASSERT
+    // Get all records written to sink.
+    ArgumentCaptor<List<Record>> captor = ArgumentCaptor.forClass(List.class);
+    verify(recordService, atLeastOnce()).batchUpsert(any(), any(), captor.capture(), any(), any());
+    List<Record> allRecords = captor.getAllValues().stream().flatMap(List::stream).toList();
+
+    if (shouldAddImportMetadata) {
+      // All records should have the same value for metadata fields.
+      Set<Object> snapshotIds =
+          allRecords.stream()
+              .map(record -> record.getAttributeValue("import:snapshot_id"))
+              .collect(Collectors.toSet());
+      assertThat(snapshotIds).isEqualTo(Set.of("e3638824-9ed9-408e-b3f5-cba7585658a3"));
+
+      DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss");
+      String expectedTimestamp =
+          ZonedDateTime.ofInstant(mockInstantSource.instant(), ZoneId.of("UTC")).format(formatter);
+
+      Set<Object> timestamps =
+          allRecords.stream()
+              .map(record -> record.getAttributeValue("import:timestamp"))
+              .collect(Collectors.toSet());
+      assertThat(timestamps).isEqualTo(Set.of(expectedTimestamp));
+    } else {
+      boolean hasImportMetadata =
+          allRecords.stream()
+              .anyMatch(
+                  record -> {
+                    RecordAttributes recordAttributes = record.getAttributes();
+                    return recordAttributes.containsAttribute("import:snapshot_id")
+                        || recordAttributes.containsAttribute("import:timestamp");
+                  });
+      assertThat(hasImportMetadata).isFalse();
+    }
+  }
+
+  @Test
+  void getAddImportMetadataToRecordFunction() {
+    // Arrange
+    var recordType = RecordType.valueOf("thing");
+    var record = new Record("1", recordType, new RecordAttributes(Map.of("value", 1)));
+
+    var snapshotId = UUID.randomUUID();
+    var importTime = Instant.ofEpochSecond(1716335100);
+
+    // Act
+    var mapRecord =
+        TdrManifestQuartzJob.getAddImportMetadataToRecordFunction(snapshotId, importTime);
+    var annotatedRecord = mapRecord.apply(record);
+
+    // Assert
+    assertThat(annotatedRecord)
+        .isEqualTo(
+            new Record(
+                "1",
+                recordType,
+                new RecordAttributes(
+                    Map.of(
+                        "value",
+                        1,
+                        "import:snapshot_id",
+                        snapshotId.toString(),
+                        "import:timestamp",
+                        "05-21-2024T23:45:00"))));
   }
 }
