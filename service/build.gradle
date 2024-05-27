@@ -86,7 +86,7 @@ dependencies {
     implementation 'com.squareup.okhttp3:okhttp' // required by Sam client
     implementation "bio.terra:datarepo-client:2.13.0-SNAPSHOT"
     implementation "bio.terra:workspace-manager-client:0.254.983-SNAPSHOT"
-    implementation "bio.terra:java-pfb-library:0.42.0"
+    implementation "bio.terra:java-pfb-library:0.45.0"
     implementation project(path: ':client')
 
     // Parquet, used for TDR snapshot import
@@ -122,7 +122,7 @@ dependencies {
     implementation "org.glassfish.jersey.core:jersey-common"
 
     annotationProcessor 'org.springframework.boot:spring-boot-configuration-processor'
-    runtimeOnly 'org.webjars.npm:swagger-ui-dist:5.17.10'
+    runtimeOnly 'org.webjars.npm:swagger-ui-dist:5.17.12'
     testImplementation 'io.micrometer:micrometer-observation-test'
     testImplementation 'org.springframework.boot:spring-boot-starter-test'
     testImplementation 'org.junit.jupiter:junit-jupiter'
@@ -132,14 +132,14 @@ dependencies {
     testImplementation 'org.junit-pioneer:junit-pioneer:2.2.0'
 
     // google bucket mock
-    testImplementation 'com.google.cloud:google-cloud-nio:0.127.17'
+    testImplementation 'com.google.cloud:google-cloud-nio:0.127.18'
 
     constraints {
         implementation('org.json:json:20240303') {
             because("CVE-2022-45688")
         }
         // commons-compress required by org.apache.avro:avro:1.11.3, required by java-pfb-library:0.14.0
-        implementation('org.apache.commons:commons-compress:1.26.1') {
+        implementation('org.apache.commons:commons-compress:1.26.2') {
             because("CVE-2023-42503")
         }
         implementation('org.xerial.snappy:snappy-java:1.1.10.5') {
