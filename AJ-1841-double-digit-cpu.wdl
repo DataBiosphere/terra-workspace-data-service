@@ -25,7 +25,7 @@ task hello {
     # https://cromwell.readthedocs.io/en/stable/RuntimeAttributes/
     runtime {
         docker: "ubuntu:latest"
-        cpu: 8
+        cpu: 16
         #memory: "1024 GB"
         #disk: "1000 GB"
         maxRetries: 0
