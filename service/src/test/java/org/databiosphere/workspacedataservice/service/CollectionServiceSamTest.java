@@ -8,17 +8,19 @@ import java.util.UUID;
 import org.broadinstitute.dsde.workbench.client.sam.ApiException;
 import org.broadinstitute.dsde.workbench.client.sam.api.ResourcesApi;
 import org.broadinstitute.dsde.workbench.client.sam.model.CreateResourceRequestV2;
+import org.databiosphere.workspacedataservice.annotations.SingleTenant;
 import org.databiosphere.workspacedataservice.common.TestBase;
 import org.databiosphere.workspacedataservice.dao.CollectionDao;
 import org.databiosphere.workspacedataservice.sam.SamAuthorizationDao;
 import org.databiosphere.workspacedataservice.sam.SamClientFactory;
+import org.databiosphere.workspacedataservice.shared.model.WorkspaceId;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
+import org.junit.jupiter.api.TestInstance.Lifecycle;
 import org.mockito.InOrder;
 import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.test.annotation.DirtiesContext;
@@ -27,7 +29,7 @@ import org.springframework.test.context.ActiveProfiles;
 @ActiveProfiles(profiles = "mock-collection-dao")
 @DirtiesContext
 @SpringBootTest
-@TestInstance(TestInstance.Lifecycle.PER_CLASS)
+@TestInstance(Lifecycle.PER_CLASS)
 class CollectionServiceSamTest extends TestBase {
 
   @Autowired private CollectionService collectionService;
@@ -40,8 +42,7 @@ class CollectionServiceSamTest extends TestBase {
   // to mock it manually
   final ResourcesApi mockResourcesApi = Mockito.mock(ResourcesApi.class);
 
-  @Value("${twds.instance.workspace-id}")
-  String parentWorkspaceId;
+  @Autowired @SingleTenant WorkspaceId parentWorkspaceId;
 
   @BeforeEach
   void setUp() throws ApiException {
@@ -93,7 +94,7 @@ class CollectionServiceSamTest extends TestBase {
         .verify(mockResourcesApi)
         .resourcePermissionV2(
             SamAuthorizationDao.RESOURCE_NAME_WORKSPACE,
-            parentWorkspaceId,
+            parentWorkspaceId.toString(),
             SamAuthorizationDao.ACTION_WRITE);
 
     // and that should be the only call we made to Sam
@@ -123,7 +124,7 @@ class CollectionServiceSamTest extends TestBase {
         .verify(mockResourcesApi)
         .resourcePermissionV2(
             SamAuthorizationDao.RESOURCE_NAME_WORKSPACE,
-            parentWorkspaceId,
+            parentWorkspaceId.toString(),
             SamAuthorizationDao.ACTION_WRITE);
 
     // and that should be the only call we made to Sam
