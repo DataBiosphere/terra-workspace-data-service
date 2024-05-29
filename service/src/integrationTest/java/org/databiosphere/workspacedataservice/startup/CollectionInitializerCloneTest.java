@@ -15,6 +15,7 @@ import org.databiosphere.workspacedata.client.ApiException;
 import org.databiosphere.workspacedata.model.BackupJob;
 import org.databiosphere.workspacedata.model.BackupResponse;
 import org.databiosphere.workspacedataservice.IntegrationServiceTestBase;
+import org.databiosphere.workspacedataservice.annotations.SingleTenant;
 import org.databiosphere.workspacedataservice.dao.CloneDao;
 import org.databiosphere.workspacedataservice.dao.CollectionDao;
 import org.databiosphere.workspacedataservice.dao.RecordDao;
@@ -22,6 +23,7 @@ import org.databiosphere.workspacedataservice.leonardo.LeonardoDao;
 import org.databiosphere.workspacedataservice.shared.model.CloneResponse;
 import org.databiosphere.workspacedataservice.shared.model.CloneStatus;
 import org.databiosphere.workspacedataservice.shared.model.RecordType;
+import org.databiosphere.workspacedataservice.shared.model.WorkspaceId;
 import org.databiosphere.workspacedataservice.shared.model.job.Job;
 import org.databiosphere.workspacedataservice.shared.model.job.JobInput;
 import org.databiosphere.workspacedataservice.shared.model.job.JobStatus;
@@ -71,8 +73,7 @@ class CollectionInitializerCloneTest extends IntegrationServiceTestBase {
   @MockBean CollectionInitializer mockCollectionInitializer;
 
   // values
-  @Value("${twds.instance.workspace-id}")
-  String workspaceId;
+  @Autowired @SingleTenant WorkspaceId workspaceId;
 
   @Value("${twds.instance.source-workspace-id}")
   String sourceWorkspaceId;
@@ -115,7 +116,7 @@ class CollectionInitializerCloneTest extends IntegrationServiceTestBase {
         cloneStatus.getErrorMessage());
 
     // default collection should exist, with no tables in it
-    UUID workspaceUuid = UUID.fromString(workspaceId);
+    UUID workspaceUuid = workspaceId.id();
     assertTrue(collectionDao.collectionSchemaExists(workspaceUuid));
     assertThat(recordDao.getAllRecordTypes(workspaceUuid)).isEmpty();
   }
@@ -155,7 +156,7 @@ class CollectionInitializerCloneTest extends IntegrationServiceTestBase {
 
     // default collection should exist, with a single table named "thing" in it
     // the "thing" table is defined in WDS-integrationTest-LocalFileStorage-input.sql.
-    UUID workspaceUuid = UUID.fromString(workspaceId);
+    UUID workspaceUuid = workspaceId.id();
     List<UUID> actualCollections = collectionDao.listCollectionSchemas();
     assertEquals(List.of(workspaceUuid), actualCollections);
     List<RecordType> actualTypes = recordDao.getAllRecordTypes(workspaceUuid);
