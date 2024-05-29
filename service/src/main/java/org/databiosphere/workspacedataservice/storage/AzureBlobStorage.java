@@ -13,6 +13,7 @@ import java.io.OutputStream;
 import java.io.OutputStreamWriter;
 import java.nio.charset.StandardCharsets;
 import org.databiosphere.workspacedataservice.service.model.exception.LaunchProcessException;
+import org.databiosphere.workspacedataservice.shared.model.WorkspaceId;
 import org.databiosphere.workspacedataservice.workspacemanager.WorkspaceManagerDao;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -80,7 +81,8 @@ public class AzureBlobStorage implements BackUpFileStorage {
 
   private BlobContainerClient constructBlockBlobClient(String workspaceId, String authToken) {
     // get workspace blob storage endpoint and token
-    var blobstorageDetails = workspaceManagerDao.getBlobStorageUrl(workspaceId, authToken);
+    var blobstorageDetails =
+        workspaceManagerDao.getBlobStorageUrl(WorkspaceId.fromString(workspaceId), authToken);
 
     // the url we get from WSM already contains the token in it, so no need to specify sasToken
     // separately
