@@ -1,5 +1,6 @@
 package org.databiosphere.workspacedataservice.startup;
 
+import org.databiosphere.workspacedataservice.annotations.DeploymentMode.DataPlane;
 import org.databiosphere.workspacedataservice.dao.CloneDao;
 import org.databiosphere.workspacedataservice.dao.CollectionDao;
 import org.databiosphere.workspacedataservice.leonardo.LeonardoDao;
@@ -12,6 +13,7 @@ import org.springframework.integration.support.locks.LockRegistry;
 @Configuration
 public class CollectionInitializerConfig {
 
+  @DataPlane
   @Bean
   public CollectionInitializerBean collectionInitializerBean(
       CollectionDao collectionDao,
