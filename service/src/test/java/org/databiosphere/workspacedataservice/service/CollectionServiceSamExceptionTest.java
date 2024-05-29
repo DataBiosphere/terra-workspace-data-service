@@ -13,12 +13,14 @@ import java.util.List;
 import java.util.UUID;
 import org.broadinstitute.dsde.workbench.client.sam.ApiException;
 import org.broadinstitute.dsde.workbench.client.sam.api.ResourcesApi;
+import org.databiosphere.workspacedataservice.annotations.SingleTenant;
 import org.databiosphere.workspacedataservice.common.TestBase;
 import org.databiosphere.workspacedataservice.dao.CollectionDao;
 import org.databiosphere.workspacedataservice.sam.SamClientFactory;
 import org.databiosphere.workspacedataservice.service.model.exception.AuthenticationException;
 import org.databiosphere.workspacedataservice.service.model.exception.AuthorizationException;
 import org.databiosphere.workspacedataservice.service.model.exception.RestException;
+import org.databiosphere.workspacedataservice.shared.model.WorkspaceId;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -28,7 +30,6 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.test.annotation.DirtiesContext;
@@ -70,8 +71,7 @@ class CollectionServiceSamExceptionTest extends TestBase {
   // to mock it manually
   final ResourcesApi mockResourcesApi = Mockito.mock(ResourcesApi.class);
 
-  @Value("${twds.instance.workspace-id}")
-  String containingWorkspaceId;
+  @Autowired @SingleTenant WorkspaceId containingWorkspaceId;
 
   @BeforeEach
   void setUp() {
@@ -96,7 +96,7 @@ class CollectionServiceSamExceptionTest extends TestBase {
     // Setup: the call to check permissions in Sam throws an ApiException
     given(
             mockResourcesApi.resourcePermissionV2(
-                anyString(), eq(containingWorkspaceId), anyString()))
+                anyString(), eq(containingWorkspaceId.toString()), anyString()))
         .willThrow(
             new ApiException(
                 thrownStatusCode, "intentional exception for unit test: " + thrownStatusCode));
@@ -114,7 +114,7 @@ class CollectionServiceSamExceptionTest extends TestBase {
     // Setup: the call to check permissions in Sam throws an ApiException
     given(
             mockResourcesApi.resourcePermissionV2(
-                anyString(), eq(containingWorkspaceId), anyString()))
+                anyString(), eq(containingWorkspaceId.toString()), anyString()))
         .willThrow(
             new ApiException(
                 thrownStatusCode, "intentional exception for unit test: " + thrownStatusCode));
@@ -132,7 +132,7 @@ class CollectionServiceSamExceptionTest extends TestBase {
     // Setup: the call to check permissions in Sam throws an ApiException
     given(
             mockResourcesApi.resourcePermissionV2(
-                anyString(), eq(containingWorkspaceId), anyString()))
+                anyString(), eq(containingWorkspaceId.toString()), anyString()))
         .willThrow(
             new ApiException(
                 thrownStatusCode, "intentional exception for unit test: " + thrownStatusCode));
@@ -150,7 +150,7 @@ class CollectionServiceSamExceptionTest extends TestBase {
     // Setup: the call to check permissions in Sam throws an ApiException
     given(
             mockResourcesApi.resourcePermissionV2(
-                anyString(), eq(containingWorkspaceId), anyString()))
+                anyString(), eq(containingWorkspaceId.toString()), anyString()))
         .willThrow(
             new ApiException(
                 thrownStatusCode, "intentional exception for unit test: " + thrownStatusCode));
@@ -176,7 +176,7 @@ class CollectionServiceSamExceptionTest extends TestBase {
     // Setup: the call to check permissions in Sam throws the specified Exception
     given(
             mockResourcesApi.resourcePermissionV2(
-                anyString(), eq(containingWorkspaceId), anyString()))
+                anyString(), eq(containingWorkspaceId.toString()), anyString()))
         .willThrow(toThrow);
 
     doSamCreateAndDeleteTest(collectionId, 500);
