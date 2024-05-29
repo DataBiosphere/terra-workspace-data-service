@@ -34,19 +34,19 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
+import org.junit.jupiter.api.TestInstance.Lifecycle;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.EnumSource;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
 @SpringBootTest
-@TestInstance(TestInstance.Lifecycle.PER_CLASS)
+@TestInstance(Lifecycle.PER_CLASS)
 class RecordDaoTest extends TestBase {
 
   private static final String PRIMARY_KEY = "row_id";
@@ -66,9 +66,6 @@ class RecordDaoTest extends TestBase {
   @Autowired ObjectMapper objectMapper;
 
   @Autowired PrimaryKeyDao primaryKeyDao;
-
-  @Value("${twds.instance.workspace-id}")
-  String workspaceId;
 
   @BeforeEach
   void setUp() {
