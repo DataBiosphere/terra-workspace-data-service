@@ -13,20 +13,16 @@ import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
+import org.junit.jupiter.api.TestInstance.Lifecycle;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.test.annotation.DirtiesContext;
-import org.springframework.test.context.TestPropertySource;
 
 @SpringBootTest
 @DirtiesContext
-@TestInstance(TestInstance.Lifecycle.PER_CLASS)
-@TestPropertySource(
-    properties = {
-      "twds.instance.workspace-id=80000000-4000-4000-4000-120000000000",
-    })
+@TestInstance(Lifecycle.PER_CLASS)
 class PostgresCollectionDaoTest extends TestBase {
 
   @Autowired CollectionDao collectionDao;
