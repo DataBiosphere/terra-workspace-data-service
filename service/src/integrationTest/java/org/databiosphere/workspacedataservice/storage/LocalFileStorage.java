@@ -4,13 +4,14 @@ import java.io.*;
 import java.nio.charset.StandardCharsets;
 import java.util.Objects;
 import org.databiosphere.workspacedataservice.service.model.exception.LaunchProcessException;
+import org.databiosphere.workspacedataservice.shared.model.WorkspaceId;
 
 public class LocalFileStorage implements BackUpFileStorage {
   public LocalFileStorage() {}
 
   @Override
   public void streamOutputToBlobStorage(
-      InputStream fromStream, String blobName, String workspaceId) {
+      InputStream fromStream, String blobName, WorkspaceId workspaceId) {
     File targetFile;
     try {
       targetFile = File.createTempFile("WDS-integrationTest-LocalFileStorage-", ".sql");
@@ -40,7 +41,7 @@ public class LocalFileStorage implements BackUpFileStorage {
 
   @Override
   public void streamInputFromBlobStorage(
-      OutputStream toStream, String blobName, String workspaceId, String authToken) {
+      OutputStream toStream, String blobName, WorkspaceId workspaceId, String authToken) {
     try (InputStream inStream =
         LocalFileStorage.class.getResourceAsStream(
             "/WDS-integrationTest-LocalFileStorage-input.sql")) {
@@ -57,7 +58,7 @@ public class LocalFileStorage implements BackUpFileStorage {
   }
 
   @Override
-  public void deleteBlob(String blobFile, String workspaceId, String authToken) {
+  public void deleteBlob(String blobFile, WorkspaceId workspaceId, String authToken) {
     // delete is handled in stream output for local set up
   }
 }

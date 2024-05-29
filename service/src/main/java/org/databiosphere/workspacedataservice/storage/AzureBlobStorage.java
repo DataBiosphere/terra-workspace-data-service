@@ -18,6 +18,7 @@ import org.databiosphere.workspacedataservice.workspacemanager.WorkspaceManagerD
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.lang.Nullable;
 
 @Configuration
 public class AzureBlobStorage implements BackUpFileStorage {
@@ -43,9 +44,10 @@ public class AzureBlobStorage implements BackUpFileStorage {
    */
   @Override
   public void streamOutputToBlobStorage(
-      InputStream fromStream, String blobName, String workspaceId) {
+      InputStream fromStream, String blobName, WorkspaceId workspaceId) {
     LOGGER.info("Creating blob storage client. ");
-    BlobContainerClient blobContainerClient = constructBlockBlobClient(workspaceId, null);
+    BlobContainerClient blobContainerClient =
+        constructBlockBlobClient(workspaceId, /* authToken= */ null);
     LOGGER.info("About to write to blob storage. ");
     // https://learn.microsoft.com/en-us/java/api/overview/azure/storage-blob-readme?view=azure-java-stable#upload-a-blob-via-an-outputstream
     try (OutputStreamWriter blobOS =
@@ -70,7 +72,7 @@ public class AzureBlobStorage implements BackUpFileStorage {
 
   @Override
   public void streamInputFromBlobStorage(
-      OutputStream toStream, String blobName, String workspaceId, String authToken) {
+      OutputStream toStream, String blobName, WorkspaceId workspaceId, String authToken) {
     BlobContainerClient blobContainerClient = constructBlockBlobClient(workspaceId, authToken);
     try (toStream) {
       blobContainerClient.getBlobClient(blobName).downloadStream(toStream);
@@ -79,10 +81,10 @@ public class AzureBlobStorage implements BackUpFileStorage {
     }
   }
 
-  private BlobContainerClient constructBlockBlobClient(String workspaceId, String authToken) {
+  private BlobContainerClient constructBlockBlobClient(
+      WorkspaceId workspaceId, @Nullable String authToken) {
     // get workspace blob storage endpoint and token
-    var blobstorageDetails =
-        workspaceManagerDao.getBlobStorageUrl(WorkspaceId.fromString(workspaceId), authToken);
+    var blobstorageDetails = workspaceManagerDao.getBlobStorageUrl(workspaceId, authToken);
 
     // the url we get from WSM already contains the token in it, so no need to specify sasToken
     // separately
@@ -102,7 +104,7 @@ public class AzureBlobStorage implements BackUpFileStorage {
   }
 
   @Override
-  public void deleteBlob(String blobFile, String workspaceId, String authToken) {
+  public void deleteBlob(String blobFile, WorkspaceId workspaceId, String authToken) {
     BlobContainerClient blobContainerClient = constructBlockBlobClient(workspaceId, authToken);
     try {
       var blobClient = blobContainerClient.getBlobClient(blobFile);
