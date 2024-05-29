@@ -2,7 +2,6 @@ package org.databiosphere.workspacedataservice.service;
 
 import static org.databiosphere.workspacedataservice.service.RecordUtils.VERSION;
 import static org.junit.jupiter.api.Assertions.*;
-import static org.junit.jupiter.api.TestInstance.*;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
@@ -58,7 +57,7 @@ import org.springframework.test.context.ActiveProfiles;
 @ActiveProfiles(profiles = "mock-collection-dao")
 @DirtiesContext
 @SpringBootTest
-@TestInstance(Lifecycle.PER_CLASS)
+@TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class CollectionServiceSamExceptionTest extends TestBase {
 
   @Autowired private CollectionService collectionService;

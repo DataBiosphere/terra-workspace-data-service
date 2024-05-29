@@ -17,7 +17,6 @@ import org.databiosphere.workspacedataservice.shared.model.WorkspaceId;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
-import org.junit.jupiter.api.TestInstance.Lifecycle;
 import org.mockito.InOrder;
 import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -29,7 +28,7 @@ import org.springframework.test.context.ActiveProfiles;
 @ActiveProfiles(profiles = "mock-collection-dao")
 @DirtiesContext
 @SpringBootTest
-@TestInstance(Lifecycle.PER_CLASS)
+@TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class CollectionServiceSamTest extends TestBase {
 
   @Autowired private CollectionService collectionService;

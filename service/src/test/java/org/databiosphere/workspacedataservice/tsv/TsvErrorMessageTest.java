@@ -16,7 +16,6 @@ import org.databiosphere.workspacedataservice.shared.model.RecordType;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.TestInstance;
-import org.junit.jupiter.api.TestInstance.Lifecycle;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -28,7 +27,7 @@ import org.springframework.test.context.TestPropertySource;
 
 @ActiveProfiles(profiles = "mock-sam")
 @SpringBootTest
-@TestInstance(Lifecycle.PER_CLASS)
+@TestInstance(TestInstance.Lifecycle.PER_CLASS)
 @TestPropertySource(
     properties = {
       "twds.tenancy.enforce-collections-match-workspace-id=false", // TODO(AJ-1682): get rid of this
