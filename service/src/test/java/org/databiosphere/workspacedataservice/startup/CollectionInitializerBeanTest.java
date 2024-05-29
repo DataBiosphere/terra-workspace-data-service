@@ -12,13 +12,14 @@ import static org.mockito.Mockito.when;
 import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.locks.Lock;
+import org.databiosphere.workspacedataservice.annotations.SingleTenant;
 import org.databiosphere.workspacedataservice.common.TestBase;
 import org.databiosphere.workspacedataservice.dao.*;
+import org.databiosphere.workspacedataservice.shared.model.WorkspaceId;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.boot.test.mock.mockito.SpyBean;
@@ -48,8 +49,7 @@ class CollectionInitializerBeanTest extends TestBase {
   @SpyBean CollectionDao collectionDao;
   @SpyBean CloneDao cloneDao;
 
-  @Value("${twds.instance.workspace-id}")
-  String workspaceId;
+  @Autowired @SingleTenant WorkspaceId workspaceId;
 
   // sourceWorkspaceId when we need one
   final String sourceWorkspaceId = UUID.randomUUID().toString();
@@ -180,7 +180,7 @@ class CollectionInitializerBeanTest extends TestBase {
 
   @Test
   void sourceAndCurrentWorkspaceIdsMatch() {
-    boolean cloneMode = collectionInitializerBean.isInCloneMode(workspaceId);
+    boolean cloneMode = collectionInitializerBean.isInCloneMode(workspaceId.toString());
     assertFalse(cloneMode);
   }
 }
