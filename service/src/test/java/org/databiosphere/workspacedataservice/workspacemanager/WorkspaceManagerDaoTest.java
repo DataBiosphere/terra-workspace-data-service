@@ -22,6 +22,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 import org.apache.commons.lang3.RandomStringUtils;
+import org.databiosphere.workspacedataservice.annotations.SingleTenant;
 import org.databiosphere.workspacedataservice.common.TestBase;
 import org.databiosphere.workspacedataservice.shared.model.WorkspaceId;
 import org.junit.jupiter.api.BeforeEach;
@@ -29,7 +30,6 @@ import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.HttpStatus;
@@ -45,8 +45,7 @@ class WorkspaceManagerDaoTest extends TestBase {
 
   @MockBean WorkspaceManagerClientFactory mockWorkspaceManagerClientFactory;
 
-  @Value("${twds.instance.workspace-id:}")
-  private UUID workspaceId;
+  @Autowired @SingleTenant WorkspaceId workspaceId;
 
   final ReferencedGcpResourceApi mockReferencedGcpResourceApi =
       Mockito.mock(ReferencedGcpResourceApi.class);
@@ -68,7 +67,7 @@ class WorkspaceManagerDaoTest extends TestBase {
   void testSnapshotReturned() throws ApiException {
     final SnapshotModel testSnapshot =
         new SnapshotModel().name("test snapshot").id(UUID.randomUUID());
-    workspaceManagerDao.linkSnapshotForPolicy(WorkspaceId.of(workspaceId), testSnapshot);
+    workspaceManagerDao.linkSnapshotForPolicy(workspaceId, testSnapshot);
     verify(mockReferencedGcpResourceApi)
         .createDataRepoSnapshotReference(
             argThat(
@@ -88,11 +87,10 @@ class WorkspaceManagerDaoTest extends TestBase {
         new SnapshotModel().name("test snapshot").id(UUID.randomUUID());
     given(mockReferencedGcpResourceApi.createDataRepoSnapshotReference(any(), any()))
         .willThrow(new ApiException(statusCode, "Intentional error thrown for unit test"));
-    WorkspaceId wid = WorkspaceId.of(workspaceId);
     var exception =
         assertThrows(
             WorkspaceManagerException.class,
-            () -> workspaceManagerDao.linkSnapshotForPolicy(wid, testSnapshot));
+            () -> workspaceManagerDao.linkSnapshotForPolicy(workspaceId, testSnapshot));
     assertEquals(statusCode, exception.getStatusCode().value());
   }
 
@@ -101,7 +99,7 @@ class WorkspaceManagerDaoTest extends TestBase {
     var resourceUUID =
         buildResourceListObjectAndCallExtraction(
             workspaceId, "sc-" + workspaceId, ResourceType.AZURE_STORAGE_CONTAINER);
-    assertEquals(workspaceId, resourceUUID);
+    assertEquals(workspaceId.id(), resourceUUID);
   }
 
   @Test
@@ -153,7 +151,7 @@ class WorkspaceManagerDaoTest extends TestBase {
     UUID snapshotId = UUID.randomUUID();
     SnapshotModel snapshotModel = new SnapshotModel().id(snapshotId);
     // call the create-reference method
-    workspaceManagerDao.linkSnapshotForPolicy(WorkspaceId.of(workspaceId), snapshotModel);
+    workspaceManagerDao.linkSnapshotForPolicy(workspaceId, snapshotModel);
 
     // validate that it sent correct Properties to resourceApi.createDataRepoSnapshotReference
     ArgumentCaptor<CreateDataRepoSnapshotReferenceRequestBody> argumentCaptor =
@@ -173,13 +171,14 @@ class WorkspaceManagerDaoTest extends TestBase {
     assertEquals(PURPOSE_POLICY, actual.getValue());
   }
 
-  UUID buildResourceListObjectAndCallExtraction(UUID workspaceId, String name, ResourceType type) {
+  UUID buildResourceListObjectAndCallExtraction(
+      WorkspaceId workspaceId, String name, ResourceType type) {
     ResourceList resourceList = new ResourceList();
     ResourceDescription resourceDescription = new ResourceDescription();
     ResourceMetadata meta = new ResourceMetadata();
     resourceDescription.setMetadata(meta);
     resourceDescription.getMetadata().setName(name);
-    resourceDescription.getMetadata().setResourceId(workspaceId);
+    resourceDescription.getMetadata().setResourceId(workspaceId.id());
     resourceDescription.getMetadata().setResourceType(type);
     List<ResourceDescription> listOfDescriptions = new ArrayList<>();
     listOfDescriptions.add(resourceDescription);
