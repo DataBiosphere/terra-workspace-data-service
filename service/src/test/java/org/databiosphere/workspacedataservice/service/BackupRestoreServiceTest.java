@@ -17,6 +17,7 @@ import org.databiosphere.workspacedataservice.common.TestBase;
 import org.databiosphere.workspacedataservice.dao.BackupRestoreDao;
 import org.databiosphere.workspacedataservice.service.model.exception.LaunchProcessException;
 import org.databiosphere.workspacedataservice.shared.model.RestoreResponse;
+import org.databiosphere.workspacedataservice.shared.model.WorkspaceId;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -28,24 +29,22 @@ import org.springframework.test.context.TestPropertySource;
 @DirtiesContext
 @SpringBootTest(properties = "spring.cache.type=NONE")
 @TestPropertySource(
-    properties = {
-      "twds.instance.workspace-id=f7c83b8d-53f3-473e-b9b4-2663d13e2752",
-      "twds.pg_dump.path=/unit/test/pg_dump",
-      "twds.pg_dump.psqlPath=/unit/test/psql"
-    })
+    properties = {"twds.pg_dump.path=/unit/test/pg_dump", "twds.pg_dump.psqlPath=/unit/test/psql"})
 class BackupRestoreServiceTest extends TestBase {
   @Autowired private BackupRestoreService backupRestoreService;
   @Autowired private NamedParameterJdbcTemplate namedTemplate;
+  @Autowired private WorkspaceId workspaceId;
 
   @MockBean BackupRestoreDao<RestoreResponse> mockRestoreDao;
 
   @Test
   void CheckBackupCommandLine() {
+    String expectedCommand =
+        "/unit/test/pg_dump -b -n %s -h localhost -p 5432 -U wds -d wds -v -w"
+            .formatted(workspaceId);
     List<String> commandList = backupRestoreService.generateCommandList(true);
     String command = String.join(" ", commandList);
-    assertThat(command)
-        .isEqualTo(
-            "/unit/test/pg_dump -b -n f7c83b8d-53f3-473e-b9b4-2663d13e2752 -h localhost -p 5432 -U wds -d wds -v -w");
+    assertThat(command).isEqualTo(expectedCommand);
   }
 
   @Test

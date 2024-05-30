@@ -44,7 +44,7 @@ class RecordOrchestratorSamTest extends TestBase {
   // to mock it manually
   final ResourcesApi mockResourcesApi = Mockito.mock(ResourcesApi.class);
 
-  private static final UUID COLLECTION = UUID.fromString("123e4567-e89b-12d3-a456-426614174000");
+  private static final UUID COLLECTION = UUID.fromString(HARDCODED_WORKSPACE_ID);
 
   @BeforeEach
   void setUp() {

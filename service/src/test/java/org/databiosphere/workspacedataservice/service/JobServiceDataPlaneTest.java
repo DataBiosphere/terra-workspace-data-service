@@ -1,6 +1,7 @@
 package org.databiosphere.workspacedataservice.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.databiosphere.workspacedataservice.common.TestBase.HARDCODED_WORKSPACE_ID;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
@@ -35,7 +36,7 @@ import org.springframework.test.context.ActiveProfiles;
 
 @ActiveProfiles(profiles = {"data-plane"})
 @DirtiesContext
-@SpringBootTest(properties = {"twds.instance.workspace-id=f01dab1e-0000-1111-2222-000011112222"})
+@SpringBootTest(properties = {"twds.instance.workspace-id=" + HARDCODED_WORKSPACE_ID})
 class JobServiceDataPlaneTest extends JobServiceTestBase {
 
   @Autowired JobService jobService;
