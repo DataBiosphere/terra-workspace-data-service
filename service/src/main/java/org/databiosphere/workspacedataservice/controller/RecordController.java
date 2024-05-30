@@ -11,6 +11,7 @@ import org.databiosphere.workspacedataservice.service.RecordOrchestratorService;
 import org.databiosphere.workspacedataservice.service.model.AttributeSchema;
 import org.databiosphere.workspacedataservice.service.model.RecordTypeSchema;
 import org.databiosphere.workspacedataservice.shared.model.BatchResponse;
+import org.databiosphere.workspacedataservice.shared.model.CollectionId;
 import org.databiosphere.workspacedataservice.shared.model.RecordQueryResponse;
 import org.databiosphere.workspacedataservice.shared.model.RecordRequest;
 import org.databiosphere.workspacedataservice.shared.model.RecordResponse;
@@ -57,7 +58,7 @@ public class RecordController {
       @RequestBody RecordRequest recordRequest) {
     RecordResponse response =
         recordOrchestratorService.updateSingleRecord(
-            instanceId, version, recordType, recordId, recordRequest);
+            CollectionId.of(instanceId), version, recordType, recordId, recordRequest);
     return new ResponseEntity<>(response, HttpStatus.OK);
   }
 
@@ -68,7 +69,8 @@ public class RecordController {
       @PathVariable("recordType") RecordType recordType,
       @PathVariable("recordId") String recordId) {
     RecordResponse response =
-        recordOrchestratorService.getSingleRecord(instanceId, version, recordType, recordId);
+        recordOrchestratorService.getSingleRecord(
+            CollectionId.of(instanceId), version, recordType, recordId);
     return new ResponseEntity<>(response, HttpStatus.OK);
   }
 
@@ -81,7 +83,8 @@ public class RecordController {
       @RequestParam("records") MultipartFile records)
       throws IOException {
     int recordsModified =
-        recordOrchestratorService.tsvUpload(instanceId, version, recordType, primaryKey, records);
+        recordOrchestratorService.tsvUpload(
+            CollectionId.of(instanceId), version, recordType, primaryKey, records);
     return new ResponseEntity<>(
         new TsvUploadResponse(recordsModified, "Updated " + recordType), HttpStatus.OK);
   }
@@ -92,7 +95,8 @@ public class RecordController {
       @PathVariable("version") String version,
       @PathVariable("recordType") RecordType recordType) {
     StreamingResponseBody responseBody =
-        recordOrchestratorService.streamAllEntities(instanceId, version, recordType);
+        recordOrchestratorService.streamAllEntities(
+            CollectionId.of(instanceId), version, recordType);
     return ResponseEntity.status(HttpStatus.OK)
         .contentType(new MediaType("text", "tab-separated-values"))
         .header(
@@ -107,7 +111,7 @@ public class RecordController {
       @PathVariable("version") String version,
       @Nullable @RequestBody(required = false) SearchRequest searchRequest) {
     return recordOrchestratorService.queryForRecords(
-        instanceId, recordType, version, searchRequest);
+        CollectionId.of(instanceId), recordType, version, searchRequest);
   }
 
   @PutMapping("/{instanceId}/records/{version}/{recordType}/{recordId}")
@@ -119,12 +123,13 @@ public class RecordController {
       @RequestParam(name = "primaryKey", required = false) Optional<String> primaryKey,
       @RequestBody RecordRequest recordRequest) {
     return recordOrchestratorService.upsertSingleRecord(
-        instanceId, version, recordType, recordId, primaryKey, recordRequest);
+        CollectionId.of(instanceId), version, recordType, recordId, primaryKey, recordRequest);
   }
 
   @GetMapping("/instances/{version}")
   public ResponseEntity<List<UUID>> listInstances(@PathVariable("version") String version) {
-    List<UUID> schemaList = collectionService.listCollections(version);
+    List<UUID> schemaList =
+        collectionService.listCollections(version).stream().map(CollectionId::id).toList();
     return new ResponseEntity<>(schemaList, HttpStatus.OK);
   }
 
@@ -138,7 +143,7 @@ public class RecordController {
   @DeleteMapping("/instances/{version}/{instanceId}")
   public ResponseEntity<String> deleteInstance(
       @PathVariable("instanceId") UUID instanceId, @PathVariable("version") String version) {
-    collectionService.deleteCollection(instanceId, version);
+    collectionService.deleteCollection(CollectionId.of(instanceId), version);
     return new ResponseEntity<>(HttpStatus.OK);
   }
 
@@ -149,7 +154,8 @@ public class RecordController {
       @PathVariable("recordType") RecordType recordType,
       @PathVariable("recordId") String recordId) {
     boolean recordFound =
-        recordOrchestratorService.deleteSingleRecord(instanceId, version, recordType, recordId);
+        recordOrchestratorService.deleteSingleRecord(
+            CollectionId.of(instanceId), version, recordType, recordId);
     return recordFound
         ? new ResponseEntity<>(HttpStatus.NO_CONTENT)
         : new ResponseEntity<>(HttpStatus.NOT_FOUND);
@@ -160,7 +166,7 @@ public class RecordController {
       @PathVariable("instanceId") UUID instanceId,
       @PathVariable("v") String version,
       @PathVariable("type") RecordType recordType) {
-    recordOrchestratorService.deleteRecordType(instanceId, version, recordType);
+    recordOrchestratorService.deleteRecordType(CollectionId.of(instanceId), version, recordType);
     return new ResponseEntity<>(HttpStatus.NO_CONTENT);
   }
 
@@ -173,7 +179,7 @@ public class RecordController {
       @RequestBody AttributeSchema newAttributeSchema) {
     Optional<String> optionalNewAttributeName = Optional.ofNullable(newAttributeSchema.name());
     Optional<String> optionalNewDataType = Optional.ofNullable(newAttributeSchema.datatype());
-
+    CollectionId collectionId = CollectionId.of(instanceId);
     if (optionalNewAttributeName.isEmpty() && optionalNewDataType.isEmpty()) {
       throw new ResponseStatusException(
           HttpStatus.BAD_REQUEST, "At least one of name or datatype is required");
@@ -182,17 +188,17 @@ public class RecordController {
     optionalNewAttributeName.ifPresent(
         newAttributeName ->
             recordOrchestratorService.renameAttribute(
-                instanceId, version, recordType, attribute, newAttributeName));
+                collectionId, version, recordType, attribute, newAttributeName));
 
     String finalAttributeName = optionalNewAttributeName.orElse(attribute);
 
     optionalNewDataType.ifPresent(
         newDataType ->
             recordOrchestratorService.updateAttributeDataType(
-                instanceId, version, recordType, finalAttributeName, newDataType));
+                collectionId, version, recordType, finalAttributeName, newDataType));
 
     RecordTypeSchema recordTypeSchema =
-        recordOrchestratorService.describeRecordType(instanceId, version, recordType);
+        recordOrchestratorService.describeRecordType(collectionId, version, recordType);
     AttributeSchema attributeSchema = recordTypeSchema.getAttributeSchema(finalAttributeName);
     return new ResponseEntity<>(attributeSchema, HttpStatus.OK);
   }
@@ -203,7 +209,8 @@ public class RecordController {
       @PathVariable("v") String version,
       @PathVariable("type") RecordType recordType,
       @PathVariable("attribute") String attribute) {
-    recordOrchestratorService.deleteAttribute(instanceId, version, recordType, attribute);
+    recordOrchestratorService.deleteAttribute(
+        CollectionId.of(instanceId), version, recordType, attribute);
     return new ResponseEntity<>(HttpStatus.NO_CONTENT);
   }
 
@@ -213,7 +220,8 @@ public class RecordController {
       @PathVariable("v") String version,
       @PathVariable("type") RecordType recordType) {
     RecordTypeSchema result =
-        recordOrchestratorService.describeRecordType(instanceId, version, recordType);
+        recordOrchestratorService.describeRecordType(
+            CollectionId.of(instanceId), version, recordType);
     return new ResponseEntity<>(result, HttpStatus.OK);
   }
 
@@ -221,7 +229,7 @@ public class RecordController {
   public ResponseEntity<List<RecordTypeSchema>> describeAllRecordTypes(
       @PathVariable("instanceId") UUID instanceId, @PathVariable("v") String version) {
     List<RecordTypeSchema> result =
-        recordOrchestratorService.describeAllRecordTypes(instanceId, version);
+        recordOrchestratorService.describeAllRecordTypes(CollectionId.of(instanceId), version);
     return new ResponseEntity<>(result, HttpStatus.OK);
   }
 
@@ -234,7 +242,8 @@ public class RecordController {
       @RequestParam(name = "primaryKey", required = false) Optional<String> primaryKey,
       InputStream is) {
     int recordsModified =
-        recordOrchestratorService.streamingWrite(instanceId, version, recordType, primaryKey, is);
+        recordOrchestratorService.streamingWrite(
+            CollectionId.of(instanceId), version, recordType, primaryKey, is);
     return new ResponseEntity<>(new BatchResponse(recordsModified, "Huzzah"), HttpStatus.OK);
   }
 }

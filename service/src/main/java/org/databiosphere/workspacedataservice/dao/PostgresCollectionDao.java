@@ -26,7 +26,7 @@ public class PostgresCollectionDao implements CollectionDao {
 
   private final NamedParameterJdbcTemplate namedTemplate;
 
-  @Nullable private UUID workspaceId;
+  @Nullable private WorkspaceId workspaceId;
 
   public PostgresCollectionDao(NamedParameterJdbcTemplate namedTemplate) {
     this.namedTemplate = namedTemplate;
@@ -34,29 +34,32 @@ public class PostgresCollectionDao implements CollectionDao {
 
   @Autowired(required = false) // control plane won't have workspaceId
   void setWorkspaceId(@SingleTenant WorkspaceId workspaceId) {
-    this.workspaceId = workspaceId.id();
+    this.workspaceId = workspaceId;
   }
 
   @Override
-  public boolean collectionSchemaExists(UUID collectionId) {
+  public boolean collectionSchemaExists(CollectionId collectionId) {
     return Boolean.TRUE.equals(
         namedTemplate.queryForObject(
             "select exists(select from sys_wds.collection WHERE id = :collectionId)",
-            new MapSqlParameterSource("collectionId", collectionId),
+            new MapSqlParameterSource("collectionId", collectionId.id()),
             Boolean.class));
   }
 
   @Override
-  public List<UUID> listCollectionSchemas() {
+  public List<CollectionId> listCollectionSchemas() {
     return namedTemplate
         .getJdbcTemplate()
-        .queryForList("select id from sys_wds.collection order by id", UUID.class);
+        .queryForList("select id from sys_wds.collection order by id", UUID.class)
+        .stream()
+        .map(CollectionId::of)
+        .toList();
   }
 
   @Override
   @WriteTransaction
   @SuppressWarnings("squid:S2077") // since collectionId must be a UUID, it is safe to use inline
-  public void createSchema(UUID collectionId) {
+  public void createSchema(CollectionId collectionId) {
     // insert to collection table
     insertCollectionRow(collectionId, /* ignoreConflict= */ false);
     // create the postgres schema
@@ -66,19 +69,19 @@ public class PostgresCollectionDao implements CollectionDao {
   @Override
   @WriteTransaction
   @SuppressWarnings("squid:S2077") // since collectionId must be a UUID, it is safe to use inline
-  public void dropSchema(UUID collectionId) {
+  public void dropSchema(CollectionId collectionId) {
     namedTemplate
         .getJdbcTemplate()
         .update("drop schema " + quote(collectionId.toString()) + " cascade");
     namedTemplate
         .getJdbcTemplate()
-        .update("delete from sys_wds.collection where id = ?", collectionId);
+        .update("delete from sys_wds.collection where id = ?", collectionId.id());
   }
 
   @Override
   @WriteTransaction
   @SuppressWarnings("squid:S2077") // since collectionId must be a UUID, it is safe to use inline
-  public void alterSchema(UUID oldSchemaId, UUID newSchemaId) {
+  public void alterSchema(CollectionId oldSchemaId, CollectionId newSchemaId) {
     if (workspaceId == null) {
       throw new UnsupportedOperationException(
           "$WORKSPACE_ID environment variable is required for alterSchema()");
@@ -96,9 +99,9 @@ public class PostgresCollectionDao implements CollectionDao {
         .getJdbcTemplate()
         .update(
             "update sys_wds.collection set id = ?, workspace_id = ? where id = ?",
-            newSchemaId,
-            workspaceId,
-            oldSchemaId);
+            newSchemaId.id(),
+            workspaceId.id(),
+            oldSchemaId.id());
     // ensure new exists in sys_wds.collection. When this alterSchema() method is called after
     // restoring from a pg_dump,
     // the oldSchema doesn't exist, so is not renamed in the previous statement.
@@ -115,19 +118,20 @@ public class PostgresCollectionDao implements CollectionDao {
     return WorkspaceId.of(workspaceUuid);
   }
 
-  private void insertCollectionRow(UUID collectionId, boolean ignoreConflict) {
+  private void insertCollectionRow(CollectionId collectionId, boolean ignoreConflict) {
     // if workspaceId as configured by the $WORKSPACE_ID is null, use
     // collectionId instead
-    UUID nonNullWorkspaceId = Objects.requireNonNullElse(workspaceId, collectionId);
+    WorkspaceId nonNullWorkspaceId =
+        Objects.requireNonNullElse(workspaceId, WorkspaceId.of(collectionId.id()));
 
     // auto-generate the name for this collection
     String name = collectionId.toString();
-    if (collectionId.equals(nonNullWorkspaceId)) {
+    if (collectionId.id().equals(nonNullWorkspaceId.id())) {
       name = "default";
     }
 
-    MapSqlParameterSource params = new MapSqlParameterSource("id", collectionId);
-    params.addValue("workspace_id", nonNullWorkspaceId);
+    MapSqlParameterSource params = new MapSqlParameterSource("id", collectionId.id());
+    params.addValue("workspace_id", nonNullWorkspaceId.id());
     params.addValue("name", name);
     params.addValue("description", name);
 

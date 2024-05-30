@@ -13,6 +13,7 @@ import org.databiosphere.workspacedataservice.common.TestBase;
 import org.databiosphere.workspacedataservice.dao.CollectionDao;
 import org.databiosphere.workspacedataservice.sam.SamClientFactory;
 import org.databiosphere.workspacedataservice.service.model.exception.AuthorizationException;
+import org.databiosphere.workspacedataservice.shared.model.CollectionId;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
 import org.mockito.Mockito;
@@ -50,12 +51,12 @@ class CollectionServiceNoPermissionSamTest extends TestBase {
     given(mockResourcesApi.resourcePermissionV2(anyString(), anyString(), anyString()))
         .willReturn(false);
 
-    UUID collectionId = UUID.randomUUID();
+    CollectionId collectionId = CollectionId.of(UUID.randomUUID());
     assertThrows(
         AuthorizationException.class,
-        () -> collectionService.createCollection(collectionId, VERSION),
+        () -> collectionService.createCollection(collectionId.id(), VERSION),
         "createCollection should throw if caller does not have write permission to the workspace resource in Sam");
-    List<UUID> allCollections = collectionService.listCollections(VERSION);
+    List<CollectionId> allCollections = collectionService.listCollections(VERSION);
     assertFalse(allCollections.contains(collectionId), "should not have created the collection.");
   }
 
@@ -69,7 +70,7 @@ class CollectionServiceNoPermissionSamTest extends TestBase {
     given(mockResourcesApi.resourcePermissionV2(anyString(), anyString(), anyString()))
         .willReturn(false);
 
-    UUID collectionId = UUID.randomUUID();
+    CollectionId collectionId = CollectionId.of(UUID.randomUUID());
     // create the collection (directly in the db, bypassing Sam)
     collectionDao.createSchema(collectionId);
 
@@ -77,7 +78,7 @@ class CollectionServiceNoPermissionSamTest extends TestBase {
         AuthorizationException.class,
         () -> collectionService.deleteCollection(collectionId, VERSION),
         "deleteCollection should throw if caller does not have write permission to the workspace resource in Sam");
-    List<UUID> allCollections = collectionService.listCollections(VERSION);
+    List<CollectionId> allCollections = collectionService.listCollections(VERSION);
     assertTrue(allCollections.contains(collectionId), "should not have deleted the collection.");
   }
 }

@@ -12,6 +12,7 @@ import java.util.UUID;
 import org.databiosphere.workspacedataservice.common.TestBase;
 import org.databiosphere.workspacedataservice.dao.CollectionDao;
 import org.databiosphere.workspacedataservice.dao.RecordDao;
+import org.databiosphere.workspacedataservice.shared.model.CollectionId;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -36,7 +37,8 @@ class DataRepoDaoTest extends TestBase {
 
   final RepositoryApi mockRepositoryApi = Mockito.mock(RepositoryApi.class);
 
-  private static final UUID COLLECTION = UUID.fromString("111e9999-e89b-12d3-a456-426614174000");
+  private static final CollectionId COLLECTION =
+      CollectionId.fromString("111e9999-e89b-12d3-a456-426614174000");
 
   @BeforeEach
   void setUp() {

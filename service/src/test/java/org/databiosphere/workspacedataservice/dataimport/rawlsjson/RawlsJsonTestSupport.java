@@ -20,6 +20,7 @@ import org.databiosphere.workspacedataservice.generated.ImportRequestServerModel
 import org.databiosphere.workspacedataservice.generated.ImportRequestServerModel.TypeEnum;
 import org.databiosphere.workspacedataservice.pubsub.PubSub;
 import org.databiosphere.workspacedataservice.service.ImportService;
+import org.databiosphere.workspacedataservice.shared.model.CollectionId;
 import org.databiosphere.workspacedataservice.storage.GcsStorage;
 import org.quartz.JobDetail;
 import org.quartz.JobExecutionContext;
@@ -42,12 +43,13 @@ public class RawlsJsonTestSupport {
         dataImportProperties, observations, jobDao, importDetailsRetriever, storage, pubSub);
   }
 
-  static JobExecutionContext stubJobContext(UUID jobId, URI resourceUri, UUID collectionId) {
+  static JobExecutionContext stubJobContext(
+      UUID jobId, URI resourceUri, CollectionId collectionId) {
     return stubJobContext(jobId, resourceUri, collectionId, /* isUpsert= */ false);
   }
 
   static JobExecutionContext stubJobContext(
-      UUID jobId, URI resourceUri, UUID collectionId, boolean isUpsert) {
+      UUID jobId, URI resourceUri, CollectionId collectionId, boolean isUpsert) {
     JobExecutionContext mockContext = mock(JobExecutionContext.class);
 
     ImportJobInput importJobInput =

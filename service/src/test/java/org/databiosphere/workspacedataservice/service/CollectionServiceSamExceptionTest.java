@@ -19,6 +19,7 @@ import org.databiosphere.workspacedataservice.sam.SamClientFactory;
 import org.databiosphere.workspacedataservice.service.model.exception.AuthenticationException;
 import org.databiosphere.workspacedataservice.service.model.exception.AuthorizationException;
 import org.databiosphere.workspacedataservice.service.model.exception.RestException;
+import org.databiosphere.workspacedataservice.shared.model.CollectionId;
 import org.databiosphere.workspacedataservice.shared.model.WorkspaceId;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -81,7 +82,7 @@ class CollectionServiceSamExceptionTest extends TestBase {
   @AfterEach
   void tearDown() {
     // clean up any collections left in the db
-    List<UUID> allCollections = collectionDao.listCollectionSchemas();
+    List<CollectionId> allCollections = collectionDao.listCollectionSchemas();
     allCollections.forEach(collectionId -> collectionDao.dropSchema(collectionId));
   }
 
@@ -90,7 +91,7 @@ class CollectionServiceSamExceptionTest extends TestBase {
   @Test
   void testAuthenticationExceptionOnPermissionCheck() throws ApiException {
     int thrownStatusCode = 401;
-    UUID collectionId = UUID.randomUUID();
+    CollectionId collectionId = CollectionId.of(UUID.randomUUID());
 
     // Setup: the call to check permissions in Sam throws an ApiException
     given(
@@ -108,7 +109,7 @@ class CollectionServiceSamExceptionTest extends TestBase {
   @Test
   void testAuthorizationExceptionOnPermissionCheck() throws ApiException {
     int thrownStatusCode = 403;
-    UUID collectionId = UUID.randomUUID();
+    CollectionId collectionId = CollectionId.of(UUID.randomUUID());
 
     // Setup: the call to check permissions in Sam throws an ApiException
     given(
@@ -126,7 +127,7 @@ class CollectionServiceSamExceptionTest extends TestBase {
           "if Sam throws ApiException({0}) on resourcePermissionV2, createCollection and deleteCollection should throw RestException({0})")
   @ValueSource(ints = {400, 404, 409, 429, 500, 502, 503})
   void testStandardSamExceptionOnPermissionCheck(int thrownStatusCode) throws ApiException {
-    UUID collectionId = UUID.randomUUID();
+    CollectionId collectionId = CollectionId.of(UUID.randomUUID());
 
     // Setup: the call to check permissions in Sam throws an ApiException
     given(
@@ -144,7 +145,7 @@ class CollectionServiceSamExceptionTest extends TestBase {
           "if Sam throws ApiException({0}) on resourcePermissionV2, createCollection and deleteCollection should throw RestException(500)")
   @ValueSource(ints = {-1, 0, 8080})
   void testNonstandardSamExceptionOnPermissionCheck(int thrownStatusCode) throws ApiException {
-    UUID collectionId = UUID.randomUUID();
+    CollectionId collectionId = CollectionId.of(UUID.randomUUID());
 
     // Setup: the call to check permissions in Sam throws an ApiException
     given(
@@ -167,7 +168,7 @@ class CollectionServiceSamExceptionTest extends TestBase {
           InvocationTargetException,
           InstantiationException,
           IllegalAccessException {
-    UUID collectionId = UUID.randomUUID();
+    CollectionId collectionId = CollectionId.of(UUID.randomUUID());
 
     Constructor<Throwable> ctor = clazz.getConstructor(String.class);
     Throwable toThrow = ctor.newInstance("intentional exception for unit test: " + clazz.getName());
@@ -183,30 +184,30 @@ class CollectionServiceSamExceptionTest extends TestBase {
 
   // implementation of tests that expect AuthenticationException or AuthorizationException
   private void doAuthnCreateAndDeleteTest(
-      UUID collectionId, Class<? extends Exception> expectedExceptionClass) {
+      CollectionId collectionId, Class<? extends Exception> expectedExceptionClass) {
     doAuthnCreateTest(collectionId, expectedExceptionClass);
     doAuthnDeleteTest(collectionId, expectedExceptionClass);
   }
 
   private void doAuthnCreateTest(
-      UUID collectionId, Class<? extends Exception> expectedExceptionClass) {
+      CollectionId collectionId, Class<? extends Exception> expectedExceptionClass) {
 
     // attempt to create the collection, which should fail
     assertThrows(
         expectedExceptionClass,
-        () -> collectionService.createCollection(collectionId, VERSION),
+        () -> collectionService.createCollection(collectionId.id(), VERSION),
         "createCollection should throw if caller does not have write permission to the workspace resource in Sam");
-    List<UUID> allCollections = collectionService.listCollections(VERSION);
+    List<CollectionId> allCollections = collectionService.listCollections(VERSION);
     assertFalse(
         allCollections.contains(collectionId),
         "CollectionService.createCollection should not have created the collection.");
   }
 
   private void doAuthnDeleteTest(
-      UUID collectionId, Class<? extends Exception> expectedExceptionClass) {
+      CollectionId collectionId, Class<? extends Exception> expectedExceptionClass) {
     // create the collection (directly in the db, bypassing Sam)
     collectionDao.createSchema(collectionId);
-    List<UUID> allCollections = collectionService.listCollections(VERSION);
+    List<CollectionId> allCollections = collectionService.listCollections(VERSION);
     assertTrue(
         allCollections.contains(collectionId), "unit test should have created the collections.");
 
@@ -222,30 +223,30 @@ class CollectionServiceSamExceptionTest extends TestBase {
   }
 
   // implementation of tests that expect RestException
-  private void doSamCreateAndDeleteTest(UUID collectionId, int expectedSamExceptionCode) {
+  private void doSamCreateAndDeleteTest(CollectionId collectionId, int expectedSamExceptionCode) {
     doSamCreateTest(collectionId, expectedSamExceptionCode);
     doSamDeleteTest(collectionId, expectedSamExceptionCode);
   }
 
-  private void doSamCreateTest(UUID collectionId, int expectedSamExceptionCode) {
+  private void doSamCreateTest(CollectionId collectionId, int expectedSamExceptionCode) {
     // attempt to create the collection, which should fail
     RestException samException =
         assertThrows(
             RestException.class,
-            () -> collectionService.createCollection(collectionId, VERSION),
+            () -> collectionService.createCollection(collectionId.id(), VERSION),
             "createCollection should throw if caller does not have write permission to the workspace resource in Sam");
     assertEquals(
         expectedSamExceptionCode,
         samException.getStatusCode().value(),
         "RestException from createCollection should have same status code as the thrown ApiException");
-    List<UUID> allCollections = collectionService.listCollections(VERSION);
+    List<CollectionId> allCollections = collectionService.listCollections(VERSION);
     assertFalse(allCollections.contains(collectionId), "should not have created the collections.");
   }
 
-  private void doSamDeleteTest(UUID collectionId, int expectedSamExceptionCode) {
+  private void doSamDeleteTest(CollectionId collectionId, int expectedSamExceptionCode) {
     // bypass Sam and create the collection directly in the db
     collectionDao.createSchema(collectionId);
-    List<UUID> allCollections = collectionService.listCollections(VERSION);
+    List<CollectionId> allCollections = collectionService.listCollections(VERSION);
     assertTrue(
         allCollections.contains(collectionId), "unit test should have created the collections.");
 

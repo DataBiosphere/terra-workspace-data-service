@@ -18,6 +18,7 @@ import org.databiosphere.workspacedataservice.annotations.WithTestObservationReg
 import org.databiosphere.workspacedataservice.common.TestBase;
 import org.databiosphere.workspacedataservice.dao.RecordDao;
 import org.databiosphere.workspacedataservice.service.model.DataTypeMapping;
+import org.databiosphere.workspacedataservice.shared.model.CollectionId;
 import org.databiosphere.workspacedataservice.shared.model.RecordAttributes;
 import org.databiosphere.workspacedataservice.shared.model.RecordRequest;
 import org.databiosphere.workspacedataservice.shared.model.RecordType;
@@ -40,12 +41,12 @@ class RecordServiceTest extends TestBase {
   @Autowired RecordDao recordDao;
   @Autowired TestObservationRegistry observationRegistry;
 
-  private UUID collectionId;
+  private CollectionId collectionId;
 
   @BeforeEach
   void beforeEach() {
-    collectionId = UUID.randomUUID();
-    collectionService.createCollection(collectionId, "v0.2");
+    collectionId = CollectionId.of(UUID.randomUUID());
+    collectionService.createCollection(collectionId.id(), "v0.2");
   }
 
   @AfterEach
@@ -61,7 +62,7 @@ class RecordServiceTest extends TestBase {
     // insert a simple record; this will create "myAttr" as numeric
     RecordType recordType = RecordType.valueOf("myType");
     recordService.upsertSingleRecord(
-        collectionId,
+        collectionId.id(),
         recordType,
         "111",
         Optional.of("pk"),
@@ -70,11 +71,11 @@ class RecordServiceTest extends TestBase {
     // verify schema
     assertEquals(
         Map.of("pk", DataTypeMapping.STRING, "myAttr", DataTypeMapping.NUMBER),
-        recordDao.getExistingTableSchema(collectionId, recordType));
+        recordDao.getExistingTableSchema(collectionId.id(), recordType));
 
     // insert another record, which will update the "myAttr" to be a string
     recordService.upsertSingleRecord(
-        collectionId,
+        collectionId.id(),
         recordType,
         "111",
         Optional.of("pk"),
@@ -83,7 +84,7 @@ class RecordServiceTest extends TestBase {
     // verify schema
     assertEquals(
         Map.of("pk", DataTypeMapping.STRING, "myAttr", DataTypeMapping.STRING),
-        recordDao.getExistingTableSchema(collectionId, recordType));
+        recordDao.getExistingTableSchema(collectionId.id(), recordType));
 
     // we should have created an observation
     assertThat(observationRegistry)

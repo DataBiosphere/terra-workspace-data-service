@@ -21,6 +21,7 @@ import org.databiosphere.workspacedataservice.service.model.exception.MissingObj
 import org.databiosphere.workspacedataservice.shared.model.BackupResponse;
 import org.databiosphere.workspacedataservice.shared.model.BackupRestoreRequest;
 import org.databiosphere.workspacedataservice.shared.model.CloneResponse;
+import org.databiosphere.workspacedataservice.shared.model.CollectionId;
 import org.databiosphere.workspacedataservice.shared.model.RestoreResponse;
 import org.databiosphere.workspacedataservice.shared.model.WorkspaceId;
 import org.databiosphere.workspacedataservice.shared.model.job.Job;
@@ -201,7 +202,8 @@ public class BackupRestoreService {
       */
 
       // rename workspace schema from source to dest
-      collectionDao.alterSchema(UUID.fromString(sourceWorkspaceId), workspaceId.id());
+      collectionDao.alterSchema(
+          CollectionId.fromString(sourceWorkspaceId), CollectionId.of(workspaceId.id()));
 
       activityLogger.saveEventForCurrentUser(
           user -> user.restored().backup().withId(backupFileName));
@@ -255,7 +257,7 @@ public class BackupRestoreService {
       command.put(pgDumpPath, null);
       command.put("-b", null);
       // Grab all workspace collections/schemas in wds
-      for (UUID id : collectionDao.listCollectionSchemas()) {
+      for (CollectionId id : collectionDao.listCollectionSchemas()) {
         command.put("-n", id.toString());
       }
     } else {

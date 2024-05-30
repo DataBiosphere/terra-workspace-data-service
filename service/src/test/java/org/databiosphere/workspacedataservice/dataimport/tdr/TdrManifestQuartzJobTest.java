@@ -269,7 +269,7 @@ class TdrManifestQuartzJobTest extends TestBase {
 
     // set up the job
     TdrManifestQuartzJob tdrManifestQuartzJob = testSupport.buildTdrManifestQuartzJob();
-    JobExecutionContext mockContext = stubJobContext(jobId, v2fManifestResource, collectionId.id());
+    JobExecutionContext mockContext = stubJobContext(jobId, v2fManifestResource, collectionId);
 
     // ACT
     // execute the job
@@ -305,7 +305,7 @@ class TdrManifestQuartzJobTest extends TestBase {
     // set up the job
     TdrManifestQuartzJob tdrManifestQuartzJob = testSupport.buildTdrManifestQuartzJob();
     JobExecutionContext mockContext =
-        stubJobContext(jobId, v2fManifestResource, collectionId.id(), /* syncPermissions= */ true);
+        stubJobContext(jobId, v2fManifestResource, collectionId, /* syncPermissions= */ true);
 
     // ACT
     // execute the job
@@ -347,7 +347,7 @@ class TdrManifestQuartzJobTest extends TestBase {
 
     // Set up the job
     TdrManifestQuartzJob tdrManifestQuartzJob = testSupport.buildTdrManifestQuartzJob();
-    JobExecutionContext mockContext = stubJobContext(jobId, v2fManifestResource, collectionId.id());
+    JobExecutionContext mockContext = stubJobContext(jobId, v2fManifestResource, collectionId);
 
     // Act
     // Execute the job

@@ -51,7 +51,7 @@ public class CollectionService {
     this.workspaceId = workspaceId;
   }
 
-  public List<UUID> listCollections(String version) {
+  public List<CollectionId> listCollections(String version) {
     validateVersion(version);
     return collectionDao.listCollectionSchemas();
   }
@@ -90,24 +90,24 @@ public class CollectionService {
       throw new AuthorizationException("Caller does not have permission to create collection.");
     }
 
-    if (collectionDao.collectionSchemaExists(collectionId.id())) {
+    if (collectionDao.collectionSchemaExists(collectionId)) {
       throw new ResponseStatusException(HttpStatus.CONFLICT, "This collection already exists");
     }
 
     // create collection schema in Postgres
     // TODO: this needs to pass the workspaceId argument so the collection is created correctly
-    collectionDao.createSchema(collectionId.id());
+    collectionDao.createSchema(collectionId);
 
     activityLogger.saveEventForCurrentUser(
         user -> user.created().collection().withUuid(collectionId.id()));
   }
 
-  public void deleteCollection(UUID collectionId, String version) {
+  public void deleteCollection(CollectionId collectionId, String version) {
     validateVersion(version);
     validateCollection(collectionId);
 
     // check that the current user has permission to delete the Sam resource
-    if (!canDeleteCollection(CollectionId.of(collectionId))) {
+    if (!canDeleteCollection(collectionId)) {
       throw new AuthorizationException("Caller does not have permission to delete collection.");
     }
 
@@ -115,10 +115,10 @@ public class CollectionService {
     collectionDao.dropSchema(collectionId);
 
     activityLogger.saveEventForCurrentUser(
-        user -> user.deleted().collection().withUuid(collectionId));
+        user -> user.deleted().collection().withUuid(collectionId.id()));
   }
 
-  public void validateCollection(UUID collectionId) {
+  public void validateCollection(CollectionId collectionId) {
     // if this deployment allows virtual collections, there is nothing to validate
     if (tenancyProperties.getAllowVirtualCollections()) {
       return;

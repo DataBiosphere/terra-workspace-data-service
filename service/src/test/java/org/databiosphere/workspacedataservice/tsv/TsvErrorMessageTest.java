@@ -12,6 +12,7 @@ import org.databiosphere.workspacedataservice.common.TestBase;
 import org.databiosphere.workspacedataservice.service.CollectionService;
 import org.databiosphere.workspacedataservice.service.RecordOrchestratorService;
 import org.databiosphere.workspacedataservice.service.model.exception.InvalidTsvException;
+import org.databiosphere.workspacedataservice.shared.model.CollectionId;
 import org.databiosphere.workspacedataservice.shared.model.RecordType;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -37,20 +38,20 @@ class TsvErrorMessageTest extends TestBase {
   @Autowired CollectionService collectionService;
   @Autowired RecordOrchestratorService recordOrchestratorService;
 
-  private UUID collectionId;
+  private CollectionId collectionId;
 
   private static final String VERSION = "v0.2";
 
   @BeforeEach
   void setUp() {
-    collectionId = UUID.randomUUID();
-    collectionService.createCollection(collectionId, VERSION);
+    collectionId = CollectionId.of(UUID.randomUUID());
+    collectionService.createCollection(collectionId.id(), VERSION);
   }
 
   @AfterEach
   void tearDown() {
-    List<UUID> allCollections = collectionService.listCollections(VERSION);
-    for (UUID id : allCollections) {
+    List<CollectionId> allCollections = collectionService.listCollections(VERSION);
+    for (CollectionId id : allCollections) {
       collectionService.deleteCollection(id, VERSION);
     }
   }

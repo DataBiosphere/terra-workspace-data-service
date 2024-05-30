@@ -15,6 +15,7 @@ import java.util.concurrent.locks.Lock;
 import org.databiosphere.workspacedataservice.annotations.SingleTenant;
 import org.databiosphere.workspacedataservice.common.TestBase;
 import org.databiosphere.workspacedataservice.dao.*;
+import org.databiosphere.workspacedataservice.shared.model.CollectionId;
 import org.databiosphere.workspacedataservice.shared.model.WorkspaceId;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -62,7 +63,7 @@ class CollectionInitializerBeanTest extends TestBase {
   @AfterEach
   void tearDown() {
     // clean up any collections left in the db
-    List<UUID> allCollections = collectionDao.listCollectionSchemas();
+    List<CollectionId> allCollections = collectionDao.listCollectionSchemas();
     allCollections.forEach(collectionId -> collectionDao.dropSchema(collectionId));
   }
 
@@ -177,7 +178,7 @@ class CollectionInitializerBeanTest extends TestBase {
     assertFalse(cloneMode);
   }
 
-  private UUID collectionIdMatchingWorkspaceId() {
-    return workspaceId.id();
+  private CollectionId collectionIdMatchingWorkspaceId() {
+    return CollectionId.of(workspaceId.id());
   }
 }

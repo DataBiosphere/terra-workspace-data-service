@@ -12,7 +12,6 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
-import java.util.UUID;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.databiosphere.workspacedataservice.common.TestBase;
@@ -25,6 +24,7 @@ import org.databiosphere.workspacedataservice.service.model.exception.ConflictEx
 import org.databiosphere.workspacedataservice.service.model.exception.ConflictingPrimaryKeysException;
 import org.databiosphere.workspacedataservice.service.model.exception.MissingObjectException;
 import org.databiosphere.workspacedataservice.service.model.exception.ValidationException;
+import org.databiosphere.workspacedataservice.shared.model.CollectionId;
 import org.databiosphere.workspacedataservice.shared.model.RecordAttributes;
 import org.databiosphere.workspacedataservice.shared.model.RecordQueryResponse;
 import org.databiosphere.workspacedataservice.shared.model.RecordRequest;
@@ -52,7 +52,7 @@ class RecordOrchestratorServiceTest extends TestBase {
   @Autowired private CollectionDao collectionDao;
   @Autowired private RecordOrchestratorService recordOrchestratorService;
 
-  private static final UUID COLLECTION = UUID.fromString(HARDCODED_WORKSPACE_ID);
+  private static final CollectionId COLLECTION = CollectionId.fromString(HARDCODED_WORKSPACE_ID);
   private static final RecordType TEST_TYPE = RecordType.valueOf("test");
 
   private static final String RECORD_ID = "aNewRecord";

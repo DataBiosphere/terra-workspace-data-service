@@ -12,6 +12,7 @@ import java.util.UUID;
 import org.databiosphere.workspacedataservice.dao.CollectionDao;
 import org.databiosphere.workspacedataservice.dao.RecordDao;
 import org.databiosphere.workspacedataservice.service.RecordOrchestratorService;
+import org.databiosphere.workspacedataservice.shared.model.CollectionId;
 import org.databiosphere.workspacedataservice.shared.model.RecordAttributes;
 import org.databiosphere.workspacedataservice.shared.model.RecordQueryResponse;
 import org.databiosphere.workspacedataservice.shared.model.RecordRequest;
@@ -30,7 +31,7 @@ import org.springframework.test.web.servlet.MvcResult;
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class RecordControllerSearchFilterTest extends MockMvcTestBase {
 
-  private final UUID COLLECTION_ID = UUID.randomUUID();
+  private final CollectionId COLLECTION_ID = CollectionId.of(UUID.randomUUID());
 
   private static final String VERSION = "v0.2";
   private static final RecordType RECTYPE = RecordType.valueOf("mytype");

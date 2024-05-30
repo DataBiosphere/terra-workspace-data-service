@@ -7,6 +7,7 @@ import org.databiosphere.workspacedataservice.generated.GenericJobServerModel;
 import org.databiosphere.workspacedataservice.generated.ImportApi;
 import org.databiosphere.workspacedataservice.generated.ImportRequestServerModel;
 import org.databiosphere.workspacedataservice.service.ImportService;
+import org.databiosphere.workspacedataservice.shared.model.CollectionId;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.RestController;
@@ -24,7 +25,8 @@ public class ImportController implements ImportApi {
   @Override
   public ResponseEntity<GenericJobServerModel> importV1(
       UUID instanceUuid, ImportRequestServerModel importRequest) {
-    GenericJobServerModel importJob = importService.createImport(instanceUuid, importRequest);
+    GenericJobServerModel importJob =
+        importService.createImport(CollectionId.of(instanceUuid), importRequest);
     return new ResponseEntity<>(importJob, HttpStatus.ACCEPTED);
   }
 }

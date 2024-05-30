@@ -14,6 +14,7 @@ import org.databiosphere.workspacedataservice.service.model.exception.RestExcept
 import org.databiosphere.workspacedataservice.shared.model.CloneResponse;
 import org.databiosphere.workspacedataservice.shared.model.CloneStatus;
 import org.databiosphere.workspacedataservice.shared.model.CloneTable;
+import org.databiosphere.workspacedataservice.shared.model.CollectionId;
 import org.databiosphere.workspacedataservice.shared.model.WorkspaceId;
 import org.databiosphere.workspacedataservice.shared.model.job.Job;
 import org.databiosphere.workspacedataservice.shared.model.job.JobInput;
@@ -154,7 +155,8 @@ public class CollectionInitializerBean {
       // If there's a clone entry and no default schema, another replica errored before completing.
       // If there's a clone entry and a default schema there's nothing for us to do here.
       if (cloneDao.cloneExistsForWorkspace((UUID.fromString(sourceWorkspaceId)))) {
-        boolean collectionSchemaExists = collectionDao.collectionSchemaExists(workspaceId.id());
+        boolean collectionSchemaExists =
+            collectionDao.collectionSchemaExists(CollectionId.of(workspaceId.id()));
         LOGGER.info(
             "Previous clone entry found. Collection schema exists: {}.", collectionSchemaExists);
         return collectionSchemaExists;
@@ -302,7 +304,7 @@ public class CollectionInitializerBean {
   */
   private void initializeDefaultCollection() {
     try {
-      UUID collectionId = workspaceId.id();
+      CollectionId collectionId = CollectionId.of(workspaceId.id());
 
       if (!collectionDao.collectionSchemaExists(collectionId)) {
         collectionDao.createSchema(collectionId);

@@ -18,6 +18,7 @@ import org.databiosphere.workspacedataservice.generated.ImportRequestServerModel
 import org.databiosphere.workspacedataservice.pubsub.PubSub;
 import org.databiosphere.workspacedataservice.sam.MockSamUsersApi;
 import org.databiosphere.workspacedataservice.service.ImportService;
+import org.databiosphere.workspacedataservice.shared.model.CollectionId;
 import org.databiosphere.workspacedataservice.storage.GcsStorage;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -66,11 +67,11 @@ class RawlsJsonQuartzJobControlPlaneE2ETest {
   /** ArgumentCaptor for the message passed to {@link PubSub#publishSync(Map)}. */
   @Captor private ArgumentCaptor<Map<String, String>> pubSubMessageCaptor;
 
-  private UUID collectionId;
+  private CollectionId collectionId;
 
   @BeforeEach
   void setup() {
-    collectionId = UUID.randomUUID();
+    collectionId = CollectionId.of(UUID.randomUUID());
   }
 
   @AfterEach

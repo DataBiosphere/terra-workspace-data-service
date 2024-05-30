@@ -6,7 +6,6 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.BDDMockito.given;
 
-import java.util.UUID;
 import org.broadinstitute.dsde.workbench.client.sam.ApiException;
 import org.broadinstitute.dsde.workbench.client.sam.api.ResourcesApi;
 import org.databiosphere.workspacedataservice.common.TestBase;
@@ -14,6 +13,7 @@ import org.databiosphere.workspacedataservice.dao.CollectionDao;
 import org.databiosphere.workspacedataservice.sam.SamClientFactory;
 import org.databiosphere.workspacedataservice.service.model.exception.AuthorizationException;
 import org.databiosphere.workspacedataservice.service.model.exception.RestException;
+import org.databiosphere.workspacedataservice.shared.model.CollectionId;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -44,7 +44,7 @@ class RecordOrchestratorSamTest extends TestBase {
   // to mock it manually
   final ResourcesApi mockResourcesApi = Mockito.mock(ResourcesApi.class);
 
-  private static final UUID COLLECTION = UUID.fromString(HARDCODED_WORKSPACE_ID);
+  private static final CollectionId COLLECTION = CollectionId.fromString(HARDCODED_WORKSPACE_ID);
 
   @BeforeEach
   void setUp() {

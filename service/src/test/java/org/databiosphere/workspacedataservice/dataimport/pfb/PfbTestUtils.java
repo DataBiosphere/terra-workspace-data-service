@@ -28,6 +28,7 @@ import org.databiosphere.workspacedataservice.dataimport.ImportJobInput;
 import org.databiosphere.workspacedataservice.generated.ImportRequestServerModel;
 import org.databiosphere.workspacedataservice.generated.ImportRequestServerModel.TypeEnum;
 import org.databiosphere.workspacedataservice.service.ImportService;
+import org.databiosphere.workspacedataservice.shared.model.CollectionId;
 import org.mockito.Mockito;
 import org.quartz.JobDetail;
 import org.quartz.JobExecutionContext;
@@ -156,12 +157,13 @@ public class PfbTestUtils {
     return dataFileStream;
   }
 
-  public static JobExecutionContext stubJobContext(UUID jobId, Resource resource, UUID collectionId)
-      throws IOException {
+  public static JobExecutionContext stubJobContext(
+      UUID jobId, Resource resource, CollectionId collectionId) throws IOException {
     return stubJobContext(jobId, resource.getURI(), collectionId);
   }
 
-  public static JobExecutionContext stubJobContext(UUID jobId, URI resourceUri, UUID collectionId) {
+  public static JobExecutionContext stubJobContext(
+      UUID jobId, URI resourceUri, CollectionId collectionId) {
     JobExecutionContext mockContext = mock(JobExecutionContext.class);
 
     ImportJobInput importJobInput =

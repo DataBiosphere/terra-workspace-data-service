@@ -80,12 +80,12 @@ class PfbQuartzJobDataPlaneE2ETest {
   @Value("classpath:avro/cyclical.avro")
   Resource cyclicalAvroResource;
 
-  UUID collectionId;
+  CollectionId collectionId;
 
   @BeforeEach
   void beforeEach() {
-    collectionId = UUID.randomUUID();
-    collectionService.createCollection(workspaceId, CollectionId.of(collectionId), "v0.2");
+    collectionId = CollectionId.of(UUID.randomUUID());
+    collectionService.createCollection(workspaceId, collectionId, "v0.2");
     // stub out WSM to report no snapshots already linked to this workspace
     when(wsmDao.enumerateDataRepoSnapshotReferences(any(), anyInt(), anyInt()))
         .thenReturn(new ResourceList());

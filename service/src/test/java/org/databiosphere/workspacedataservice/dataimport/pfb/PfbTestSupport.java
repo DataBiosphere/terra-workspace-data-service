@@ -17,6 +17,7 @@ import org.databiosphere.workspacedataservice.recordsink.RecordSinkFactory;
 import org.databiosphere.workspacedataservice.recordsource.RecordSourceFactory;
 import org.databiosphere.workspacedataservice.service.BatchWriteService;
 import org.databiosphere.workspacedataservice.service.ImportService;
+import org.databiosphere.workspacedataservice.shared.model.CollectionId;
 import org.quartz.JobExecutionContext;
 import org.quartz.JobExecutionException;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -38,7 +39,7 @@ class PfbTestSupport {
   @Autowired private DataImportProperties dataImportProperties;
   @Autowired private ImportDetailsRetriever importDetailsRetriever;
 
-  UUID executePfbImportQuartzJob(UUID collectionId, Resource pfbResource)
+  UUID executePfbImportQuartzJob(CollectionId collectionId, Resource pfbResource)
       throws IOException, JobExecutionException {
     ImportRequestServerModel importRequest =
         new ImportRequestServerModel(TypeEnum.PFB, pfbResource.getURI());

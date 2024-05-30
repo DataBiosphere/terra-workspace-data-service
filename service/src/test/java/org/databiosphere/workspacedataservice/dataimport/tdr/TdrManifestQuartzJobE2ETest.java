@@ -28,6 +28,7 @@ import org.databiosphere.workspacedataservice.service.RecordOrchestratorService;
 import org.databiosphere.workspacedataservice.service.model.AttributeSchema;
 import org.databiosphere.workspacedataservice.service.model.DataTypeMapping;
 import org.databiosphere.workspacedataservice.service.model.RecordTypeSchema;
+import org.databiosphere.workspacedataservice.shared.model.CollectionId;
 import org.databiosphere.workspacedataservice.shared.model.RecordResponse;
 import org.databiosphere.workspacedataservice.shared.model.RecordType;
 import org.databiosphere.workspacedataservice.workspacemanager.WorkspaceManagerDao;
@@ -76,12 +77,12 @@ class TdrManifestQuartzJobE2ETest extends TestBase {
   @Value("classpath:tdrmanifest/with-entity-reference-lists.json")
   Resource withEntityReferenceListsResource;
 
-  UUID collectionId;
+  CollectionId collectionId;
 
   @BeforeEach
   void beforeEach() {
-    collectionId = UUID.randomUUID();
-    collectionService.createCollection(collectionId, "v0.2");
+    collectionId = CollectionId.of(UUID.randomUUID());
+    collectionService.createCollection(collectionId.id(), "v0.2");
   }
 
   @AfterEach

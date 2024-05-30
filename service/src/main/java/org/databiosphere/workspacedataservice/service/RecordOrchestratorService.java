@@ -10,7 +10,6 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.UUID;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.databiosphere.workspacedataservice.activitylog.ActivityLogger;
@@ -85,7 +84,7 @@ public class RecordOrchestratorService { // TODO give me a better name
   }
 
   public RecordResponse updateSingleRecord(
-      UUID collectionId,
+      CollectionId collectionId,
       String version,
       RecordType recordType,
       String recordId,
@@ -93,19 +92,18 @@ public class RecordOrchestratorService { // TODO give me a better name
     validateAndPermissions(collectionId, version);
     checkRecordTypeExists(collectionId, recordType);
     RecordResponse response =
-        recordService.updateSingleRecord(collectionId, recordType, recordId, recordRequest);
+        recordService.updateSingleRecord(collectionId.id(), recordType, recordId, recordRequest);
     activityLogger.saveEventForCurrentUser(
         user -> user.updated().record().withRecordType(recordType).withId(recordId));
     return response;
   }
 
-  public void validateAndPermissions(UUID collectionId, String version) {
+  public void validateAndPermissions(CollectionId collectionId, String version) {
     validateVersion(version);
     collectionService.validateCollection(collectionId);
 
     // check that the caller has write permissions on the workspace associated with the collectionId
-    boolean hasWriteWorkspacePermission =
-        collectionService.canWriteCollection(CollectionId.of(collectionId));
+    boolean hasWriteWorkspacePermission = collectionService.canWriteCollection(collectionId);
     LOGGER.debug("hasWriteWorkspacePermission? {}", hasWriteWorkspacePermission);
 
     if (!hasWriteWorkspacePermission) {
@@ -115,34 +113,34 @@ public class RecordOrchestratorService { // TODO give me a better name
 
   @ReadTransaction
   public RecordResponse getSingleRecord(
-      UUID collectionId, String version, RecordType recordType, String recordId) {
+      CollectionId collectionId, String version, RecordType recordType, String recordId) {
     validateVersion(version);
     collectionService.validateCollection(collectionId);
     checkRecordTypeExists(collectionId, recordType);
     Record result =
         recordDao
-            .getSingleRecord(collectionId, recordType, recordId)
+            .getSingleRecord(collectionId.id(), recordType, recordId)
             .orElseThrow(() -> new MissingObjectException("Record"));
     return new RecordResponse(recordId, recordType, result.getAttributes());
   }
 
   // N.B. transaction annotated in batchWriteService.batchWrite
   public int tsvUpload(
-      UUID collectionId,
+      CollectionId collectionId,
       String version,
       RecordType recordType,
       Optional<String> primaryKey,
       MultipartFile records)
       throws IOException, DataImportException {
     validateAndPermissions(collectionId, version);
-    if (recordDao.recordTypeExists(collectionId, recordType)) {
+    if (recordDao.recordTypeExists(collectionId.id(), recordType)) {
       primaryKey =
-          Optional.of(recordService.validatePrimaryKey(collectionId, recordType, primaryKey));
+          Optional.of(recordService.validatePrimaryKey(collectionId.id(), recordType, primaryKey));
     }
 
     TsvRecordSource recordSource =
         recordSourceFactory.forTsv(records.getInputStream(), recordType, primaryKey);
-    try (RecordSink recordSink = recordSinkFactory.buildRecordSink(CollectionId.of(collectionId))) {
+    try (RecordSink recordSink = recordSinkFactory.buildRecordSink(collectionId)) {
       BatchWriteResult result =
           batchWriteService.batchWrite(
               recordSource,
@@ -161,18 +159,18 @@ public class RecordOrchestratorService { // TODO give me a better name
 
   // TODO: enable read transaction
   public StreamingResponseBody streamAllEntities(
-      UUID collectionId, String version, RecordType recordType) {
+      CollectionId collectionId, String version, RecordType recordType) {
     validateVersion(version);
     collectionService.validateCollection(collectionId);
     checkRecordTypeExists(collectionId, recordType);
-    List<String> headers = recordDao.getAllAttributeNames(collectionId, recordType);
+    List<String> headers = recordDao.getAllAttributeNames(collectionId.id(), recordType);
 
     Map<String, DataTypeMapping> typeSchema =
-        recordDao.getExistingTableSchema(collectionId, recordType);
+        recordDao.getExistingTableSchema(collectionId.id(), recordType);
 
     return httpResponseOutputStream -> {
       try (Stream<Record> allRecords =
-          recordDao.streamAllRecordsForType(collectionId, recordType)) {
+          recordDao.streamAllRecordsForType(collectionId.id(), recordType)) {
         tsvSupport.writeTsvToStream(allRecords, typeSchema, httpResponseOutputStream, headers);
       }
     };
@@ -180,7 +178,7 @@ public class RecordOrchestratorService { // TODO give me a better name
 
   @ReadTransaction
   public RecordQueryResponse queryForRecords(
-      UUID collectionId,
+      CollectionId collectionId,
       RecordType recordType,
       String version,
       // SearchRequest isn't required in the controller, so it can be null here
@@ -202,11 +200,11 @@ public class RecordOrchestratorService { // TODO give me a better name
     }
     if (searchRequest.getSortAttribute() != null
         && !recordDao
-            .getExistingTableSchemaLessPrimaryKey(collectionId, recordType)
+            .getExistingTableSchemaLessPrimaryKey(collectionId.id(), recordType)
             .containsKey(searchRequest.getSortAttribute())) {
       throw new MissingObjectException("Requested sort attribute");
     }
-    int totalRecords = recordDao.countRecords(collectionId, recordType);
+    int totalRecords = recordDao.countRecords(collectionId.id(), recordType);
     if (searchRequest.getOffset() > totalRecords) {
       return new RecordQueryResponse(searchRequest, Collections.emptyList(), totalRecords);
     }
@@ -219,7 +217,7 @@ public class RecordOrchestratorService { // TODO give me a better name
             searchRequest.getSort().name().toLowerCase(),
             searchRequest.getSortAttribute(),
             searchRequest.getFilter(),
-            collectionId);
+            collectionId.id());
     List<RecordResponse> recordList =
         records.stream()
             .map(r -> new RecordResponse(r.getId(), r.getRecordType(), r.getAttributes()))
@@ -228,7 +226,7 @@ public class RecordOrchestratorService { // TODO give me a better name
   }
 
   public ResponseEntity<RecordResponse> upsertSingleRecord(
-      UUID collectionId,
+      CollectionId collectionId,
       String version,
       RecordType recordType,
       String recordId,
@@ -237,7 +235,7 @@ public class RecordOrchestratorService { // TODO give me a better name
     validateAndPermissions(collectionId, version);
     ResponseEntity<RecordResponse> response =
         recordService.upsertSingleRecord(
-            collectionId, recordType, recordId, primaryKey, recordRequest);
+            collectionId.id(), recordType, recordId, primaryKey, recordRequest);
 
     if (response.getStatusCode() == HttpStatus.CREATED) {
       activityLogger.saveEventForCurrentUser(
@@ -250,25 +248,25 @@ public class RecordOrchestratorService { // TODO give me a better name
   }
 
   public boolean deleteSingleRecord(
-      UUID collectionId, String version, RecordType recordType, String recordId) {
+      CollectionId collectionId, String version, RecordType recordType, String recordId) {
     validateAndPermissions(collectionId, version);
     checkRecordTypeExists(collectionId, recordType);
-    boolean response = recordService.deleteSingleRecord(collectionId, recordType, recordId);
+    boolean response = recordService.deleteSingleRecord(collectionId.id(), recordType, recordId);
     activityLogger.saveEventForCurrentUser(
         user -> user.deleted().record().withRecordType(recordType).withId(recordId));
     return response;
   }
 
-  public void deleteRecordType(UUID collectionId, String version, RecordType recordType) {
+  public void deleteRecordType(CollectionId collectionId, String version, RecordType recordType) {
     validateAndPermissions(collectionId, version);
     checkRecordTypeExists(collectionId, recordType);
-    recordService.deleteRecordType(collectionId, recordType);
+    recordService.deleteRecordType(collectionId.id(), recordType);
     activityLogger.saveEventForCurrentUser(
         user -> user.deleted().table().ofQuantity(1).withRecordType(recordType));
   }
 
   public void renameAttribute(
-      UUID collectionId,
+      CollectionId collectionId,
       String version,
       RecordType recordType,
       String attribute,
@@ -276,7 +274,7 @@ public class RecordOrchestratorService { // TODO give me a better name
     validateAndPermissions(collectionId, version);
     checkRecordTypeExists(collectionId, recordType);
     validateRenameAttribute(collectionId, recordType, attribute, newAttributeName);
-    recordService.renameAttribute(collectionId, recordType, attribute, newAttributeName);
+    recordService.renameAttribute(collectionId.id(), recordType, attribute, newAttributeName);
     activityLogger.saveEventForCurrentUser(
         user ->
             user.renamed()
@@ -286,7 +284,7 @@ public class RecordOrchestratorService { // TODO give me a better name
   }
 
   private void validateRenameAttribute(
-      UUID collectionId, RecordType recordType, String attribute, String newAttributeName) {
+      CollectionId collectionId, RecordType recordType, String attribute, String newAttributeName) {
     RecordTypeSchema schema = getSchemaDescription(collectionId, recordType);
 
     if (schema.isPrimaryKey(attribute)) {
@@ -301,7 +299,7 @@ public class RecordOrchestratorService { // TODO give me a better name
   }
 
   public void updateAttributeDataType(
-      UUID collectionId,
+      CollectionId collectionId,
       String version,
       RecordType recordType,
       String attribute,
@@ -316,7 +314,7 @@ public class RecordOrchestratorService { // TODO give me a better name
     DataTypeMapping newDataTypeMapping = validateAttributeDataType(newDataType);
     try {
       recordService.updateAttributeDataType(
-          collectionId, recordType, attribute, newDataTypeMapping);
+          collectionId.id(), recordType, attribute, newDataTypeMapping);
     } catch (IllegalArgumentException e) {
       throw new ValidationException(e.getMessage());
     }
@@ -333,16 +331,17 @@ public class RecordOrchestratorService { // TODO give me a better name
   }
 
   public void deleteAttribute(
-      UUID collectionId, String version, RecordType recordType, String attribute) {
+      CollectionId collectionId, String version, RecordType recordType, String attribute) {
     validateAndPermissions(collectionId, version);
     checkRecordTypeExists(collectionId, recordType);
     validateDeleteAttribute(collectionId, recordType, attribute);
-    recordService.deleteAttribute(collectionId, recordType, attribute);
+    recordService.deleteAttribute(collectionId.id(), recordType, attribute);
     activityLogger.saveEventForCurrentUser(
         user -> user.deleted().attribute().withRecordType(recordType).withId(attribute));
   }
 
-  private void validateDeleteAttribute(UUID collectionId, RecordType recordType, String attribute) {
+  private void validateDeleteAttribute(
+      CollectionId collectionId, RecordType recordType, String attribute) {
     RecordTypeSchema schema = getSchemaDescription(collectionId, recordType);
 
     if (schema.isPrimaryKey(attribute)) {
@@ -355,7 +354,7 @@ public class RecordOrchestratorService { // TODO give me a better name
 
   @ReadTransaction
   public RecordTypeSchema describeRecordType(
-      UUID collectionId, String version, RecordType recordType) {
+      CollectionId collectionId, String version, RecordType recordType) {
     validateVersion(version);
     collectionService.validateCollection(collectionId);
     checkRecordTypeExists(collectionId, recordType);
@@ -363,25 +362,25 @@ public class RecordOrchestratorService { // TODO give me a better name
   }
 
   @ReadTransaction
-  public List<RecordTypeSchema> describeAllRecordTypes(UUID collectionId, String version) {
+  public List<RecordTypeSchema> describeAllRecordTypes(CollectionId collectionId, String version) {
     validateVersion(version);
     collectionService.validateCollection(collectionId);
-    List<RecordType> allRecordTypes = recordDao.getAllRecordTypes(collectionId);
+    List<RecordType> allRecordTypes = recordDao.getAllRecordTypes(collectionId.id());
     return allRecordTypes.stream()
         .map(recordType -> getSchemaDescription(collectionId, recordType))
         .toList();
   }
 
   public int streamingWrite(
-      UUID collectionId,
+      CollectionId collectionId,
       String version,
       RecordType recordType,
       Optional<String> primaryKey,
       InputStream is)
       throws DataImportException {
     validateAndPermissions(collectionId, version);
-    if (recordDao.recordTypeExists(collectionId, recordType)) {
-      recordService.validatePrimaryKey(collectionId, recordType, primaryKey);
+    if (recordDao.recordTypeExists(collectionId.id(), recordType)) {
+      recordService.validatePrimaryKey(collectionId.id(), recordType, primaryKey);
     }
 
     RecordSource recordSource;
@@ -391,7 +390,7 @@ public class RecordOrchestratorService { // TODO give me a better name
       throw new BadStreamingWriteRequestException(e);
     }
 
-    try (RecordSink recordSink = recordSinkFactory.buildRecordSink(CollectionId.of(collectionId))) {
+    try (RecordSink recordSink = recordSinkFactory.buildRecordSink(collectionId)) {
       BatchWriteResult result =
           batchWriteService.batchWrite(
               recordSource, recordSink, recordType, primaryKey.orElse(RECORD_ID));
@@ -402,17 +401,17 @@ public class RecordOrchestratorService { // TODO give me a better name
     }
   }
 
-  private void checkRecordTypeExists(UUID collectionId, RecordType recordType) {
-    if (!recordDao.recordTypeExists(collectionId, recordType)) {
+  private void checkRecordTypeExists(CollectionId collectionId, RecordType recordType) {
+    if (!recordDao.recordTypeExists(collectionId.id(), recordType)) {
       throw new MissingObjectException("Record type");
     }
   }
 
-  private RecordTypeSchema getSchemaDescription(UUID collectionId, RecordType recordType) {
+  private RecordTypeSchema getSchemaDescription(CollectionId collectionId, RecordType recordType) {
     Map<String, DataTypeMapping> schema =
-        recordDao.getExistingTableSchema(collectionId, recordType);
-    List<Relation> relationCols = recordDao.getRelationArrayCols(collectionId, recordType);
-    relationCols.addAll(recordDao.getRelationCols(collectionId, recordType));
+        recordDao.getExistingTableSchema(collectionId.id(), recordType);
+    List<Relation> relationCols = recordDao.getRelationArrayCols(collectionId.id(), recordType);
+    relationCols.addAll(recordDao.getRelationCols(collectionId.id(), recordType));
     Map<String, RecordType> relations =
         relationCols.stream()
             .collect(Collectors.toMap(Relation::relationColName, Relation::relationRecordType));
@@ -424,11 +423,11 @@ public class RecordOrchestratorService { // TODO give me a better name
                     new AttributeSchema(
                         entry.getKey(), entry.getValue().toString(), relations.get(entry.getKey())))
             .toList();
-    int recordCount = recordDao.countRecords(collectionId, recordType);
+    int recordCount = recordDao.countRecords(collectionId.id(), recordType);
     return new RecordTypeSchema(
         recordType,
         attrSchema,
         recordCount,
-        recordDao.getPrimaryKeyColumn(recordType, collectionId));
+        recordDao.getPrimaryKeyColumn(recordType, collectionId.id()));
   }
 }

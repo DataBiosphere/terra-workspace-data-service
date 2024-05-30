@@ -49,7 +49,7 @@ public class JobService {
   public List<GenericJobServerModel> getJobsForCollection(
       CollectionId collectionId, Optional<List<String>> statuses) {
     // verify collection exists
-    collectionService.validateCollection(collectionId.id());
+    collectionService.validateCollection(collectionId);
     // check permissions
     if (!collectionService.canReadCollection(collectionId)) {
       throw new AuthenticationMaskableException("Collection");

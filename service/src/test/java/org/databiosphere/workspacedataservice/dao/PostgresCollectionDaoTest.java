@@ -8,6 +8,7 @@ import java.util.Map;
 import java.util.UUID;
 import org.databiosphere.workspacedataservice.annotations.SingleTenant;
 import org.databiosphere.workspacedataservice.common.TestBase;
+import org.databiosphere.workspacedataservice.shared.model.CollectionId;
 import org.databiosphere.workspacedataservice.shared.model.WorkspaceId;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeEach;
@@ -31,7 +32,7 @@ class PostgresCollectionDaoTest extends TestBase {
   // clean up all collections before each test to ensure tests start from a clean slate
   @BeforeEach
   void beforeEach() {
-    List<UUID> allCollections = collectionDao.listCollectionSchemas();
+    List<CollectionId> allCollections = collectionDao.listCollectionSchemas();
     allCollections.forEach(collectionId -> collectionDao.dropSchema(collectionId));
   }
 
@@ -39,7 +40,7 @@ class PostgresCollectionDaoTest extends TestBase {
   // slate
   @AfterAll
   void afterAll() {
-    List<UUID> allCollections = collectionDao.listCollectionSchemas();
+    List<CollectionId> allCollections = collectionDao.listCollectionSchemas();
     allCollections.forEach(collectionId -> collectionDao.dropSchema(collectionId));
   }
 
@@ -58,18 +59,18 @@ class PostgresCollectionDaoTest extends TestBase {
   @Test
   void insertPopulatesAllColumns() {
 
-    List<UUID> allCollections = collectionDao.listCollectionSchemas();
+    List<CollectionId> allCollections = collectionDao.listCollectionSchemas();
     assertEquals(0, allCollections.size());
 
-    UUID collectionId = UUID.randomUUID();
+    CollectionId collectionId = CollectionId.of(UUID.randomUUID());
     collectionDao.createSchema(collectionId);
 
     Map<String, Object> rowMap =
         namedParameterJdbcTemplate.queryForMap(
             "select id, workspace_id, name, description from sys_wds.collection where id = :id",
-            new MapSqlParameterSource("id", collectionId));
+            new MapSqlParameterSource("id", collectionId.id()));
 
-    assertEquals(collectionId, rowMap.get("id"));
+    assertEquals(collectionId.id(), rowMap.get("id"));
     assertEquals(workspaceId.id(), rowMap.get("workspace_id"));
     assertEquals(collectionId.toString(), rowMap.get("name"));
     assertEquals(collectionId.toString(), rowMap.get("description"));
@@ -80,19 +81,19 @@ class PostgresCollectionDaoTest extends TestBase {
   @Test
   void defaultPopulatesAllColumns() {
 
-    List<UUID> allCollections = collectionDao.listCollectionSchemas();
+    List<CollectionId> allCollections = collectionDao.listCollectionSchemas();
     assertEquals(0, allCollections.size());
 
-    UUID collectionId = workspaceId.id();
+    CollectionId collectionId = CollectionId.of(workspaceId.id());
 
     collectionDao.createSchema(collectionId);
 
     Map<String, Object> rowMap =
         namedParameterJdbcTemplate.queryForMap(
             "select id, workspace_id, name, description from sys_wds.collection where id = :id",
-            new MapSqlParameterSource("id", collectionId));
+            new MapSqlParameterSource("id", collectionId.id()));
 
-    assertEquals(collectionId, rowMap.get("id"));
+    assertEquals(collectionId.id(), rowMap.get("id"));
     assertEquals(workspaceId.id(), rowMap.get("workspace_id"));
     assertEquals("default", rowMap.get("name"));
     assertEquals("default", rowMap.get("description"));

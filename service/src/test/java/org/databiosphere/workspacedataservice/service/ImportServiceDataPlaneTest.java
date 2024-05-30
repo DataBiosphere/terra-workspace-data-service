@@ -63,18 +63,15 @@ class ImportServiceDataPlaneTest extends TestBase {
   void userHasWritePermission() {
     // ARRANGE
     // collection dao says the collection exists and returns the expected workspace id
-    when(collectionDao.collectionSchemaExists(collectionId.id())).thenReturn(true);
+    when(collectionDao.collectionSchemaExists(collectionId)).thenReturn(true);
     when(collectionDao.getWorkspaceId(collectionId)).thenReturn(workspaceId);
     // sam dao says the user has write permission
     stubWriteWorkspacePermission(workspaceId).thenReturn(true);
     stubReadWorkspacePermission(workspaceId).thenReturn(true);
 
     // ACT/ASSERT
-    // extract the UUID here so the lambda below has only one invocation possibly throwing a runtime
-    // exception
-    UUID collectionUuid = collectionId.id();
     // perform the import request
-    assertDoesNotThrow(() -> importService.createImport(collectionUuid, importRequest));
+    assertDoesNotThrow(() -> importService.createImport(collectionId, importRequest));
   }
 
   /* collection exists, workspace matches env var, user has read but not write permission */
@@ -82,21 +79,18 @@ class ImportServiceDataPlaneTest extends TestBase {
   void userHasOnlyReadPermission() {
     // ARRANGE
     // collection dao says the collection exists and returns the expected workspace id
-    when(collectionDao.collectionSchemaExists(collectionId.id())).thenReturn(true);
+    when(collectionDao.collectionSchemaExists(collectionId)).thenReturn(true);
     when(collectionDao.getWorkspaceId(collectionId)).thenReturn(workspaceId);
     // sam dao says the user has read but not write permission
     stubWriteWorkspacePermission(workspaceId).thenReturn(false);
     stubReadWorkspacePermission(workspaceId).thenReturn(true);
 
     // ACT/ASSERT
-    // extract the UUID here so the lambda below has only one invocation possibly throwing a runtime
-    // exception
-    UUID collectionUuid = collectionId.id();
     // perform the import request
     AuthenticationException actual =
         assertThrows(
             AuthenticationException.class,
-            () -> importService.createImport(collectionUuid, importRequest));
+            () -> importService.createImport(collectionId, importRequest));
 
     assertThat(actual)
         .withFailMessage("should not be a maskable exception")
@@ -109,21 +103,18 @@ class ImportServiceDataPlaneTest extends TestBase {
   void userDoesNotHaveAccess() {
     // ARRANGE
     // collection dao says the collection exists and returns the expected workspace id
-    when(collectionDao.collectionSchemaExists(collectionId.id())).thenReturn(true);
+    when(collectionDao.collectionSchemaExists(collectionId)).thenReturn(true);
     when(collectionDao.getWorkspaceId(collectionId)).thenReturn(workspaceId);
     // sam dao says the user does not have read or write permission
     stubWriteWorkspacePermission(workspaceId).thenReturn(false);
     stubReadWorkspacePermission(workspaceId).thenReturn(false);
 
     // ACT/ASSERT
-    // extract the UUID here so the lambda below has only one invocation possibly throwing a runtime
-    // exception
-    UUID collectionUuid = collectionId.id();
     // perform the import request
     AuthenticationMaskableException actual =
         assertThrows(
             AuthenticationMaskableException.class,
-            () -> importService.createImport(collectionUuid, importRequest));
+            () -> importService.createImport(collectionId, importRequest));
 
     // ASSERT
     assertEquals("Collection", actual.getObjectType());
@@ -133,7 +124,7 @@ class ImportServiceDataPlaneTest extends TestBase {
   void errorCheckingReadAccess() {
     // ARRANGE
     // collection dao says the collection exists and returns the expected workspace id
-    when(collectionDao.collectionSchemaExists(collectionId.id())).thenReturn(true);
+    when(collectionDao.collectionSchemaExists(collectionId)).thenReturn(true);
     when(collectionDao.getWorkspaceId(collectionId)).thenReturn(workspaceId);
     // sam dao says the user does not have write permission, and fails to check read permission
     stubWriteWorkspacePermission(workspaceId).thenReturn(false);
@@ -144,14 +135,11 @@ class ImportServiceDataPlaneTest extends TestBase {
             });
 
     // ACT/ASSERT
-    // extract the UUID here so the lambda below has only one invocation possibly throwing a runtime
-    // exception
-    UUID collectionUuid = collectionId.id();
     // perform the import request
     AuthenticationMaskableException actual =
         assertThrows(
             AuthenticationMaskableException.class,
-            () -> importService.createImport(collectionUuid, importRequest));
+            () -> importService.createImport(collectionId, importRequest));
 
     // ASSERT
     assertEquals("Collection", actual.getObjectType());
@@ -163,18 +151,15 @@ class ImportServiceDataPlaneTest extends TestBase {
     // ARRANGE
     WorkspaceId nonMatchingWorkspaceId = WorkspaceId.of(UUID.randomUUID());
     // collection dao says the collection exists and returns an unexpected workspace id
-    when(collectionDao.collectionSchemaExists(collectionId.id())).thenReturn(true);
+    when(collectionDao.collectionSchemaExists(collectionId)).thenReturn(true);
     when(collectionDao.getWorkspaceId(collectionId)).thenReturn(nonMatchingWorkspaceId);
     // sam dao says the user has write permission
     stubWriteWorkspacePermission(nonMatchingWorkspaceId).thenReturn(true);
 
     // ACT/ASSERT
-    // extract the UUID here so the lambda below has only one invocation possibly throwing a runtime
-    // exception
-    UUID collectionUuid = collectionId.id();
     // perform the import request
     assertThrows(
-        CollectionException.class, () -> importService.createImport(collectionUuid, importRequest));
+        CollectionException.class, () -> importService.createImport(collectionId, importRequest));
   }
 
   /* collection does not exist */
@@ -182,18 +167,15 @@ class ImportServiceDataPlaneTest extends TestBase {
   void collectionDoesNotExist() {
     // ARRANGE
     // collection dao says the collection does not exist
-    when(collectionDao.collectionSchemaExists(collectionId.id())).thenReturn(false);
+    when(collectionDao.collectionSchemaExists(collectionId)).thenReturn(false);
     when(collectionDao.getWorkspaceId(collectionId))
         .thenThrow(new EmptyResultDataAccessException("unit test intentional error", 1));
 
     // ACT/ASSERT
-    // extract the UUID here so the lambda below has only one invocation possibly throwing a runtime
-    // exception
-    UUID collectionUuid = collectionId.id();
     // perform the import request
     assertThrows(
         MissingObjectException.class,
-        () -> importService.createImport(collectionUuid, importRequest));
+        () -> importService.createImport(collectionId, importRequest));
 
     verifyNoInteractions(samAuthorizationDaoFactory);
     verifyNoInteractions(samAuthorizationDao);

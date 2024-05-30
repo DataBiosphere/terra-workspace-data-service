@@ -79,7 +79,7 @@ class RawlsJsonQuartzJobTest extends TestBase {
     UUID jobId = UUID.randomUUID();
     Blob incoming = createRandomBlob();
     JobExecutionContext mockContext =
-        stubJobContext(jobId, getUri(incoming), collectionId.id(), isUpsert);
+        stubJobContext(jobId, getUri(incoming), collectionId, isUpsert);
 
     // act
     testSupport.buildRawlsJsonQuartzJob().execute(mockContext);

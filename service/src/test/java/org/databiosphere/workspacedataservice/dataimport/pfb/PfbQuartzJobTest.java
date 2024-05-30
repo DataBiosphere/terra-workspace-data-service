@@ -160,8 +160,7 @@ class PfbQuartzJobTest extends TestBase {
     UUID jobId = UUID.randomUUID();
     CollectionId collectionId = CollectionId.of(UUID.randomUUID());
     WorkspaceId workspaceId = WorkspaceId.of(UUID.randomUUID());
-    JobExecutionContext mockContext =
-        stubJobContext(jobId, minimalDataAvroResource, collectionId.id());
+    JobExecutionContext mockContext = stubJobContext(jobId, minimalDataAvroResource, collectionId);
 
     when(collectionService.getWorkspaceId(collectionId)).thenReturn(workspaceId);
 
@@ -185,7 +184,7 @@ class PfbQuartzJobTest extends TestBase {
   void useWorkspaceIdFromCollection() throws JobExecutionException, IOException {
     UUID jobId = UUID.randomUUID();
     CollectionId collectionId = CollectionId.of(UUID.randomUUID());
-    JobExecutionContext mockContext = stubJobContext(jobId, testAvroResource, collectionId.id());
+    JobExecutionContext mockContext = stubJobContext(jobId, testAvroResource, collectionId);
 
     // WSM should report no snapshots already linked to this workspace
     when(wsmDao.enumerateDataRepoSnapshotReferences(any(), anyInt(), anyInt()))
@@ -220,7 +219,7 @@ class PfbQuartzJobTest extends TestBase {
     UUID jobId = UUID.randomUUID();
     CollectionId collectionId = CollectionId.of(UUID.randomUUID());
     WorkspaceId workspaceId = WorkspaceId.of(UUID.randomUUID());
-    JobExecutionContext mockContext = stubJobContext(jobId, testAvroResource, collectionId.id());
+    JobExecutionContext mockContext = stubJobContext(jobId, testAvroResource, collectionId);
 
     when(collectionService.getWorkspaceId(collectionId)).thenReturn(workspaceId);
 

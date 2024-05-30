@@ -13,6 +13,7 @@ import org.databiosphere.workspacedataservice.common.TestBase;
 import org.databiosphere.workspacedataservice.dao.CollectionDao;
 import org.databiosphere.workspacedataservice.sam.SamAuthorizationDao;
 import org.databiosphere.workspacedataservice.sam.SamClientFactory;
+import org.databiosphere.workspacedataservice.shared.model.CollectionId;
 import org.databiosphere.workspacedataservice.shared.model.WorkspaceId;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -56,28 +57,28 @@ class CollectionServiceSamTest extends TestBase {
 
   @Test
   void createCollectionSamCalls() throws ApiException {
-    UUID collectionId = UUID.randomUUID();
+    CollectionId collectionId = CollectionId.of(UUID.randomUUID());
     doCreateCollectionTest(collectionId);
   }
 
   @Test
   void createCollectionWithWorkspaceIdSamCalls() throws ApiException {
-    UUID collectionId = UUID.randomUUID();
+    CollectionId collectionId = CollectionId.of(UUID.randomUUID());
     doCreateCollectionTest(collectionId);
   }
 
   @Test
   void deleteCollectionSamCalls() throws ApiException {
-    UUID collectionId = UUID.randomUUID();
+    CollectionId collectionId = CollectionId.of(UUID.randomUUID());
     doDeleteCollectionTest(collectionId);
   }
 
-  void doCreateCollectionTest(UUID collectionId) throws ApiException {
+  void doCreateCollectionTest(CollectionId collectionId) throws ApiException {
     // setup: capture order of calls to Sam
     InOrder callOrder = inOrder(mockResourcesApi);
 
     // call createCollection
-    collectionService.createCollection(collectionId, VERSION);
+    collectionService.createCollection(collectionId.id(), VERSION);
 
     // createCollection should check permission with Sam exactly once:
     verify(mockResourcesApi, times(1)).resourcePermissionV2(anyString(), anyString(), anyString());
@@ -100,7 +101,7 @@ class CollectionServiceSamTest extends TestBase {
     verifyNoMoreInteractions(mockResourcesApi);
   }
 
-  void doDeleteCollectionTest(UUID collectionId) throws ApiException {
+  void doDeleteCollectionTest(CollectionId collectionId) throws ApiException {
     // setup: capture order of calls to Sam
     InOrder callOrder = inOrder(mockResourcesApi);
 

@@ -9,7 +9,6 @@ import static org.mockito.Mockito.verify;
 import java.io.IOException;
 import java.util.List;
 import java.util.Optional;
-import java.util.UUID;
 import org.databiosphere.workspacedataservice.common.TestBase;
 import org.databiosphere.workspacedataservice.dao.CollectionDao;
 import org.databiosphere.workspacedataservice.dao.RecordDao;
@@ -53,7 +52,8 @@ class TsvBatchTypeDetectionTest extends TestBase {
   @SpyBean DataTypeInferer inferer;
   @SpyBean RecordService recordService;
 
-  private static final UUID COLLECTION = UUID.fromString("aaaabbbb-cccc-dddd-1111-222233334444");
+  private static final CollectionId COLLECTION =
+      CollectionId.fromString("aaaabbbb-cccc-dddd-1111-222233334444");
   private static final RecordType THING_TYPE = RecordType.valueOf("thing");
 
   @BeforeEach
@@ -97,13 +97,13 @@ id\tmyColumn
         recordSourceFactory.forTsv(file.getInputStream(), THING_TYPE, Optional.of(primaryKey));
     // batchWrite will fail if we are not correctly re-detecting datatypes in later batches
     // (note this is a try-with-resources; an exception from batchWrite() will still fail the test)
-    try (RecordSink recordSink = recordSinkFactory.buildRecordSink(CollectionId.of(COLLECTION))) {
+    try (RecordSink recordSink = recordSinkFactory.buildRecordSink(COLLECTION)) {
       batchWriteService.batchWrite(recordSource, recordSink, THING_TYPE, primaryKey);
     }
 
     // we should write three batches
     verify(recordService, times(3))
-        .batchUpsert(eq(COLLECTION), eq(THING_TYPE), any(), any(), eq(primaryKey));
+        .batchUpsert(eq(COLLECTION.id()), eq(THING_TYPE), any(), any(), eq(primaryKey));
 
     // and we should have inferred the schema three times as well
     verify(inferer, times(3)).inferTypes(ArgumentMatchers.<List<Record>>any());

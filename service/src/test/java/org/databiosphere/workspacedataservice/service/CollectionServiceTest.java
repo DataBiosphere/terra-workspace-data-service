@@ -5,10 +5,10 @@ import static org.databiosphere.workspacedataservice.service.RecordUtils.VERSION
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import java.util.List;
-import java.util.UUID;
 import org.databiosphere.workspacedataservice.common.TestBase;
 import org.databiosphere.workspacedataservice.dao.CollectionDao;
 import org.databiosphere.workspacedataservice.service.model.exception.MissingObjectException;
+import org.databiosphere.workspacedataservice.shared.model.CollectionId;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -25,7 +25,8 @@ class CollectionServiceTest extends TestBase {
   @Autowired private CollectionService collectionService;
   @Autowired private CollectionDao collectionDao;
 
-  private static final UUID COLLECTION = UUID.fromString("111e9999-e89b-12d3-a456-426614174000");
+  private static final CollectionId COLLECTION =
+      CollectionId.fromString("111e9999-e89b-12d3-a456-426614174000");
 
   @BeforeEach
   @AfterEach
@@ -38,10 +39,11 @@ class CollectionServiceTest extends TestBase {
 
   @Test
   void testCreateAndValidateCollection() {
-    collectionService.createCollection(COLLECTION, VERSION);
+    collectionService.createCollection(COLLECTION.id(), VERSION);
     collectionService.validateCollection(COLLECTION);
 
-    UUID invalidCollection = UUID.fromString("000e4444-e22b-22d1-a333-426614174000");
+    CollectionId invalidCollection =
+        CollectionId.fromString("000e4444-e22b-22d1-a333-426614174000");
     assertThrows(
         MissingObjectException.class,
         () -> collectionService.validateCollection(invalidCollection),
@@ -50,19 +52,20 @@ class CollectionServiceTest extends TestBase {
 
   @Test
   void listCollections() {
-    collectionService.createCollection(COLLECTION, VERSION);
+    collectionService.createCollection(COLLECTION.id(), VERSION);
 
-    UUID secondCollectionId = UUID.fromString("999e1111-e89b-12d3-a456-426614174000");
-    collectionService.createCollection(secondCollectionId, VERSION);
+    CollectionId secondCollectionId =
+        CollectionId.fromString("999e1111-e89b-12d3-a456-426614174000");
+    collectionService.createCollection(secondCollectionId.id(), VERSION);
 
-    List<UUID> collections = collectionService.listCollections(VERSION);
+    List<CollectionId> collections = collectionService.listCollections(VERSION);
 
     assertThat(collections).hasSize(2).contains(COLLECTION).contains(secondCollectionId);
   }
 
   @Test
   void deleteCollection() {
-    collectionService.createCollection(COLLECTION, VERSION);
+    collectionService.createCollection(COLLECTION.id(), VERSION);
     collectionService.validateCollection(COLLECTION);
 
     collectionService.deleteCollection(COLLECTION, VERSION);

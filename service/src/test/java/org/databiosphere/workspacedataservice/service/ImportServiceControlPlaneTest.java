@@ -72,11 +72,8 @@ class ImportServiceControlPlaneTest {
     stubWriteWorkspacePermission(WorkspaceId.of(collectionId.id())).thenReturn(true);
 
     // ACT/ASSERT
-    // extract the UUID here so the lambda below has only one invocation possibly throwing a runtime
-    // exception
-    UUID collectionUuid = collectionId.id();
     // perform the import request
-    assertDoesNotThrow(() -> importService.createImport(collectionUuid, importRequest));
+    assertDoesNotThrow(() -> importService.createImport(collectionId, importRequest));
   }
 
   /* Collection does not exist, user does not have access */
@@ -92,14 +89,11 @@ class ImportServiceControlPlaneTest {
     stubReadWorkspacePermission(WorkspaceId.of(collectionId.id())).thenReturn(false);
 
     // ACT/ASSERT
-    // extract the UUID here so the lambda below has only one invocation possibly throwing a runtime
-    // exception
-    UUID collectionUuid = collectionId.id();
     // perform the import request
     AuthenticationMaskableException actual =
         assertThrows(
             AuthenticationMaskableException.class,
-            () -> importService.createImport(collectionUuid, importRequest));
+            () -> importService.createImport(collectionId, importRequest));
 
     // ASSERT
     assertEquals("Collection", actual.getObjectType());
@@ -121,14 +115,11 @@ class ImportServiceControlPlaneTest {
             });
 
     // ACT/ASSERT
-    // extract the UUID here so the lambda below has only one invocation possibly throwing a runtime
-    // exception
-    UUID collectionUuid = collectionId.id();
     // perform the import request
     AuthenticationMaskableException actual =
         assertThrows(
             AuthenticationMaskableException.class,
-            () -> importService.createImport(collectionUuid, importRequest));
+            () -> importService.createImport(collectionId, importRequest));
 
     // ASSERT
     assertEquals("Collection", actual.getObjectType());
@@ -146,14 +137,11 @@ class ImportServiceControlPlaneTest {
     stubReadWorkspacePermission(WorkspaceId.of(collectionId.id())).thenReturn(true);
 
     // ACT/ASSERT
-    // extract the UUID here so the lambda below has only one invocation possibly throwing a runtime
-    // exception
-    UUID collectionUuid = collectionId.id();
     // perform the import request
     AuthenticationException actual =
         assertThrows(
             AuthenticationException.class,
-            () -> importService.createImport(collectionUuid, importRequest));
+            () -> importService.createImport(collectionId, importRequest));
 
     // ASSERT
     assertThat(actual)
@@ -174,12 +162,9 @@ class ImportServiceControlPlaneTest {
     stubWriteWorkspacePermission(randomWorkspaceId).thenReturn(true);
 
     // ACT/ASSERT
-    // extract the UUID here so the lambda below has only one invocation possibly throwing a runtime
-    // exception
-    UUID collectionUuid = collectionId.id();
     // perform the import request
     assertThrows(
-        CollectionException.class, () -> importService.createImport(collectionUuid, importRequest));
+        CollectionException.class, () -> importService.createImport(collectionId, importRequest));
   }
 
   private OngoingStubbing<Boolean> stubWriteWorkspacePermission(WorkspaceId workspaceId) {

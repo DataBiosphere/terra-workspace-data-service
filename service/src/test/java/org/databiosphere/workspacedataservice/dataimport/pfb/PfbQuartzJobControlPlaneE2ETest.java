@@ -54,6 +54,7 @@ import org.databiosphere.workspacedataservice.sam.MockSamUsersApi;
 import org.databiosphere.workspacedataservice.sam.SamDao;
 import org.databiosphere.workspacedataservice.service.CollectionService;
 import org.databiosphere.workspacedataservice.shared.model.BearerToken;
+import org.databiosphere.workspacedataservice.shared.model.CollectionId;
 import org.databiosphere.workspacedataservice.shared.model.RecordType;
 import org.databiosphere.workspacedataservice.storage.GcsStorage;
 import org.junit.jupiter.api.AfterEach;
@@ -130,11 +131,11 @@ class PfbQuartzJobControlPlaneE2ETest {
   @Value("classpath:avro/test.avro")
   Resource testAvroWithMultipleBatches;
 
-  private UUID collectionId;
+  private CollectionId collectionId;
 
   @BeforeEach
   void setup() {
-    collectionId = UUID.randomUUID();
+    collectionId = CollectionId.of(UUID.randomUUID());
 
     // stub out rawls to report no snapshots already linked to this workspace
     when(rawlsClient.enumerateDataRepoSnapshotReferences(any(), anyInt(), anyInt()))

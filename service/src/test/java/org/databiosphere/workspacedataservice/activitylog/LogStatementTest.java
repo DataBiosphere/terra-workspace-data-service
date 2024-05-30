@@ -16,6 +16,7 @@ import org.databiosphere.workspacedataservice.datarepo.DataRepoClientFactory;
 import org.databiosphere.workspacedataservice.service.CollectionService;
 import org.databiosphere.workspacedataservice.service.RecordOrchestratorService;
 import org.databiosphere.workspacedataservice.shared.model.BatchOperation;
+import org.databiosphere.workspacedataservice.shared.model.CollectionId;
 import org.databiosphere.workspacedataservice.shared.model.OperationType;
 import org.databiosphere.workspacedataservice.shared.model.Record;
 import org.databiosphere.workspacedataservice.shared.model.RecordAttributes;
@@ -62,16 +63,16 @@ class LogStatementTest extends TestBase {
 
   @AfterEach
   void tearDown() {
-    List<UUID> allCollections = collectionService.listCollections(VERSION);
-    for (UUID id : allCollections) {
+    List<CollectionId> allCollections = collectionService.listCollections(VERSION);
+    for (CollectionId id : allCollections) {
       collectionService.deleteCollection(id, VERSION);
     }
   }
 
   @Test
   void createAndDeleteCollectionLogging(CapturedOutput output) {
-    UUID collectionId = UUID.randomUUID();
-    collectionService.createCollection(collectionId, VERSION);
+    CollectionId collectionId = CollectionId.of(UUID.randomUUID());
+    collectionService.createCollection(collectionId.id(), VERSION);
     collectionService.deleteCollection(collectionId, VERSION);
     assertThat(output.getOut())
         .contains("user anonymous created 1 collection(s) with id(s) [%s]".formatted(collectionId));
@@ -81,10 +82,10 @@ class LogStatementTest extends TestBase {
 
   @Test
   void upsertRecordLogging(CapturedOutput output) {
-    UUID collectionId = UUID.randomUUID();
+    CollectionId collectionId = CollectionId.of(UUID.randomUUID());
     RecordType recordType = RecordType.valueOf("mytype");
     String recordId = "my-record-id";
-    collectionService.createCollection(collectionId, VERSION);
+    collectionService.createCollection(collectionId.id(), VERSION);
     // loop twice - this creates the record and then updates it,
     // using the same upsert method.
     for (int i = 0; i <= 1; i++) {
@@ -108,10 +109,10 @@ class LogStatementTest extends TestBase {
 
   @Test
   void updateRecordLogging(CapturedOutput output) {
-    UUID collectionId = UUID.randomUUID();
+    CollectionId collectionId = CollectionId.of(UUID.randomUUID());
     RecordType recordType = RecordType.valueOf("mytype");
     String recordId = "my-record-id";
-    collectionService.createCollection(collectionId, VERSION);
+    collectionService.createCollection(collectionId.id(), VERSION);
     // create the record
     recordOrchestratorService.upsertSingleRecord(
         collectionId,
@@ -131,10 +132,10 @@ class LogStatementTest extends TestBase {
 
   @Test
   void deleteRecordLogging(CapturedOutput output) {
-    UUID collectionId = UUID.randomUUID();
+    CollectionId collectionId = CollectionId.of(UUID.randomUUID());
     RecordType recordType = RecordType.valueOf("mytype");
     String recordId = "my-record-id";
-    collectionService.createCollection(collectionId, VERSION);
+    collectionService.createCollection(collectionId.id(), VERSION);
     // create the record
     recordOrchestratorService.upsertSingleRecord(
         collectionId,
@@ -153,10 +154,10 @@ class LogStatementTest extends TestBase {
 
   @Test
   void deleteRecordTypeLogging(CapturedOutput output) {
-    UUID collectionId = UUID.randomUUID();
+    CollectionId collectionId = CollectionId.of(UUID.randomUUID());
     RecordType recordType = RecordType.valueOf("mytype");
     String recordId = "my-record-id";
-    collectionService.createCollection(collectionId, VERSION);
+    collectionService.createCollection(collectionId.id(), VERSION);
     // create the record
     recordOrchestratorService.upsertSingleRecord(
         collectionId,
@@ -173,9 +174,9 @@ class LogStatementTest extends TestBase {
 
   @Test
   void tsvUploadLogging(CapturedOutput output) throws IOException {
-    UUID collectionId = UUID.randomUUID();
+    CollectionId collectionId = CollectionId.of(UUID.randomUUID());
     RecordType recordType = RecordType.valueOf("mytype");
-    collectionService.createCollection(collectionId, VERSION);
+    collectionService.createCollection(collectionId.id(), VERSION);
 
     try (InputStream tsvStream = ClassLoader.getSystemResourceAsStream("tsv/small-test.tsv")) {
       MultipartFile upload = new MockMultipartFile("myupload", tsvStream);
@@ -189,9 +190,9 @@ class LogStatementTest extends TestBase {
 
   @Test
   void batchWriteLogging(CapturedOutput output) throws IOException {
-    UUID collectionId = UUID.randomUUID();
+    CollectionId collectionId = CollectionId.of(UUID.randomUUID());
     RecordType recordType = RecordType.valueOf("mytype");
-    collectionService.createCollection(collectionId, VERSION);
+    collectionService.createCollection(collectionId.id(), VERSION);
 
     BatchOperation[] ops =
         new BatchOperation[] {

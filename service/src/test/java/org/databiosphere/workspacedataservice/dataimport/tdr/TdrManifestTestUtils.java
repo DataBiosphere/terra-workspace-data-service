@@ -15,6 +15,7 @@ import java.util.UUID;
 import org.databiosphere.workspacedataservice.dataimport.ImportJobInput;
 import org.databiosphere.workspacedataservice.generated.ImportRequestServerModel.TypeEnum;
 import org.databiosphere.workspacedataservice.service.ImportService;
+import org.databiosphere.workspacedataservice.shared.model.CollectionId;
 import org.quartz.JobDetail;
 import org.quartz.JobExecutionContext;
 import org.springframework.core.io.Resource;
@@ -22,23 +23,23 @@ import org.springframework.core.io.Resource;
 public class TdrManifestTestUtils {
   public static final String BEARER_TOKEN = "expectedToken";
 
-  public static JobExecutionContext stubJobContext(UUID jobId, Resource resource, UUID collectionId)
-      throws IOException {
+  public static JobExecutionContext stubJobContext(
+      UUID jobId, Resource resource, CollectionId collectionId) throws IOException {
     return stubJobContext(jobId, resource, collectionId, /* syncPermissions= */ false);
   }
 
-  public static JobExecutionContext stubJobContext(UUID jobId, URI uri, UUID collectionId) {
+  public static JobExecutionContext stubJobContext(UUID jobId, URI uri, CollectionId collectionId) {
     return stubJobContext(jobId, uri, collectionId, /* syncPermissions= */ false);
   }
 
   public static JobExecutionContext stubJobContext(
-      UUID jobId, Resource resource, UUID collectionId, boolean syncPermissions)
+      UUID jobId, Resource resource, CollectionId collectionId, boolean syncPermissions)
       throws IOException {
     return stubJobContext(jobId, resource.getURI(), collectionId, syncPermissions);
   }
 
   public static JobExecutionContext stubJobContext(
-      UUID jobId, URI resourceUri, UUID collectionId, boolean syncPermissions) {
+      UUID jobId, URI resourceUri, CollectionId collectionId, boolean syncPermissions) {
     JobExecutionContext mockContext = mock(JobExecutionContext.class);
 
     ImportJobInput importJobInput =

@@ -59,19 +59,17 @@ public class ImportService {
   }
 
   public GenericJobServerModel createImport(
-      UUID collectionId, ImportRequestServerModel importRequest) {
+      CollectionId collectionId, ImportRequestServerModel importRequest) {
     // validate collection exists
     collectionService.validateCollection(collectionId);
 
     // validate write permission
-    boolean hasWriteCollectionPermission =
-        collectionService.canWriteCollection(CollectionId.of(collectionId));
+    boolean hasWriteCollectionPermission = collectionService.canWriteCollection(collectionId);
     logger.debug("hasWriteCollectionPermission? {}", hasWriteCollectionPermission);
     if (!hasWriteCollectionPermission) {
       boolean hasReadCollectionPermission = false;
       try {
-        hasReadCollectionPermission =
-            collectionService.canReadCollection(CollectionId.of(collectionId));
+        hasReadCollectionPermission = collectionService.canReadCollection(collectionId);
       } catch (Exception e) {
         logger.warn("Problem determining read permission for data import: " + e.getMessage(), e);
       }
@@ -86,7 +84,7 @@ public class ImportService {
       }
     }
 
-    WorkspaceId workspaceId = collectionService.getWorkspaceId(CollectionId.of(collectionId));
+    WorkspaceId workspaceId = collectionService.getWorkspaceId(collectionId);
     importValidator.validateImport(importRequest, workspaceId);
 
     // get a token to execute the job
@@ -95,8 +93,7 @@ public class ImportService {
     logger.info("Data import of type {} requested", importRequest.getType());
 
     ImportJobInput importJobInput = ImportJobInput.from(importRequest);
-    Job<JobInput, JobResult> job =
-        Job.newJob(CollectionId.of(collectionId), JobType.DATA_IMPORT, importJobInput);
+    Job<JobInput, JobResult> job = Job.newJob(collectionId, JobType.DATA_IMPORT, importJobInput);
 
     // persist the full job to WDS's db
     GenericJobServerModel createdJob = jobDao.createJob(job);
