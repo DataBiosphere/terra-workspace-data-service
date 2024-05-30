@@ -1,5 +1,6 @@
 package org.databiosphere.workspacedataservice.workspacemanager;
 
+import static java.util.UUID.randomUUID;
 import static org.databiosphere.workspacedataservice.workspacemanager.WorkspaceManagerDao.PROP_PURPOSE;
 import static org.databiosphere.workspacedataservice.workspacemanager.WorkspaceManagerDao.PURPOSE_POLICY;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -33,6 +34,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.HttpStatus;
+import org.springframework.lang.Nullable;
 import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.ActiveProfiles;
 
@@ -65,8 +67,7 @@ class WorkspaceManagerDaoTest extends TestBase {
 
   @Test
   void testSnapshotReturned() throws ApiException {
-    final SnapshotModel testSnapshot =
-        new SnapshotModel().name("test snapshot").id(UUID.randomUUID());
+    final SnapshotModel testSnapshot = new SnapshotModel().name("test snapshot").id(randomUUID());
     workspaceManagerDao.linkSnapshotForPolicy(workspaceId, testSnapshot);
     verify(mockReferencedGcpResourceApi)
         .createDataRepoSnapshotReference(
@@ -83,8 +84,7 @@ class WorkspaceManagerDaoTest extends TestBase {
   @Test
   void testErrorThrown() throws ApiException {
     final int statusCode = HttpStatus.UNAUTHORIZED.value();
-    final SnapshotModel testSnapshot =
-        new SnapshotModel().name("test snapshot").id(UUID.randomUUID());
+    final SnapshotModel testSnapshot = new SnapshotModel().name("test snapshot").id(randomUUID());
     given(mockReferencedGcpResourceApi.createDataRepoSnapshotReference(any(), any()))
         .willThrow(new ApiException(statusCode, "Intentional error thrown for unit test"));
     var exception =
@@ -106,7 +106,7 @@ class WorkspaceManagerDaoTest extends TestBase {
   void testResourceReturnFailure() {
     var resourceUUID =
         buildResourceListObjectAndCallExtraction(
-            workspaceId, "sc-" + UUID.randomUUID(), ResourceType.AZURE_STORAGE_CONTAINER);
+            workspaceId, "sc-" + randomUUID(), ResourceType.AZURE_STORAGE_CONTAINER);
     assertNull(resourceUUID);
   }
 
@@ -114,12 +114,12 @@ class WorkspaceManagerDaoTest extends TestBase {
   void enumerateResourcesAuthTokenNull() throws ApiException {
     // call enumerateResources with authToken=null
     workspaceManagerDao.enumerateResources(
-        UUID.randomUUID(),
-        0,
-        10,
+        WorkspaceId.of(randomUUID()),
+        /* offset= */ 0,
+        /* limit= */ 10,
         ResourceType.DATA_REPO_SNAPSHOT,
         StewardshipType.REFERENCED,
-        null);
+        /* authToken= */ null);
     // validate argument
     ArgumentCaptor<String> argumentCaptor = ArgumentCaptor.forClass(String.class);
     verify(mockWorkspaceManagerClientFactory).getResourceApi(argumentCaptor.capture());
@@ -129,26 +129,26 @@ class WorkspaceManagerDaoTest extends TestBase {
 
   @Test
   void enumerateResourcesAuthTokenPopulated() throws ApiException {
-    String expected = RandomStringUtils.randomAlphanumeric(16);
+    String expectedAuthToken = RandomStringUtils.randomAlphanumeric(16);
     // call enumerateResources with authToken={random string value}
     workspaceManagerDao.enumerateResources(
-        UUID.randomUUID(),
-        0,
-        10,
+        WorkspaceId.of(randomUUID()),
+        /* offset= */ 0,
+        /* limit= */ 10,
         ResourceType.DATA_REPO_SNAPSHOT,
         StewardshipType.REFERENCED,
-        expected);
+        expectedAuthToken);
     // validate argument
     ArgumentCaptor<String> argumentCaptor = ArgumentCaptor.forClass(String.class);
     verify(mockWorkspaceManagerClientFactory).getResourceApi(argumentCaptor.capture());
-    String actual = argumentCaptor.getValue();
-    assertEquals(expected, actual);
+    String actualAuthToken = argumentCaptor.getValue();
+    assertEquals(expectedAuthToken, actualAuthToken);
   }
 
   @Test
   void policyOnlyProperty() throws ApiException {
     // set up inputs
-    UUID snapshotId = UUID.randomUUID();
+    UUID snapshotId = randomUUID();
     SnapshotModel snapshotModel = new SnapshotModel().id(snapshotId);
     // call the create-reference method
     workspaceManagerDao.linkSnapshotForPolicy(workspaceId, snapshotModel);
@@ -171,6 +171,7 @@ class WorkspaceManagerDaoTest extends TestBase {
     assertEquals(PURPOSE_POLICY, actual.getValue());
   }
 
+  @Nullable
   UUID buildResourceListObjectAndCallExtraction(
       WorkspaceId workspaceId, String name, ResourceType type) {
     ResourceList resourceList = new ResourceList();
@@ -183,8 +184,6 @@ class WorkspaceManagerDaoTest extends TestBase {
     List<ResourceDescription> listOfDescriptions = new ArrayList<>();
     listOfDescriptions.add(resourceDescription);
     resourceList.setResources(listOfDescriptions);
-    var resourceUUID =
-        workspaceManagerDao.extractResourceId(resourceList, String.valueOf(workspaceId));
-    return resourceUUID;
+    return workspaceManagerDao.extractResourceId(resourceList, workspaceId);
   }
 }

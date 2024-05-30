@@ -15,6 +15,7 @@ import org.databiosphere.workspacedataservice.shared.model.WorkspaceId;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
+import org.springframework.lang.Nullable;
 
 public class WorkspaceManagerDao {
   public static final String INSTANCE_NAME = "terra";
@@ -77,7 +78,8 @@ public class WorkspaceManagerDao {
     }
   }
 
-  public ResourceList enumerateDataRepoSnapshotReferences(UUID workspaceId, int offset, int limit) {
+  public ResourceList enumerateDataRepoSnapshotReferences(
+      WorkspaceId workspaceId, int offset, int limit) {
     // get a page of results from WSM
     return enumerateResources(
         workspaceId,
@@ -85,20 +87,25 @@ public class WorkspaceManagerDao {
         limit,
         ResourceType.DATA_REPO_SNAPSHOT,
         StewardshipType.REFERENCED,
-        null);
+        /* authToken= */ null);
   }
 
   /** Retrieves the azure storage container url and sas token for a given workspace. */
-  public String getBlobStorageUrl(String storageWorkspaceId, String authToken) {
+  public String getBlobStorageUrl(WorkspaceId storageWorkspaceId, String authToken) {
     try {
       final ControlledAzureResourceApi azureResourceApi =
           this.workspaceManagerClientFactory.getAzureResourceApi(authToken);
-      UUID workspaceUUID = UUID.fromString(storageWorkspaceId);
       LOGGER.debug(
-          "Finding storage resource for workspace {} from Workspace Manager ...", workspaceUUID);
+          "Finding storage resource for workspace {} from Workspace Manager ...",
+          storageWorkspaceId);
       ResourceList resourceList =
           enumerateResources(
-              workspaceUUID, 0, 5, ResourceType.AZURE_STORAGE_CONTAINER, null, authToken);
+              storageWorkspaceId,
+              /* offset= */ 0,
+              /* limit= */ 5,
+              ResourceType.AZURE_STORAGE_CONTAINER,
+              /* stewardshipType= */ null,
+              authToken);
       // note: it is possible a workspace may have more than one storage container associated with
       // it but currently there is no way to tell which one is the primary except for checking the
       // actual container name
@@ -106,11 +113,11 @@ public class WorkspaceManagerDao {
       if (storageUUID != null) {
         LOGGER.debug(
             "Requesting SAS token-enabled storage url or workspace {} from Workspace Manager ...",
-            workspaceUUID);
+            storageWorkspaceId);
         RestCall<CreatedAzureStorageContainerSasToken> sasBundleFunction =
             () ->
                 azureResourceApi.createAzureStorageContainerSasToken(
-                    workspaceUUID,
+                    storageWorkspaceId.id(),
                     storageUUID,
                     /* sasIpRange= */ null,
                     /* sasExpirationDuration= */ null,
@@ -123,17 +130,20 @@ public class WorkspaceManagerDao {
         throw new RestException(
             HttpStatus.INTERNAL_SERVER_ERROR,
             "WorkspaceManagerDao: Can't locate a storage resource matching workspace Id "
-                + workspaceUUID);
+                + storageWorkspaceId);
       }
     } catch (RestException e) {
       throw new WorkspaceManagerException(e);
     }
   }
 
-  public UUID extractResourceId(ResourceList resourceList, String storageWorkspaceId) {
+  @Nullable
+  public UUID extractResourceId(ResourceList resourceList, WorkspaceId storageWorkspaceId) {
     var resourceStorage =
         resourceList.getResources().stream()
-            .filter(resource -> resource.getMetadata().getName().contains(storageWorkspaceId))
+            .filter(
+                resource ->
+                    resource.getMetadata().getName().contains(storageWorkspaceId.toString()))
             .findFirst()
             .orElse(null);
     if (resourceStorage != null) {
@@ -143,18 +153,18 @@ public class WorkspaceManagerDao {
   }
 
   ResourceList enumerateResources(
-      UUID workspaceId,
+      WorkspaceId workspaceId,
       int offset,
       int limit,
       ResourceType resourceType,
-      StewardshipType stewardshipType,
-      String authToken) {
+      @Nullable StewardshipType stewardshipType,
+      @Nullable String authToken) {
     ResourceApi resourceApi = this.workspaceManagerClientFactory.getResourceApi(authToken);
     try {
       RestCall<ResourceList> enumerateResourcesFunction =
           () ->
               resourceApi.enumerateResources(
-                  workspaceId, offset, limit, resourceType, stewardshipType);
+                  workspaceId.id(), offset, limit, resourceType, stewardshipType);
       return restClientRetry.withRetryAndErrorHandling(
           enumerateResourcesFunction, "WSM.enumerateResources");
     } catch (RestException e) {
@@ -162,11 +172,11 @@ public class WorkspaceManagerDao {
     }
   }
 
-  public WorkspaceDescription getWorkspace(UUID workspaceId) {
+  public WorkspaceDescription getWorkspace(WorkspaceId workspaceId) {
     WorkspaceApi workspaceApi = this.workspaceManagerClientFactory.getWorkspaceApi(null);
     try {
       RestCall<WorkspaceDescription> getWorkspaceFn =
-          () -> workspaceApi.getWorkspace(workspaceId, IamRole.READER);
+          () -> workspaceApi.getWorkspace(workspaceId.id(), IamRole.READER);
       return restClientRetry.withRetryAndErrorHandling(getWorkspaceFn, "WSM.getWorkspace");
     } catch (RestException e) {
       throw new WorkspaceManagerException(e);
