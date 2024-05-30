@@ -21,8 +21,8 @@ public class MockCollectionDao implements CollectionDao {
   }
 
   @Override
-  public boolean collectionSchemaExists(UUID collectionId) {
-    return collections.contains(collectionId);
+  public boolean collectionSchemaExists(CollectionId collectionId) {
+    return collections.contains(collectionId.id());
   }
 
   @Override

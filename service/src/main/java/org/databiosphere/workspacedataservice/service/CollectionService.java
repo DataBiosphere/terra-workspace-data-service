@@ -90,7 +90,7 @@ public class CollectionService {
       throw new AuthorizationException("Caller does not have permission to create collection.");
     }
 
-    if (collectionDao.collectionSchemaExists(collectionId.id())) {
+    if (collectionDao.collectionSchemaExists(collectionId)) {
       throw new ResponseStatusException(HttpStatus.CONFLICT, "This collection already exists");
     }
 
@@ -124,7 +124,7 @@ public class CollectionService {
       return;
     }
     // else, check if this collection has a row in the collections table
-    if (!collectionDao.collectionSchemaExists(collectionId)) {
+    if (!collectionDao.collectionSchemaExists(CollectionId.of(collectionId))) {
       throw new MissingObjectException("Collection");
     }
   }

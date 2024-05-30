@@ -25,6 +25,7 @@ import org.databiosphere.workspacedataservice.service.model.exception.ConflictEx
 import org.databiosphere.workspacedataservice.service.model.exception.ConflictingPrimaryKeysException;
 import org.databiosphere.workspacedataservice.service.model.exception.MissingObjectException;
 import org.databiosphere.workspacedataservice.service.model.exception.ValidationException;
+import org.databiosphere.workspacedataservice.shared.model.CollectionId;
 import org.databiosphere.workspacedataservice.shared.model.RecordAttributes;
 import org.databiosphere.workspacedataservice.shared.model.RecordQueryResponse;
 import org.databiosphere.workspacedataservice.shared.model.RecordRequest;
@@ -62,7 +63,7 @@ class RecordOrchestratorServiceTest extends TestBase {
 
   @BeforeEach
   void setUp() {
-    if (!collectionDao.collectionSchemaExists(COLLECTION)) {
+    if (!collectionDao.collectionSchemaExists(CollectionId.of(COLLECTION))) {
       collectionDao.createSchema(COLLECTION);
     }
   }
