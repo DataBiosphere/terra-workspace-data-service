@@ -13,6 +13,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import org.databiosphere.workspacedataservice.shared.model.CloneResponse;
 import org.databiosphere.workspacedataservice.shared.model.CloneStatus;
 import org.databiosphere.workspacedataservice.shared.model.CloneTable;
+import org.databiosphere.workspacedataservice.shared.model.WorkspaceId;
 import org.databiosphere.workspacedataservice.shared.model.job.Job;
 import org.databiosphere.workspacedataservice.shared.model.job.JobInput;
 import org.databiosphere.workspacedataservice.shared.model.job.JobStatus;
@@ -26,15 +27,15 @@ public class MockCloneDao implements CloneDao {
   }
 
   @Override
-  public boolean cloneExistsForWorkspace(UUID workspaceId) {
+  public boolean cloneExistsForWorkspace(WorkspaceId workspaceId) {
     return clone.stream()
-        .anyMatch(entry -> entry.getResult().sourceWorkspaceId().equals(workspaceId));
+        .anyMatch(entry -> entry.getResult().sourceWorkspaceId().equals(workspaceId.id()));
   }
 
   @Override
-  public void createCloneEntry(UUID trackingId, UUID sourceWorkspaceId) {
+  public void createCloneEntry(UUID trackingId, WorkspaceId sourceWorkspaceId) {
     LocalDateTime now = Timestamp.from(Instant.now()).toLocalDateTime();
-    var cloneEntry = new CloneResponse(sourceWorkspaceId, CloneStatus.BACKUPQUEUED);
+    var cloneEntry = new CloneResponse(sourceWorkspaceId.id(), CloneStatus.BACKUPQUEUED);
     Job<JobInput, CloneResponse> jobEntry =
         new Job<>(
             trackingId,
