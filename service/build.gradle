@@ -148,8 +148,6 @@ dependencies {
         implementation('org.codehaus.jettison:jettison:1.5.4') {
             because("CVE-2022-40149, CVE-2022-40150, CVE-2022-45685, CVE-2022-45693, CVE-2023-1436")
         }
-        // SEE ALSO:
-        //  - org.liquibase:liquibase-core:4.26.0, configured in build.gradle
     }
 }
 
