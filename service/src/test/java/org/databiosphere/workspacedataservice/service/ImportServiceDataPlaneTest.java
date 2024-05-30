@@ -13,6 +13,7 @@ import java.net.URI;
 import java.util.UUID;
 import org.broadinstitute.dsde.workbench.client.sam.ApiException;
 import org.databiosphere.workspacedataservice.annotations.SingleTenant;
+import org.databiosphere.workspacedataservice.common.TestBase;
 import org.databiosphere.workspacedataservice.dao.CollectionDao;
 import org.databiosphere.workspacedataservice.generated.ImportRequestServerModel;
 import org.databiosphere.workspacedataservice.sam.MockSamAuthorizationDao;
@@ -42,10 +43,8 @@ import org.springframework.test.context.ActiveProfiles;
  */
 @ActiveProfiles({"data-plane", "noop-scheduler-dao", "mock-sam"})
 @DirtiesContext
-// the "data-plane" profile enforces validity of twds.instance.workspace-id, so we need to set that
-@SpringBootTest(properties = {"twds.instance.workspace-id=b01dface-0000-0000-0000-000000000000"})
-class ImportServiceDataPlaneTest {
-
+@SpringBootTest
+class ImportServiceDataPlaneTest extends TestBase {
   @Autowired ImportService importService;
   @Autowired @SingleTenant WorkspaceId workspaceId;
   @MockBean CollectionDao collectionDao;

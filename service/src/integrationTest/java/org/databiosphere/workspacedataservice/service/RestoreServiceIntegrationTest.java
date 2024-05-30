@@ -7,15 +7,16 @@ import static org.junit.jupiter.api.Assertions.assertSame;
 import java.util.List;
 import java.util.UUID;
 import org.databiosphere.workspacedataservice.IntegrationServiceTestBase;
+import org.databiosphere.workspacedataservice.annotations.SingleTenant;
 import org.databiosphere.workspacedataservice.dao.CollectionDao;
 import org.databiosphere.workspacedataservice.dao.RecordDao;
 import org.databiosphere.workspacedataservice.shared.model.RecordType;
+import org.databiosphere.workspacedataservice.shared.model.WorkspaceId;
 import org.databiosphere.workspacedataservice.shared.model.job.JobStatus;
 import org.databiosphere.workspacedataservice.startup.CollectionInitializer;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
@@ -40,13 +41,11 @@ class RestoreServiceIntegrationTest extends IntegrationServiceTestBase {
   @Autowired CollectionDao collectionDao;
   @Autowired NamedParameterJdbcTemplate namedTemplate;
   @Autowired RecordDao recordDao;
+  @Autowired @SingleTenant WorkspaceId workspaceId;
 
   // Don't run the CollectionInitializer on startup, so this test can start with a clean slate.
   // By making an (empty) mock bean to replace CollectionInitializer, we ensure it is a noop.
   @MockBean CollectionInitializer mockCollectionInitializer;
-
-  @Value("${twds.instance.workspace-id:}")
-  private String workspaceId;
 
   // ensure we clean up the db after our tests
   @AfterEach
@@ -57,7 +56,7 @@ class RestoreServiceIntegrationTest extends IntegrationServiceTestBase {
   // this test references the file src/integrationTest/resources/backup-test.sql as its backup
   @Test
   void testRestoreAzureWDS() {
-    UUID destCollection = UUID.fromString(workspaceId);
+    UUID destCollection = workspaceId.id();
 
     // confirm neither source nor destination collection should exist in our list of schemas to
     // start

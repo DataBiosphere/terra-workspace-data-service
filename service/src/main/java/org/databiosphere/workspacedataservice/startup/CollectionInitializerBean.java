@@ -4,6 +4,7 @@ import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.Lock;
 import org.apache.commons.lang3.StringUtils;
+import org.databiosphere.workspacedataservice.annotations.SingleTenant;
 import org.databiosphere.workspacedataservice.dao.CloneDao;
 import org.databiosphere.workspacedataservice.dao.CollectionDao;
 import org.databiosphere.workspacedataservice.leonardo.LeonardoDao;
@@ -13,6 +14,7 @@ import org.databiosphere.workspacedataservice.service.model.exception.RestExcept
 import org.databiosphere.workspacedataservice.shared.model.CloneResponse;
 import org.databiosphere.workspacedataservice.shared.model.CloneStatus;
 import org.databiosphere.workspacedataservice.shared.model.CloneTable;
+import org.databiosphere.workspacedataservice.shared.model.WorkspaceId;
 import org.databiosphere.workspacedataservice.shared.model.job.Job;
 import org.databiosphere.workspacedataservice.shared.model.job.JobInput;
 import org.databiosphere.workspacedataservice.shared.model.job.JobStatus;
@@ -35,9 +37,7 @@ public class CollectionInitializerBean {
   private final LockRegistry lockRegistry;
 
   private final BackupRestoreService restoreService;
-
-  @Value("${twds.instance.workspace-id}")
-  private String workspaceId;
+  private final WorkspaceId workspaceId;
 
   @Value("${twds.instance.source-workspace-id}")
   private String sourceWorkspaceId;
@@ -63,13 +63,15 @@ public class CollectionInitializerBean {
       WorkspaceDataServiceDao wdsDao,
       CloneDao cloneDao,
       BackupRestoreService restoreService,
-      LockRegistry lockRegistry) {
+      LockRegistry lockRegistry,
+      @SingleTenant WorkspaceId workspaceId) {
     this.collectionDao = collectionDao;
     this.leoDao = leoDao;
     this.wdsDao = wdsDao;
     this.cloneDao = cloneDao;
     this.restoreService = restoreService;
     this.lockRegistry = lockRegistry;
+    this.workspaceId = workspaceId;
   }
 
   /**
@@ -106,17 +108,18 @@ public class CollectionInitializerBean {
    * @return whether {@code SOURCE_WORKSPACE_ID} is valid.
    */
   protected boolean isInCloneMode(String sourceWorkspaceId) {
+    UUID sourceWorkspaceUuid;
     if (StringUtils.isNotBlank(sourceWorkspaceId)) {
       LOGGER.info("SourceWorkspaceId found, checking validity");
       try {
-        UUID.fromString(sourceWorkspaceId);
+        sourceWorkspaceUuid = UUID.fromString(sourceWorkspaceId);
       } catch (IllegalArgumentException e) {
         LOGGER.warn(
             "SourceWorkspaceId {} could not be parsed, unable to clone DB.", sourceWorkspaceId);
         return false;
       }
 
-      if (sourceWorkspaceId.equals(workspaceId)) {
+      if (sourceWorkspaceUuid.equals(workspaceId.id())) {
         LOGGER.warn("SourceWorkspaceId and current WorkspaceId can't be the same.");
         return false;
       }
@@ -151,8 +154,7 @@ public class CollectionInitializerBean {
       // If there's a clone entry and no default schema, another replica errored before completing.
       // If there's a clone entry and a default schema there's nothing for us to do here.
       if (cloneDao.cloneExistsForWorkspace((UUID.fromString(sourceWorkspaceId)))) {
-        boolean collectionSchemaExists =
-            collectionDao.collectionSchemaExists(UUID.fromString(workspaceId));
+        boolean collectionSchemaExists = collectionDao.collectionSchemaExists(workspaceId.id());
         LOGGER.info(
             "Previous clone entry found. Collection schema exists: {}.", collectionSchemaExists);
         return collectionSchemaExists;
@@ -229,7 +231,7 @@ public class CollectionInitializerBean {
       LOGGER.info(
           "Requesting a backup file from the remote source WDS in workspace {}", sourceWorkspaceId);
       cloneDao.updateCloneEntryStatus(trackingId, CloneStatus.BACKUPQUEUED);
-      var backupResponse = wdsDao.triggerBackup(startupToken, UUID.fromString(workspaceId));
+      var backupResponse = wdsDao.triggerBackup(startupToken, workspaceId.id());
 
       // TODO when the wdsDao.triggerBackup is async, we will need a second call here to poll
       // for/check its status
@@ -300,7 +302,7 @@ public class CollectionInitializerBean {
   */
   private void initializeDefaultCollection() {
     try {
-      UUID collectionId = UUID.fromString(workspaceId);
+      UUID collectionId = workspaceId.id();
 
       if (!collectionDao.collectionSchemaExists(collectionId)) {
         collectionDao.createSchema(collectionId);

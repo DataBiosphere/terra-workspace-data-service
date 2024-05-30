@@ -39,7 +39,6 @@ import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.EnumSource;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.transaction.annotation.Transactional;
@@ -66,9 +65,6 @@ class RecordDaoTest extends TestBase {
   @Autowired ObjectMapper objectMapper;
 
   @Autowired PrimaryKeyDao primaryKeyDao;
-
-  @Value("${twds.instance.workspace-id}")
-  String workspaceId;
 
   @BeforeEach
   void setUp() {

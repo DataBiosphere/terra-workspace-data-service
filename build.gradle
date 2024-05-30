@@ -1,7 +1,7 @@
 import org.springframework.boot.gradle.plugin.SpringBootPlugin
 
 plugins {
-    id 'org.springframework.boot' version '3.2.5' apply false
+    id 'org.springframework.boot' version '3.3.0' apply false
     id 'io.spring.dependency-management' version '1.1.5' apply false
     id 'com.google.cloud.tools.jib' version '3.2.1' apply false
     id "org.sonarqube" version "5.0.0.4638" apply false
@@ -20,7 +20,7 @@ repositories {
 
 subprojects {
     group = 'org.databiosphere'
-    version = '0.5.4-SNAPSHOT'
+    version = '0.6.1-SNAPSHOT'
 
     apply plugin: 'idea'
     apply plugin: 'java'
@@ -37,10 +37,7 @@ subprojects {
             mavenBom(SpringBootPlugin.BOM_COORDINATES)
         }
         dependencies {
-            // WDS requires a version of Liquibase with
-            // https://github.com/liquibase/liquibase/pull/5391
-            // "This bug existed from 4.22.0 to 4.25.1"
-            dependency 'org.liquibase:liquibase-core:4.27.0'
+            // no dependencyManagement overrides at this time
         }
     }
 }

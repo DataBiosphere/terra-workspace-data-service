@@ -261,7 +261,7 @@ class TdrManifestQuartzJobTest extends TestBase {
     // WSM should report no snapshots already linked to this workspace
     // note that if enumerateDataRepoSnapshotReferences is called with the wrong workspaceId,
     // this test will fail
-    when(wsmDao.enumerateDataRepoSnapshotReferences(eq(workspaceId.id()), anyInt(), anyInt()))
+    when(wsmDao.enumerateDataRepoSnapshotReferences(eq(workspaceId), anyInt(), anyInt()))
         .thenReturn(new ResourceList());
 
     // set up the job
@@ -273,7 +273,7 @@ class TdrManifestQuartzJobTest extends TestBase {
     tdrManifestQuartzJob.executeInternal(jobId, mockContext);
 
     // ASSERT
-    verify(wsmDao).enumerateDataRepoSnapshotReferences(eq(workspaceId.id()), anyInt(), anyInt());
+    verify(wsmDao).enumerateDataRepoSnapshotReferences(eq(workspaceId), anyInt(), anyInt());
   }
 
   @Test
@@ -292,7 +292,7 @@ class TdrManifestQuartzJobTest extends TestBase {
     // WSM should report no snapshots already linked to this workspace
     // note that if enumerateDataRepoSnapshotReferences is called with the wrong workspaceId,
     // this test will fail
-    when(wsmDao.enumerateDataRepoSnapshotReferences(eq(workspaceId.id()), anyInt(), anyInt()))
+    when(wsmDao.enumerateDataRepoSnapshotReferences(eq(workspaceId), anyInt(), anyInt()))
         .thenReturn(new ResourceList());
     // mock property that only gets enabled in application-control-plane.yml
     when(dataImportProperties.isTdrPermissionSyncingEnabled()).thenReturn(true);
@@ -339,7 +339,7 @@ class TdrManifestQuartzJobTest extends TestBase {
     // WSM should report no snapshots already linked to this workspace
     // note that if enumerateDataRepoSnapshotReferences is called with the wrong workspaceId,
     // this test will fail
-    when(wsmDao.enumerateDataRepoSnapshotReferences(eq(workspaceId.id()), anyInt(), anyInt()))
+    when(wsmDao.enumerateDataRepoSnapshotReferences(eq(workspaceId), anyInt(), anyInt()))
         .thenReturn(new ResourceList());
 
     // Set up the job
