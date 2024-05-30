@@ -117,10 +117,10 @@ public class BackupRestoreService {
 
       // if request did not specify which workspace asked for the backup, default to the current
       // workspace
-      UUID requesterWorkspaceId =
+      WorkspaceId requesterWorkspaceId =
           backupRestoreRequest.requestingWorkspaceId() == null
-              ? workspaceId.id()
-              : backupRestoreRequest.requestingWorkspaceId();
+              ? workspaceId
+              : WorkspaceId.of(backupRestoreRequest.requestingWorkspaceId());
 
       // create an entry to track progress of this backup
       backupDao.createEntry(trackingId, backupRestoreRequest);
@@ -136,7 +136,7 @@ public class BackupRestoreService {
       backupDao.updateStatus(trackingId, JobStatus.RUNNING);
       LOGGER.info("Starting streaming backup to storage.");
       storage.streamOutputToBlobStorage(
-          localProcessLauncher.getInputStream(), blobName, String.valueOf(requesterWorkspaceId));
+          localProcessLauncher.getInputStream(), blobName, requesterWorkspaceId);
       String error = checkForError(localProcessLauncher);
 
       if (StringUtils.isNotBlank(error)) {
@@ -183,10 +183,7 @@ public class BackupRestoreService {
       doCleanup = true;
       // grab blob from storage
       storage.streamInputFromBlobStorage(
-          localProcessLauncher.getOutputStream(),
-          backupFileName,
-          workspaceId.toString(),
-          startupToken);
+          localProcessLauncher.getOutputStream(), backupFileName, workspaceId, startupToken);
 
       logSearchPath("Immediately after restore");
 
@@ -219,7 +216,7 @@ public class BackupRestoreService {
       // clean up
       if (doCleanup) {
         try {
-          storage.deleteBlob(backupFileName, workspaceId.toString(), startupToken);
+          storage.deleteBlob(backupFileName, workspaceId, startupToken);
         } catch (Exception e) {
           LOGGER.warn(
               "Error cleaning up after restore. File '{}' was not deleted from storage container: {}",
