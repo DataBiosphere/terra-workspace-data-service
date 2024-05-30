@@ -314,8 +314,8 @@ class PfbQuartzJobControlPlaneE2ETest {
 
     // by the time we get here, there are no currently running jobs and so the _active_ metrics
     // should all be zero.
-    assertMetric(metrics, "wds_job_execute_active_seconds_active_count", "0.0");
-    assertMetric(metrics, "wds_job_execute_active_seconds_duration_sum", "0.0");
+    assertMetric(metrics, "wds_job_execute_active_seconds_count", "0");
+    assertMetric(metrics, "wds_job_execute_active_seconds_sum", "0.0");
     assertMetric(metrics, "wds_job_execute_active_seconds_max", "0.0");
 
     // (counter) we should have counted one job.execute event regardless of outcome
@@ -329,7 +329,7 @@ class PfbQuartzJobControlPlaneE2ETest {
             .build());
 
     // (counter) of job.execute events
-    assertMetric(metrics, "wds_job_execute_seconds_count", "1.0", successTags);
+    assertMetric(metrics, "wds_job_execute_seconds_count", "1", successTags);
 
     // (summary) sum of all job durations, and when divided by count, can get the average
     assertMetric(metrics, "wds_job_execute_seconds_sum", ".*", successTags);
@@ -358,8 +358,8 @@ class PfbQuartzJobControlPlaneE2ETest {
 
     // by the time we get here, there are no currently running jobs and so the _active_ metrics
     // should all be zero.
-    assertMetric(metrics, "wds_job_execute_active_seconds_active_count", "0.0");
-    assertMetric(metrics, "wds_job_execute_active_seconds_duration_sum", "0.0");
+    assertMetric(metrics, "wds_job_execute_active_seconds_count", "0");
+    assertMetric(metrics, "wds_job_execute_active_seconds_sum", "0.0");
     assertMetric(metrics, "wds_job_execute_active_seconds_max", "0.0");
 
     // (counter) we should have counted one job.execute event regardless of outcome
@@ -373,7 +373,7 @@ class PfbQuartzJobControlPlaneE2ETest {
             .build());
 
     // (counter) of job.execute events
-    assertMetric(metrics, "wds_job_execute_seconds_count", "1.0", failureTags);
+    assertMetric(metrics, "wds_job_execute_seconds_count", "1", failureTags);
 
     // (summary) sum of all job durations, and when divided by count, can get the average
     assertMetric(metrics, "wds_job_execute_seconds_sum", ".*", failureTags);
