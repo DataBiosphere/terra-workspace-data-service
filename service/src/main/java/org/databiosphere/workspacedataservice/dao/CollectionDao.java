@@ -8,7 +8,7 @@ import org.databiosphere.workspacedataservice.shared.model.WorkspaceId;
 public interface CollectionDao {
   boolean collectionSchemaExists(CollectionId collectionId);
 
-  List<UUID> listCollectionSchemas();
+  List<CollectionId> listCollectionSchemas();
 
   void createSchema(UUID collectionId);
 

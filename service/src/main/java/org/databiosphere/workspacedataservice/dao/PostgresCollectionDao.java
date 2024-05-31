@@ -47,10 +47,13 @@ public class PostgresCollectionDao implements CollectionDao {
   }
 
   @Override
-  public List<UUID> listCollectionSchemas() {
+  public List<CollectionId> listCollectionSchemas() {
     return namedTemplate
         .getJdbcTemplate()
-        .queryForList("select id from sys_wds.collection order by id", UUID.class);
+        .queryForList("select id from sys_wds.collection order by id", UUID.class)
+        .stream()
+        .map(CollectionId::of)
+        .toList();
   }
 
   @Override
