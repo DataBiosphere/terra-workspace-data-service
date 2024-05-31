@@ -38,11 +38,11 @@ public class PostgresCollectionDao implements CollectionDao {
   }
 
   @Override
-  public boolean collectionSchemaExists(UUID collectionId) {
+  public boolean collectionSchemaExists(CollectionId collectionId) {
     return Boolean.TRUE.equals(
         namedTemplate.queryForObject(
             "select exists(select from sys_wds.collection WHERE id = :collectionId)",
-            new MapSqlParameterSource("collectionId", collectionId),
+            new MapSqlParameterSource("collectionId", collectionId.id()),
             Boolean.class));
   }
 

@@ -12,6 +12,7 @@ import java.util.UUID;
 import org.databiosphere.workspacedataservice.common.TestBase;
 import org.databiosphere.workspacedataservice.dao.CollectionDao;
 import org.databiosphere.workspacedataservice.dao.RecordDao;
+import org.databiosphere.workspacedataservice.shared.model.CollectionId;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -41,14 +42,14 @@ class DataRepoDaoTest extends TestBase {
   @BeforeEach
   void setUp() {
     given(mockDataRepoClientFactory.getRepositoryApi()).willReturn(mockRepositoryApi);
-    if (!collectionDao.collectionSchemaExists(COLLECTION)) {
+    if (!collectionDao.collectionSchemaExists(CollectionId.of(COLLECTION))) {
       collectionDao.createSchema(COLLECTION);
     }
   }
 
   @AfterEach
   void tearDown() {
-    if (collectionDao.collectionSchemaExists(COLLECTION)) {
+    if (collectionDao.collectionSchemaExists(CollectionId.of(COLLECTION))) {
       collectionDao.dropSchema(COLLECTION);
     }
   }

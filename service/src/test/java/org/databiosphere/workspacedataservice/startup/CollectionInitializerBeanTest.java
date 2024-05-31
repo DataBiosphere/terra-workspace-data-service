@@ -20,6 +20,7 @@ import org.databiosphere.workspacedataservice.common.TestBase;
 import org.databiosphere.workspacedataservice.dao.*;
 import org.databiosphere.workspacedataservice.leonardo.LeonardoDao;
 import org.databiosphere.workspacedataservice.service.BackupRestoreService;
+import org.databiosphere.workspacedataservice.shared.model.CollectionId;
 import org.databiosphere.workspacedataservice.shared.model.WorkspaceId;
 import org.databiosphere.workspacedataservice.sourcewds.WorkspaceDataServiceDao;
 import org.junit.jupiter.api.AfterEach;
@@ -88,7 +89,7 @@ class CollectionInitializerBeanTest extends TestBase {
     // collection does not exist
     assertFalse(collectionDao.collectionSchemaExists(collectionIdMatchingWorkspaceId()));
     // create the collection outside the initializer
-    collectionDao.createSchema(collectionIdMatchingWorkspaceId());
+    collectionDao.createSchema(collectionUuidMatchingWorkspaceId());
     assertTrue(collectionDao.collectionSchemaExists(collectionIdMatchingWorkspaceId()));
     // now run the initializer
     getBean().initializeCollection();
@@ -129,7 +130,7 @@ class CollectionInitializerBeanTest extends TestBase {
   // exists.
   void cloneWithCloneTableAndCollectionExist() {
     // start with collection and clone entry
-    collectionDao.createSchema(collectionIdMatchingWorkspaceId());
+    collectionDao.createSchema(collectionUuidMatchingWorkspaceId());
     cloneDao.createCloneEntry(randomUUID(), sourceWorkspaceId);
     // enter clone mode
     boolean cleanExit = getBean().initCloneMode(sourceWorkspaceId);
@@ -181,7 +182,11 @@ class CollectionInitializerBeanTest extends TestBase {
     assertThat(getCloningSourceWorkspaceId(workspaceId.toString())).isEmpty();
   }
 
-  private UUID collectionIdMatchingWorkspaceId() {
+  private CollectionId collectionIdMatchingWorkspaceId() {
+    return CollectionId.of(workspaceId.id());
+  }
+
+  private UUID collectionUuidMatchingWorkspaceId() {
     return workspaceId.id();
   }
 

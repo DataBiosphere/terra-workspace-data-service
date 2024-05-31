@@ -58,7 +58,7 @@ class TsvBatchTypeDetectionTest extends TestBase {
 
   @BeforeEach
   void setUp() {
-    if (!collectionDao.collectionSchemaExists(COLLECTION)) {
+    if (!collectionDao.collectionSchemaExists(CollectionId.of(COLLECTION))) {
       collectionDao.createSchema(COLLECTION);
     }
   }

@@ -86,7 +86,7 @@ class JobControllerTest extends TestBase {
   @ParameterizedTest(name = "Return all jobs with a querystring of {0}")
   @ValueSource(strings = {"", "?someOtherParam=whatever", "?statuses="})
   void instanceJobsReturnAll(String queryString) {
-    when(collectionDao.collectionSchemaExists(collectionId.id())).thenReturn(true);
+    when(collectionDao.collectionSchemaExists(collectionId)).thenReturn(true);
     HttpHeaders headers = new HttpHeaders();
     ResponseEntity<List<GenericJobServerModel>> result =
         restTemplate.exchange(
@@ -111,7 +111,7 @@ class JobControllerTest extends TestBase {
 
   @Test
   void instanceJobsWithMultipleStatuses() {
-    when(collectionDao.collectionSchemaExists(collectionId.id())).thenReturn(true);
+    when(collectionDao.collectionSchemaExists(collectionId)).thenReturn(true);
     assertDoesNotThrow(() -> jobDao.updateStatus(jobId, StatusEnum.CANCELLED));
     HttpHeaders headers = new HttpHeaders();
     ResponseEntity<List<GenericJobServerModel>> result =
@@ -133,7 +133,7 @@ class JobControllerTest extends TestBase {
 
   @Test
   void instanceJobsWithMultipleDelimitedStatuses() {
-    when(collectionDao.collectionSchemaExists(collectionId.id())).thenReturn(true);
+    when(collectionDao.collectionSchemaExists(collectionId)).thenReturn(true);
     assertDoesNotThrow(() -> jobDao.updateStatus(jobId, StatusEnum.CANCELLED));
     HttpHeaders headers = new HttpHeaders();
     ResponseEntity<List<GenericJobServerModel>> result =
@@ -156,7 +156,7 @@ class JobControllerTest extends TestBase {
   @ParameterizedTest(name = "Return Bad Request with ?statuses={0}")
   @ValueSource(strings = {"xasdaf", "QUEUED,bad,RUNNING"})
   void instanceJobsWithEmpStatuses(String statusValues) {
-    when(collectionDao.collectionSchemaExists(collectionId.id())).thenReturn(true);
+    when(collectionDao.collectionSchemaExists(collectionId)).thenReturn(true);
     HttpHeaders headers = new HttpHeaders();
     ResponseEntity<ErrorResponse> result =
         restTemplate.exchange(

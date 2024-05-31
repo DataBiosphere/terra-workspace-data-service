@@ -14,6 +14,7 @@ import org.databiosphere.workspacedataservice.dao.CollectionDao;
 import org.databiosphere.workspacedataservice.sam.SamClientFactory;
 import org.databiosphere.workspacedataservice.service.model.exception.AuthorizationException;
 import org.databiosphere.workspacedataservice.service.model.exception.RestException;
+import org.databiosphere.workspacedataservice.shared.model.CollectionId;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -48,7 +49,7 @@ class RecordOrchestratorSamTest extends TestBase {
 
   @BeforeEach
   void setUp() {
-    if (!collectionDao.collectionSchemaExists(COLLECTION)) {
+    if (!collectionDao.collectionSchemaExists(CollectionId.of(COLLECTION))) {
       collectionDao.createSchema(COLLECTION);
     }
     given(mockSamClientFactory.getResourcesApi()).willReturn(mockResourcesApi);
