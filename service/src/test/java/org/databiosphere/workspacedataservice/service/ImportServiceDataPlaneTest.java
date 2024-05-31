@@ -63,7 +63,7 @@ class ImportServiceDataPlaneTest extends TestBase {
   void userHasWritePermission() {
     // ARRANGE
     // collection dao says the collection exists and returns the expected workspace id
-    when(collectionDao.collectionSchemaExists(collectionId.id())).thenReturn(true);
+    when(collectionDao.collectionSchemaExists(collectionId)).thenReturn(true);
     when(collectionDao.getWorkspaceId(collectionId)).thenReturn(workspaceId);
     // sam dao says the user has write permission
     stubWriteWorkspacePermission(workspaceId).thenReturn(true);
@@ -82,7 +82,7 @@ class ImportServiceDataPlaneTest extends TestBase {
   void userHasOnlyReadPermission() {
     // ARRANGE
     // collection dao says the collection exists and returns the expected workspace id
-    when(collectionDao.collectionSchemaExists(collectionId.id())).thenReturn(true);
+    when(collectionDao.collectionSchemaExists(collectionId)).thenReturn(true);
     when(collectionDao.getWorkspaceId(collectionId)).thenReturn(workspaceId);
     // sam dao says the user has read but not write permission
     stubWriteWorkspacePermission(workspaceId).thenReturn(false);
@@ -109,7 +109,7 @@ class ImportServiceDataPlaneTest extends TestBase {
   void userDoesNotHaveAccess() {
     // ARRANGE
     // collection dao says the collection exists and returns the expected workspace id
-    when(collectionDao.collectionSchemaExists(collectionId.id())).thenReturn(true);
+    when(collectionDao.collectionSchemaExists(collectionId)).thenReturn(true);
     when(collectionDao.getWorkspaceId(collectionId)).thenReturn(workspaceId);
     // sam dao says the user does not have read or write permission
     stubWriteWorkspacePermission(workspaceId).thenReturn(false);
@@ -133,7 +133,7 @@ class ImportServiceDataPlaneTest extends TestBase {
   void errorCheckingReadAccess() {
     // ARRANGE
     // collection dao says the collection exists and returns the expected workspace id
-    when(collectionDao.collectionSchemaExists(collectionId.id())).thenReturn(true);
+    when(collectionDao.collectionSchemaExists(collectionId)).thenReturn(true);
     when(collectionDao.getWorkspaceId(collectionId)).thenReturn(workspaceId);
     // sam dao says the user does not have write permission, and fails to check read permission
     stubWriteWorkspacePermission(workspaceId).thenReturn(false);
@@ -163,7 +163,7 @@ class ImportServiceDataPlaneTest extends TestBase {
     // ARRANGE
     WorkspaceId nonMatchingWorkspaceId = WorkspaceId.of(UUID.randomUUID());
     // collection dao says the collection exists and returns an unexpected workspace id
-    when(collectionDao.collectionSchemaExists(collectionId.id())).thenReturn(true);
+    when(collectionDao.collectionSchemaExists(collectionId)).thenReturn(true);
     when(collectionDao.getWorkspaceId(collectionId)).thenReturn(nonMatchingWorkspaceId);
     // sam dao says the user has write permission
     stubWriteWorkspacePermission(nonMatchingWorkspaceId).thenReturn(true);
@@ -182,7 +182,7 @@ class ImportServiceDataPlaneTest extends TestBase {
   void collectionDoesNotExist() {
     // ARRANGE
     // collection dao says the collection does not exist
-    when(collectionDao.collectionSchemaExists(collectionId.id())).thenReturn(false);
+    when(collectionDao.collectionSchemaExists(collectionId)).thenReturn(false);
     when(collectionDao.getWorkspaceId(collectionId))
         .thenThrow(new EmptyResultDataAccessException("unit test intentional error", 1));
 

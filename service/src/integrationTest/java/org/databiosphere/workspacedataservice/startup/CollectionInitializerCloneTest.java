@@ -22,6 +22,7 @@ import org.databiosphere.workspacedataservice.dao.RecordDao;
 import org.databiosphere.workspacedataservice.leonardo.LeonardoDao;
 import org.databiosphere.workspacedataservice.shared.model.CloneResponse;
 import org.databiosphere.workspacedataservice.shared.model.CloneStatus;
+import org.databiosphere.workspacedataservice.shared.model.CollectionId;
 import org.databiosphere.workspacedataservice.shared.model.RecordType;
 import org.databiosphere.workspacedataservice.shared.model.WorkspaceId;
 import org.databiosphere.workspacedataservice.shared.model.job.Job;
@@ -116,7 +117,7 @@ class CollectionInitializerCloneTest extends IntegrationServiceTestBase {
 
     // default collection should exist, with no tables in it
     UUID workspaceUuid = workspaceId.id();
-    assertTrue(collectionDao.collectionSchemaExists(workspaceUuid));
+    assertTrue(collectionDao.collectionSchemaExists(CollectionId.of(workspaceUuid)));
     assertThat(recordDao.getAllRecordTypes(workspaceUuid)).isEmpty();
   }
 
@@ -156,8 +157,8 @@ class CollectionInitializerCloneTest extends IntegrationServiceTestBase {
     // default collection should exist, with a single table named "thing" in it
     // the "thing" table is defined in WDS-integrationTest-LocalFileStorage-input.sql.
     UUID workspaceUuid = workspaceId.id();
-    List<UUID> actualCollections = collectionDao.listCollectionSchemas();
-    assertEquals(List.of(workspaceUuid), actualCollections);
+    List<CollectionId> actualCollections = collectionDao.listCollectionSchemas();
+    assertEquals(List.of(CollectionId.of(workspaceUuid)), actualCollections);
     List<RecordType> actualTypes = recordDao.getAllRecordTypes(workspaceUuid);
     assertEquals(List.of(RecordType.valueOf("thing")), actualTypes);
 

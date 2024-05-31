@@ -1,5 +1,7 @@
 package org.databiosphere.workspacedataservice.startup;
 
+import static java.util.UUID.randomUUID;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
@@ -10,12 +12,17 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.locks.Lock;
 import org.databiosphere.workspacedataservice.annotations.SingleTenant;
 import org.databiosphere.workspacedataservice.common.TestBase;
 import org.databiosphere.workspacedataservice.dao.*;
+import org.databiosphere.workspacedataservice.leonardo.LeonardoDao;
+import org.databiosphere.workspacedataservice.service.BackupRestoreService;
+import org.databiosphere.workspacedataservice.shared.model.CollectionId;
 import org.databiosphere.workspacedataservice.shared.model.WorkspaceId;
+import org.databiosphere.workspacedataservice.sourcewds.WorkspaceDataServiceDao;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -24,6 +31,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.boot.test.mock.mockito.SpyBean;
 import org.springframework.integration.jdbc.lock.JdbcLockRegistry;
+import org.springframework.lang.Nullable;
 import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.ActiveProfiles;
 
@@ -41,7 +49,9 @@ class CollectionInitializerBeanTest extends TestBase {
   // Don't run the CollectionInitializer on startup, so this test can start with a clean slate.
   // By making an (empty) mock bean to replace CollectionInitializer, we ensure it is a noop.
   @MockBean CollectionInitializer collectionInitializer;
-  @Autowired CollectionInitializerBean collectionInitializerBean;
+  @Autowired LeonardoDao leoDao;
+  @Autowired WorkspaceDataServiceDao wdsDao;
+  @Autowired BackupRestoreService restoreService;
   @MockBean JdbcLockRegistry registry;
   @SpyBean CollectionDao collectionDao;
   @SpyBean CloneDao cloneDao;
@@ -49,7 +59,7 @@ class CollectionInitializerBeanTest extends TestBase {
   @Autowired @SingleTenant WorkspaceId workspaceId;
 
   // sourceWorkspaceId when we need one
-  final String sourceWorkspaceId = UUID.randomUUID().toString();
+  final WorkspaceId sourceWorkspaceId = WorkspaceId.of(randomUUID());
 
   Lock mockLock = mock(Lock.class);
 
@@ -62,7 +72,7 @@ class CollectionInitializerBeanTest extends TestBase {
   @AfterEach
   void tearDown() {
     // clean up any collections left in the db
-    List<UUID> allCollections = collectionDao.listCollectionSchemas();
+    List<CollectionId> allCollections = collectionDao.listCollectionSchemas();
     allCollections.forEach(collectionId -> collectionDao.dropSchema(collectionId));
   }
 
@@ -70,7 +80,7 @@ class CollectionInitializerBeanTest extends TestBase {
   void testHappyPath() {
     // collection does not exist
     assertFalse(collectionDao.collectionSchemaExists(collectionIdMatchingWorkspaceId()));
-    assertDoesNotThrow(() -> collectionInitializerBean.initializeCollection());
+    assertDoesNotThrow(() -> getBean().initializeCollection());
     assert (collectionDao.collectionSchemaExists(collectionIdMatchingWorkspaceId()));
   }
 
@@ -82,7 +92,7 @@ class CollectionInitializerBeanTest extends TestBase {
     collectionDao.createSchema(collectionIdMatchingWorkspaceId());
     assertTrue(collectionDao.collectionSchemaExists(collectionIdMatchingWorkspaceId()));
     // now run the initializer
-    collectionInitializerBean.initializeCollection();
+    getBean().initializeCollection();
     // verify that method to create collection was NOT called again. We expect one call from the
     // setup above.
     verify(collectionDao, times(1)).createSchema(any());
@@ -95,9 +105,9 @@ class CollectionInitializerBeanTest extends TestBase {
     // collection does not exist
     assertFalse(collectionDao.collectionSchemaExists(collectionIdMatchingWorkspaceId()));
     // enter clone mode
-    collectionInitializerBean.initCloneMode(sourceWorkspaceId);
+    getBean().initCloneMode(sourceWorkspaceId);
     // confirm we have moved forward with cloning
-    assertTrue(cloneDao.cloneExistsForWorkspace(UUID.fromString(sourceWorkspaceId)));
+    assertTrue(cloneDao.cloneExistsForWorkspace(sourceWorkspaceId));
   }
 
   @Test
@@ -107,12 +117,12 @@ class CollectionInitializerBeanTest extends TestBase {
     // collection does not exist
     assertFalse(collectionDao.collectionSchemaExists(collectionIdMatchingWorkspaceId()));
     // enter clone mode
-    boolean cleanExit = collectionInitializerBean.initCloneMode(sourceWorkspaceId);
+    boolean cleanExit = getBean().initCloneMode(sourceWorkspaceId);
     // initCloneMode() should have returned true since we did not enter a situation
     // where we'd have to create the default schema.
     assertTrue(cleanExit);
     // confirm we did not enter clone mode
-    assertFalse(cloneDao.cloneExistsForWorkspace(UUID.fromString(sourceWorkspaceId)));
+    assertFalse(cloneDao.cloneExistsForWorkspace(sourceWorkspaceId));
   }
 
   @Test
@@ -121,9 +131,9 @@ class CollectionInitializerBeanTest extends TestBase {
   void cloneWithCloneTableAndCollectionExist() {
     // start with collection and clone entry
     collectionDao.createSchema(collectionIdMatchingWorkspaceId());
-    cloneDao.createCloneEntry(UUID.randomUUID(), UUID.fromString(sourceWorkspaceId));
+    cloneDao.createCloneEntry(randomUUID(), sourceWorkspaceId);
     // enter clone mode
-    boolean cleanExit = collectionInitializerBean.initCloneMode(sourceWorkspaceId);
+    boolean cleanExit = getBean().initCloneMode(sourceWorkspaceId);
     // initCloneMode() should have returned true since we did not enter a situation
     // where we'd have to create the default schema.
     assertTrue(cleanExit);
@@ -134,11 +144,11 @@ class CollectionInitializerBeanTest extends TestBase {
   // not exist.
   void cloneWithCloneTableAndNoCollection() {
     // start with clone entry
-    cloneDao.createCloneEntry(UUID.randomUUID(), UUID.fromString(sourceWorkspaceId));
+    cloneDao.createCloneEntry(randomUUID(), sourceWorkspaceId);
     // collection does not exist
     assertFalse(collectionDao.collectionSchemaExists(collectionIdMatchingWorkspaceId()));
     // enter clone mode
-    boolean cleanExit = collectionInitializerBean.initCloneMode(sourceWorkspaceId);
+    boolean cleanExit = getBean().initCloneMode(sourceWorkspaceId);
     // initCloneMode() should have returned false since we encountered a situation
     // where we'd have to create the default schema.
     assertFalse(cleanExit);
@@ -146,38 +156,55 @@ class CollectionInitializerBeanTest extends TestBase {
 
   @Test
   void sourceWorkspaceIDNotProvided() {
-    boolean cloneMode = collectionInitializerBean.isInCloneMode(null);
-    assertFalse(cloneMode);
+    assertThat(getCloningSourceWorkspaceId(/* sourceWorkspaceIdString= */ null)).isEmpty();
   }
 
   @Test
   void blankSourceWorkspaceID() {
-    boolean cloneMode = collectionInitializerBean.isInCloneMode("");
-    assertFalse(cloneMode);
-
-    cloneMode = collectionInitializerBean.isInCloneMode(" ");
-    assertFalse(cloneMode);
+    assertThat(getCloningSourceWorkspaceId(/* sourceWorkspaceIdString= */ "")).isEmpty();
+    assertThat(getCloningSourceWorkspaceId(/* sourceWorkspaceIdString= */ " ")).isEmpty();
   }
 
   @Test
   void sourceWorkspaceIDCorrect() {
-    boolean cloneMode = collectionInitializerBean.isInCloneMode(UUID.randomUUID().toString());
-    assert (cloneMode);
+    UUID randomUuid = randomUUID();
+    assertThat(getCloningSourceWorkspaceId(/* sourceWorkspaceIdString= */ randomUuid.toString()))
+        .hasValue(WorkspaceId.of(randomUuid));
   }
 
   @Test
   void sourceWorkspaceIDInvalid() {
-    boolean cloneMode = collectionInitializerBean.isInCloneMode("invalidUUID");
-    assertFalse(cloneMode);
+    assertThat(getCloningSourceWorkspaceId("invalidUUID")).isEmpty();
   }
 
   @Test
   void sourceAndCurrentWorkspaceIdsMatch() {
-    boolean cloneMode = collectionInitializerBean.isInCloneMode(workspaceId.toString());
-    assertFalse(cloneMode);
+    assertThat(getCloningSourceWorkspaceId(workspaceId.toString())).isEmpty();
   }
 
-  private UUID collectionIdMatchingWorkspaceId() {
-    return workspaceId.id();
+  private CollectionId collectionIdMatchingWorkspaceId() {
+    return CollectionId.of(workspaceId.id());
+  }
+
+  private CollectionInitializerBean getBean() {
+    return getBean(/* sourceWorkspaceIdString= */ null);
+  }
+
+  private CollectionInitializerBean getBean(@Nullable String sourceWorkspaceIdString) {
+    return new CollectionInitializerBean(
+        collectionDao,
+        leoDao,
+        wdsDao,
+        cloneDao,
+        restoreService,
+        registry,
+        workspaceId,
+        sourceWorkspaceIdString,
+        /* startupToken= */ null);
+  }
+
+  private Optional<WorkspaceId> getCloningSourceWorkspaceId(
+      @Nullable String sourceWorkspaceIdString) {
+    return getBean(sourceWorkspaceIdString).getCloningSourceWorkspaceId();
   }
 }

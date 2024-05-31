@@ -8,6 +8,7 @@ import org.databiosphere.workspacedataservice.leonardo.LeonardoDao;
 import org.databiosphere.workspacedataservice.service.BackupRestoreService;
 import org.databiosphere.workspacedataservice.shared.model.WorkspaceId;
 import org.databiosphere.workspacedataservice.sourcewds.WorkspaceDataServiceDao;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.integration.support.locks.LockRegistry;
@@ -24,8 +25,18 @@ public class CollectionInitializerConfig {
       CloneDao cloneDao,
       BackupRestoreService restoreService,
       LockRegistry lockRegistry,
-      @SingleTenant WorkspaceId workspaceId) {
+      @SingleTenant WorkspaceId workspaceId,
+      @Value("${twds.instance.source-workspace-id}") String sourceWorkspaceIdString,
+      @Value("${twds.startup-token}") String startupToken) {
     return new CollectionInitializerBean(
-        collectionDao, leoDao, wdsDao, cloneDao, restoreService, lockRegistry, workspaceId);
+        collectionDao,
+        leoDao,
+        wdsDao,
+        cloneDao,
+        restoreService,
+        lockRegistry,
+        workspaceId,
+        sourceWorkspaceIdString,
+        startupToken);
   }
 }
