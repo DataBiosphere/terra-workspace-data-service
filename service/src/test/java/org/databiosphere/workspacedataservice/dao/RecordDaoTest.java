@@ -2,6 +2,7 @@ package org.databiosphere.workspacedataservice.dao;
 
 import static java.util.Collections.emptyMap;
 import static java.util.UUID.randomUUID;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.databiosphere.workspacedataservice.service.model.DataTypeMapping.*;
 import static org.databiosphere.workspacedataservice.service.model.DataTypeMapping.ARRAY_OF_NUMBER;
 import static org.databiosphere.workspacedataservice.service.model.DataTypeMapping.ARRAY_OF_STRING;
@@ -341,6 +342,7 @@ class RecordDaoTest extends TestBase {
         Map.of("foo", STRING, "relationAttr", RELATION));
 
     List<Relation> relations = recordDao.getRelationCols(collectionUuid, recordType);
+    assertThat(relations).hasSize(1);
 
     Record testRecordFetched =
         recordDao.getSingleRecord(collectionUuid, recordType, recordId).get();
@@ -1100,10 +1102,10 @@ class RecordDaoTest extends TestBase {
     List<Relation> relationArrayCols =
         recordDao.getRelationArrayCols(collectionUuid, relationArrayType);
     assertEquals(List.of(arrayRelation), relationArrayCols);
-    Record record = recordDao.getSingleRecord(collectionUuid, relationArrayType, relArrId).get();
-    assertNotNull(record);
+    Record rec = recordDao.getSingleRecord(collectionUuid, relationArrayType, relArrId).get();
+    assertNotNull(rec);
     String[] actualAttrValue =
-        assertInstanceOf(String[].class, record.getAttributeValue("relArrAttr"));
+        assertInstanceOf(String[].class, rec.getAttributeValue("relArrAttr"));
     assertIterableEquals(relArr, Arrays.asList(actualAttrValue));
 
     // The purpose of inserting in to the join is to make sure foreign keys are consistent
@@ -1115,11 +1117,11 @@ class RecordDaoTest extends TestBase {
                 arrayRelation,
                 relationArrayType,
                 List.of(
-                    new RelationValue(record, referencedRecord),
-                    new RelationValue(record, referencedRecord2))));
+                    new RelationValue(rec, referencedRecord),
+                    new RelationValue(rec, referencedRecord2))));
     assertEquals(
         List.of(refRecordId, refRecordId2),
-        testDao.getRelationArrayValues(collectionUuid, "relArrAttr", record, recordType));
+        testDao.getRelationArrayValues(collectionUuid, "relArrAttr", rec, recordType));
   }
 
   @Test

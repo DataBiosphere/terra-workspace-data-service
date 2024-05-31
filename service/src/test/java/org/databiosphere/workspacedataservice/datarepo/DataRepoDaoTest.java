@@ -68,8 +68,9 @@ class DataRepoDaoTest extends TestBase {
     final int statusCode = HttpStatus.UNAUTHORIZED.value();
     given(mockRepositoryApi.retrieveSnapshot(any(), any()))
         .willThrow(new ApiException(statusCode, "Intentional error thrown for unit test"));
+    UUID randomUuid = randomUUID();
     var exception =
-        assertThrows(DataRepoException.class, () -> dataRepoDao.getSnapshot(randomUUID()));
+        assertThrows(DataRepoException.class, () -> dataRepoDao.getSnapshot(randomUuid));
     assertEquals(statusCode, exception.getStatusCode().value());
     Mockito.clearInvocations(mockRepositoryApi);
   }
