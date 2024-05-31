@@ -1,5 +1,6 @@
 package org.databiosphere.workspacedataservice.dao;
 
+import static java.util.UUID.randomUUID;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 
@@ -60,15 +61,17 @@ class PostgresCollectionDaoTest extends TestBase {
   void insertPopulatesAllColumns() {
     assertEquals(0, collectionDao.listCollectionSchemas().size());
 
-    UUID collectionId = UUID.randomUUID();
+    CollectionId collectionId = CollectionId.of(randomUUID());
+    UUID collectionUuid = collectionId.id();
+
     collectionDao.createSchema(collectionId);
 
     Map<String, Object> rowMap =
         namedParameterJdbcTemplate.queryForMap(
             "select id, workspace_id, name, description from sys_wds.collection where id = :id",
-            new MapSqlParameterSource("id", collectionId));
+            new MapSqlParameterSource("id", collectionUuid));
 
-    assertEquals(collectionId, rowMap.get("id"));
+    assertEquals(collectionUuid, rowMap.get("id"));
     assertEquals(workspaceId.id(), rowMap.get("workspace_id"));
     assertEquals(collectionId.toString(), rowMap.get("name"));
     assertEquals(collectionId.toString(), rowMap.get("description"));
@@ -80,16 +83,17 @@ class PostgresCollectionDaoTest extends TestBase {
   void defaultPopulatesAllColumns() {
     assertEquals(0, collectionDao.listCollectionSchemas().size());
 
-    UUID collectionId = workspaceId.id();
+    UUID collectionUuid = workspaceId.id();
+    CollectionId collectionId = CollectionId.of(collectionUuid);
 
     collectionDao.createSchema(collectionId);
 
     Map<String, Object> rowMap =
         namedParameterJdbcTemplate.queryForMap(
             "select id, workspace_id, name, description from sys_wds.collection where id = :id",
-            new MapSqlParameterSource("id", collectionId));
+            new MapSqlParameterSource("id", collectionUuid));
 
-    assertEquals(collectionId, rowMap.get("id"));
+    assertEquals(collectionUuid, rowMap.get("id"));
     assertEquals(workspaceId.id(), rowMap.get("workspace_id"));
     assertEquals("default", rowMap.get("name"));
     assertEquals("default", rowMap.get("description"));

@@ -31,8 +31,8 @@ public class MockCollectionDao implements CollectionDao {
   }
 
   @Override
-  public void createSchema(UUID collectionId) {
-    if (collections.contains(collectionId)) {
+  public void createSchema(CollectionId collectionId) {
+    if (collections.contains(collectionId.id())) {
       ServerErrorMessage sqlMsg =
           new ServerErrorMessage(
               "ERROR: schema \"" + collectionId.toString() + "\" already exists");
@@ -40,7 +40,7 @@ public class MockCollectionDao implements CollectionDao {
       String sql = "create schema \"" + collectionId + "\"";
       throw new org.springframework.jdbc.BadSqlGrammarException("StatementCallback", sql, ex);
     }
-    collections.add(collectionId);
+    collections.add(collectionId.id());
   }
 
   @Override

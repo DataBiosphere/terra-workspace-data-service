@@ -59,9 +59,9 @@ public class PostgresCollectionDao implements CollectionDao {
   @Override
   @WriteTransaction
   @SuppressWarnings("squid:S2077") // since collectionId must be a UUID, it is safe to use inline
-  public void createSchema(UUID collectionId) {
+  public void createSchema(CollectionId collectionId) {
     // insert to collection table
-    insertCollectionRow(collectionId, /* ignoreConflict= */ false);
+    insertCollectionRow(collectionId.id(), /* ignoreConflict= */ false);
     // create the postgres schema
     namedTemplate.getJdbcTemplate().update("create schema " + quote(collectionId.toString()));
   }

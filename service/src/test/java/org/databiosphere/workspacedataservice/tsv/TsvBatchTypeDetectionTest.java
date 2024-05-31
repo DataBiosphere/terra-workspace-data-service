@@ -1,5 +1,6 @@
 package org.databiosphere.workspacedataservice.tsv;
 
+import static java.util.UUID.randomUUID;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
@@ -53,19 +54,20 @@ class TsvBatchTypeDetectionTest extends TestBase {
   @SpyBean DataTypeInferer inferer;
   @SpyBean RecordService recordService;
 
-  private static final UUID COLLECTION = UUID.fromString("aaaabbbb-cccc-dddd-1111-222233334444");
+  private static final UUID COLLECTION_UUID = randomUUID();
+  private static final CollectionId COLLECTION_ID = CollectionId.of(COLLECTION_UUID);
   private static final RecordType THING_TYPE = RecordType.valueOf("thing");
 
   @BeforeEach
   void setUp() {
-    if (!collectionDao.collectionSchemaExists(CollectionId.of(COLLECTION))) {
-      collectionDao.createSchema(COLLECTION);
+    if (!collectionDao.collectionSchemaExists(CollectionId.of(COLLECTION_UUID))) {
+      collectionDao.createSchema(COLLECTION_ID);
     }
   }
 
   @AfterEach
   void tearDown() {
-    collectionDao.dropSchema(COLLECTION);
+    collectionDao.dropSchema(COLLECTION_UUID);
   }
 
   // when batchWriteTsvStream is called with a single specified RecordType, we should not fail if
@@ -97,20 +99,21 @@ id\tmyColumn
         recordSourceFactory.forTsv(file.getInputStream(), THING_TYPE, Optional.of(primaryKey));
     // batchWrite will fail if we are not correctly re-detecting datatypes in later batches
     // (note this is a try-with-resources; an exception from batchWrite() will still fail the test)
-    try (RecordSink recordSink = recordSinkFactory.buildRecordSink(CollectionId.of(COLLECTION))) {
+    try (RecordSink recordSink =
+        recordSinkFactory.buildRecordSink(CollectionId.of(COLLECTION_UUID))) {
       batchWriteService.batchWrite(recordSource, recordSink, THING_TYPE, primaryKey);
     }
 
     // we should write three batches
     verify(recordService, times(3))
-        .batchUpsert(eq(COLLECTION), eq(THING_TYPE), any(), any(), eq(primaryKey));
+        .batchUpsert(eq(COLLECTION_UUID), eq(THING_TYPE), any(), any(), eq(primaryKey));
 
     // and we should have inferred the schema three times as well
     verify(inferer, times(3)).inferTypes(ArgumentMatchers.<List<Record>>any());
 
     // retrieve the final record schema
     RecordTypeSchema actualRecordSchema =
-        recordOrchestratorService.describeRecordType(COLLECTION, "v0.2", THING_TYPE);
+        recordOrchestratorService.describeRecordType(COLLECTION_UUID, "v0.2", THING_TYPE);
     AttributeSchema actual = actualRecordSchema.getAttributeSchema("myColumn");
 
     // "myColumn" should be a string, reflecting the change we saw in the second batch
