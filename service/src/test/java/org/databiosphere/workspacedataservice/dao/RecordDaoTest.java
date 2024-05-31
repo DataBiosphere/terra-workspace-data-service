@@ -27,6 +27,7 @@ import org.databiosphere.workspacedataservice.service.model.Relation;
 import org.databiosphere.workspacedataservice.service.model.RelationCollection;
 import org.databiosphere.workspacedataservice.service.model.RelationValue;
 import org.databiosphere.workspacedataservice.service.model.exception.InvalidRelationException;
+import org.databiosphere.workspacedataservice.shared.model.CollectionId;
 import org.databiosphere.workspacedataservice.shared.model.Record;
 import org.databiosphere.workspacedataservice.shared.model.RecordAttributes;
 import org.databiosphere.workspacedataservice.shared.model.RecordType;
@@ -91,43 +92,43 @@ class RecordDaoTest extends TestBase {
   @Test
   void listCollections() {
     // get the list of collections in this DB
-    List<UUID> actualInitialSchemas = collectionDao.listCollectionSchemas();
+    List<CollectionId> actualInitialSchemas = collectionDao.listCollectionSchemas();
 
     // generate some new UUIDs
-    List<UUID> someCollectionsToCreate =
-        IntStream.range(0, 5).mapToObj(i -> UUID.randomUUID()).toList();
+    List<CollectionId> someCollectionsToCreate =
+        IntStream.range(0, 5).mapToObj(i -> CollectionId.of(UUID.randomUUID())).toList();
 
     // check that the new UUIDs do not exist in our collections list yet.
     someCollectionsToCreate.forEach(
-        inst ->
+        collectionId ->
             assertFalse(
-                actualInitialSchemas.contains(inst),
+                actualInitialSchemas.contains(collectionId),
                 "initial schema list should not contain brand new UUIDs"));
 
     // create the collections
-    someCollectionsToCreate.forEach(inst -> collectionDao.createSchema(inst));
+    someCollectionsToCreate.forEach(collectionId -> collectionDao.createSchema(collectionId.id()));
 
     // get the list of collections again
-    List<UUID> actualSchemasAfterCreation = collectionDao.listCollectionSchemas();
+    List<CollectionId> actualSchemasAfterCreation = collectionDao.listCollectionSchemas();
 
     // check that the new UUIDs do exist in our collections list.
     someCollectionsToCreate.forEach(
-        inst ->
+        collectionId ->
             assertTrue(
-                actualSchemasAfterCreation.contains(inst),
+                actualSchemasAfterCreation.contains(collectionId),
                 "schema list after creation step should contain the new UUIDs"));
 
     // delete the new collections
-    someCollectionsToCreate.forEach(inst -> collectionDao.dropSchema(inst));
+    someCollectionsToCreate.forEach(inst -> collectionDao.dropSchema(inst.id()));
 
     // get the list of collections again
-    List<UUID> actualSchemasAfterDeletion = collectionDao.listCollectionSchemas();
+    List<CollectionId> actualSchemasAfterDeletion = collectionDao.listCollectionSchemas();
 
     // check that the new UUIDs do not exist in our collections list, now that we've deleted them
     someCollectionsToCreate.forEach(
-        inst ->
+        collectionId ->
             assertFalse(
-                actualSchemasAfterDeletion.contains(inst),
+                actualSchemasAfterDeletion.contains(collectionId),
                 "schema list after deletion step should not contain the new UUIDs"));
 
     // at this point, the "after deletion" list and the "initial" list should be the same
@@ -136,9 +137,10 @@ class RecordDaoTest extends TestBase {
 
   @Test
   void listNonUuidCollections() {
-    List<UUID> initialCollections = collectionDao.listCollectionSchemas();
+    List<CollectionId> initialCollections = collectionDao.listCollectionSchemas();
     namedTemplate.getJdbcTemplate().update("create schema if not exists notAUuid");
-    List<UUID> testableCollections = collectionDao.listCollectionSchemas(); // should not throw
+    List<CollectionId> testableCollections =
+        collectionDao.listCollectionSchemas(); // should not throw
     // second call should filter out the non-uuid
     assertIterableEquals(initialCollections, testableCollections);
     // cleanup

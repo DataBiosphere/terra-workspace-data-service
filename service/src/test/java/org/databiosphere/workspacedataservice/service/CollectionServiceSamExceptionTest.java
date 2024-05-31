@@ -19,6 +19,7 @@ import org.databiosphere.workspacedataservice.sam.SamClientFactory;
 import org.databiosphere.workspacedataservice.service.model.exception.AuthenticationException;
 import org.databiosphere.workspacedataservice.service.model.exception.AuthorizationException;
 import org.databiosphere.workspacedataservice.service.model.exception.RestException;
+import org.databiosphere.workspacedataservice.shared.model.CollectionId;
 import org.databiosphere.workspacedataservice.shared.model.WorkspaceId;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -81,8 +82,8 @@ class CollectionServiceSamExceptionTest extends TestBase {
   @AfterEach
   void tearDown() {
     // clean up any collections left in the db
-    List<UUID> allCollections = collectionDao.listCollectionSchemas();
-    allCollections.forEach(collectionId -> collectionDao.dropSchema(collectionId));
+    List<CollectionId> allCollections = collectionDao.listCollectionSchemas();
+    allCollections.forEach(collectionId -> collectionDao.dropSchema(collectionId.id()));
   }
 
   @DisplayName(

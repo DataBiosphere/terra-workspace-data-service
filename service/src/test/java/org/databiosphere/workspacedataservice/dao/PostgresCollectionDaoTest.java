@@ -8,6 +8,7 @@ import java.util.Map;
 import java.util.UUID;
 import org.databiosphere.workspacedataservice.annotations.SingleTenant;
 import org.databiosphere.workspacedataservice.common.TestBase;
+import org.databiosphere.workspacedataservice.shared.model.CollectionId;
 import org.databiosphere.workspacedataservice.shared.model.WorkspaceId;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeEach;
@@ -31,16 +32,16 @@ class PostgresCollectionDaoTest extends TestBase {
   // clean up all collections before each test to ensure tests start from a clean slate
   @BeforeEach
   void beforeEach() {
-    List<UUID> allCollections = collectionDao.listCollectionSchemas();
-    allCollections.forEach(collectionId -> collectionDao.dropSchema(collectionId));
+    List<CollectionId> allCollections = collectionDao.listCollectionSchemas();
+    allCollections.forEach(collectionId -> collectionDao.dropSchema(collectionId.id()));
   }
 
   // clean up all collections after all tests to ensure tests in other files start from a clean
   // slate
   @AfterAll
   void afterAll() {
-    List<UUID> allCollections = collectionDao.listCollectionSchemas();
-    allCollections.forEach(collectionId -> collectionDao.dropSchema(collectionId));
+    List<CollectionId> allCollections = collectionDao.listCollectionSchemas();
+    allCollections.forEach(collectionId -> collectionDao.dropSchema(collectionId.id()));
   }
 
   // is this test set up correctly?
@@ -57,9 +58,7 @@ class PostgresCollectionDaoTest extends TestBase {
   // do we populate all db columns correctly?
   @Test
   void insertPopulatesAllColumns() {
-
-    List<UUID> allCollections = collectionDao.listCollectionSchemas();
-    assertEquals(0, allCollections.size());
+    assertEquals(0, collectionDao.listCollectionSchemas().size());
 
     UUID collectionId = UUID.randomUUID();
     collectionDao.createSchema(collectionId);
@@ -79,9 +78,7 @@ class PostgresCollectionDaoTest extends TestBase {
   // do we populate all db columns correctly?
   @Test
   void defaultPopulatesAllColumns() {
-
-    List<UUID> allCollections = collectionDao.listCollectionSchemas();
-    assertEquals(0, allCollections.size());
+    assertEquals(0, collectionDao.listCollectionSchemas().size());
 
     UUID collectionId = workspaceId.id();
 

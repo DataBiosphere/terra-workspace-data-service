@@ -53,7 +53,7 @@ public class CollectionService {
 
   public List<UUID> listCollections(String version) {
     validateVersion(version);
-    return collectionDao.listCollectionSchemas();
+    return collectionDao.listCollectionSchemas().stream().map(CollectionId::id).toList();
   }
 
   /**

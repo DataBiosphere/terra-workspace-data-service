@@ -26,8 +26,8 @@ public class MockCollectionDao implements CollectionDao {
   }
 
   @Override
-  public List<UUID> listCollectionSchemas() {
-    return collections.stream().toList();
+  public List<CollectionId> listCollectionSchemas() {
+    return collections.stream().map(CollectionId::of).toList();
   }
 
   @Override
