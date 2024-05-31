@@ -51,7 +51,7 @@ class DataRepoDaoTest extends TestBase {
   @AfterEach
   void tearDown() {
     if (collectionDao.collectionSchemaExists(COLLECTION_ID)) {
-      collectionDao.dropSchema(COLLECTION_UUID);
+      collectionDao.dropSchema(COLLECTION_ID);
     }
   }
 

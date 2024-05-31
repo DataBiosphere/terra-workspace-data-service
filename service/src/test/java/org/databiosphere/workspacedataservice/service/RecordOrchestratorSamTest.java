@@ -51,7 +51,7 @@ class RecordOrchestratorSamTest extends TestBase {
 
   @BeforeEach
   void setUp() {
-    if (!collectionDao.collectionSchemaExists(CollectionId.of(COLLECTION_UUID))) {
+    if (!collectionDao.collectionSchemaExists(COLLECTION_ID)) {
       collectionDao.createSchema(COLLECTION_ID);
     }
     given(mockSamClientFactory.getResourcesApi()).willReturn(mockResourcesApi);
@@ -62,7 +62,7 @@ class RecordOrchestratorSamTest extends TestBase {
 
   @AfterEach
   void tearDown() {
-    collectionDao.dropSchema(COLLECTION_UUID);
+    collectionDao.dropSchema(COLLECTION_ID);
   }
 
   @Test

@@ -22,9 +22,7 @@ public class IntegrationServiceTestBase {
     namedTemplate.getJdbcTemplate().update("delete from sys_wds.restore");
 
     // delete all collections that are currently known to WDS
-    collectionDao
-        .listCollectionSchemas()
-        .forEach(collectionId -> collectionDao.dropSchema(collectionId.id()));
+    collectionDao.listCollectionSchemas().forEach(collectionDao::dropSchema);
 
     // and drop any orphaned Postgres schemas
     dropOrphanedSchemas(namedTemplate);

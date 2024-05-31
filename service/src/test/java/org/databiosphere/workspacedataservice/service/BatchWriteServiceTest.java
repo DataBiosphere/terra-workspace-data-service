@@ -14,7 +14,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.net.URL;
 import java.util.Map;
-import java.util.UUID;
 import org.apache.avro.file.DataFileStream;
 import org.apache.avro.generic.GenericRecord;
 import org.databiosphere.workspacedataservice.common.TestBase;
@@ -53,8 +52,7 @@ class BatchWriteServiceTest extends TestBase {
   @SpyBean DataTypeInferer inferer;
   @SpyBean RecordService recordService;
 
-  private static final UUID COLLECTION_UUID = randomUUID();
-  private static final CollectionId COLLECTION_ID = CollectionId.of(COLLECTION_UUID);
+  private static final CollectionId COLLECTION_ID = CollectionId.of(randomUUID());
   private static final RecordType THING_TYPE = RecordType.valueOf("thing");
 
   @BeforeEach
@@ -66,7 +64,7 @@ class BatchWriteServiceTest extends TestBase {
 
   @AfterEach
   void tearDown() {
-    collectionDao.dropSchema(COLLECTION_UUID);
+    collectionDao.dropSchema(COLLECTION_ID);
   }
 
   @Test
@@ -76,8 +74,7 @@ class BatchWriteServiceTest extends TestBase {
     InputStream is = new ByteArrayInputStream(streamContents.getBytes());
 
     RecordSource recordSource = recordSourceFactory.forJson(is);
-    try (RecordSink recordSink =
-        recordSinkFactory.buildRecordSink(CollectionId.of(COLLECTION_UUID))) {
+    try (RecordSink recordSink = recordSinkFactory.buildRecordSink(COLLECTION_ID)) {
       Exception ex =
           assertThrows(
               BadStreamingWriteRequestException.class,
@@ -160,8 +157,7 @@ class BatchWriteServiceTest extends TestBase {
   private BatchWriteResult batchWritePfbStream(
       DataFileStream<GenericRecord> pfbStream, String primaryKey, ImportMode importMode)
       throws IOException {
-    try (RecordSink recordSink =
-        recordSinkFactory.buildRecordSink(CollectionId.of(COLLECTION_UUID))) {
+    try (RecordSink recordSink = recordSinkFactory.buildRecordSink(COLLECTION_ID)) {
       return batchWriteService.batchWrite(
           recordSourceFactory.forPfb(pfbStream, importMode),
           recordSink,

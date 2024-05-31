@@ -33,7 +33,7 @@ class CollectionServiceTest extends TestBase {
     // Delete all collections
     collectionDao
         .listCollectionSchemas()
-        .forEach(collection -> collectionDao.dropSchema(collection.id()));
+        .forEach(collection -> collectionDao.dropSchema(collection));
   }
 
   @Test

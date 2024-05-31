@@ -202,7 +202,8 @@ public class BackupRestoreService {
       */
 
       // rename workspace schema from source to dest
-      collectionDao.alterSchema(UUID.fromString(sourceWorkspaceId), workspaceId.id());
+      collectionDao.alterSchema(
+          CollectionId.fromString(sourceWorkspaceId), CollectionId.of(workspaceId.id()));
 
       activityLogger.saveEventForCurrentUser(
           user -> user.restored().backup().withId(backupFileName));

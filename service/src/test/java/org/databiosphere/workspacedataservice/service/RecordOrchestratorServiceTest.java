@@ -72,7 +72,7 @@ class RecordOrchestratorServiceTest extends TestBase {
 
   @AfterEach
   void tearDown() {
-    collectionDao.dropSchema(COLLECTION_UUID);
+    collectionDao.dropSchema(COLLECTION_ID);
   }
 
   @Test

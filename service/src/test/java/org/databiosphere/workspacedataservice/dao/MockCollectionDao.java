@@ -3,7 +3,6 @@ package org.databiosphere.workspacedataservice.dao;
 import java.sql.SQLException;
 import java.util.List;
 import java.util.Set;
-import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import org.databiosphere.workspacedataservice.shared.model.CollectionId;
 import org.databiosphere.workspacedataservice.shared.model.WorkspaceId;
@@ -13,7 +12,7 @@ import org.postgresql.util.ServerErrorMessage;
 public class MockCollectionDao implements CollectionDao {
 
   // backing "database" for this mock
-  private final Set<UUID> collections = ConcurrentHashMap.newKeySet();
+  private final Set<CollectionId> collections = ConcurrentHashMap.newKeySet();
   private final WorkspaceId workspaceId;
 
   public MockCollectionDao(WorkspaceId workspaceId) {
@@ -22,33 +21,31 @@ public class MockCollectionDao implements CollectionDao {
 
   @Override
   public boolean collectionSchemaExists(CollectionId collectionId) {
-    return collections.contains(collectionId.id());
+    return collections.contains(collectionId);
   }
 
   @Override
   public List<CollectionId> listCollectionSchemas() {
-    return collections.stream().map(CollectionId::of).toList();
+    return collections.stream().toList();
   }
 
   @Override
   public void createSchema(CollectionId collectionId) {
-    if (collections.contains(collectionId.id())) {
+    if (collections.contains(collectionId)) {
       ServerErrorMessage sqlMsg =
-          new ServerErrorMessage(
-              "ERROR: schema \"" + collectionId.toString() + "\" already exists");
+          new ServerErrorMessage("ERROR: schema \"" + collectionId + "\" already exists");
       SQLException ex = new org.postgresql.util.PSQLException(sqlMsg);
       String sql = "create schema \"" + collectionId + "\"";
       throw new org.springframework.jdbc.BadSqlGrammarException("StatementCallback", sql, ex);
     }
-    collections.add(collectionId.id());
+    collections.add(collectionId);
   }
 
   @Override
-  public void dropSchema(UUID collectionId) {
+  public void dropSchema(CollectionId collectionId) {
     if (!collections.contains(collectionId)) {
       ServerErrorMessage sqlMsg =
-          new ServerErrorMessage(
-              "ERROR: schema \"" + collectionId.toString() + "\" does not exist");
+          new ServerErrorMessage("ERROR: schema \"" + collectionId + "\" does not exist");
       SQLException ex = new org.postgresql.util.PSQLException(sqlMsg);
       String sql = "drop schema \"" + collectionId + "\" cascade";
       throw new org.springframework.jdbc.BadSqlGrammarException("StatementCallback", sql, ex);
@@ -57,17 +54,16 @@ public class MockCollectionDao implements CollectionDao {
   }
 
   @Override
-  public void alterSchema(UUID sourceWorkspaceId, UUID workspaceId) {
-    if (!collections.contains(sourceWorkspaceId)) {
+  public void alterSchema(CollectionId oldCollectionId, CollectionId newCollectionId) {
+    if (!collections.contains(oldCollectionId)) {
       ServerErrorMessage sqlMsg =
-          new ServerErrorMessage(
-              "ERROR: schema \"" + sourceWorkspaceId.toString() + "\" does not exist");
+          new ServerErrorMessage("ERROR: schema \"" + oldCollectionId + "\" does not exist");
       SQLException ex = new org.postgresql.util.PSQLException(sqlMsg);
-      String sql = "alter schema \"" + sourceWorkspaceId + "\" rename to \"" + workspaceId + "\"";
+      String sql = "alter schema \"" + oldCollectionId + "\" rename to \"" + newCollectionId + "\"";
       throw new org.springframework.jdbc.BadSqlGrammarException("StatementCallback", sql, ex);
     }
-    collections.remove(sourceWorkspaceId);
-    collections.add(workspaceId);
+    collections.remove(oldCollectionId);
+    collections.add(newCollectionId);
   }
 
   @Override
@@ -77,7 +73,7 @@ public class MockCollectionDao implements CollectionDao {
 
   // convenience for unit tests: removes all collections
   public void clearAllCollections() {
-    Set<UUID> toRemove = Set.copyOf(collections);
+    Set<CollectionId> toRemove = Set.copyOf(collections);
     collections.removeAll(toRemove);
   }
 }

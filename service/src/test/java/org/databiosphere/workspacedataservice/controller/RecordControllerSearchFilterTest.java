@@ -67,7 +67,7 @@ class RecordControllerSearchFilterTest extends MockMvcTestBase {
 
   @AfterAll
   void deleteAllInstances() {
-    collectionDao.dropSchema(COLLECTION_UUID);
+    collectionDao.dropSchema(COLLECTION_ID);
   }
 
   @Test
