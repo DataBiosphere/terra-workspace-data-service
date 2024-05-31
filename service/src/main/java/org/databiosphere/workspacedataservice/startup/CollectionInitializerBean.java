@@ -286,9 +286,9 @@ public class CollectionInitializerBean {
   */
   private void initializeDefaultCollection() {
     try {
-      UUID collectionId = workspaceId.id();
+      CollectionId collectionId = CollectionId.of(workspaceId.id());
 
-      if (!collectionDao.collectionSchemaExists(CollectionId.of(workspaceId.id()))) {
+      if (!collectionDao.collectionSchemaExists(collectionId)) {
         collectionDao.createSchema(collectionId);
         LOGGER.info("Creating default schema id succeeded for workspaceId {}.", workspaceId);
       } else {

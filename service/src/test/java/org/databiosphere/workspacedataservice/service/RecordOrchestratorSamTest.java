@@ -1,5 +1,6 @@
 package org.databiosphere.workspacedataservice.service;
 
+import static java.util.UUID.randomUUID;
 import static org.databiosphere.workspacedataservice.service.RecordUtils.VERSION;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -45,12 +46,13 @@ class RecordOrchestratorSamTest extends TestBase {
   // to mock it manually
   final ResourcesApi mockResourcesApi = Mockito.mock(ResourcesApi.class);
 
-  private static final UUID COLLECTION = UUID.fromString(HARDCODED_WORKSPACE_ID);
+  private static final UUID COLLECTION_UUID = randomUUID();
+  private static final CollectionId COLLECTION_ID = CollectionId.of(COLLECTION_UUID);
 
   @BeforeEach
   void setUp() {
-    if (!collectionDao.collectionSchemaExists(CollectionId.of(COLLECTION))) {
-      collectionDao.createSchema(COLLECTION);
+    if (!collectionDao.collectionSchemaExists(CollectionId.of(COLLECTION_UUID))) {
+      collectionDao.createSchema(COLLECTION_ID);
     }
     given(mockSamClientFactory.getResourcesApi()).willReturn(mockResourcesApi);
 
@@ -60,7 +62,7 @@ class RecordOrchestratorSamTest extends TestBase {
 
   @AfterEach
   void tearDown() {
-    collectionDao.dropSchema(COLLECTION);
+    collectionDao.dropSchema(COLLECTION_UUID);
   }
 
   @Test
@@ -73,7 +75,7 @@ class RecordOrchestratorSamTest extends TestBase {
 
     assertThrows(
         AuthorizationException.class,
-        () -> recordOrchestratorService.validateAndPermissions(COLLECTION, VERSION),
+        () -> recordOrchestratorService.validateAndPermissions(COLLECTION_UUID, VERSION),
         "validateAndPermissions should throw if caller does not have write permission in Sam");
   }
 
@@ -84,7 +86,7 @@ class RecordOrchestratorSamTest extends TestBase {
         .willReturn(true);
 
     assertDoesNotThrow(
-        () -> recordOrchestratorService.validateAndPermissions(COLLECTION, VERSION),
+        () -> recordOrchestratorService.validateAndPermissions(COLLECTION_UUID, VERSION),
         "validateAndPermissions should not throw if caller has write permission in Sam");
   }
 
@@ -96,7 +98,7 @@ class RecordOrchestratorSamTest extends TestBase {
                 0, "intentional failure for unit test")); // 0 indicates a failed connection
     assertThrows(
         RestException.class,
-        () -> recordOrchestratorService.validateAndPermissions(COLLECTION, VERSION),
+        () -> recordOrchestratorService.validateAndPermissions(COLLECTION_UUID, VERSION),
         "validateAndPermissions should throw if caller does not have write permission in Sam");
   }
 }

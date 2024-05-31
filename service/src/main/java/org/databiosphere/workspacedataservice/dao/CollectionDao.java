@@ -10,7 +10,7 @@ public interface CollectionDao {
 
   List<CollectionId> listCollectionSchemas();
 
-  void createSchema(UUID collectionId);
+  void createSchema(CollectionId collectionId);
 
   void dropSchema(UUID collectionId);
 

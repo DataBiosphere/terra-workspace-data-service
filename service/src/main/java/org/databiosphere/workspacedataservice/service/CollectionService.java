@@ -94,9 +94,10 @@ public class CollectionService {
       throw new ResponseStatusException(HttpStatus.CONFLICT, "This collection already exists");
     }
 
+    // TODO(AJ-1662): this needs to pass the workspaceId argument so the collection is created
+    //   correctly
     // create collection schema in Postgres
-    // TODO: this needs to pass the workspaceId argument so the collection is created correctly
-    collectionDao.createSchema(collectionId.id());
+    collectionDao.createSchema(collectionId);
 
     activityLogger.saveEventForCurrentUser(
         user -> user.created().collection().withUuid(collectionId.id()));

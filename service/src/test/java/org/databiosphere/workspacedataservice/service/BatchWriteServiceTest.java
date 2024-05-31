@@ -1,5 +1,6 @@
 package org.databiosphere.workspacedataservice.service;
 
+import static java.util.UUID.randomUUID;
 import static org.databiosphere.workspacedataservice.dataimport.pfb.PfbRecordConverter.ID_FIELD;
 import static org.databiosphere.workspacedataservice.service.model.ReservedNames.RECORD_ID;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -52,19 +53,20 @@ class BatchWriteServiceTest extends TestBase {
   @SpyBean DataTypeInferer inferer;
   @SpyBean RecordService recordService;
 
-  private static final UUID COLLECTION = UUID.fromString("aaaabbbb-cccc-dddd-1111-222233334444");
+  private static final UUID COLLECTION_UUID = randomUUID();
+  private static final CollectionId COLLECTION_ID = CollectionId.of(COLLECTION_UUID);
   private static final RecordType THING_TYPE = RecordType.valueOf("thing");
 
   @BeforeEach
   void setUp() {
-    if (!collectionDao.collectionSchemaExists(CollectionId.of(COLLECTION))) {
-      collectionDao.createSchema(COLLECTION);
+    if (!collectionDao.collectionSchemaExists(COLLECTION_ID)) {
+      collectionDao.createSchema(COLLECTION_ID);
     }
   }
 
   @AfterEach
   void tearDown() {
-    collectionDao.dropSchema(COLLECTION);
+    collectionDao.dropSchema(COLLECTION_UUID);
   }
 
   @Test
@@ -74,7 +76,8 @@ class BatchWriteServiceTest extends TestBase {
     InputStream is = new ByteArrayInputStream(streamContents.getBytes());
 
     RecordSource recordSource = recordSourceFactory.forJson(is);
-    try (RecordSink recordSink = recordSinkFactory.buildRecordSink(CollectionId.of(COLLECTION))) {
+    try (RecordSink recordSink =
+        recordSinkFactory.buildRecordSink(CollectionId.of(COLLECTION_UUID))) {
       Exception ex =
           assertThrows(
               BadStreamingWriteRequestException.class,
@@ -157,7 +160,8 @@ class BatchWriteServiceTest extends TestBase {
   private BatchWriteResult batchWritePfbStream(
       DataFileStream<GenericRecord> pfbStream, String primaryKey, ImportMode importMode)
       throws IOException {
-    try (RecordSink recordSink = recordSinkFactory.buildRecordSink(CollectionId.of(COLLECTION))) {
+    try (RecordSink recordSink =
+        recordSinkFactory.buildRecordSink(CollectionId.of(COLLECTION_UUID))) {
       return batchWriteService.batchWrite(
           recordSourceFactory.forPfb(pfbStream, importMode),
           recordSink,

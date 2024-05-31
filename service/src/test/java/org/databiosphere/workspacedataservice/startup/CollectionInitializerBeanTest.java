@@ -89,7 +89,7 @@ class CollectionInitializerBeanTest extends TestBase {
     // collection does not exist
     assertFalse(collectionDao.collectionSchemaExists(collectionIdMatchingWorkspaceId()));
     // create the collection outside the initializer
-    collectionDao.createSchema(collectionUuidMatchingWorkspaceId());
+    collectionDao.createSchema(collectionIdMatchingWorkspaceId());
     assertTrue(collectionDao.collectionSchemaExists(collectionIdMatchingWorkspaceId()));
     // now run the initializer
     getBean().initializeCollection();
@@ -130,7 +130,7 @@ class CollectionInitializerBeanTest extends TestBase {
   // exists.
   void cloneWithCloneTableAndCollectionExist() {
     // start with collection and clone entry
-    collectionDao.createSchema(collectionUuidMatchingWorkspaceId());
+    collectionDao.createSchema(collectionIdMatchingWorkspaceId());
     cloneDao.createCloneEntry(randomUUID(), sourceWorkspaceId);
     // enter clone mode
     boolean cleanExit = getBean().initCloneMode(sourceWorkspaceId);
@@ -184,10 +184,6 @@ class CollectionInitializerBeanTest extends TestBase {
 
   private CollectionId collectionIdMatchingWorkspaceId() {
     return CollectionId.of(workspaceId.id());
-  }
-
-  private UUID collectionUuidMatchingWorkspaceId() {
-    return workspaceId.id();
   }
 
   private CollectionInitializerBean getBean() {
