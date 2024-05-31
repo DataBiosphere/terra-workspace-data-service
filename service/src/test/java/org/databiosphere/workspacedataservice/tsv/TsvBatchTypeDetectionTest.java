@@ -60,14 +60,14 @@ class TsvBatchTypeDetectionTest extends TestBase {
 
   @BeforeEach
   void setUp() {
-    if (!collectionDao.collectionSchemaExists(CollectionId.of(COLLECTION_UUID))) {
+    if (!collectionDao.collectionSchemaExists(COLLECTION_ID)) {
       collectionDao.createSchema(COLLECTION_ID);
     }
   }
 
   @AfterEach
   void tearDown() {
-    collectionDao.dropSchema(COLLECTION_UUID);
+    collectionDao.dropSchema(COLLECTION_ID);
   }
 
   // when batchWriteTsvStream is called with a single specified RecordType, we should not fail if
@@ -99,8 +99,7 @@ id\tmyColumn
         recordSourceFactory.forTsv(file.getInputStream(), THING_TYPE, Optional.of(primaryKey));
     // batchWrite will fail if we are not correctly re-detecting datatypes in later batches
     // (note this is a try-with-resources; an exception from batchWrite() will still fail the test)
-    try (RecordSink recordSink =
-        recordSinkFactory.buildRecordSink(CollectionId.of(COLLECTION_UUID))) {
+    try (RecordSink recordSink = recordSinkFactory.buildRecordSink(COLLECTION_ID)) {
       batchWriteService.batchWrite(recordSource, recordSink, THING_TYPE, primaryKey);
     }
 

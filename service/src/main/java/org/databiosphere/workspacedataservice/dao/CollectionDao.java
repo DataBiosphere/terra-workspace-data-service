@@ -1,7 +1,6 @@
 package org.databiosphere.workspacedataservice.dao;
 
 import java.util.List;
-import java.util.UUID;
 import org.databiosphere.workspacedataservice.shared.model.CollectionId;
 import org.databiosphere.workspacedataservice.shared.model.WorkspaceId;
 
@@ -12,9 +11,9 @@ public interface CollectionDao {
 
   void createSchema(CollectionId collectionId);
 
-  void dropSchema(UUID collectionId);
+  void dropSchema(CollectionId collectionId);
 
-  void alterSchema(UUID sourceWorkspaceId, UUID workspaceId);
+  void alterSchema(CollectionId oldCollectionId, CollectionId newCollectionId);
 
   WorkspaceId getWorkspaceId(CollectionId collectionId);
 }

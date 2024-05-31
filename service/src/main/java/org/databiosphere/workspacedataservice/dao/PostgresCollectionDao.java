@@ -61,7 +61,7 @@ public class PostgresCollectionDao implements CollectionDao {
   @SuppressWarnings("squid:S2077") // since collectionId must be a UUID, it is safe to use inline
   public void createSchema(CollectionId collectionId) {
     // insert to collection table
-    insertCollectionRow(collectionId.id(), /* ignoreConflict= */ false);
+    insertCollectionRow(collectionId, /* ignoreConflict= */ false);
     // create the postgres schema
     namedTemplate.getJdbcTemplate().update("create schema " + quote(collectionId.toString()));
   }
@@ -69,19 +69,19 @@ public class PostgresCollectionDao implements CollectionDao {
   @Override
   @WriteTransaction
   @SuppressWarnings("squid:S2077") // since collectionId must be a UUID, it is safe to use inline
-  public void dropSchema(UUID collectionId) {
+  public void dropSchema(CollectionId collectionId) {
     namedTemplate
         .getJdbcTemplate()
         .update("drop schema " + quote(collectionId.toString()) + " cascade");
     namedTemplate
         .getJdbcTemplate()
-        .update("delete from sys_wds.collection where id = ?", collectionId);
+        .update("delete from sys_wds.collection where id = ?", collectionId.id());
   }
 
   @Override
   @WriteTransaction
   @SuppressWarnings("squid:S2077") // since collectionId must be a UUID, it is safe to use inline
-  public void alterSchema(UUID oldSchemaId, UUID newSchemaId) {
+  public void alterSchema(CollectionId oldCollectionId, CollectionId newCollectionId) {
     if (workspaceId == null) {
       throw new UnsupportedOperationException(
           "$WORKSPACE_ID environment variable is required for alterSchema()");
@@ -91,21 +91,21 @@ public class PostgresCollectionDao implements CollectionDao {
         .getJdbcTemplate()
         .update(
             "alter schema "
-                + quote(oldSchemaId.toString())
+                + quote(oldCollectionId.toString())
                 + " rename to "
-                + quote(newSchemaId.toString()));
+                + quote(newCollectionId.toString()));
     // rename any rows in sys_wds.collection from old to new
     namedTemplate
         .getJdbcTemplate()
         .update(
             "update sys_wds.collection set id = ?, workspace_id = ? where id = ?",
-            newSchemaId,
+            newCollectionId.id(),
             workspaceId,
-            oldSchemaId);
+            oldCollectionId.id());
     // ensure new exists in sys_wds.collection. When this alterSchema() method is called after
     // restoring from a pg_dump,
     // the oldSchema doesn't exist, so is not renamed in the previous statement.
-    insertCollectionRow(newSchemaId, /* ignoreConflict= */ true);
+    insertCollectionRow(newCollectionId, /* ignoreConflict= */ true);
   }
 
   @Override
@@ -118,19 +118,19 @@ public class PostgresCollectionDao implements CollectionDao {
     return WorkspaceId.of(workspaceUuid);
   }
 
-  private void insertCollectionRow(UUID collectionId, boolean ignoreConflict) {
+  private void insertCollectionRow(CollectionId collectionId, boolean ignoreConflict) {
     // if workspaceId as configured by the $WORKSPACE_ID is null, use
     // collectionId instead
-    UUID nonNullWorkspaceId = Objects.requireNonNullElse(workspaceId, collectionId);
+    UUID nonNullWorkspaceUuid = Objects.requireNonNullElse(workspaceId, collectionId.id());
 
     // auto-generate the name for this collection
     String name = collectionId.toString();
-    if (collectionId.equals(nonNullWorkspaceId)) {
+    if (collectionId.id().equals(nonNullWorkspaceUuid)) {
       name = "default";
     }
 
-    MapSqlParameterSource params = new MapSqlParameterSource("id", collectionId);
-    params.addValue("workspace_id", nonNullWorkspaceId);
+    MapSqlParameterSource params = new MapSqlParameterSource("id", collectionId.id());
+    params.addValue("workspace_id", nonNullWorkspaceUuid);
     params.addValue("name", name);
     params.addValue("description", name);
 

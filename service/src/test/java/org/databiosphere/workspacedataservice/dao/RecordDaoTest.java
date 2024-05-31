@@ -82,7 +82,7 @@ class RecordDaoTest extends TestBase {
 
   @AfterEach
   void tearDown() {
-    collectionDao.dropSchema(collectionUuid);
+    collectionDao.dropSchema(CollectionId.of(collectionUuid));
   }
 
   /**
@@ -122,7 +122,7 @@ class RecordDaoTest extends TestBase {
                 "schema list after creation step should contain the new UUIDs"));
 
     // delete the new collections
-    someCollectionsToCreate.forEach(inst -> collectionDao.dropSchema(inst.id()));
+    someCollectionsToCreate.forEach(collectionId -> collectionDao.dropSchema(collectionId));
 
     // get the list of collections again
     List<CollectionId> actualSchemasAfterDeletion = collectionDao.listCollectionSchemas();

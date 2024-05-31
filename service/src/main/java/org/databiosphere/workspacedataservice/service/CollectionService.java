@@ -103,12 +103,13 @@ public class CollectionService {
         user -> user.created().collection().withUuid(collectionId.id()));
   }
 
-  public void deleteCollection(UUID collectionId, String version) {
+  public void deleteCollection(UUID collectionUuid, String version) {
     validateVersion(version);
-    validateCollection(collectionId);
+    validateCollection(collectionUuid);
+    CollectionId collectionId = CollectionId.of(collectionUuid);
 
     // check that the current user has permission to delete the Sam resource
-    if (!canDeleteCollection(CollectionId.of(collectionId))) {
+    if (!canDeleteCollection(collectionId)) {
       throw new AuthorizationException("Caller does not have permission to delete collection.");
     }
 
@@ -116,7 +117,7 @@ public class CollectionService {
     collectionDao.dropSchema(collectionId);
 
     activityLogger.saveEventForCurrentUser(
-        user -> user.deleted().collection().withUuid(collectionId));
+        user -> user.deleted().collection().withUuid(collectionUuid));
   }
 
   public void validateCollection(UUID collectionId) {

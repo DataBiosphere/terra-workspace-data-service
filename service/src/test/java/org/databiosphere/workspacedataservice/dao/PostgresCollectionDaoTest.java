@@ -34,7 +34,7 @@ class PostgresCollectionDaoTest extends TestBase {
   @BeforeEach
   void beforeEach() {
     List<CollectionId> allCollections = collectionDao.listCollectionSchemas();
-    allCollections.forEach(collectionId -> collectionDao.dropSchema(collectionId.id()));
+    allCollections.forEach(collectionId -> collectionDao.dropSchema(collectionId));
   }
 
   // clean up all collections after all tests to ensure tests in other files start from a clean
@@ -42,7 +42,7 @@ class PostgresCollectionDaoTest extends TestBase {
   @AfterAll
   void afterAll() {
     List<CollectionId> allCollections = collectionDao.listCollectionSchemas();
-    allCollections.forEach(collectionId -> collectionDao.dropSchema(collectionId.id()));
+    allCollections.forEach(collectionId -> collectionDao.dropSchema(collectionId));
   }
 
   // is this test set up correctly?

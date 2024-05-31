@@ -73,7 +73,7 @@ class CollectionInitializerBeanTest extends TestBase {
   void tearDown() {
     // clean up any collections left in the db
     List<CollectionId> allCollections = collectionDao.listCollectionSchemas();
-    allCollections.forEach(collectionId -> collectionDao.dropSchema(collectionId.id()));
+    allCollections.forEach(collectionId -> collectionDao.dropSchema(collectionId));
   }
 
   @Test
