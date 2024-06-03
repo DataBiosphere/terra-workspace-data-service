@@ -13,6 +13,7 @@ import static org.databiosphere.workspacedataservice.recordsink.RawlsModel.Op.AD
 import static org.databiosphere.workspacedataservice.recordsink.RawlsModel.Op.ADD_UPDATE_ATTRIBUTE;
 import static org.databiosphere.workspacedataservice.recordsink.RawlsModel.Op.CREATE_ATTRIBUTE_VALUE_LIST;
 import static org.databiosphere.workspacedataservice.recordsink.RawlsModel.Op.REMOVE_ATTRIBUTE;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
@@ -26,6 +27,8 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ArrayNode;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.google.common.collect.ImmutableMap;
 import com.google.mu.util.stream.BiStream;
 import java.io.IOException;
@@ -277,8 +280,49 @@ class PfbQuartzJobControlPlaneE2ETest {
      at raw values.
     */
     InputStream writtenJson = storage.getBlobContents(rawlsJsonBlobName(jobId));
+    // never readAllBytes() for large streams; we know this unit test's stream is a manageable size
     String writtenJsonString = new String(writtenJson.readAllBytes());
-    assertThat(writtenJsonString).doesNotContain("\\\"");
+    assertThat(writtenJsonString)
+        .withFailMessage("Written output should not contain escaped quotes")
+        .doesNotContain("\\\"");
+
+    // read as json
+    JsonNode jsonNode = mapper.readTree(writtenJsonString);
+    ArrayNode arrayNode = assertInstanceOf(ArrayNode.class, jsonNode);
+
+    // expect 2 entities in this output
+    List<ObjectNode> entityNodes =
+        StreamSupport.stream(arrayNode.spliterator(), false)
+            .map(objNode -> assertInstanceOf(ObjectNode.class, objNode))
+            .toList();
+    assertEquals(2, entityNodes.size());
+
+    // loop through entities in the output
+    entityNodes.forEach(
+        entityNode -> {
+          // filter to only the AddListMember ops for the "pfb:links" attribute
+          ArrayNode operations = assertInstanceOf(ArrayNode.class, entityNode.get("operations"));
+          List<ObjectNode> addListMemberObjects =
+              new java.util.ArrayList<>(
+                  StreamSupport.stream(operations.spliterator(), false)
+                      .map(objNode -> assertInstanceOf(ObjectNode.class, objNode))
+                      .filter(
+                          objNode ->
+                              objNode.has("attributeListName")
+                                  && "pfb:links".equals(objNode.get("attributeListName").asText())
+                                  && "AddListMember".equals(objNode.get("op").asText()))
+                      .toList());
+          // we should have at least one AddListMember op
+          assertThat(addListMemberObjects.size()).isGreaterThan(1);
+          // and the AddListMember's "newMember" value should be JSON (not a string)
+          addListMemberObjects.forEach(
+              addListMemberObj -> {
+                assertInstanceOf(
+                    ObjectNode.class,
+                    addListMemberObj.get("newMember"),
+                    "newMember value should be JSON");
+              });
+        });
   }
 
   @Test
