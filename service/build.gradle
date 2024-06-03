@@ -8,7 +8,7 @@ plugins {
     id 'org.openapi.generator'
     id 'com.diffplug.spotless'
     id 'jacoco'
-    id "au.com.dius.pact" version "4.6.9"
+    id "au.com.dius.pact" version "4.6.10"
     id 'jvm-test-suite'
 }
 
@@ -39,17 +39,17 @@ ext {
     parquet_mr_version = "1.14.0"
     hadoop_version = "3.4.0"
     prometheus_rsocket_version = "1.5.3"
-    spring_cloud_gcp_version = "5.3.0"
+    spring_cloud_gcp_version = "5.4.1"
 }
 
 dependencies {
     // logging
-    implementation 'org.zalando:logbook-spring-boot-starter:3.8.0'
+    implementation 'org.zalando:logbook-spring-boot-starter:3.9.0'
 
     // Azure libraries
     implementation 'com.microsoft.azure:applicationinsights-runtime-attach:3.4.19'
     implementation 'com.azure:azure-storage-blob:12.26.0'
-    implementation 'com.azure:azure-identity-extensions:1.1.15' // postgres password plugin
+    implementation 'com.azure:azure-identity-extensions:1.1.16' // postgres password plugin
 
     implementation 'org.springframework.boot:spring-boot-starter'
     implementation 'org.springframework.boot:spring-boot-starter-jdbc'
@@ -62,7 +62,7 @@ dependencies {
     implementation "io.micrometer.prometheus:prometheus-rsocket-spring:$prometheus_rsocket_version"
     implementation 'org.springframework.integration:spring-integration-jdbc'
     implementation 'org.aspectj:aspectjweaver' // required by spring-retry, not used directly
-    implementation 'com.google.guava:guava:33.2.0-jre'
+    implementation 'com.google.guava:guava:33.2.1-jre'
     implementation 'org.postgresql:postgresql'
     implementation 'org.webjars:webjars-locator-core' // versioned by spring dependency management
     implementation 'com.fasterxml.jackson.dataformat:jackson-dataformat-csv'
@@ -86,7 +86,7 @@ dependencies {
     implementation 'com.squareup.okhttp3:okhttp' // required by Sam client
     implementation "bio.terra:datarepo-client:2.13.0-SNAPSHOT"
     implementation "bio.terra:workspace-manager-client:0.254.983-SNAPSHOT"
-    implementation "bio.terra:java-pfb-library:0.42.0"
+    implementation "bio.terra:java-pfb-library:0.45.0"
     implementation project(path: ':client')
 
     // Parquet, used for TDR snapshot import
@@ -122,24 +122,24 @@ dependencies {
     implementation "org.glassfish.jersey.core:jersey-common"
 
     annotationProcessor 'org.springframework.boot:spring-boot-configuration-processor'
-    runtimeOnly 'org.webjars.npm:swagger-ui-dist:5.17.10'
+    runtimeOnly 'org.webjars.npm:swagger-ui-dist:5.17.14'
     testImplementation 'io.micrometer:micrometer-observation-test'
     testImplementation 'org.springframework.boot:spring-boot-starter-test'
     testImplementation 'org.junit.jupiter:junit-jupiter'
     testImplementation project(':client')
-    testImplementation 'au.com.dius.pact.provider:spring:4.6.9'
-    testImplementation 'au.com.dius.pact.consumer:junit5:4.6.9'
+    testImplementation 'au.com.dius.pact.provider:spring:4.6.10'
+    testImplementation 'au.com.dius.pact.consumer:junit5:4.6.10'
     testImplementation 'org.junit-pioneer:junit-pioneer:2.2.0'
 
     // google bucket mock
-    testImplementation 'com.google.cloud:google-cloud-nio:0.127.17'
+    testImplementation 'com.google.cloud:google-cloud-nio:0.127.18'
 
     constraints {
         implementation('org.json:json:20240303') {
             because("CVE-2022-45688")
         }
         // commons-compress required by org.apache.avro:avro:1.11.3, required by java-pfb-library:0.14.0
-        implementation('org.apache.commons:commons-compress:1.26.1') {
+        implementation('org.apache.commons:commons-compress:1.26.2') {
             because("CVE-2023-42503")
         }
         implementation('org.xerial.snappy:snappy-java:1.1.10.5') {

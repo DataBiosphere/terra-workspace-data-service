@@ -19,6 +19,7 @@ import org.databiosphere.workspacedataservice.sam.SamClientFactory;
 import org.databiosphere.workspacedataservice.service.model.exception.AuthenticationException;
 import org.databiosphere.workspacedataservice.service.model.exception.AuthorizationException;
 import org.databiosphere.workspacedataservice.service.model.exception.RestException;
+import org.databiosphere.workspacedataservice.shared.model.CollectionId;
 import org.databiosphere.workspacedataservice.shared.model.WorkspaceId;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -81,7 +82,7 @@ class CollectionServiceSamExceptionTest extends TestBase {
   @AfterEach
   void tearDown() {
     // clean up any collections left in the db
-    List<UUID> allCollections = collectionDao.listCollectionSchemas();
+    List<CollectionId> allCollections = collectionDao.listCollectionSchemas();
     allCollections.forEach(collectionId -> collectionDao.dropSchema(collectionId));
   }
 
@@ -205,7 +206,7 @@ class CollectionServiceSamExceptionTest extends TestBase {
   private void doAuthnDeleteTest(
       UUID collectionId, Class<? extends Exception> expectedExceptionClass) {
     // create the collection (directly in the db, bypassing Sam)
-    collectionDao.createSchema(collectionId);
+    collectionDao.createSchema(CollectionId.of(collectionId));
     List<UUID> allCollections = collectionService.listCollections(VERSION);
     assertTrue(
         allCollections.contains(collectionId), "unit test should have created the collections.");
@@ -244,7 +245,7 @@ class CollectionServiceSamExceptionTest extends TestBase {
 
   private void doSamDeleteTest(UUID collectionId, int expectedSamExceptionCode) {
     // bypass Sam and create the collection directly in the db
-    collectionDao.createSchema(collectionId);
+    collectionDao.createSchema(CollectionId.of(collectionId));
     List<UUID> allCollections = collectionService.listCollections(VERSION);
     assertTrue(
         allCollections.contains(collectionId), "unit test should have created the collections.");
