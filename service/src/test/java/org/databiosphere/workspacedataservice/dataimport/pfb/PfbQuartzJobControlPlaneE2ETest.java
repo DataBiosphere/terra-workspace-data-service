@@ -130,6 +130,9 @@ class PfbQuartzJobControlPlaneE2ETest {
   @Value("classpath:avro/test.avro")
   Resource testAvroWithMultipleBatches;
 
+  @Value("classpath:pfb/array-of-json.avro")
+  Resource dataWithArrayOfJson;
+
   private UUID collectionId;
 
   @BeforeEach
@@ -207,7 +210,7 @@ class PfbQuartzJobControlPlaneE2ETest {
 
   @Test
   @Tag(SLOW)
-  void pfbToRawlsEntityWithArrays() throws JobExecutionException, IOException {
+  void pfbToRawlsEntityWithArrayOfStrings() throws JobExecutionException, IOException {
     // Arrange / Act
     UUID jobId = testSupport.executePfbImportQuartzJob(collectionId, dataWithArrayPfb);
 
@@ -244,6 +247,38 @@ class PfbQuartzJobControlPlaneE2ETest {
             new AddListMember(
                 arrayProp, AttributeValue.of("22222222-2222-2222-2222-222222222222")));
     assertThat(actual).isEqualTo(expected);
+  }
+
+  @Test
+  @Tag(SLOW)
+  void pfbToRawlsEntityWithArrayOfJson() throws JobExecutionException, IOException {
+    // Arrange / Act
+    // "dataWithArrayOfJson" contains two rows; each row has a "links" attribute which is an
+    // array of json objects.
+    UUID jobId = testSupport.executePfbImportQuartzJob(collectionId, dataWithArrayOfJson);
+
+    // Assert
+    assertPubSubMessage(expectedPubSubMessageFor(jobId));
+    assertSingleBlobWritten(rawlsJsonBlobName(jobId));
+    /*
+     When serialized properly, the array of json will look like this. Note that the "newMember"
+     value is an OBJECT:
+     {"op":"AddListMember" ... "newMember":{"inputs":[{"input_id":"550e8400-e29b-41d4-a716-446655440000","input_type":"cell_suspension"}],"link_type":
+
+     When serialized improperly, with extra escaping, the array of json will look like this. Note
+     that the "newMember" value is a STRING, containing an escaped version of the object:
+     {"op":"AddListMember" ... "newMember":"{\"inputs\": [{\"input_id\": \"550e8400-e29b-41d4-a716-446655440000\", \"input_type\": \"cell_suspension\"}], \"link_type\":
+
+     So, we can perform a simple test here that looks for \" in the written json.
+
+     N.B. attempting to deserialize the written json into AttributeOperation / AddListMember objects
+     for testing is tricky - when deserializing into a String, the ObjectMapper will treat both of
+     the above as the same value. The test below bypasses deserialization to ensure we're looking
+     at raw values.
+    */
+    InputStream writtenJson = storage.getBlobContents(rawlsJsonBlobName(jobId));
+    String writtenJsonString = new String(writtenJson.readAllBytes());
+    assertThat(writtenJsonString).doesNotContain("\\\"");
   }
 
   @Test
