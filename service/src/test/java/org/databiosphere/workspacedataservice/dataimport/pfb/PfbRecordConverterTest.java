@@ -240,7 +240,7 @@ class PfbRecordConverterTest extends TestBase {
   @ParameterizedTest(name = "with input of {0}, return value should be {1}")
   @MethodSource("provideConvertScalarAttributesArgs")
   void convertScalarAttributes(Object input, Object expected) {
-    Object actual = converter.convertAttributeType(input);
+    Object actual = converter.convertAttributeType(input, null);
     assertEquals(expected, actual);
   }
 
@@ -249,7 +249,7 @@ class PfbRecordConverterTest extends TestBase {
   void convertScalarEnums() {
     Object input = new GenericData.EnumSymbol(Schema.create(Schema.Type.STRING), "bar");
 
-    Object actual = converter.convertAttributeType(input);
+    Object actual = converter.convertAttributeType(input, null);
     assertEquals("bar", actual);
   }
 
@@ -295,7 +295,7 @@ class PfbRecordConverterTest extends TestBase {
   @ParameterizedTest(name = "with array input of {0}, return value should be {1}")
   @MethodSource("provideConvertArrayAttributesArgs")
   void convertArrayAttributes(Object input, Object expected) {
-    Object actual = converter.convertAttributeType(input);
+    Object actual = converter.convertAttributeType(input, null);
     assertEquals(expected, actual);
   }
 
@@ -308,7 +308,7 @@ class PfbRecordConverterTest extends TestBase {
             new GenericData.EnumSymbol(Schema.create(Schema.Type.STRING), "foo"),
             new GenericData.EnumSymbol(Schema.create(Schema.Type.STRING), "baz"));
 
-    Object actual = converter.convertAttributeType(input);
+    Object actual = converter.convertAttributeType(input, null);
     assertEquals(List.of("bar", "foo", "baz"), actual);
   }
 
@@ -317,7 +317,7 @@ class PfbRecordConverterTest extends TestBase {
   @MethodSource("provideDecodeEnumArgs")
   void decodesEnums(String symbol, String expected) {
     Object input = List.of(new GenericData.EnumSymbol(Schema.create(Schema.Type.STRING), symbol));
-    Object actual = converter.convertAttributeType(input);
+    Object actual = converter.convertAttributeType(input, null);
     assertEquals(List.of(expected), actual);
   }
 

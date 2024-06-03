@@ -7,6 +7,11 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.annotations.VisibleForTesting;
 import java.math.BigDecimal;
 import java.nio.ByteBuffer;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
+import java.time.ZoneOffset;
+import java.time.format.DateTimeFormatter;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
@@ -97,7 +102,8 @@ public abstract class AvroRecordConverter {
           objectAttributes.get(fieldName) == null
               ? null
               : convertAttributeType(
-                  destructureElementList(objectAttributes.get(fieldName), field));
+                  destructureElementList(objectAttributes.get(fieldName), field),
+                  getLogicalTypeForValues(field));
 
       attributes.putAttribute(fieldName, value);
     }
@@ -112,7 +118,8 @@ public abstract class AvroRecordConverter {
    */
   @VisibleForTesting
   @Nullable
-  public Object convertAttributeType(@Nullable Object attribute) {
+  public Object convertAttributeType(
+      @Nullable Object attribute, @Nullable LogicalType logicalType) {
 
     if (attribute == null) {
       return null;
@@ -140,7 +147,7 @@ public abstract class AvroRecordConverter {
     // Avro arrays
     if (attribute instanceof Collection<?> collAttr) {
       // recurse
-      return collAttr.stream().map(this::convertAttributeType).toList();
+      return collAttr.stream().map(value -> this.convertAttributeType(value, logicalType)).toList();
     }
 
     // Avro maps
@@ -168,12 +175,12 @@ public abstract class AvroRecordConverter {
 
     // Avro ints
     if (attribute instanceof Integer intAttr) {
-      return BigDecimal.valueOf(intAttr);
+      return convertInteger(intAttr, logicalType);
     }
 
     // Avro longs
     if (attribute instanceof Long longAttr) {
-      return BigDecimal.valueOf(longAttr);
+      return convertLong(longAttr, logicalType);
     }
 
     // Avro floats
@@ -248,6 +255,35 @@ public abstract class AvroRecordConverter {
     return false;
   }
 
+  /**
+   * Get the logical type of values in a field. If the field is a list, this returns the logical
+   * type of the list elements.
+   */
+  private @Nullable LogicalType getLogicalTypeForValues(Field field) {
+    // Lists
+    if (isStructuredList(field)) {
+      return field.schema().getElementType().getFields().get(0).schema().getLogicalType();
+    }
+    if (Schema.Type.ARRAY.equals(field.schema().getType())) {
+      return field.schema().getElementType().getLogicalType();
+    }
+    // For scalar fields, Parquet files exported by TDR have a logical type
+    // that is a union of "null" and the actual data type.
+    if (Schema.Type.UNION.equals(field.schema().getType())) {
+      List<Schema> nonNullTypes =
+          field.schema().getTypes().stream()
+              .filter(type -> !Schema.Type.NULL.equals(type.getType()))
+              .toList();
+      if (nonNullTypes.size() > 1) {
+        LOGGER.warn(
+            "getLogicalTypeForValue received field with multiple types: {}", field.schema());
+        return null;
+      }
+      return nonNullTypes.get(0).getLogicalType();
+    }
+    return field.schema().getLogicalType();
+  }
+
   // Parquet has a concept of "physical type" and "logical type". For some numeric types,
   // the physical type is a fixed-size byte array (GenericData.Fixed), but the logical type
   // defines the desired shape of the value, such as Decimal. This method converts the fixed-size
@@ -278,6 +314,29 @@ public abstract class AvroRecordConverter {
 
     // if this was NOT a logical decimal, just toString() it so we have some usable value
     return fixedAttr.toString();
+  }
+
+  private Object convertInteger(Integer intAttr, @Nullable LogicalType logicalType) {
+    if (logicalType instanceof LogicalTypes.Date) {
+      return LocalDate.ofEpochDay(intAttr);
+    }
+
+    return BigDecimal.valueOf(intAttr);
+  }
+
+  private Object convertLong(Long longAttr, @Nullable LogicalType logicalType) {
+    if (logicalType instanceof LogicalTypes.LocalTimestampMicros) {
+      long seconds = Math.floorDiv(longAttr, 1000000);
+      int nanoSeconds = Math.floorMod(longAttr, 1000000);
+      return LocalDateTime.ofEpochSecond(seconds, nanoSeconds, ZoneOffset.UTC);
+    }
+
+    if (logicalType instanceof LogicalTypes.TimeMicros) {
+      LocalTime time = LocalTime.ofNanoOfDay(longAttr * 1000);
+      return time.format(DateTimeFormatter.ISO_LOCAL_TIME);
+    }
+
+    return BigDecimal.valueOf(longAttr);
   }
 
   private JsonAttribute createJsonAttribute(String serialized) {
