@@ -133,7 +133,7 @@ public class TdrManifestQuartzJob extends QuartzJob {
     // Collect details needed for import
     ImportDetails details = importDetailsRetriever.fetch(jobId, jobData, PrefixStrategy.TDR);
     ImportJobInput jobInput = details.importJobInput();
-    TdrManifestImportOptions options = (TdrManifestImportOptions) jobInput.options();
+    TdrManifestImportOptions options = (TdrManifestImportOptions) jobInput.getOptions();
 
     // read manifest
     SnapshotExportResponseModel snapshotExportResponseModel = parseManifest(uri);
