@@ -7,6 +7,7 @@ import static org.databiosphere.workspacedataservice.dataimport.pfb.PfbTestUtils
 import static org.databiosphere.workspacedataservice.dataimport.pfb.PfbTestUtils.RELATION_ARRAY_SCHEMA;
 import static org.databiosphere.workspacedataservice.dataimport.pfb.PfbTestUtils.RELATION_SCHEMA;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.fail;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -29,6 +30,7 @@ import org.databiosphere.workspacedataservice.recordsource.RecordSource.ImportMo
 import org.databiosphere.workspacedataservice.service.JsonConfig;
 import org.databiosphere.workspacedataservice.shared.model.Record;
 import org.databiosphere.workspacedataservice.shared.model.RecordType;
+import org.databiosphere.workspacedataservice.shared.model.attributes.JsonAttribute;
 import org.databiosphere.workspacedataservice.shared.model.attributes.RelationAttribute;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -181,15 +183,17 @@ class PfbRecordConverterTest extends TestBase {
         actual.getAttributeValue("arrayOfNumbers"));
     assertEquals(List.of("one", "two", "three"), actual.getAttributeValue("arrayOfStrings"));
     assertEquals(List.of("enumValue2", "enumValue1"), actual.getAttributeValue("arrayOfEnums"));
-    assertEqualsJsonString(
+
+    // json attributes use the JsonAttribute wrapper class
+    assertEqualsJsonAttribute(
         "{\"one\":1,\"two\":2,\"three\":3}", actual.getAttributeValue("mapOfNumbers"));
-    assertEqualsJsonString(
+    assertEqualsJsonAttribute(
         "{\"one\":\"one\",\"two\":\"two\",\"three\":\"three\"}",
         actual.getAttributeValue("mapOfStrings"));
-    assertEqualsJsonString(
+    assertEqualsJsonAttribute(
         "{\"one\":\"enumValue1\",\"two\":\"enumValue2\"}", actual.getAttributeValue("mapOfEnums"));
-    assertEqualsJsonString(
-        "{\"embeddedLong\":123,\"embeddedString\":\"embeddedString\"}",
+    assertEqualsJsonAttribute(
+        "{\"embeddedLong\":123,\"embeddedString\":\"embeddedString\"})",
         actual.getAttributeValue("embeddedObject"));
   }
 
@@ -326,11 +330,11 @@ class PfbRecordConverterTest extends TestBase {
         Arguments.of("noconversion", "noconversion"));
   }
 
-  private void assertEqualsJsonString(String expectedJsonString, Object actualValue) {
-    assertThat(actualValue).isInstanceOf(String.class);
-
+  private void assertEqualsJsonAttribute(String expectedJsonString, Object actualValue) {
+    // json attributes use the JsonAttribute wrapper class
+    JsonAttribute actual = assertInstanceOf(JsonAttribute.class, actualValue);
     try {
-      JsonNode actualJson = normalizeJson(actualValue.toString());
+      JsonNode actualJson = normalizeJson(actual.jsonValue().toString());
       JsonNode expectedJson = normalizeJson(expectedJsonString);
       assertThat(actualJson).isEqualTo(expectedJson);
     } catch (JsonProcessingException e) {
