@@ -12,9 +12,9 @@ import org.databiosphere.workspacedataservice.common.TestBase;
 import org.databiosphere.workspacedataservice.dao.PostgresJobDao;
 import org.databiosphere.workspacedataservice.dataimport.ImportJobInput;
 import org.databiosphere.workspacedataservice.dataimport.pfb.PfbImportOptions;
+import org.databiosphere.workspacedataservice.dataimport.pfb.PfbJobInput;
 import org.databiosphere.workspacedataservice.generated.GenericJobServerModel;
 import org.databiosphere.workspacedataservice.generated.GenericJobServerModel.StatusEnum;
-import org.databiosphere.workspacedataservice.generated.ImportRequestServerModel;
 import org.databiosphere.workspacedataservice.shared.model.CollectionId;
 import org.databiosphere.workspacedataservice.shared.model.job.Job;
 import org.databiosphere.workspacedataservice.shared.model.job.JobInput;
@@ -37,11 +37,7 @@ class ImportJobUpdaterTest extends TestBase {
     // Arrange
     JobType jobType = JobType.DATA_IMPORT;
     CollectionId collectionId = CollectionId.of(UUID.randomUUID());
-    ImportJobInput jobInput =
-        new ImportJobInput(
-            new URI("http://some/uri"),
-            ImportRequestServerModel.TypeEnum.PFB,
-            new PfbImportOptions());
+    ImportJobInput jobInput = new PfbJobInput(new URI("http://some/uri"), new PfbImportOptions());
 
     // A running job
     Job<JobInput, JobResult> testJob = Job.newJob(collectionId, jobType, jobInput);
