@@ -313,7 +313,7 @@ class PfbQuartzJobControlPlaneE2ETest {
                                   && "AddListMember".equals(objNode.get("op").asText()))
                       .toList());
           // we should have at least one AddListMember op
-          assertThat(addListMemberObjects.size()).isGreaterThan(1);
+          assertThat(addListMemberObjects).hasSizeGreaterThan(1);
           // and the AddListMember's "newMember" value should be JSON (not a string)
           addListMemberObjects.forEach(
               addListMemberObj -> {
