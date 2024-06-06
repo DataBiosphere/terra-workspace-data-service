@@ -143,11 +143,17 @@ dependencies {
         implementation('org.apache.commons:commons-compress:1.26.2') {
             because("CVE-2023-42503")
         }
+        implementation('org.apache.commons:commons-configuration2:2.10.1') {
+            because("CVE-2024-29131, CVE-2024-29133")
+        }
         implementation('org.xerial.snappy:snappy-java:1.1.10.5') {
             because("CVE-2023-34453, CVE-2023-34454, CVE-2023-34455, CVE-2023-43642")
         }
         implementation('org.codehaus.jettison:jettison:1.5.4') {
             because("CVE-2022-40149, CVE-2022-40150, CVE-2022-45685, CVE-2022-45693, CVE-2023-1436")
+        }
+        implementation('io.airlift:aircompressor:0.27') {
+            because("CVE-2024-36114")
         }
     }
 }
