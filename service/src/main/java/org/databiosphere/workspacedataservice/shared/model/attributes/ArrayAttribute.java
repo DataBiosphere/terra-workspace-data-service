@@ -82,12 +82,6 @@ public abstract class ArrayAttribute<T extends ScalarAttribute<?>> implements At
   }
 
   @Override
-  public Object sqlValue() {
-    // an array of the underlying sql values of each attribute in the list
-    return this.value.stream().map(x -> x.sqlValue()).toArray();
-  }
-
-  @Override
   public Class<?> getBaseType() {
     return String.class;
   }

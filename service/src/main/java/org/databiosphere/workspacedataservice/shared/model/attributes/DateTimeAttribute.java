@@ -9,6 +9,11 @@ public class DateTimeAttribute extends ScalarAttribute<LocalDateTime> {
   }
 
   @Override
+  public LocalDateTime sqlValue() {
+    return this.value;
+  }
+
+  @Override
   public DataTypeMapping getDataTypeMapping() {
     return DataTypeMapping.DATE_TIME;
   }

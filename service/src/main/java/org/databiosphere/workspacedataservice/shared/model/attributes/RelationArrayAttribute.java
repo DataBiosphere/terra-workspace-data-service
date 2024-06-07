@@ -12,4 +12,9 @@ public class RelationArrayAttribute extends ArrayAttribute<RelationAttribute> {
   public DataTypeMapping getDataTypeMapping() {
     return DataTypeMapping.ARRAY_OF_RELATION;
   }
+
+  @Override
+  public String[] sqlValue() {
+    return this.value.stream().map(RelationAttribute::sqlValue).toArray(String[]::new);
+  }
 }

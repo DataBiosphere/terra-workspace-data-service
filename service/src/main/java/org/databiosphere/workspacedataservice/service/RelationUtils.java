@@ -5,6 +5,7 @@ import java.util.Arrays;
 import java.util.List;
 import org.databiosphere.workspacedataservice.service.model.exception.InvalidRelationException;
 import org.databiosphere.workspacedataservice.shared.model.RecordType;
+import org.databiosphere.workspacedataservice.shared.model.RelationTarget;
 import org.databiosphere.workspacedataservice.shared.model.attributes.RelationAttribute;
 import org.springframework.web.util.UriComponents;
 import org.springframework.web.util.UriComponentsBuilder;
@@ -29,7 +30,21 @@ public class RelationUtils {
   }
 
   private static String[] splitRelationIdentifier(Object obj) {
-    String errorMessage = "Expected " + RELATION_IDENTIFIER + "<recordType>/<recordId>";
+    // TODO AJ-494: can we do better here?
+    if (obj instanceof RelationTarget relationTarget) {
+      return new String[] {relationTarget.targetType().getName(), relationTarget.targetId()};
+    }
+    if (obj instanceof RelationAttribute relationAttribute) {
+      return splitRelationIdentifier(relationAttribute.getValue());
+    }
+
+    String errorMessage =
+        "Expected "
+            + RELATION_IDENTIFIER
+            + "<recordType>/<recordId> in "
+            + obj.getClass().getName()
+            + ": value of "
+            + obj;
     Preconditions.checkNotNull(obj, errorMessage);
     Preconditions.checkArgument(obj instanceof String, errorMessage);
     String ref = (String) obj;
@@ -59,7 +74,9 @@ public class RelationUtils {
    * @return true if attribute begins with the REFERENCE_IDENTIFIER
    */
   public static boolean isRelationValue(Object obj) {
-    return obj instanceof RelationAttribute || obj.toString().startsWith(RELATION_IDENTIFIER);
+    return obj instanceof RelationAttribute
+        || obj instanceof RelationTarget
+        || obj.toString().startsWith(RELATION_IDENTIFIER);
   }
 
   public static String createRelationString(RecordType targetRecordType, String recordId) {

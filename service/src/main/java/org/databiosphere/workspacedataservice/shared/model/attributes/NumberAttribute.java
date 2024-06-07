@@ -8,6 +8,11 @@ public class NumberAttribute extends ScalarAttribute<Number> {
   }
 
   @Override
+  public Number sqlValue() {
+    return this.value;
+  }
+
+  @Override
   public DataTypeMapping getDataTypeMapping() {
     return DataTypeMapping.NUMBER;
   }

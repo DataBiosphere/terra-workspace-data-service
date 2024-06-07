@@ -9,6 +9,11 @@ public class StringArrayAttribute extends ArrayAttribute<StringAttribute> {
   }
 
   @Override
+  public String[] sqlValue() {
+    return this.value.stream().map(StringAttribute::sqlValue).toArray(String[]::new);
+  }
+
+  @Override
   public DataTypeMapping getDataTypeMapping() {
     return DataTypeMapping.ARRAY_OF_STRING;
   }

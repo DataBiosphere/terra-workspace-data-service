@@ -12,4 +12,9 @@ public class FileArrayAttribute extends ArrayAttribute<FileAttribute> {
   public DataTypeMapping getDataTypeMapping() {
     return DataTypeMapping.ARRAY_OF_FILE;
   }
+
+  @Override
+  public String[] sqlValue() {
+    return this.value.stream().map(FileAttribute::sqlValue).toArray(String[]::new);
+  }
 }

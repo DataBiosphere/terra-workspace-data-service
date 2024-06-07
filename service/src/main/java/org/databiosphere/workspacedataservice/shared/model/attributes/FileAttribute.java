@@ -8,6 +8,11 @@ public class FileAttribute extends ScalarAttribute<String> {
   }
 
   @Override
+  public String sqlValue() {
+    return this.value;
+  }
+
+  @Override
   public DataTypeMapping getDataTypeMapping() {
     return DataTypeMapping.FILE;
   }

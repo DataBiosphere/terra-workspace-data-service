@@ -8,8 +8,11 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import java.math.BigDecimal;
 import java.math.BigInteger;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -347,9 +350,9 @@ class RecordControllerMockMvcTest extends MockMvcTestBase {
     RecordResponse recordResponse = fromJson(result, RecordResponse.class);
     Object attributeValue = recordResponse.recordAttributes().getAttributeValue("json-attr");
     assertInstanceOf(
-        Map.class,
+        JsonNode.class,
         attributeValue,
-        "jsonb data should deserialize to a map, "
+        "jsonb data should deserialize to a JsonNode, "
             + "before getting serialized to json in the final response");
   }
 
@@ -2680,7 +2683,8 @@ class RecordControllerMockMvcTest extends MockMvcTestBase {
             .andReturn();
     // assert single-record response is human-readable
     RecordResponse actualSingle = fromJson(mvcSingleResult, RecordResponse.class);
-    assertEquals(dateString, actualSingle.recordAttributes().getAttributeValue("dateAttr"));
+    LocalDate expected = LocalDate.parse(dateString);
+    assertEquals(expected, actualSingle.recordAttributes().getAttributeValue("dateAttr"));
 
     // retrieve as a page of records
     MvcResult mvcMultiResult =
@@ -2696,7 +2700,7 @@ class RecordControllerMockMvcTest extends MockMvcTestBase {
 
     RecordQueryResponse actualMulti = fromJson(mvcMultiResult, RecordQueryResponse.class);
     assertEquals(
-        dateString, actualMulti.records().get(0).recordAttributes().getAttributeValue("dateAttr"));
+        expected, actualMulti.records().get(0).recordAttributes().getAttributeValue("dateAttr"));
   }
 
   @Test
@@ -2735,7 +2739,8 @@ class RecordControllerMockMvcTest extends MockMvcTestBase {
             .andReturn();
     // assert single-record response is human-readable
     RecordResponse actualSingle = fromJson(mvcSingleResult, RecordResponse.class);
-    assertEquals(datetimeString, actualSingle.recordAttributes().getAttributeValue("datetimeAttr"));
+    LocalDateTime expected = LocalDateTime.parse(datetimeString);
+    assertEquals(expected, actualSingle.recordAttributes().getAttributeValue("datetimeAttr"));
 
     // retrieve as a page of records
     MvcResult mvcMultiResult =
@@ -2751,7 +2756,7 @@ class RecordControllerMockMvcTest extends MockMvcTestBase {
 
     RecordQueryResponse actualMulti = fromJson(mvcMultiResult, RecordQueryResponse.class);
     assertEquals(
-        datetimeString,
+        expected,
         actualMulti.records().get(0).recordAttributes().getAttributeValue("datetimeAttr"));
   }
 

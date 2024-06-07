@@ -8,6 +8,11 @@ public class StringAttribute extends ScalarAttribute<String> {
   }
 
   @Override
+  public String sqlValue() {
+    return this.value;
+  }
+
+  @Override
   public DataTypeMapping getDataTypeMapping() {
     return DataTypeMapping.STRING;
   }

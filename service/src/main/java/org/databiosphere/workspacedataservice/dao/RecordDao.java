@@ -736,11 +736,12 @@ public class RecordDao {
       return null;
     }
     if (attVal instanceof Attribute attr) {
+      String className = attr.sqlValue() == null ? "null" : attr.sqlValue().getClass().getName();
       LOGGER.warn(
           "******************* sqlValue <"
               + attr.sqlValue()
               + "> of class "
-              + attr.sqlValue().getClass().getName()
+              + className
               + " for known datatype "
               + typeMapping.name());
       return attr.sqlValue();

@@ -12,4 +12,9 @@ public class NumberArrayAttribute extends ArrayAttribute<NumberAttribute> {
   public DataTypeMapping getDataTypeMapping() {
     return DataTypeMapping.ARRAY_OF_NUMBER;
   }
+
+  @Override
+  public Number[] sqlValue() {
+    return this.value.stream().map(NumberAttribute::getValue).toArray(Number[]::new);
+  }
 }

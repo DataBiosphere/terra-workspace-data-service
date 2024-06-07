@@ -11,4 +11,9 @@ public class BooleanAttribute extends ScalarAttribute<Boolean> {
   public DataTypeMapping getDataTypeMapping() {
     return DataTypeMapping.BOOLEAN;
   }
+
+  @Override
+  public Boolean sqlValue() {
+    return this.value;
+  }
 }

@@ -9,7 +9,7 @@ import java.time.format.DateTimeParseException;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
-import org.apache.commons.lang3.StringUtils;
+import org.databiosphere.workspacedataservice.common.JsonUtils;
 import org.databiosphere.workspacedataservice.service.RelationUtils;
 import org.databiosphere.workspacedataservice.shared.model.RecordType;
 import org.slf4j.Logger;
@@ -29,16 +29,19 @@ public abstract class ScalarAttribute<T> implements Attribute {
   }
 
   public static ScalarAttribute<?> create(@Nullable Object input) {
-    if (input instanceof Map amap) {
-      LOGGER.warn("Actual value: " + StringUtils.join(amap));
-    }
 
     if (input == null) {
       return NullAttribute.INSTANCE;
     }
+
+    // Booleans
     if (input instanceof Boolean booleanInput) {
       return new BooleanAttribute(booleanInput);
     }
+    if (input.toString().equalsIgnoreCase("true") || input.toString().equalsIgnoreCase("false")) {
+      return new BooleanAttribute(Boolean.parseBoolean(input.toString().toLowerCase()));
+    }
+
     if (input instanceof LocalDateTime dateTimeInput) {
       return new DateTimeAttribute(dateTimeInput);
     }
@@ -74,6 +77,16 @@ public abstract class ScalarAttribute<T> implements Attribute {
     if (input instanceof String stringInput && isFileType(stringInput)) {
       return new FileAttribute(stringInput);
     }
+    // TODO: handle json. How? We need an ObjectMapper.
+    if (input instanceof Map<?, ?> amap) {
+      try {
+        String jsonString = JsonUtils.stringify(amap);
+        return new JsonAttribute(JsonUtils.parse(jsonString));
+      } catch (RuntimeException e) {
+        // noop
+      }
+    }
+
     if (input instanceof String stringInput) {
       return new StringAttribute(stringInput);
     }
@@ -126,10 +139,11 @@ public abstract class ScalarAttribute<T> implements Attribute {
     return this.value;
   }
 
-  @Override
-  public Object sqlValue() {
-    return this.value;
-  }
+  //
+  //  @Override
+  //  public Object sqlValue() {
+  //    return this.value;
+  //  }
 
   @Override
   public String toString() {

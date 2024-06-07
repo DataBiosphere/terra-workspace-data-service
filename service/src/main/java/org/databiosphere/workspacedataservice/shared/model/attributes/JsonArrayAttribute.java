@@ -12,4 +12,9 @@ public class JsonArrayAttribute extends ArrayAttribute<JsonAttribute> {
   public DataTypeMapping getDataTypeMapping() {
     return DataTypeMapping.ARRAY_OF_JSON;
   }
+
+  @Override
+  public String[] sqlValue() {
+    return this.value.stream().map(JsonAttribute::sqlValue).toArray(String[]::new);
+  }
 }
