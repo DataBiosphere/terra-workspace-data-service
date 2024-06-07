@@ -140,9 +140,22 @@ public class RecordDao {
   }
 
   public boolean recordTypeExists(UUID collectionId, RecordType recordType) {
+    return tableExists(collectionId, recordType) || viewExists(collectionId, recordType);
+  }
+
+  public boolean tableExists(UUID collectionId, RecordType recordType) {
     return Boolean.TRUE.equals(
         namedTemplate.queryForObject(
             "select exists(select from pg_tables where schemaname = :collectionId AND tablename  = :recordType)",
+            new MapSqlParameterSource(
+                Map.of(COLLECTION_ID, collectionId.toString(), "recordType", recordType.getName())),
+            Boolean.class));
+  }
+
+  public boolean viewExists(UUID collectionId, RecordType recordType) {
+    return Boolean.TRUE.equals(
+        namedTemplate.queryForObject(
+            "select exists(select from pg_views where schemaname = :collectionId AND viewname  = :recordType)",
             new MapSqlParameterSource(
                 Map.of(COLLECTION_ID, collectionId.toString(), "recordType", recordType.getName())),
             Boolean.class));
@@ -317,6 +330,17 @@ public class RecordDao {
   }
 
   public Map<String, DataTypeMapping> getExistingTableSchema(
+      UUID collectionId, RecordType recordType) {
+    MapSqlParameterSource params =
+        new MapSqlParameterSource(COLLECTION_ID, collectionId.toString());
+    params.addValue("tableName", recordType.getName());
+    String sql =
+        "select column_name,coalesce(domain_name, udt_name::regtype::varchar) as data_type from INFORMATION_SCHEMA.COLUMNS "
+            + "where table_schema = :collectionId and table_name = :tableName";
+    return getTableSchema(sql, params);
+  }
+
+  public Map<String, DataTypeMapping> getExistingViewSchema(
       UUID collectionId, RecordType recordType) {
     MapSqlParameterSource params =
         new MapSqlParameterSource(COLLECTION_ID, collectionId.toString());
@@ -1120,6 +1144,12 @@ public class RecordDao {
   public List<RecordType> getAllRecordTypes(UUID collectionId) {
     return namedTemplate.queryForList(
         "select tablename from pg_tables WHERE schemaname = :workspaceSchema and tablename not like 'sys_%' order by tablename",
+        new MapSqlParameterSource("workspaceSchema", collectionId.toString()), RecordType.class);
+  }
+
+  public List<RecordType> getAllViews(UUID collectionId) {
+    return namedTemplate.queryForList(
+        "select viewname from pg_views WHERE schemaname = :workspaceSchema and viewname not like 'sys_%' order by viewname",
         new MapSqlParameterSource("workspaceSchema", collectionId.toString()), RecordType.class);
   }
 

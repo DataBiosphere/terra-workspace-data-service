@@ -366,10 +366,22 @@ public class RecordOrchestratorService { // TODO give me a better name
   public List<RecordTypeSchema> describeAllRecordTypes(UUID collectionId, String version) {
     validateVersion(version);
     collectionService.validateCollection(collectionId);
+    // get all table names
     List<RecordType> allRecordTypes = recordDao.getAllRecordTypes(collectionId);
-    return allRecordTypes.stream()
-        .map(recordType -> getSchemaDescription(collectionId, recordType))
-        .toList();
+    // get schema for all tables
+    List<RecordTypeSchema> tableSchemas =
+        allRecordTypes.stream()
+            .map(recordType -> getSchemaDescription(collectionId, recordType))
+            .toList();
+    // get all view names
+    List<RecordType> allViews = recordDao.getAllViews(collectionId);
+    // get schema for all views
+    List<RecordTypeSchema> viewSchemas =
+        allViews.stream()
+            .map(recordType -> getViewSchemaDescription(collectionId, recordType))
+            .toList();
+
+    return Stream.concat(tableSchemas.stream(), viewSchemas.stream()).toList();
   }
 
   public int streamingWrite(
@@ -425,6 +437,37 @@ public class RecordOrchestratorService { // TODO give me a better name
                         entry.getKey(), entry.getValue().toString(), relations.get(entry.getKey())))
             .toList();
     int recordCount = recordDao.countRecords(collectionId, recordType);
+    return new RecordTypeSchema(
+        recordType,
+        attrSchema,
+        recordCount,
+        recordDao.getPrimaryKeyColumn(recordType, collectionId));
+  }
+
+  private RecordTypeSchema getViewSchemaDescription(UUID collectionId, RecordType recordType) {
+    Map<String, DataTypeMapping> schema =
+        recordDao.getExistingTableSchema(collectionId, recordType);
+    // TODO: handle relations
+    /*
+    List<Relation> relationCols = recordDao.getRelationArrayCols(collectionId, recordType);
+    relationCols.addAll(recordDao.getRelationCols(collectionId, recordType));
+    Map<String, RecordType> relations =
+        relationCols.stream()
+            .collect(Collectors.toMap(Relation::relationColName, Relation::relationRecordType));
+    */
+    Map<String, RecordType> relations = Map.of();
+
+    List<AttributeSchema> attrSchema =
+        schema.entrySet().stream()
+            .sorted(Map.Entry.comparingByKey())
+            .map(
+                entry ->
+                    new AttributeSchema(
+                        entry.getKey(), entry.getValue().toString(), relations.get(entry.getKey())))
+            .toList();
+    int recordCount = recordDao.countRecords(collectionId, recordType);
+
+    // TODO: handle primary keys
     return new RecordTypeSchema(
         recordType,
         attrSchema,
