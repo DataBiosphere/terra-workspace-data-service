@@ -59,7 +59,6 @@ import org.databiosphere.workspacedataservice.shared.model.WorkspaceId;
 import org.databiosphere.workspacedataservice.shared.model.attributes.RelationAttribute;
 import org.databiosphere.workspacedataservice.storage.GcsStorage;
 import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
@@ -354,7 +353,6 @@ class RawlsRecordSinkTest extends TestBase {
     assertThat(pubSubMessageCaptor.getValue()).isEqualTo(expectedMessage);
   }
 
-  @Disabled("AJ-1808: Don't publish to Rawls on failure.")
   @Test
   void doesNotSendPubSubOnFailure() throws IOException {
     // Arrange
@@ -405,6 +403,7 @@ class RawlsRecordSinkTest extends TestBase {
           recordList,
           /* primaryKey= */ "name" // currently ignored
           );
+      recordSink.success();
     }
 
     // Assert
