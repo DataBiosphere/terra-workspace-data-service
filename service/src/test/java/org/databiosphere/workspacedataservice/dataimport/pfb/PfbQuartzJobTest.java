@@ -202,7 +202,7 @@ class PfbQuartzJobTest extends TestBase {
 
     // verify that snapshot operations use the appropriate workspaceId
     verify(wsmDao, times(1))
-        .enumerateDataRepoSnapshotReferences(eq(expectedWorkspaceId.id()), anyInt(), anyInt());
+        .enumerateDataRepoSnapshotReferences(eq(expectedWorkspaceId), anyInt(), anyInt());
     // The "790795c4..." UUID below is the snapshotId found in the "test.avro" resource used
     // by this unit test
     verify(wsmDao)

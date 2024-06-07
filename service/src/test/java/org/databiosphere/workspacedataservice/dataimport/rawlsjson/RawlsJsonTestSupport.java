@@ -17,7 +17,6 @@ import org.databiosphere.workspacedataservice.dao.JobDao;
 import org.databiosphere.workspacedataservice.dataimport.ImportDetailsRetriever;
 import org.databiosphere.workspacedataservice.dataimport.ImportJobInput;
 import org.databiosphere.workspacedataservice.generated.ImportRequestServerModel;
-import org.databiosphere.workspacedataservice.generated.ImportRequestServerModel.TypeEnum;
 import org.databiosphere.workspacedataservice.pubsub.PubSub;
 import org.databiosphere.workspacedataservice.service.ImportService;
 import org.databiosphere.workspacedataservice.storage.GcsStorage;
@@ -51,10 +50,8 @@ public class RawlsJsonTestSupport {
     JobExecutionContext mockContext = mock(JobExecutionContext.class);
 
     ImportJobInput importJobInput =
-        new ImportJobInput(
-            URI.create("gs://test-bucket/rawls-import.json"),
-            TypeEnum.RAWLSJSON,
-            new RawlsJsonImportOptions(isUpsert));
+        new RawlsJsonJobInput(
+            URI.create("gs://test-bucket/rawls-import.json"), new RawlsJsonImportOptions(isUpsert));
 
     var schedulable =
         ImportService.createSchedulable(

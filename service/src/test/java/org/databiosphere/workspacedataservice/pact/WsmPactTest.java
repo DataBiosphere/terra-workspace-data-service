@@ -56,6 +56,7 @@ class WsmPactTest {
   // UUIDs are hardcoded to prevent churn in pactfiles, and intended to be human memorable
   private static final UUID WORKSPACE_UUID =
       UUID.fromString("facade00-0000-4000-a000-000000000000");
+  private static final WorkspaceId WORKSPACE_ID = WorkspaceId.of(WORKSPACE_UUID);
   private static final UUID SNAPSHOT_UUID = UUID.fromString("decade00-0000-4000-a000-000000000000");
   private static final UUID RESOURCE_UUID = UUID.fromString("5ca1ab1e-0000-4000-a000-000000000000");
   private static final String SNAPSHOT_NAME = "hardcodedSnapshotName";
@@ -450,7 +451,7 @@ class WsmPactTest {
   void getBlobStorageUrl_ok(MockServer mockServer) {
     var wsmDao = buildWsmDao(mockServer);
 
-    var blobStorageUrl = wsmDao.getBlobStorageUrl(WORKSPACE_UUID.toString(), BEARER_TOKEN);
+    var blobStorageUrl = wsmDao.getBlobStorageUrl(WORKSPACE_ID, BEARER_TOKEN);
 
     assertNotNull(blobStorageUrl);
     // TODO: the sas URL has some pretty strict formatting requirements and making some assertions
@@ -499,7 +500,7 @@ class WsmPactTest {
     var thrown =
         assertThrows(
             WorkspaceManagerException.class,
-            () -> wsmDao.getBlobStorageUrl(WORKSPACE_UUID.toString(), BEARER_TOKEN));
+            () -> wsmDao.getBlobStorageUrl(WORKSPACE_ID, BEARER_TOKEN));
     assertEquals(HttpStatus.FORBIDDEN, thrown.getStatusCode());
   }
 
@@ -513,7 +514,7 @@ class WsmPactTest {
     var thrown =
         assertThrows(
             WorkspaceManagerException.class,
-            () -> wsmDao.getBlobStorageUrl(WORKSPACE_UUID.toString(), BEARER_TOKEN));
+            () -> wsmDao.getBlobStorageUrl(WORKSPACE_ID, BEARER_TOKEN));
     assertEquals(HttpStatus.INTERNAL_SERVER_ERROR, thrown.getStatusCode());
   }
 

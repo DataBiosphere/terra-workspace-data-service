@@ -10,6 +10,8 @@ import java.time.format.DateTimeFormatter;
 import java.util.*;
 import org.apache.commons.lang3.StringUtils;
 import org.databiosphere.workspacedataservice.activitylog.ActivityLogger;
+import org.databiosphere.workspacedataservice.annotations.DeploymentMode.DataPlane;
+import org.databiosphere.workspacedataservice.annotations.SingleTenant;
 import org.databiosphere.workspacedataservice.dao.BackupRestoreDao;
 import org.databiosphere.workspacedataservice.dao.CloneDao;
 import org.databiosphere.workspacedataservice.dao.CollectionDao;
@@ -19,7 +21,9 @@ import org.databiosphere.workspacedataservice.service.model.exception.MissingObj
 import org.databiosphere.workspacedataservice.shared.model.BackupResponse;
 import org.databiosphere.workspacedataservice.shared.model.BackupRestoreRequest;
 import org.databiosphere.workspacedataservice.shared.model.CloneResponse;
+import org.databiosphere.workspacedataservice.shared.model.CollectionId;
 import org.databiosphere.workspacedataservice.shared.model.RestoreResponse;
+import org.databiosphere.workspacedataservice.shared.model.WorkspaceId;
 import org.databiosphere.workspacedataservice.shared.model.job.Job;
 import org.databiosphere.workspacedataservice.shared.model.job.JobInput;
 import org.databiosphere.workspacedataservice.shared.model.job.JobStatus;
@@ -34,6 +38,7 @@ import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.stereotype.Service;
 
 @Service
+@DataPlane
 public class BackupRestoreService {
   private final BackupRestoreDao<BackupResponse> backupDao;
   private final BackupRestoreDao<RestoreResponse> restoreDao;
@@ -42,10 +47,9 @@ public class BackupRestoreService {
   private final CollectionDao collectionDao;
   private final NamedParameterJdbcTemplate namedTemplate;
   private final ActivityLogger activityLogger;
-  private static final Logger LOGGER = LoggerFactory.getLogger(BackupRestoreService.class);
+  private final WorkspaceId workspaceId;
 
-  @Value("${twds.instance.workspace-id:}")
-  private String workspaceId;
+  private static final Logger LOGGER = LoggerFactory.getLogger(BackupRestoreService.class);
 
   @Value("${twds.instance.source-workspace-id:}")
   private String sourceWorkspaceId;
@@ -81,7 +85,8 @@ public class BackupRestoreService {
       BackUpFileStorage backUpFileStorage,
       CloneDao cloneDao,
       NamedParameterJdbcTemplate namedTemplate,
-      ActivityLogger activityLogger) {
+      ActivityLogger activityLogger,
+      @SingleTenant WorkspaceId workspaceId) {
     this.backupDao = backupDao;
     this.restoreDao = restoreDao;
     this.collectionDao = collectionDao;
@@ -89,6 +94,7 @@ public class BackupRestoreService {
     this.storage = backUpFileStorage;
     this.namedTemplate = namedTemplate;
     this.activityLogger = activityLogger;
+    this.workspaceId = workspaceId;
   }
 
   public Job<JobInput, BackupResponse> checkBackupStatus(UUID trackingId) {
@@ -112,10 +118,10 @@ public class BackupRestoreService {
 
       // if request did not specify which workspace asked for the backup, default to the current
       // workspace
-      UUID requesterWorkspaceId =
+      WorkspaceId requesterWorkspaceId =
           backupRestoreRequest.requestingWorkspaceId() == null
-              ? UUID.fromString(workspaceId)
-              : backupRestoreRequest.requestingWorkspaceId();
+              ? workspaceId
+              : WorkspaceId.of(backupRestoreRequest.requestingWorkspaceId());
 
       // create an entry to track progress of this backup
       backupDao.createEntry(trackingId, backupRestoreRequest);
@@ -131,7 +137,7 @@ public class BackupRestoreService {
       backupDao.updateStatus(trackingId, JobStatus.RUNNING);
       LOGGER.info("Starting streaming backup to storage.");
       storage.streamOutputToBlobStorage(
-          localProcessLauncher.getInputStream(), blobName, String.valueOf(requesterWorkspaceId));
+          localProcessLauncher.getInputStream(), blobName, requesterWorkspaceId);
       String error = checkForError(localProcessLauncher);
 
       if (StringUtils.isNotBlank(error)) {
@@ -162,7 +168,7 @@ public class BackupRestoreService {
       restoreDao.createEntry(
           trackingId,
           new BackupRestoreRequest(
-              UUID.fromString(workspaceId), String.format("Restore from %s", backupFileName)));
+              workspaceId.id(), String.format("Restore from %s", backupFileName)));
 
       // generate psql query
       List<String> commandList = generateCommandList(false);
@@ -196,7 +202,8 @@ public class BackupRestoreService {
       */
 
       // rename workspace schema from source to dest
-      collectionDao.alterSchema(UUID.fromString(sourceWorkspaceId), UUID.fromString(workspaceId));
+      collectionDao.alterSchema(
+          CollectionId.fromString(sourceWorkspaceId), CollectionId.of(workspaceId.id()));
 
       activityLogger.saveEventForCurrentUser(
           user -> user.restored().backup().withId(backupFileName));
@@ -250,7 +257,7 @@ public class BackupRestoreService {
       command.put(pgDumpPath, null);
       command.put("-b", null);
       // Grab all workspace collections/schemas in wds
-      for (UUID id : collectionDao.listCollectionSchemas()) {
+      for (CollectionId id : collectionDao.listCollectionSchemas()) {
         command.put("-n", id.toString());
       }
     } else {

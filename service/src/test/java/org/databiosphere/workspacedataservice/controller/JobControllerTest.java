@@ -1,5 +1,6 @@
 package org.databiosphere.workspacedataservice.controller;
 
+import static java.util.Collections.emptyMap;
 import static java.util.UUID.randomUUID;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.databiosphere.workspacedataservice.generated.GenericJobServerModel.JobTypeEnum;
@@ -23,8 +24,9 @@ import org.databiosphere.workspacedataservice.common.TestBase;
 import org.databiosphere.workspacedataservice.dao.CollectionDao;
 import org.databiosphere.workspacedataservice.dao.JobDao;
 import org.databiosphere.workspacedataservice.dataimport.ImportJobInput;
+import org.databiosphere.workspacedataservice.dataimport.pfb.PfbImportOptions;
+import org.databiosphere.workspacedataservice.dataimport.pfb.PfbJobInput;
 import org.databiosphere.workspacedataservice.generated.GenericJobServerModel;
-import org.databiosphere.workspacedataservice.generated.ImportRequestServerModel;
 import org.databiosphere.workspacedataservice.shared.model.CollectionId;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
@@ -86,7 +88,7 @@ class JobControllerTest extends TestBase {
   @ParameterizedTest(name = "Return all jobs with a querystring of {0}")
   @ValueSource(strings = {"", "?someOtherParam=whatever", "?statuses="})
   void instanceJobsReturnAll(String queryString) {
-    when(collectionDao.collectionSchemaExists(collectionId.id())).thenReturn(true);
+    when(collectionDao.collectionSchemaExists(collectionId)).thenReturn(true);
     HttpHeaders headers = new HttpHeaders();
     ResponseEntity<List<GenericJobServerModel>> result =
         restTemplate.exchange(
@@ -111,7 +113,7 @@ class JobControllerTest extends TestBase {
 
   @Test
   void instanceJobsWithMultipleStatuses() {
-    when(collectionDao.collectionSchemaExists(collectionId.id())).thenReturn(true);
+    when(collectionDao.collectionSchemaExists(collectionId)).thenReturn(true);
     assertDoesNotThrow(() -> jobDao.updateStatus(jobId, StatusEnum.CANCELLED));
     HttpHeaders headers = new HttpHeaders();
     ResponseEntity<List<GenericJobServerModel>> result =
@@ -133,7 +135,7 @@ class JobControllerTest extends TestBase {
 
   @Test
   void instanceJobsWithMultipleDelimitedStatuses() {
-    when(collectionDao.collectionSchemaExists(collectionId.id())).thenReturn(true);
+    when(collectionDao.collectionSchemaExists(collectionId)).thenReturn(true);
     assertDoesNotThrow(() -> jobDao.updateStatus(jobId, StatusEnum.CANCELLED));
     HttpHeaders headers = new HttpHeaders();
     ResponseEntity<List<GenericJobServerModel>> result =
@@ -156,7 +158,7 @@ class JobControllerTest extends TestBase {
   @ParameterizedTest(name = "Return Bad Request with ?statuses={0}")
   @ValueSource(strings = {"xasdaf", "QUEUED,bad,RUNNING"})
   void instanceJobsWithEmpStatuses(String statusValues) {
-    when(collectionDao.collectionSchemaExists(collectionId.id())).thenReturn(true);
+    when(collectionDao.collectionSchemaExists(collectionId)).thenReturn(true);
     HttpHeaders headers = new HttpHeaders();
     ResponseEntity<ErrorResponse> result =
         restTemplate.exchange(
@@ -171,9 +173,7 @@ class JobControllerTest extends TestBase {
 
   private static ImportJobInput makePfbJobInput() {
     try {
-      return ImportJobInput.from(
-          new ImportRequestServerModel(
-              ImportRequestServerModel.TypeEnum.PFB, new URI(TEST_IMPORT_URI)));
+      return new PfbJobInput(new URI(TEST_IMPORT_URI), PfbImportOptions.from(emptyMap()));
     } catch (URISyntaxException e) {
       throw new RuntimeException(e);
     }

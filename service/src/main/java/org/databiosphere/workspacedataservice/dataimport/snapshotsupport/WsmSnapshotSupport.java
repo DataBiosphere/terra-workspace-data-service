@@ -22,7 +22,7 @@ public class WsmSnapshotSupport extends SnapshotSupport {
 
   @Override
   protected ResourceList enumerateDataRepoSnapshotReferences(int offset, int pageSize) {
-    return wsmDao.enumerateDataRepoSnapshotReferences(workspaceId.id(), offset, pageSize);
+    return wsmDao.enumerateDataRepoSnapshotReferences(workspaceId, offset, pageSize);
   }
 
   @Override

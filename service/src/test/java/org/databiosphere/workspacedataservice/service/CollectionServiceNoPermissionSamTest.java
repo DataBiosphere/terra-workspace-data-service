@@ -13,6 +13,7 @@ import org.databiosphere.workspacedataservice.common.TestBase;
 import org.databiosphere.workspacedataservice.dao.CollectionDao;
 import org.databiosphere.workspacedataservice.sam.SamClientFactory;
 import org.databiosphere.workspacedataservice.service.model.exception.AuthorizationException;
+import org.databiosphere.workspacedataservice.shared.model.CollectionId;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
 import org.mockito.Mockito;
@@ -71,7 +72,7 @@ class CollectionServiceNoPermissionSamTest extends TestBase {
 
     UUID collectionId = UUID.randomUUID();
     // create the collection (directly in the db, bypassing Sam)
-    collectionDao.createSchema(collectionId);
+    collectionDao.createSchema(CollectionId.of(collectionId));
 
     assertThrows(
         AuthorizationException.class,

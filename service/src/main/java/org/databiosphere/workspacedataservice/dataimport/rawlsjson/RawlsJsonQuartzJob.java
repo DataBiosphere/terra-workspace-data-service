@@ -56,7 +56,7 @@ public class RawlsJsonQuartzJob extends QuartzJob {
     JobDataMapReader jobData = JobDataMapReader.fromContext(context);
     ImportDetails details = importDetailsRetriever.fetch(jobId, jobData, PrefixStrategy.NONE);
     ImportJobInput jobInput = details.importJobInput();
-    RawlsJsonImportOptions options = (RawlsJsonImportOptions) jobInput.options();
+    RawlsJsonImportOptions options = (RawlsJsonImportOptions) jobInput.getOptions();
     URI sourceUri = jobData.getURI(ARG_URL);
     Blob destination = moveBlob(sourceUri, rawlsJsonBlobName(jobId));
     publishToRawls(jobId, jobData, destination, options.isUpsert());

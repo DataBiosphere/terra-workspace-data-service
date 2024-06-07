@@ -299,7 +299,7 @@ class ImportServiceTest extends TestBase {
     Map<String, Serializable> actualArguments = schedulableCaptor.getValue().getArguments();
 
     ImportJobInput importJobInput = (ImportJobInput) actualArguments.get(ARG_IMPORT_JOB_INPUT);
-    TdrManifestImportOptions options = (TdrManifestImportOptions) importJobInput.options();
+    TdrManifestImportOptions options = (TdrManifestImportOptions) importJobInput.getOptions();
     assertEquals(syncPermissions, options.syncPermissions());
   }
 

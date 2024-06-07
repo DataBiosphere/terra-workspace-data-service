@@ -326,7 +326,7 @@ public class PostgresJobDao implements JobDao {
     if (jobInput != null
         && job.getJobType() == DATA_IMPORT
         && jobInput instanceof ImportJobInput inputJobInput) {
-      tags = tags.and("importType", inputJobInput.importType().toString());
+      tags = tags.and("importType", inputJobInput.getImportType().toString());
     }
 
     return tags;

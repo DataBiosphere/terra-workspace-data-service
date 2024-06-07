@@ -17,7 +17,7 @@ public class WsmProtectedDataSupport implements ProtectedDataSupport {
   }
 
   public boolean workspaceSupportsProtectedDataPolicy(WorkspaceId workspaceId) {
-    WorkspaceDescription workspace = wsmDao.getWorkspace(workspaceId.id());
+    WorkspaceDescription workspace = wsmDao.getWorkspace(workspaceId);
     return PolicyUtils.containsProtectedDataPolicy(workspace.getPolicies());
   }
 }

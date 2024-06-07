@@ -4,15 +4,16 @@ import java.util.UUID;
 import org.databiosphere.workspacedataservice.shared.model.CloneResponse;
 import org.databiosphere.workspacedataservice.shared.model.CloneStatus;
 import org.databiosphere.workspacedataservice.shared.model.CloneTable;
+import org.databiosphere.workspacedataservice.shared.model.WorkspaceId;
 import org.databiosphere.workspacedataservice.shared.model.job.Job;
 import org.databiosphere.workspacedataservice.shared.model.job.JobInput;
 
 public interface CloneDao {
-  void createCloneEntry(UUID trackingId, UUID sourceWorkspaceId);
+  void createCloneEntry(UUID trackingId, WorkspaceId sourceWorkspaceId);
 
   void updateCloneEntryStatus(UUID trackingId, CloneStatus status);
 
-  boolean cloneExistsForWorkspace(UUID sourceWorkspaceId);
+  boolean cloneExistsForWorkspace(WorkspaceId sourceWorkspaceId);
 
   Job<JobInput, CloneResponse> getCloneStatus();
 

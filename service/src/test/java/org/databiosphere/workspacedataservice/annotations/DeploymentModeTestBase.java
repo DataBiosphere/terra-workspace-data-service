@@ -29,7 +29,7 @@ class DeploymentModeTestBase extends TestBase {
   @Autowired protected ApplicationContext context;
 
   protected static Stream<String> dataPlaneConditionalBeans() {
-    return Stream.of("collectionInitializer");
+    return Stream.of("backupRestoreService", "collectionInitializer", "collectionInitializerBean");
   }
 
   protected static Stream<String> controlPlaneConditionalBeans() {

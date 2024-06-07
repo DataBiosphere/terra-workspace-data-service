@@ -39,11 +39,26 @@ public class RawlsAttributePrefixer {
    * @return the potentially prefixed/renamed attribute
    */
   public String prefix(String attributeName, String recordType) {
+    // Some attributes (such as import metadata) already have a prefix.
+    // Do not add multiple prefixes.
+    if (hasPrefix(attributeName)) {
+      return attributeName;
+    }
     return switch (prefixStrategy) {
       case PFB -> pfbPrefix(attributeName, recordType);
       case TDR -> tdrPrefix(attributeName, recordType);
       default -> attributeName; // TSV, JSON strategy:
     };
+  }
+
+  /**
+   * Check if an attribute name includes a prefix.
+   *
+   * @param attributeName the inbound original attribute name
+   * @return whether the attribute name has a prefix
+   */
+  private boolean hasPrefix(String attributeName) {
+    return attributeName.contains(":");
   }
 
   /*

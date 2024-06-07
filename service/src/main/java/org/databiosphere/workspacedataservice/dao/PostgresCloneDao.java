@@ -14,6 +14,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.databiosphere.workspacedataservice.shared.model.CloneResponse;
 import org.databiosphere.workspacedataservice.shared.model.CloneStatus;
 import org.databiosphere.workspacedataservice.shared.model.CloneTable;
+import org.databiosphere.workspacedataservice.shared.model.WorkspaceId;
 import org.databiosphere.workspacedataservice.shared.model.job.Job;
 import org.databiosphere.workspacedataservice.shared.model.job.JobInput;
 import org.databiosphere.workspacedataservice.shared.model.job.JobStatus;
@@ -39,17 +40,17 @@ public class PostgresCloneDao implements CloneDao {
   private static final Logger LOGGER = LoggerFactory.getLogger(PostgresCloneDao.class);
 
   @Override
-  public boolean cloneExistsForWorkspace(UUID sourceWorkspaceId) {
+  public boolean cloneExistsForWorkspace(WorkspaceId sourceWorkspaceId) {
     return Boolean.TRUE.equals(
         namedTemplate.queryForObject(
             "select exists(select from sys_wds.clone WHERE sourceworkspaceid = :sourceWorkspaceId)",
-            new MapSqlParameterSource("sourceWorkspaceId", sourceWorkspaceId),
+            new MapSqlParameterSource("sourceWorkspaceId", sourceWorkspaceId.id()),
             Boolean.class));
   }
 
   @Override
   @WriteTransaction
-  public void createCloneEntry(UUID trackingId, UUID sourceWorkspaceId) {
+  public void createCloneEntry(UUID trackingId, WorkspaceId sourceWorkspaceId) {
     Timestamp now = Timestamp.from(Instant.now());
     namedTemplate
         .getJdbcTemplate()
@@ -60,7 +61,7 @@ public class PostgresCloneDao implements CloneDao {
             JobStatus.QUEUED.name(),
             now,
             now,
-            sourceWorkspaceId,
+            sourceWorkspaceId.id(),
             CloneStatus.BACKUPQUEUED.name());
   }
 

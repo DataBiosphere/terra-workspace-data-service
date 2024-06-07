@@ -21,8 +21,10 @@ import org.apache.avro.generic.GenericData;
 import org.apache.avro.generic.GenericEnumSymbol;
 import org.apache.avro.generic.GenericRecord;
 import org.databiosphere.workspacedataservice.recordsource.RecordSource.ImportMode;
+import org.databiosphere.workspacedataservice.service.model.exception.DataImportException;
 import org.databiosphere.workspacedataservice.shared.model.Record;
 import org.databiosphere.workspacedataservice.shared.model.RecordAttributes;
+import org.databiosphere.workspacedataservice.shared.model.attributes.JsonAttribute;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.lang.Nullable;
@@ -126,7 +128,8 @@ public abstract class AvroRecordConverter {
       // https://broadworkbench.atlassian.net/browse/AJ-1292)
       // If that's the case, then it may be necessary to traverse the record recursively and do a
       // less lossy conversion process.
-      return GenericData.get().toString(recordAttr);
+      String serialized = GenericData.get().toString(recordAttr);
+      return createJsonAttribute(serialized);
     }
 
     // Avro enums
@@ -142,7 +145,8 @@ public abstract class AvroRecordConverter {
 
     // Avro maps
     if (attribute instanceof Map<?, ?> mapAttr) {
-      return convertToString(mapAttr);
+      String serialized = convertToString(mapAttr);
+      return createJsonAttribute(serialized);
     }
 
     // Avro fixed
@@ -274,6 +278,14 @@ public abstract class AvroRecordConverter {
 
     // if this was NOT a logical decimal, just toString() it so we have some usable value
     return fixedAttr.toString();
+  }
+
+  private JsonAttribute createJsonAttribute(String serialized) {
+    try {
+      return new JsonAttribute(objectMapper.readTree(serialized));
+    } catch (JsonProcessingException e) {
+      throw new DataImportException("Unable to convert to JsonAttribute: " + e.getMessage(), e);
+    }
   }
 
   private String convertToString(Object attribute) {

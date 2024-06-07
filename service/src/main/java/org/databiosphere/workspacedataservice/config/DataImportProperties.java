@@ -22,6 +22,7 @@ public class DataImportProperties {
   private String statusUpdatesTopic;
   private String statusUpdatesSubscription;
   private List<ImportSourceConfig> sources;
+  private boolean shouldAddImportMetadata = false;
 
   /** Where to write records after import, options are defined by {@link RecordSinkMode} */
   public RecordSinkMode getBatchWriteRecordSink() {
@@ -116,6 +117,18 @@ public class DataImportProperties {
 
   public void setSources(List<ImportSourceConfig> sources) {
     this.sources = sources;
+  }
+
+  /**
+   * Should add import metadata to TDR imports? Currently, this only works for Rawls record sinks
+   * (in the control plane).
+   */
+  public boolean shouldAddImportMetadata() {
+    return shouldAddImportMetadata;
+  }
+
+  public void setAddImportMetadata(boolean shouldAddImportMetadata) {
+    this.shouldAddImportMetadata = shouldAddImportMetadata;
   }
 
   /** Dictates the sink where BatchWriteService should write records after import. */

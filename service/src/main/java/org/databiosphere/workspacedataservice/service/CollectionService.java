@@ -53,7 +53,7 @@ public class CollectionService {
 
   public List<UUID> listCollections(String version) {
     validateVersion(version);
-    return collectionDao.listCollectionSchemas();
+    return collectionDao.listCollectionSchemas().stream().map(CollectionId::id).toList();
   }
 
   /**
@@ -90,24 +90,26 @@ public class CollectionService {
       throw new AuthorizationException("Caller does not have permission to create collection.");
     }
 
-    if (collectionDao.collectionSchemaExists(collectionId.id())) {
+    if (collectionDao.collectionSchemaExists(collectionId)) {
       throw new ResponseStatusException(HttpStatus.CONFLICT, "This collection already exists");
     }
 
+    // TODO(AJ-1662): this needs to pass the workspaceId argument so the collection is created
+    //   correctly
     // create collection schema in Postgres
-    // TODO: this needs to pass the workspaceId argument so the collection is created correctly
-    collectionDao.createSchema(collectionId.id());
+    collectionDao.createSchema(collectionId);
 
     activityLogger.saveEventForCurrentUser(
         user -> user.created().collection().withUuid(collectionId.id()));
   }
 
-  public void deleteCollection(UUID collectionId, String version) {
+  public void deleteCollection(UUID collectionUuid, String version) {
     validateVersion(version);
-    validateCollection(collectionId);
+    validateCollection(collectionUuid);
+    CollectionId collectionId = CollectionId.of(collectionUuid);
 
     // check that the current user has permission to delete the Sam resource
-    if (!canDeleteCollection(CollectionId.of(collectionId))) {
+    if (!canDeleteCollection(collectionId)) {
       throw new AuthorizationException("Caller does not have permission to delete collection.");
     }
 
@@ -115,7 +117,7 @@ public class CollectionService {
     collectionDao.dropSchema(collectionId);
 
     activityLogger.saveEventForCurrentUser(
-        user -> user.deleted().collection().withUuid(collectionId));
+        user -> user.deleted().collection().withUuid(collectionUuid));
   }
 
   public void validateCollection(UUID collectionId) {
@@ -124,7 +126,7 @@ public class CollectionService {
       return;
     }
     // else, check if this collection has a row in the collections table
-    if (!collectionDao.collectionSchemaExists(collectionId)) {
+    if (!collectionDao.collectionSchemaExists(CollectionId.of(collectionId))) {
       throw new MissingObjectException("Collection");
     }
   }

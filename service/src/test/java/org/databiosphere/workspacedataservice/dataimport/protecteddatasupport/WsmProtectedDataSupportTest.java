@@ -31,7 +31,7 @@ class WsmProtectedDataSupportTest extends TestBase {
     // Arrange
     WorkspaceId workspaceId = WorkspaceId.of(UUID.randomUUID());
 
-    when(wsmDao.getWorkspace(workspaceId.id())).thenReturn(workspaceDescription);
+    when(wsmDao.getWorkspace(workspaceId)).thenReturn(workspaceDescription);
 
     // Act
     boolean supportsProtectedDataPolicy =
