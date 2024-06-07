@@ -72,7 +72,6 @@ public class PrimaryKeyDao {
     try {
       String viewColumn = getViewPrimaryKeyColumn(recordType, instanceId);
       if (viewColumn != null) {
-        LOGGER.warn("[{}] is a view; returning pk [{}]", recordType.getName(), viewColumn);
         return viewColumn;
       }
     } catch (EmptyResultDataAccessException emptyEx) {
@@ -90,19 +89,14 @@ public class PrimaryKeyDao {
     // see https://wiki.postgresql.org/wiki/Retrieve_primary_key_columns for this query
     // for commentary, see also:
     // https://stackoverflow.com/questions/1214576/how-do-i-get-the-primary-keys-of-a-table-from-postgres-via-plpgsql
-    String tableColumn =
-        namedTemplate.queryForObject(
-            """
+    return namedTemplate.queryForObject(
+        """
                       SELECT a.attname
                       FROM   pg_index i
                       JOIN   pg_attribute a ON a.attrelid = i.indrelid AND a.attnum = ANY(i.indkey)
                       WHERE  i.indrelid = :qTableName::regclass
                       AND    i.indisprimary;""",
-            params,
-            String.class);
-
-    LOGGER.warn("[{}] is a table; returning pk [{}]", recordType.getName(), tableColumn);
-
-    return tableColumn;
+        params,
+        String.class);
   }
 }

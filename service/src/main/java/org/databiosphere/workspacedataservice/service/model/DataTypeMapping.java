@@ -58,6 +58,9 @@ public enum DataTypeMapping {
     Arrays.stream(DataTypeMapping.values())
         .filter(v -> !EnumSet.of(EMPTY_ARRAY, NULL).contains(v))
         .forEach(e -> MAPPING_BY_PG_TYPE.put(e.getPostgresType().replace("public.", ""), e));
+
+    // TODO: extra mappings to handle type translations for aggregate functions in views
+    MAPPING_BY_PG_TYPE.put("bigint", NUMBER);
   }
 
   DataTypeMapping(

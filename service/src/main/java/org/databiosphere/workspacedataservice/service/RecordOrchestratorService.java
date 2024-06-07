@@ -7,6 +7,7 @@ import bio.terra.common.db.ReadTransaction;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -381,7 +382,16 @@ public class RecordOrchestratorService { // TODO give me a better name
             .map(recordType -> getViewSchemaDescription(collectionId, recordType))
             .toList();
 
-    return Stream.concat(tableSchemas.stream(), viewSchemas.stream()).toList();
+    return Stream.concat(tableSchemas.stream(), viewSchemas.stream())
+        .sorted(new RecordTypeComparator())
+        .toList();
+  }
+
+  static class RecordTypeComparator implements Comparator<RecordTypeSchema> {
+    @Override
+    public int compare(RecordTypeSchema o1, RecordTypeSchema o2) {
+      return o1.name().getName().compareTo(o2.name().getName());
+    }
   }
 
   public int streamingWrite(
