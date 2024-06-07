@@ -17,4 +17,9 @@ public class FileArrayAttribute extends ArrayAttribute<FileAttribute> {
   public String[] sqlValue() {
     return this.value.stream().map(FileAttribute::sqlValue).toArray(String[]::new);
   }
+
+  @Override
+  public List<String> getValue() {
+    return this.value.stream().map(FileAttribute::getValue).toList();
+  }
 }

@@ -59,11 +59,6 @@ public abstract class ArrayAttribute<T extends ScalarAttribute<?>> implements At
   }
 
   @Override
-  public List<T> getValue() {
-    return this.value;
-  }
-
-  @Override
   public int hashCode() {
     return this.value.hashCode();
   }
@@ -79,10 +74,5 @@ public abstract class ArrayAttribute<T extends ScalarAttribute<?>> implements At
   @Override
   public String toString() {
     return this.value.toString();
-  }
-
-  @Override
-  public Class<?> getBaseType() {
-    return String.class;
   }
 }

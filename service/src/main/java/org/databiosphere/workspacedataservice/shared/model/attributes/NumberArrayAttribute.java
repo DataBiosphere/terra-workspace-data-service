@@ -17,4 +17,9 @@ public class NumberArrayAttribute extends ArrayAttribute<NumberAttribute> {
   public Number[] sqlValue() {
     return this.value.stream().map(NumberAttribute::getValue).toArray(Number[]::new);
   }
+
+  @Override
+  public List<Number> getValue() {
+    return this.value.stream().map(NumberAttribute::getValue).toList();
+  }
 }

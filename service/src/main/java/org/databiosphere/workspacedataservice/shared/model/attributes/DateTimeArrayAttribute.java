@@ -18,4 +18,9 @@ public class DateTimeArrayAttribute extends ArrayAttribute<DateTimeAttribute> {
   public LocalDateTime[] sqlValue() {
     return this.value.stream().map(DateTimeAttribute::sqlValue).toArray(LocalDateTime[]::new);
   }
+
+  @Override
+  public List<LocalDateTime> getValue() {
+    return this.value.stream().map(DateTimeAttribute::getValue).toList();
+  }
 }

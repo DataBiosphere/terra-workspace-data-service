@@ -18,4 +18,9 @@ public class DateArrayAttribute extends ArrayAttribute<DateAttribute> {
   public LocalDate[] sqlValue() {
     return this.value.stream().map(DateAttribute::sqlValue).toArray(LocalDate[]::new);
   }
+
+  @Override
+  public List<LocalDate> getValue() {
+    return this.value.stream().map(DateAttribute::getValue).toList();
+  }
 }

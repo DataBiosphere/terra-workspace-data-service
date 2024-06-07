@@ -21,7 +21,7 @@ public interface Attribute {
 
   DataTypeMapping getDataTypeMapping();
 
-  Class<?> getBaseType();
+  // Class<?> getBaseType();
 
   @JsonCreator
   static Attribute create(Object input) {

@@ -17,4 +17,9 @@ public class BooleanArrayAttribute extends ArrayAttribute<BooleanAttribute> {
   public Boolean[] sqlValue() {
     return this.value.stream().map(BooleanAttribute::sqlValue).toArray(Boolean[]::new);
   }
+
+  @Override
+  public List<Boolean> getValue() {
+    return this.value.stream().map(BooleanAttribute::getValue).toList();
+  }
 }

@@ -14,6 +14,11 @@ public class StringArrayAttribute extends ArrayAttribute<StringAttribute> {
   }
 
   @Override
+  public List<String> getValue() {
+    return this.value.stream().map(StringAttribute::getValue).toList();
+  }
+
+  @Override
   public DataTypeMapping getDataTypeMapping() {
     return DataTypeMapping.ARRAY_OF_STRING;
   }
