@@ -102,8 +102,7 @@ public abstract class AvroRecordConverter {
           objectAttributes.get(fieldName) == null
               ? null
               : convertAttributeType(
-                  destructureElementList(objectAttributes.get(fieldName), field),
-                  getLogicalTypeForValues(field));
+                  destructureElementList(objectAttributes.get(fieldName), field), field);
 
       attributes.putAttribute(fieldName, value);
     }
@@ -118,8 +117,7 @@ public abstract class AvroRecordConverter {
    */
   @VisibleForTesting
   @Nullable
-  public Object convertAttributeType(
-      @Nullable Object attribute, @Nullable LogicalType logicalType) {
+  public Object convertAttributeType(@Nullable Object attribute, Field field) {
 
     if (attribute == null) {
       return null;
@@ -147,7 +145,7 @@ public abstract class AvroRecordConverter {
     // Avro arrays
     if (attribute instanceof Collection<?> collAttr) {
       // recurse
-      return collAttr.stream().map(value -> this.convertAttributeType(value, logicalType)).toList();
+      return collAttr.stream().map(value -> this.convertAttributeType(value, field)).toList();
     }
 
     // Avro maps
@@ -175,12 +173,12 @@ public abstract class AvroRecordConverter {
 
     // Avro ints
     if (attribute instanceof Integer intAttr) {
-      return convertInteger(intAttr, logicalType);
+      return convertInteger(intAttr, getLogicalTypeForValues(field));
     }
 
     // Avro longs
     if (attribute instanceof Long longAttr) {
-      return convertLong(longAttr, logicalType);
+      return convertLong(longAttr, getLogicalTypeForValues(field));
     }
 
     // Avro floats
