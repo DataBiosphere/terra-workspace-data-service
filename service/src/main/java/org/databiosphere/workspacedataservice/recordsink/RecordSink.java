@@ -57,7 +57,7 @@ public interface RecordSink extends AutoCloseable {
    * Method manually invoked by callers to indicate success of all batch operations. This should
    * execute any code to run only on success, such as sending events to other systems.
    *
-   * @throws DataImportException if an error occurs while closing the sink
+   * @throws DataImportException subclasses should throw this on any error in their implementations
    */
   void success() throws DataImportException;
 }
