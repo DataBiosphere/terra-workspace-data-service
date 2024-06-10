@@ -199,6 +199,8 @@ public class TdrManifestQuartzJob extends QuartzJob {
       if (options.syncPermissions() && isTdrPermissionSyncingEnabled) {
         syncPermissions(details.workspaceId(), snapshotId);
       }
+      // complete the RecordSink
+      recordSink.success();
     } catch (Exception e) {
       throw new TdrManifestImportException(e.getMessage(), e);
     } finally {
