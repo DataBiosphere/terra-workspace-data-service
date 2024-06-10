@@ -156,7 +156,7 @@ public abstract class AvroRecordConverter {
 
     // Avro fixed
     if (attribute instanceof GenericData.Fixed fixedAttr) {
-      return convertFixed(fixedAttr);
+      return convertFixed(fixedAttr, getLogicalTypeForValues(field));
     }
 
     // Avro strings
@@ -286,10 +286,7 @@ public abstract class AvroRecordConverter {
   // the physical type is a fixed-size byte array (GenericData.Fixed), but the logical type
   // defines the desired shape of the value, such as Decimal. This method converts the fixed-size
   // byte arrays to decimals.
-  private Object convertFixed(GenericData.Fixed fixedAttr) {
-    // check if this fixed has a logical type
-    LogicalType logicalType = fixedAttr.getSchema().getLogicalType();
-
+  private Object convertFixed(GenericData.Fixed fixedAttr, @Nullable LogicalType logicalType) {
     // handle logical decimals
     if (logicalType instanceof LogicalTypes.Decimal) {
       // transform the bytes into a BigDecimal. This BigDecimal will have scale and precision
