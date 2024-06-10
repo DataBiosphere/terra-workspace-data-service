@@ -117,7 +117,7 @@ class TdrManifestQuartzJobE2ETest extends TestBase {
         allTypes,
         "all_data_types",
         "date_column",
-        DataTypeMapping.NUMBER); // actual data: 19174 (days since epoch)
+        DataTypeMapping.DATE); // actual data: 19174 (days since epoch)
 
     assertDataType(
         allTypes,

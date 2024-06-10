@@ -240,7 +240,9 @@ class PfbRecordConverterTest extends TestBase {
   @ParameterizedTest(name = "with input of {0}, return value should be {1}")
   @MethodSource("provideConvertScalarAttributesArgs")
   void convertScalarAttributes(Object input, Object expected) {
-    Object actual = converter.convertAttributeType(input);
+    Object actual =
+        converter.convertAttributeType(
+            input, new Schema.Field("field", Schema.create(Schema.Type.STRING)));
     assertEquals(expected, actual);
   }
 
@@ -249,7 +251,9 @@ class PfbRecordConverterTest extends TestBase {
   void convertScalarEnums() {
     Object input = new GenericData.EnumSymbol(Schema.create(Schema.Type.STRING), "bar");
 
-    Object actual = converter.convertAttributeType(input);
+    Object actual =
+        converter.convertAttributeType(
+            input, new Schema.Field("field", Schema.create(Schema.Type.STRING)));
     assertEquals("bar", actual);
   }
 
@@ -257,45 +261,57 @@ class PfbRecordConverterTest extends TestBase {
   static Stream<Arguments> provideConvertArrayAttributesArgs() {
     return Stream.of(
         // most basic case
-        Arguments.of(List.of("hello", "world"), List.of("hello", "world")),
+        Arguments.of(
+            List.of("hello", "world"),
+            List.of("hello", "world"),
+            Schema.create(Schema.Type.STRING)),
         // null inputs
-        Arguments.of(null, null),
+        Arguments.of(null, null, Schema.create(Schema.Type.NULL)),
         // empty arrays
-        Arguments.of(List.of(), List.of()),
+        Arguments.of(List.of(), List.of(), Schema.create(Schema.Type.STRING)),
         // numbers
         Arguments.of(
             List.of(Long.MIN_VALUE, 1L, Long.MAX_VALUE),
             List.of(
                 BigDecimal.valueOf(Long.MIN_VALUE),
                 BigDecimal.valueOf(1L),
-                BigDecimal.valueOf(Long.MAX_VALUE))),
+                BigDecimal.valueOf(Long.MAX_VALUE)),
+            Schema.create(Schema.Type.LONG)),
         Arguments.of(
             List.of(Integer.MIN_VALUE, 1, Integer.MAX_VALUE),
             List.of(
                 BigDecimal.valueOf(Integer.MIN_VALUE),
                 BigDecimal.valueOf(1),
-                BigDecimal.valueOf(Integer.MAX_VALUE))),
+                BigDecimal.valueOf(Integer.MAX_VALUE)),
+            Schema.create(Schema.Type.INT)),
         Arguments.of(
             List.of(Float.MIN_VALUE, 1F, Float.MAX_VALUE),
             List.of(
                 BigDecimal.valueOf(Float.MIN_VALUE),
                 BigDecimal.valueOf(1F),
-                BigDecimal.valueOf(Float.MAX_VALUE))),
+                BigDecimal.valueOf(Float.MAX_VALUE)),
+            Schema.create(Schema.Type.FLOAT)),
         Arguments.of(
             List.of(Double.MIN_VALUE, 1D, Double.MAX_VALUE),
             List.of(
                 BigDecimal.valueOf(Double.MIN_VALUE),
                 BigDecimal.valueOf(1D),
-                BigDecimal.valueOf(Double.MAX_VALUE))),
+                BigDecimal.valueOf(Double.MAX_VALUE)),
+            Schema.create(Schema.Type.DOUBLE)),
         // booleans
-        Arguments.of(List.of(true, false, true), List.of(true, false, true)));
+        Arguments.of(
+            List.of(true, false, true),
+            List.of(true, false, true),
+            Schema.create(Schema.Type.BOOLEAN)));
   }
 
   // targeted test for converting array Avro values to WDS values
   @ParameterizedTest(name = "with array input of {0}, return value should be {1}")
   @MethodSource("provideConvertArrayAttributesArgs")
-  void convertArrayAttributes(Object input, Object expected) {
-    Object actual = converter.convertAttributeType(input);
+  void convertArrayAttributes(Object input, Object expected, Schema elementType) {
+    Object actual =
+        converter.convertAttributeType(
+            input, new Schema.Field("field", Schema.createArray(elementType)));
     assertEquals(expected, actual);
   }
 
@@ -308,7 +324,13 @@ class PfbRecordConverterTest extends TestBase {
             new GenericData.EnumSymbol(Schema.create(Schema.Type.STRING), "foo"),
             new GenericData.EnumSymbol(Schema.create(Schema.Type.STRING), "baz"));
 
-    Object actual = converter.convertAttributeType(input);
+    Object actual =
+        converter.convertAttributeType(
+            input,
+            new Schema.Field(
+                "field",
+                Schema.createArray(
+                    Schema.createEnum("enum", "", "", List.of("foo", "bar", "baz")))));
     assertEquals(List.of("bar", "foo", "baz"), actual);
   }
 
@@ -317,7 +339,10 @@ class PfbRecordConverterTest extends TestBase {
   @MethodSource("provideDecodeEnumArgs")
   void decodesEnums(String symbol, String expected) {
     Object input = List.of(new GenericData.EnumSymbol(Schema.create(Schema.Type.STRING), symbol));
-    Object actual = converter.convertAttributeType(input);
+    Object actual =
+        converter.convertAttributeType(
+            input,
+            new Schema.Field("field", Schema.createArray(Schema.create(Schema.Type.STRING))));
     assertEquals(List.of(expected), actual);
   }
 

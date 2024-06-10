@@ -7,6 +7,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.ImmutableMap;
 import java.io.IOException;
 import java.math.BigDecimal;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -28,6 +30,8 @@ import org.databiosphere.workspacedataservice.shared.model.Record;
 import org.databiosphere.workspacedataservice.shared.model.RecordAttributes;
 import org.databiosphere.workspacedataservice.shared.model.RecordType;
 import org.junit.jupiter.api.Test;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -35,6 +39,7 @@ import org.springframework.core.io.Resource;
 
 @SpringBootTest
 class ParquetDataTypesTest extends TestBase {
+  private final Logger logger = LoggerFactory.getLogger(getClass());
 
   @Autowired ObjectMapper mapper;
 
@@ -45,6 +50,115 @@ class ParquetDataTypesTest extends TestBase {
   // contains a sample column which is an array of ints
   @Value("classpath:parquet/with-entity-reference-lists/person.parquet")
   Resource arraysParquet;
+
+  @Value("classpath:parquet/dates-times-azure.parquet")
+  Resource datesTimesAzureParquet;
+
+  @Value("classpath:parquet/dates-times-gcp.parquet")
+  Resource datesTimesGcpParquet;
+
+  @Test
+  void datesAndTimesAzure() throws IOException {
+    // ARRANGE - create all the objects we'll need to do the conversions below
+    TdrManifestImportTable testTable = makeTable("test", "pk");
+    ParquetRecordConverter converter = new ParquetRecordConverter(testTable, mapper);
+
+    InputFile inputFile =
+        HadoopInputFile.fromPath(
+            new Path(datesTimesAzureParquet.getURL().toString()), new Configuration());
+
+    // ACT - read via ParquetReader and convert via ParquetRecordConverter
+    try (ParquetReader<GenericRecord> avroParquetReader =
+        TdrManifestQuartzJob.readerForFile(inputFile)) {
+
+      // read the Parquet file into List<GenericRecord> via the parquet-hadoop library
+      List<GenericRecord> genericRecords = new ArrayList<>();
+      while (true) {
+        GenericRecord rec = avroParquetReader.read();
+        if (rec == null) {
+          break;
+        }
+        genericRecords.add(rec);
+      }
+
+      // convert the GenericRecords into WDS Records. For this test we only care about
+      // BASE_ATTRIBUTES
+      List<Record> records =
+          genericRecords.stream()
+              .map(
+                  genericRecord ->
+                      converter.convert(genericRecord, RecordSource.ImportMode.BASE_ATTRIBUTES))
+              .toList();
+
+      assertThat(records.size()).isEqualTo(1);
+
+      // ASSERT
+      Record record = records.get(0);
+
+      // Parquet files exported by Azure TDR do not include logical types for times, datetimes, or
+      // timestamps.
+      // Nor do they properly format arrays (AJ-1735)
+      // Thus, date is the only type we can test here.
+      assertThat(record.getAttributeValue("date")).isEqualTo(LocalDate.of(2024, 6, 3));
+    }
+  }
+
+  @Test
+  void datesAndTimesGcp() throws IOException {
+    // ARRANGE - create all the objects we'll need to do the conversions below
+    TdrManifestImportTable testTable = makeTable("test", "pk");
+    ParquetRecordConverter converter = new ParquetRecordConverter(testTable, mapper);
+
+    InputFile inputFile =
+        HadoopInputFile.fromPath(
+            new Path(datesTimesGcpParquet.getURL().toString()), new Configuration());
+
+    // ACT - read via ParquetReader and convert via ParquetRecordConverter
+    try (ParquetReader<GenericRecord> avroParquetReader =
+        TdrManifestQuartzJob.readerForFile(inputFile)) {
+
+      // read the Parquet file into List<GenericRecord> via the parquet-hadoop library
+      List<GenericRecord> genericRecords = new ArrayList<>();
+      while (true) {
+        GenericRecord rec = avroParquetReader.read();
+        if (rec == null) {
+          break;
+        }
+        genericRecords.add(rec);
+      }
+
+      // convert the GenericRecords into WDS Records. For this test we only care about
+      // BASE_ATTRIBUTES
+      List<Record> records =
+          genericRecords.stream()
+              .map(
+                  genericRecord ->
+                      converter.convert(genericRecord, RecordSource.ImportMode.BASE_ATTRIBUTES))
+              .toList();
+
+      assertThat(records.size()).isEqualTo(1);
+
+      // ASSERT
+      Record record = records.get(0);
+
+      assertThat(record.getAttributeValue("date")).isEqualTo(LocalDate.of(2024, 6, 3));
+      assertThat(record.getAttributeValue("date_array"))
+          .isEqualTo(List.of(LocalDate.of(2024, 6, 3)));
+
+      assertThat(record.getAttributeValue("datetime"))
+          .isEqualTo(LocalDateTime.of(2024, 6, 3, 10, 30, 0));
+      assertThat(record.getAttributeValue("datetime_array"))
+          .isEqualTo(List.of(LocalDateTime.of(2024, 6, 3, 10, 30, 0)));
+
+      assertThat(record.getAttributeValue("timestamp"))
+          .isEqualTo(LocalDateTime.of(2024, 6, 3, 10, 30, 0));
+      assertThat(record.getAttributeValue("timestamp_array"))
+          .isEqualTo(List.of(LocalDateTime.of(2024, 6, 3, 10, 30, 0)));
+
+      assertThat(record.getAttributeValue("time")).isEqualTo("10:30:00");
+      assertThat(record.getAttributeValue("time_array")).isEqualTo(List.of("10:30:00"));
+    }
+  }
 
   /**
    * Given an input Parquet file, convert the Parquet to WDS Records/attributes and assert on the

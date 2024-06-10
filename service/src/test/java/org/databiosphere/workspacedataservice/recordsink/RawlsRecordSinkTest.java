@@ -25,6 +25,8 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
@@ -199,6 +201,76 @@ class RawlsRecordSinkTest extends TestBase {
         .containsExactlyElementsOf(
             expectedArrayCreationOperations(
                 new CreateAttributeValueList("floats"), List.of(1.0, 2.0, 3.0)));
+  }
+
+  @Test
+  void translatesDateAttribute() {
+    var entities =
+        doUpsert(
+            makeRecord(
+                /* type= */ "widget", /* id= */ "id", Map.of("dateKey", LocalDate.of(2024, 6, 3))));
+
+    var operation = assertSingleOperation(AddUpdateAttribute.class, entities);
+    assertThat(operation.attributeName()).isEqualTo("dateKey");
+    assertThat(operation.addUpdateAttribute().value()).isEqualTo("2024-06-03");
+  }
+
+  @Test
+  void translatesDateArrayAttribute() {
+    var entities =
+        doUpsert(
+            makeRecord(
+                /* type= */ "widget",
+                /* id= */ "id",
+                Map.of(
+                    "dates",
+                    List.of(
+                        LocalDate.of(2024, 6, 3),
+                        LocalDate.of(2024, 6, 4),
+                        LocalDate.of(2024, 6, 5)))));
+
+    var entity = assertSingle(entities);
+    assertThat(entity.operations())
+        .containsExactlyElementsOf(
+            expectedArrayCreationOperations(
+                new CreateAttributeValueList("dates"),
+                List.of("2024-06-03", "2024-06-04", "2024-06-05")));
+  }
+
+  @Test
+  void translatesDateTimeAttribute() {
+    var entities =
+        doUpsert(
+            makeRecord(
+                /* type= */ "widget",
+                /* id= */ "id",
+                Map.of("dateTimeKey", LocalDateTime.of(2024, 6, 3, 10, 30, 0))));
+
+    var operation = assertSingleOperation(AddUpdateAttribute.class, entities);
+    assertThat(operation.attributeName()).isEqualTo("dateTimeKey");
+    assertThat(operation.addUpdateAttribute().value()).isEqualTo("2024-06-03T10:30:00");
+  }
+
+  @Test
+  void translatesDateTimeArrayAttribute() {
+    var entities =
+        doUpsert(
+            makeRecord(
+                /* type= */ "widget",
+                /* id= */ "id",
+                Map.of(
+                    "dateTimes",
+                    List.of(
+                        LocalDateTime.of(2024, 6, 3, 10, 30, 0),
+                        LocalDateTime.of(2024, 6, 3, 13, 30, 0),
+                        LocalDateTime.of(2024, 6, 3, 15, 30, 0)))));
+
+    var entity = assertSingle(entities);
+    assertThat(entity.operations())
+        .containsExactlyElementsOf(
+            expectedArrayCreationOperations(
+                new CreateAttributeValueList("dateTimes"),
+                List.of("2024-06-03T10:30:00", "2024-06-03T13:30:00", "2024-06-03T15:30:00")));
   }
 
   @Test
