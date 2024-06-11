@@ -340,17 +340,6 @@ public class RecordDao {
     return getTableSchema(sql, params);
   }
 
-  public Map<String, DataTypeMapping> getExistingViewSchema(
-      UUID collectionId, RecordType recordType) {
-    MapSqlParameterSource params =
-        new MapSqlParameterSource(COLLECTION_ID, collectionId.toString());
-    params.addValue("tableName", recordType.getName());
-    String sql =
-        "select column_name,coalesce(domain_name, udt_name::regtype::varchar) as data_type from INFORMATION_SCHEMA.COLUMNS "
-            + "where table_schema = :collectionId and table_name = :tableName";
-    return getTableSchema(sql, params);
-  }
-
   private Map<String, DataTypeMapping> getTableSchema(String sql, MapSqlParameterSource params) {
     return namedTemplate.query(
         sql,

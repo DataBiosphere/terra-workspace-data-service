@@ -369,28 +369,23 @@ public class RecordOrchestratorService { // TODO give me a better name
     collectionService.validateCollection(collectionId);
     // get all table names
     List<RecordType> allRecordTypes = recordDao.getAllRecordTypes(collectionId);
-    // get schema for all tables
-    List<RecordTypeSchema> tableSchemas =
-        allRecordTypes.stream()
-            .map(recordType -> getSchemaDescription(collectionId, recordType))
-            .toList();
     // get all view names
     List<RecordType> allViews = recordDao.getAllViews(collectionId);
-    // get schema for all views
-    List<RecordTypeSchema> viewSchemas =
-        allViews.stream()
-            .map(recordType -> getViewSchemaDescription(collectionId, recordType))
+    // concatenate tables and views, and sort alphabetically
+    List<RecordType> allTableNames =
+        Stream.concat(allRecordTypes.stream(), allViews.stream())
+            .sorted(new RecordTypeComparator())
             .toList();
 
-    return Stream.concat(tableSchemas.stream(), viewSchemas.stream())
-        .sorted(new RecordTypeComparator())
+    return allTableNames.stream()
+        .map(recordType -> getSchemaDescription(collectionId, recordType))
         .toList();
   }
 
-  static class RecordTypeComparator implements Comparator<RecordTypeSchema> {
+  static class RecordTypeComparator implements Comparator<RecordType> {
     @Override
-    public int compare(RecordTypeSchema o1, RecordTypeSchema o2) {
-      return o1.name().getName().compareTo(o2.name().getName());
+    public int compare(RecordType o1, RecordType o2) {
+      return o1.getName().compareTo(o2.getName());
     }
   }
 
