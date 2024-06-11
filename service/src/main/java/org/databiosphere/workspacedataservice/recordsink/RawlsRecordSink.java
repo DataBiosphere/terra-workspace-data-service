@@ -31,6 +31,8 @@ import org.databiosphere.workspacedataservice.shared.model.Record;
 import org.databiosphere.workspacedataservice.shared.model.RecordType;
 import org.databiosphere.workspacedataservice.shared.model.attributes.RelationAttribute;
 import org.databiosphere.workspacedataservice.storage.GcsStorage;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.util.function.ThrowingConsumer;
 
 /**
@@ -42,6 +44,10 @@ public class RawlsRecordSink implements RecordSink {
 
   private final JsonWriter jsonWriter;
   private final RawlsJsonPublisher publisher;
+
+  private boolean isComplete = false;
+
+  private static final Logger LOGGER = LoggerFactory.getLogger(RawlsRecordSink.class);
 
   RawlsRecordSink(
       RawlsAttributePrefixer attributePrefixer,
@@ -96,11 +102,20 @@ public class RawlsRecordSink implements RecordSink {
   }
 
   @Override
-  public void close() {
-    jsonWriter.close();
-
-    // TODO(AJ-1808): move this side effect to an appropriate after-success callback.
+  public void success() throws DataImportException {
+    isComplete = true;
     publisher.publish();
+  }
+
+  @Override
+  public void close() {
+    if (!isComplete) {
+      LOGGER.warn(
+          "RawlsRecordSink was closed before success() was called."
+              + " This usually indicates an error while processing records, but could also indicate"
+              + " a code path that never calls success().");
+    }
+    jsonWriter.close();
   }
 
   private Entity toEntity(Record wdsRecord) {
