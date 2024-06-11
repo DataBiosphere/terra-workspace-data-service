@@ -4,8 +4,6 @@ import bio.terra.common.db.ReadTransaction;
 import java.util.Map;
 import java.util.UUID;
 import org.databiosphere.workspacedataservice.shared.model.RecordType;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
@@ -30,8 +28,6 @@ import org.springframework.stereotype.Repository;
 public class PrimaryKeyDao {
 
   private final NamedParameterJdbcTemplate namedTemplate;
-
-  private static final Logger LOGGER = LoggerFactory.getLogger(PrimaryKeyDao.class);
 
   public PrimaryKeyDao(NamedParameterJdbcTemplate namedTemplate) {
     this.namedTemplate = namedTemplate;
