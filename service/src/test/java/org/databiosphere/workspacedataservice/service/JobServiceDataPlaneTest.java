@@ -1,6 +1,7 @@
 package org.databiosphere.workspacedataservice.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.databiosphere.workspacedataservice.common.TestBase.HARDCODED_WORKSPACE_ID;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
@@ -35,7 +36,7 @@ import org.springframework.test.context.ActiveProfiles;
 
 @ActiveProfiles(profiles = {"data-plane"})
 @DirtiesContext
-@SpringBootTest(properties = {"twds.instance.workspace-id=f01dab1e-0000-1111-2222-000011112222"})
+@SpringBootTest(properties = {"twds.instance.workspace-id=" + HARDCODED_WORKSPACE_ID})
 class JobServiceDataPlaneTest extends JobServiceTestBase {
 
   @Autowired JobService jobService;
@@ -189,7 +190,7 @@ class JobServiceDataPlaneTest extends JobServiceTestBase {
     // Arrange
     CollectionId collectionId = CollectionId.of(UUID.randomUUID());
     // collection exists and is associated with the $WORKSPACE_ID workspace
-    when(collectionDao.collectionSchemaExists(collectionId.id())).thenReturn(true);
+    when(collectionDao.collectionSchemaExists(collectionId)).thenReturn(true);
     when(collectionDao.getWorkspaceId(collectionId)).thenReturn(getEnvWorkspaceId());
     // user has permission to that workspace
     stubReadWorkspacePermission(getEnvWorkspaceId()).thenReturn(true);
@@ -236,7 +237,7 @@ class JobServiceDataPlaneTest extends JobServiceTestBase {
     CollectionId collectionId = CollectionId.of(UUID.randomUUID());
     WorkspaceId nonMatchingWorkspaceId = WorkspaceId.of(UUID.randomUUID());
     // collection exists and is associated with a non-default workspace
-    when(collectionDao.collectionSchemaExists(collectionId.id())).thenReturn(true);
+    when(collectionDao.collectionSchemaExists(collectionId)).thenReturn(true);
     when(collectionDao.getWorkspaceId(collectionId)).thenReturn(nonMatchingWorkspaceId);
     // user has permission to that workspace
     stubReadWorkspacePermission(nonMatchingWorkspaceId).thenReturn(true);

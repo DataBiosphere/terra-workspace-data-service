@@ -8,6 +8,7 @@ twds:
     # Should this WDS deployment require collections to belong to the workspace with $WORKSPACE_ID?
     enforce-collections-match-workspace-id: false
   data-import:
+    add-import-metadata: true
     batch-write-record-sink: "rawls"
     succeed-on-completion: false
     # Name of the Google Cloud Storage bucket where JSON files are uploaded for import and sent to

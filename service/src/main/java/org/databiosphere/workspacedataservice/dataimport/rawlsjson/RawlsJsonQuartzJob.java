@@ -1,7 +1,6 @@
 package org.databiosphere.workspacedataservice.dataimport.rawlsjson;
 
 import static org.databiosphere.workspacedataservice.generated.ImportRequestServerModel.TypeEnum.RAWLSJSON;
-import static org.databiosphere.workspacedataservice.service.ImportService.ARG_IS_UPSERT;
 import static org.databiosphere.workspacedataservice.shared.model.Schedulable.ARG_URL;
 import static org.databiosphere.workspacedataservice.shared.model.job.JobType.DATA_IMPORT;
 
@@ -16,6 +15,7 @@ import org.databiosphere.workspacedataservice.config.DataImportProperties;
 import org.databiosphere.workspacedataservice.dao.JobDao;
 import org.databiosphere.workspacedataservice.dataimport.ImportDetails;
 import org.databiosphere.workspacedataservice.dataimport.ImportDetailsRetriever;
+import org.databiosphere.workspacedataservice.dataimport.ImportJobInput;
 import org.databiosphere.workspacedataservice.jobexec.JobDataMapReader;
 import org.databiosphere.workspacedataservice.jobexec.QuartzJob;
 import org.databiosphere.workspacedataservice.pubsub.PubSub;
@@ -54,9 +54,12 @@ public class RawlsJsonQuartzJob extends QuartzJob {
   @Override
   protected void executeInternal(UUID jobId, JobExecutionContext context) {
     JobDataMapReader jobData = JobDataMapReader.fromContext(context);
+    ImportDetails details = importDetailsRetriever.fetch(jobId, jobData, PrefixStrategy.NONE);
+    ImportJobInput jobInput = details.importJobInput();
+    RawlsJsonImportOptions options = (RawlsJsonImportOptions) jobInput.getOptions();
     URI sourceUri = jobData.getURI(ARG_URL);
     Blob destination = moveBlob(sourceUri, rawlsJsonBlobName(jobId));
-    publishToRawls(jobId, jobData, destination);
+    publishToRawls(jobId, jobData, destination, options.isUpsert());
   }
 
   private Blob moveBlob(URI sourceUri, String desiredBlobName) {
@@ -67,12 +70,9 @@ public class RawlsJsonQuartzJob extends QuartzJob {
     return importDetailsRetriever.fetch(jobId, jobData, PrefixStrategy.NONE);
   }
 
-  private void publishToRawls(UUID jobId, JobDataMapReader jobData, Blob destination) {
-    new RawlsJsonPublisher(
-            pubSub,
-            getImportDetails(jobId, jobData),
-            destination,
-            jobData.getBoolean(ARG_IS_UPSERT))
+  private void publishToRawls(
+      UUID jobId, JobDataMapReader jobData, Blob destination, boolean isUpsert) {
+    new RawlsJsonPublisher(pubSub, getImportDetails(jobId, jobData), destination, isUpsert)
         .publish();
   }
 

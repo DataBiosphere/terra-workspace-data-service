@@ -7,6 +7,7 @@ import static org.databiosphere.workspacedataservice.dataimport.pfb.PfbTestUtils
 import static org.databiosphere.workspacedataservice.dataimport.pfb.PfbTestUtils.RELATION_ARRAY_SCHEMA;
 import static org.databiosphere.workspacedataservice.dataimport.pfb.PfbTestUtils.RELATION_SCHEMA;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.fail;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -29,6 +30,7 @@ import org.databiosphere.workspacedataservice.recordsource.RecordSource.ImportMo
 import org.databiosphere.workspacedataservice.service.JsonConfig;
 import org.databiosphere.workspacedataservice.shared.model.Record;
 import org.databiosphere.workspacedataservice.shared.model.RecordType;
+import org.databiosphere.workspacedataservice.shared.model.attributes.JsonAttribute;
 import org.databiosphere.workspacedataservice.shared.model.attributes.RelationAttribute;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -181,15 +183,17 @@ class PfbRecordConverterTest extends TestBase {
         actual.getAttributeValue("arrayOfNumbers"));
     assertEquals(List.of("one", "two", "three"), actual.getAttributeValue("arrayOfStrings"));
     assertEquals(List.of("enumValue2", "enumValue1"), actual.getAttributeValue("arrayOfEnums"));
-    assertEqualsJsonString(
+
+    // json attributes use the JsonAttribute wrapper class
+    assertEqualsJsonAttribute(
         "{\"one\":1,\"two\":2,\"three\":3}", actual.getAttributeValue("mapOfNumbers"));
-    assertEqualsJsonString(
+    assertEqualsJsonAttribute(
         "{\"one\":\"one\",\"two\":\"two\",\"three\":\"three\"}",
         actual.getAttributeValue("mapOfStrings"));
-    assertEqualsJsonString(
+    assertEqualsJsonAttribute(
         "{\"one\":\"enumValue1\",\"two\":\"enumValue2\"}", actual.getAttributeValue("mapOfEnums"));
-    assertEqualsJsonString(
-        "{\"embeddedLong\":123,\"embeddedString\":\"embeddedString\"}",
+    assertEqualsJsonAttribute(
+        "{\"embeddedLong\":123,\"embeddedString\":\"embeddedString\"})",
         actual.getAttributeValue("embeddedObject"));
   }
 
@@ -236,7 +240,9 @@ class PfbRecordConverterTest extends TestBase {
   @ParameterizedTest(name = "with input of {0}, return value should be {1}")
   @MethodSource("provideConvertScalarAttributesArgs")
   void convertScalarAttributes(Object input, Object expected) {
-    Object actual = converter.convertAttributeType(input);
+    Object actual =
+        converter.convertAttributeType(
+            input, new Schema.Field("field", Schema.create(Schema.Type.STRING)));
     assertEquals(expected, actual);
   }
 
@@ -245,7 +251,9 @@ class PfbRecordConverterTest extends TestBase {
   void convertScalarEnums() {
     Object input = new GenericData.EnumSymbol(Schema.create(Schema.Type.STRING), "bar");
 
-    Object actual = converter.convertAttributeType(input);
+    Object actual =
+        converter.convertAttributeType(
+            input, new Schema.Field("field", Schema.create(Schema.Type.STRING)));
     assertEquals("bar", actual);
   }
 
@@ -253,45 +261,57 @@ class PfbRecordConverterTest extends TestBase {
   static Stream<Arguments> provideConvertArrayAttributesArgs() {
     return Stream.of(
         // most basic case
-        Arguments.of(List.of("hello", "world"), List.of("hello", "world")),
+        Arguments.of(
+            List.of("hello", "world"),
+            List.of("hello", "world"),
+            Schema.create(Schema.Type.STRING)),
         // null inputs
-        Arguments.of(null, null),
+        Arguments.of(null, null, Schema.create(Schema.Type.NULL)),
         // empty arrays
-        Arguments.of(List.of(), List.of()),
+        Arguments.of(List.of(), List.of(), Schema.create(Schema.Type.STRING)),
         // numbers
         Arguments.of(
             List.of(Long.MIN_VALUE, 1L, Long.MAX_VALUE),
             List.of(
                 BigDecimal.valueOf(Long.MIN_VALUE),
                 BigDecimal.valueOf(1L),
-                BigDecimal.valueOf(Long.MAX_VALUE))),
+                BigDecimal.valueOf(Long.MAX_VALUE)),
+            Schema.create(Schema.Type.LONG)),
         Arguments.of(
             List.of(Integer.MIN_VALUE, 1, Integer.MAX_VALUE),
             List.of(
                 BigDecimal.valueOf(Integer.MIN_VALUE),
                 BigDecimal.valueOf(1),
-                BigDecimal.valueOf(Integer.MAX_VALUE))),
+                BigDecimal.valueOf(Integer.MAX_VALUE)),
+            Schema.create(Schema.Type.INT)),
         Arguments.of(
             List.of(Float.MIN_VALUE, 1F, Float.MAX_VALUE),
             List.of(
                 BigDecimal.valueOf(Float.MIN_VALUE),
                 BigDecimal.valueOf(1F),
-                BigDecimal.valueOf(Float.MAX_VALUE))),
+                BigDecimal.valueOf(Float.MAX_VALUE)),
+            Schema.create(Schema.Type.FLOAT)),
         Arguments.of(
             List.of(Double.MIN_VALUE, 1D, Double.MAX_VALUE),
             List.of(
                 BigDecimal.valueOf(Double.MIN_VALUE),
                 BigDecimal.valueOf(1D),
-                BigDecimal.valueOf(Double.MAX_VALUE))),
+                BigDecimal.valueOf(Double.MAX_VALUE)),
+            Schema.create(Schema.Type.DOUBLE)),
         // booleans
-        Arguments.of(List.of(true, false, true), List.of(true, false, true)));
+        Arguments.of(
+            List.of(true, false, true),
+            List.of(true, false, true),
+            Schema.create(Schema.Type.BOOLEAN)));
   }
 
   // targeted test for converting array Avro values to WDS values
   @ParameterizedTest(name = "with array input of {0}, return value should be {1}")
   @MethodSource("provideConvertArrayAttributesArgs")
-  void convertArrayAttributes(Object input, Object expected) {
-    Object actual = converter.convertAttributeType(input);
+  void convertArrayAttributes(Object input, Object expected, Schema elementType) {
+    Object actual =
+        converter.convertAttributeType(
+            input, new Schema.Field("field", Schema.createArray(elementType)));
     assertEquals(expected, actual);
   }
 
@@ -304,7 +324,13 @@ class PfbRecordConverterTest extends TestBase {
             new GenericData.EnumSymbol(Schema.create(Schema.Type.STRING), "foo"),
             new GenericData.EnumSymbol(Schema.create(Schema.Type.STRING), "baz"));
 
-    Object actual = converter.convertAttributeType(input);
+    Object actual =
+        converter.convertAttributeType(
+            input,
+            new Schema.Field(
+                "field",
+                Schema.createArray(
+                    Schema.createEnum("enum", "", "", List.of("foo", "bar", "baz")))));
     assertEquals(List.of("bar", "foo", "baz"), actual);
   }
 
@@ -313,7 +339,10 @@ class PfbRecordConverterTest extends TestBase {
   @MethodSource("provideDecodeEnumArgs")
   void decodesEnums(String symbol, String expected) {
     Object input = List.of(new GenericData.EnumSymbol(Schema.create(Schema.Type.STRING), symbol));
-    Object actual = converter.convertAttributeType(input);
+    Object actual =
+        converter.convertAttributeType(
+            input,
+            new Schema.Field("field", Schema.createArray(Schema.create(Schema.Type.STRING))));
     assertEquals(List.of(expected), actual);
   }
 
@@ -326,11 +355,11 @@ class PfbRecordConverterTest extends TestBase {
         Arguments.of("noconversion", "noconversion"));
   }
 
-  private void assertEqualsJsonString(String expectedJsonString, Object actualValue) {
-    assertThat(actualValue).isInstanceOf(String.class);
-
+  private void assertEqualsJsonAttribute(String expectedJsonString, Object actualValue) {
+    // json attributes use the JsonAttribute wrapper class
+    JsonAttribute actual = assertInstanceOf(JsonAttribute.class, actualValue);
     try {
-      JsonNode actualJson = normalizeJson(actualValue.toString());
+      JsonNode actualJson = normalizeJson(actual.jsonValue().toString());
       JsonNode expectedJson = normalizeJson(expectedJsonString);
       assertThat(actualJson).isEqualTo(expectedJson);
     } catch (JsonProcessingException e) {

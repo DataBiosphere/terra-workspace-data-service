@@ -11,7 +11,8 @@ public record ImportDetails(
     Supplier<String> userEmailSupplier,
     WorkspaceId workspaceId,
     CollectionId collectionId,
-    PrefixStrategy prefixStrategy) {
+    PrefixStrategy prefixStrategy,
+    ImportJobInput importJobInput) {
 
   /**
    * Override to ensure we never serialize the userEmailSupplier, which can contain an auth token.
@@ -30,6 +31,8 @@ public record ImportDetails(
         + collectionId
         + ", prefixStrategy="
         + prefixStrategy
+        + ", importJobInput="
+        + importJobInput
         + '}';
   }
 }

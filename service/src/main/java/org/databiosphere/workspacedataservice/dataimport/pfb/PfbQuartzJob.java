@@ -121,6 +121,8 @@ public class PfbQuartzJob extends QuartzJob {
       //   group its merged results under import mode; most notably, relations will be double
       //   counted
       result.merge(withPfbStream(uri, stream -> importTables(stream, recordSink, RELATIONS)));
+      // complete the RecordSink
+      recordSink.success();
     } catch (DataImportException e) {
       throw new PfbImportException(e.getMessage(), e);
     }

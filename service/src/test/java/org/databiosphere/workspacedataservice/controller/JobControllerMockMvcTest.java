@@ -66,7 +66,7 @@ class JobControllerMockMvcTest extends MockMvcTestBase {
     // set created and updated to now, but in UTC because that's how Postgres stores it
     OffsetDateTime time = OffsetDateTime.now(ZoneId.of("Z"));
 
-    when(collectionDao.collectionSchemaExists(collectionId.id())).thenReturn(true);
+    when(collectionDao.collectionSchemaExists(collectionId)).thenReturn(true);
 
     List<GenericJobServerModel> expected = new ArrayList<GenericJobServerModel>(2);
     expected.add(

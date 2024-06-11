@@ -1,5 +1,6 @@
 package org.databiosphere.workspacedataservice.dataimport.rawlsjson;
 
+import static org.databiosphere.workspacedataservice.service.ImportService.ARG_IMPORT_JOB_INPUT;
 import static org.databiosphere.workspacedataservice.shared.model.Schedulable.ARG_COLLECTION;
 import static org.databiosphere.workspacedataservice.shared.model.Schedulable.ARG_TOKEN;
 import static org.databiosphere.workspacedataservice.shared.model.Schedulable.ARG_URL;
@@ -10,11 +11,11 @@ import com.google.common.collect.ImmutableMap;
 import io.micrometer.observation.ObservationRegistry;
 import java.io.Serializable;
 import java.net.URI;
-import java.util.Map;
 import java.util.UUID;
 import org.databiosphere.workspacedataservice.config.DataImportProperties;
 import org.databiosphere.workspacedataservice.dao.JobDao;
 import org.databiosphere.workspacedataservice.dataimport.ImportDetailsRetriever;
+import org.databiosphere.workspacedataservice.dataimport.ImportJobInput;
 import org.databiosphere.workspacedataservice.generated.ImportRequestServerModel;
 import org.databiosphere.workspacedataservice.pubsub.PubSub;
 import org.databiosphere.workspacedataservice.service.ImportService;
@@ -41,22 +42,26 @@ public class RawlsJsonTestSupport {
   }
 
   static JobExecutionContext stubJobContext(UUID jobId, URI resourceUri, UUID collectionId) {
-    return stubJobContext(jobId, resourceUri, collectionId, Map.of());
+    return stubJobContext(jobId, resourceUri, collectionId, /* isUpsert= */ false);
   }
 
   static JobExecutionContext stubJobContext(
-      UUID jobId, URI resourceUri, UUID collectionId, Map<String, String> extraArgs) {
+      UUID jobId, URI resourceUri, UUID collectionId, boolean isUpsert) {
     JobExecutionContext mockContext = mock(JobExecutionContext.class);
+
+    ImportJobInput importJobInput =
+        new RawlsJsonJobInput(
+            URI.create("gs://test-bucket/rawls-import.json"), new RawlsJsonImportOptions(isUpsert));
 
     var schedulable =
         ImportService.createSchedulable(
             ImportRequestServerModel.TypeEnum.RAWLSJSON,
             jobId,
             new ImmutableMap.Builder<String, Serializable>()
-                .putAll(extraArgs)
                 .put(ARG_TOKEN, "fake-bearer-token")
                 .put(ARG_URL, resourceUri.toString())
                 .put(ARG_COLLECTION, collectionId.toString())
+                .put(ARG_IMPORT_JOB_INPUT, importJobInput)
                 .build());
 
     JobDetail jobDetail = schedulable.getJobDetail();
@@ -64,11 +69,5 @@ public class RawlsJsonTestSupport {
     when(mockContext.getJobDetail()).thenReturn(jobDetail);
 
     return mockContext;
-  }
-
-  static JobExecutionContext stubJobContext(
-      UUID jobId, URI resourceUri, UUID collectionId, boolean isUpsert) {
-    return stubJobContext(
-        jobId, resourceUri, collectionId, Map.of("isUpsert", String.valueOf(isUpsert)));
   }
 }

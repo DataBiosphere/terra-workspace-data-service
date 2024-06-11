@@ -25,7 +25,7 @@ import jakarta.annotation.Generated;
 
 @Schema(name = "GenericJob", description = "Generic representation of a job, no opinion on inputs and result for the job. See individual APIs for more guidance on expected input and result payloads. ")
 @JsonTypeName("GenericJob")
-@Generated(value = "org.openapitools.codegen.languages.SpringCodegen", comments = "Generator version: 7.5.0")
+@Generated(value = "org.openapitools.codegen.languages.SpringCodegen", comments = "Generator version: 7.6.0")
 public class GenericJobServerModel {
 
   private UUID jobId;
