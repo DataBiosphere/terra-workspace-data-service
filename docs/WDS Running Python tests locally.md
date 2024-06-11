@@ -16,30 +16,29 @@ _You should only need to install prerequisites once._ Python tests require:
 * pytest
 * optionally, a python virtual environment
 
-You will need a local python installation - doesn't really matter which version, since all should
-work but WDS defaults to python3.8. To check if you have python already installed, run the
+WDS defaults to python 3.8. To check the version of python you have installed, run the
 following:
 
 ```bash
 python --version
 ```
 
-You will also need to have openapi-generator-cli installed as well.
+Install openapi-generator-cli:
 
 ```bash
 npm install @openapitools/openapi-generator-cli -g
 ```
 
-Set openapi-generator-cli to the correct version (same as what the github action is using).
+Configure openapi-generator-cli to use the same version as the GitHub Action.
 Depending on your user permissions, sudo may be required to run these commands.
 
 ```bash
 openapi-generator-cli version-manager set 4.3.1
 ```
 
-At times, openapi-generator-cli wont set to right version even if the command above is run, so it is
-recommended to verify. Sometimes the proper version needs to be explicitly downloaded before it can
-be set. To see all available commands:
+At times, openapi-generator-cli won't set the right version even if the command above is run, so it
+is recommended to verify. Sometimes the proper version needs to be explicitly downloaded before it
+can be set. To see all available commands:
 
 ```bash
 openapi-generator-cli
@@ -111,8 +110,8 @@ version of the wds_client package (make sure you are in the right branch that ha
 want to test). Note that you will need to re-generate the client for each code change you make. To
 do that, run the following command (from the root of your repo or adjust path accordingly). If this
 command is generating errors, it is likely because the openapi is set to the wrong version. Note
-that package version is hard coded since it is not important to track locally - adjust as you se fit
-if you want to the version to change when you install the package locally.
+that package version is hard coded since it is not important to track locally - adjust as you see
+fit if you want to the version to change when you install the package locally.
 
 ```bash
   openapi-generator-cli generate \
