@@ -1,76 +1,119 @@
 # Running python tests locally
 
-This page provides instruction around how to replicate python tests failures that happen in
-the [following](https://github.com/DataBiosphere/terra-workspace-data-service/actions/workflows/release-python-client.yml)
-github action locally. You can do this on your dev machine or set this up inside a virtual
-environment.
+This page provides instructions for running the wds_client python tests from your dev machine.
 
-## Set up
+These tests are normally run from the "Build, test and publish Python client to PyPI" GitHub Action
+at [release-python-client.yml](https://github.com/DataBiosphere/terra-workspace-data-service/actions/workflows/release-python-client.yml).
 
-First thing is first, dont forget to have [WDS running locally](../README.md#setup). You will need a
-WDS instance locally to ensure python tests have a WDS instance to connect to.
+You may need to run tests locally to replicate and debug failures from the GitHub Action.
 
-You will need a local python installation - doesnt really matter which version, since all should
-work but WDS defaults to python3.8. To check if you have python already installed, run the
+## Prerequisites
+
+_You should only need to install prerequisites once._ Python tests require:
+
+* Python 3.8 or later
+* openapi-generator 4.3.1
+* pytest
+* optionally, a python virtual environment
+
+WDS defaults to python 3.8. To check the version of python you have installed, run the
 following:
 
-```
+```bash
 python --version
 ```
 
-You will also need to have openapi-generator-cli installed as well.
+Install openapi-generator-cli:
 
-```
+```bash
 npm install @openapitools/openapi-generator-cli -g
 ```
 
-Set openapi-generator-cli to the correct version (same as what the github action is using).
+Configure openapi-generator-cli to use the same version as the GitHub Action.
 Depending on your user permissions, sudo may be required to run these commands.
 
-```
-openapi-generator-cli version-manager set 7.6.0
+```bash
+openapi-generator-cli version-manager set 4.3.1
 ```
 
-At times, openapi-generator-cli wont set to right version even if the command above is run, so it is
-recommended to verify. Sometimes the proper version needs to be explicitly downloaded before it can
-be set. To see all available commands:
+At times, openapi-generator-cli won't set the right version even if the command above is run, so it
+is recommended to verify. Sometimes the proper version needs to be explicitly downloaded before it
+can be set. To see all available commands:
 
-```
+```bash
 openapi-generator-cli
 ```
 
-Run this command to see what versions are downloaded, if 7.6.0 is not, use arrow keys to navigate to
+Run this command to see what versions are downloaded, if 4.3.1 is not, use arrow keys to navigate to
 it and download it (or if already downloaded to use it).
 
-```
+```bash
 openapi-generator-cli version-manager list
+```
+
+Optional, but recommended: create and activate a python virtual environment:
+
+```bash
+python -m venv venv
+source venv/bin/activate
 ```
 
 To run tests, WDS uses pytest. Ensure that is installed by running:
 
-```
+```bash
 pip install pytest
 ```
 
-Some tests also require a server from which to fetch test files. For these to work, you'll have to
-set up the nginx docker container to serve them:
+## Set up
+
+_You must make sure these are running every time you run tests:_
+
+* Postgres
+* nginx mock server
+* WDS
+
+These steps are covered in detail in WDS's main [README](../README.md#setup), and that README is the
+source of truth. The steps are copied here for ease of copy/paste.
+
+Start Postgres:
+
+```bash
+./local-dev/run_postgres.sh start
+```
+
+Start the nginx mock server:
 
 ```bash
 # start the server as a docker container in detached mode
 docker run -v `pwd`/service/src/test/resources/nginx.conf:/etc/nginx/nginx.conf -v `pwd`/service/src/test/resources:/usr/share/nginx/html -p 9889:80 -d nginx:1.23.3
 ```
 
+Start WDS pointing at the mock server:
+
+```bash
+SAM_URL=http://localhost:9889 \
+WORKSPACE_MANAGER_URL=http://localhost:9889 \
+./gradlew bootRun \
+--args='--twds.data-import.allowed-hosts=localhost --twds.data-import.require-validation=false'
+```
+
 ## Build wds_client locally
+
+Optionally, activate your python virtual environment:
+
+```bash
+source venv/bin/activate
+```
 
 Once you confirm that you have python and openapitools, you will need to build and create a local
 version of the wds_client package (make sure you are in the right branch that has the changes you
 want to test). Note that you will need to re-generate the client for each code change you make. To
 do that, run the following command (from the root of your repo or adjust path accordingly). If this
 command is generating errors, it is likely because the openapi is set to the wrong version. Note
-that package version is hard coded since it is not important to track locally - adjust as you se fit
-if you want to the version to change when you install the package locally.
+that package version is hard coded since it is not important to track locally - adjust as you see
+fit if you want to the version to change when you install the package locally.
 
-```
+```bash
   openapi-generator-cli generate \
   -i service/src/main/resources/static/swagger/openapi-docs.yaml \
   -g python \
@@ -79,10 +122,10 @@ if you want to the version to change when you install the package locally.
   --skip-validate-spec
 ```
 
-This will generate a folder called wds-client. To install from that folder, run this
-command to install wds_client locally:
+This will generate a folder called `wds-client` containing the generated client. To install from
+that folder:
 
-```
+```bash
 pip install wds-client
 ```
 
@@ -108,17 +151,6 @@ pytest service/src/test/python/test.py
 
 Note: Make sure your local WDS database does not have data in it before running these tests, as its
 presence may cause the tests to fail.
-
-Another note: For
-the [import test (scenario  6)](https://github.com/DataBiosphere/terra-workspace-data-service/blob/3224b416f758bb6a7a6574697fee914da335d782/service/src/test/python/test.py#L247)
-to work correctly when run locally, you need to run gradle with the following params:
-
-```
-SAM_URL=http://localhost:9889 \
-WORKSPACE_MANAGER_URL=http://localhost:9889 \
-./gradlew bootRun \
---args='--twds.data-import.allowed-hosts=localhost --twds.data-import.require-validation=false'
-```
 
 To debug tests, you may want to try out
 python's [pdb debugger](https://realpython.com/python-debugging-pdb/).
