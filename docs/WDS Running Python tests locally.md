@@ -11,13 +11,12 @@ You may need to run tests locally to replicate and debug failures from the GitHu
 
 _You should only need to install prerequisites once._ Python tests require:
 
-* Python 3.11 or later
+* Python 3.8
 * openapi-generator 7.6.0
 * pytest
 * optionally, a python virtual environment
 
-WDS defaults to python 3.11, but should work with earlier versions. To check the version of python
-you have installed, run the following:
+WDS defaults to python 3.8. To check the version of python you have installed, run the following:
 
 ```bash
 python --version
