@@ -1,12 +1,16 @@
 package org.databiosphere.workspacedataservice;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import java.io.File;
+import java.io.IOException;
 import java.net.URISyntaxException;
+import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.UUID;
 import java.util.stream.Stream;
+import org.apache.commons.io.FileUtils;
 import org.databiosphere.workspacedata.api.GeneralWdsInformationApi;
 import org.databiosphere.workspacedata.api.InstancesApi;
 import org.databiosphere.workspacedata.api.RecordsApi;
@@ -113,6 +117,26 @@ class GeneratedClientTests extends TestBase {
     RecordResponse record =
         recordsApi.getRecord(collectionId.toString(), version, recordType, recordId);
     assertThat(record.getId()).isEqualTo(recordId);
+  }
+
+  /**
+   * verify that TSV downloads work via the client. Unit tests elsewhere assert on TSV correctness;
+   * this test asserts that the RecordsApi.getRecordsAsTsv() method succeeds.
+   */
+  @Test
+  void putAndDownloadRecords() throws ApiException, IOException {
+    RecordsApi recordsApi = new RecordsApi(apiClient);
+    String recordId = "id1";
+    String recordType = "FOO";
+    createRecord(recordsApi, recordId, recordType);
+    File tsvDownload = recordsApi.getRecordsAsTsv(collectionId.toString(), version, recordType);
+
+    List<String> tsvLines = FileUtils.readLines(tsvDownload, StandardCharsets.UTF_8);
+    // TSV should have two lines: the header row and one content row
+    assertEquals(2, tsvLines.size());
+    // check each row; this is trivial since each row has a single column
+    assertEquals("sys_name", tsvLines.get(0));
+    assertEquals("id1", tsvLines.get(1));
   }
 
   @Test
