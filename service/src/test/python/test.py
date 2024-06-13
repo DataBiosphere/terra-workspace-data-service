@@ -235,7 +235,7 @@ class WdsTests(TestCase):
 
         # read tsv back into a variable from data table and verify it matches what was originally created
         tsv_contents = self.records_client.get_records_as_tsv(self.current_workspaceId, self.version, self.cvsUpload_test)
-        tsv_path = io.StringIO(tsv_contents) # wrap the contents in a file
+        tsv_path = io.StringIO(tsv_contents.decode('utf-8')) # wrap the contents in a file
         diff = compare_csv(self.generatedCvs_name, tsv_path)
         self.assertTrue(len(diff) == 0)
 
