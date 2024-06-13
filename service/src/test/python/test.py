@@ -56,7 +56,7 @@ def generate_csv(numRecords, fileName):
 
 def compare_csv(file1, file2contents):
     differences = []
-    with open(file1, 'r') as csv1, io.BytesIO(file2contents) as csv2:  # Import CSV files
+    with open(file1, 'r') as csv1, io.StringIO(file2contents) as csv2:  # Import CSV files
         import1 = csv1.readlines()
         import2 = csv2.readlines()
         for row in import2:
@@ -235,7 +235,7 @@ class WdsTests(TestCase):
 
         # read tsv back into a variable from data table and verify it matches what was originally created
         tsv_contents = self.records_client.get_records_as_tsv(self.current_workspaceId, self.version, self.cvsUpload_test)
-        diff = compare_csv(self.generatedCvs_name, tsv_contents)
+        diff = compare_csv(self.generatedCvs_name, tsv_contents.decode('utf-8'))
         self.assertTrue(len(diff) == 0)
 
         # clean up
