@@ -119,8 +119,10 @@ class GeneratedClientTests extends TestBase {
     assertThat(record.getId()).isEqualTo(recordId);
   }
 
-  // verify that TSV downloads work via the client. Unit tests elsewhere assert on TSV correctness;
-  // this test asserts that the RecordsApi.getRecordsAsTsv() method succeeds.
+  /*
+    verify that TSV downloads work via the client. Unit tests elsewhere assert on TSV correctness;
+    this test asserts that the RecordsApi.getRecordsAsTsv() method succeeds.
+  */
   @Test
   void putAndDownloadRecords() throws ApiException, IOException {
     RecordsApi recordsApi = new RecordsApi(apiClient);
