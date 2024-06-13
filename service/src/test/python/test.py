@@ -234,7 +234,9 @@ class WdsTests(TestCase):
 
         # read tsv back into a variable from data table and verify it matches what was originally created
         tsv_path = self.records_client.get_records_as_tsv(self.current_workspaceId, self.version, self.cvsUpload_test)
-        
+        print(type(tsv_path))
+        print(tsv_path)
+        self.assertEqual(tsv_path, 'Hello world failme')
         assert isinstance(tsv_path, str)
 
         diff = compare_csv(self.generatedCvs_name, tsv_path)
