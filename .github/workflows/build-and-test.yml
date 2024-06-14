@@ -1,8 +1,6 @@
 name: Build and Test
 
 on:
-  # push:
-  #   paths-ignore: [ '*.md' ]
   pull_request:
     branches: [ '**' ]
 
