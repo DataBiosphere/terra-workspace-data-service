@@ -3,9 +3,11 @@ name: Build and Test
 on:
   pull_request:
     branches: [ '**' ]
+  push:
+    branches: main
 
 concurrency:
-  group: ${{ github.workflow }}-${{ github.head_ref }}
+  group: ${{ github.workflow }}-${{ github.head_ref || github.ref }}
   cancel-in-progress: true
 
 jobs:
