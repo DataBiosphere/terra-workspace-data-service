@@ -1,6 +1,7 @@
 package org.databiosphere.workspacedataservice.shared.model.attributes;
 
 import org.databiosphere.workspacedataservice.service.RelationUtils;
+import org.databiosphere.workspacedataservice.service.model.DataTypeMapping;
 import org.databiosphere.workspacedataservice.shared.model.RecordType;
 import org.databiosphere.workspacedataservice.shared.model.RelationTarget;
 
@@ -22,5 +23,10 @@ public class RelationAttribute extends ScalarAttribute<RelationTarget> {
   @Override
   public String toString() {
     return RelationUtils.createRelationString(value.targetType(), value.targetId());
+  }
+
+  @Override
+  public DataTypeMapping getDataTypeMapping() {
+    return DataTypeMapping.RELATION;
   }
 }

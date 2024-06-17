@@ -1,0 +1,26 @@
+package org.databiosphere.workspacedataservice.shared.model.attributes;
+
+import java.util.List;
+import org.databiosphere.workspacedataservice.service.model.DataTypeMapping;
+import org.databiosphere.workspacedataservice.shared.model.RelationTarget;
+
+public class RelationArrayAttribute extends ArrayAttribute<RelationAttribute> {
+  RelationArrayAttribute(List<RelationAttribute> value) {
+    super(value);
+  }
+
+  @Override
+  public DataTypeMapping getDataTypeMapping() {
+    return DataTypeMapping.ARRAY_OF_RELATION;
+  }
+
+  @Override
+  public String[] sqlValue() {
+    return this.value.stream().map(RelationAttribute::sqlValue).toArray(String[]::new);
+  }
+
+  @Override
+  public List<RelationTarget> getValue() {
+    return this.value.stream().map(RelationAttribute::getValue).toList();
+  }
+}
