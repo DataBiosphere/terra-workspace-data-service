@@ -11,13 +11,12 @@ You may need to run tests locally to replicate and debug failures from the GitHu
 
 _You should only need to install prerequisites once._ Python tests require:
 
-* Python 3.8 or later
-* openapi-generator 4.3.1
+* Python 3.8
+* openapi-generator 7.6.0
 * pytest
 * optionally, a python virtual environment
 
-WDS defaults to python 3.8. To check the version of python you have installed, run the
-following:
+WDS defaults to python 3.8. To check the version of python you have installed, run the following:
 
 ```bash
 python --version
@@ -33,7 +32,7 @@ Configure openapi-generator-cli to use the same version as the GitHub Action.
 Depending on your user permissions, sudo may be required to run these commands.
 
 ```bash
-openapi-generator-cli version-manager set 4.3.1
+openapi-generator-cli version-manager set 7.6.0
 ```
 
 At times, openapi-generator-cli won't set the right version even if the command above is run, so it
@@ -44,7 +43,7 @@ can be set. To see all available commands:
 openapi-generator-cli
 ```
 
-Run this command to see what versions are downloaded, if 4.3.1 is not, use arrow keys to navigate to
+Run this command to see what versions are downloaded, if 7.6.0 is not, use arrow keys to navigate to
 it and download it (or if already downloaded to use it).
 
 ```bash
@@ -94,7 +93,7 @@ Start WDS pointing at the mock server:
 SAM_URL=http://localhost:9889 \
 WORKSPACE_MANAGER_URL=http://localhost:9889 \
 ./gradlew bootRun \
---args='--twds.data-import.allowed-hosts=localhost --twds.data-import.require-validation=false'
+--args='--twds.data-import.require-validation=false'
 ```
 
 ## Build wds_client locally
@@ -118,8 +117,7 @@ fit if you want to the version to change when you install the package locally.
   -i service/src/main/resources/static/swagger/openapi-docs.yaml \
   -g python \
   -o wds-client \
-  --additional-properties=projectName=wds-client,packageName=wds_client,packageVersion=0.0.1 \
-  --skip-validate-spec
+  --additional-properties=projectName=wds-client,packageName=wds_client,packageVersion=0.0.1
 ```
 
 This will generate a folder called `wds-client` containing the generated client. To install from

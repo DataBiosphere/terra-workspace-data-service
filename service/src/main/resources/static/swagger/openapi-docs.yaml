@@ -5,7 +5,10 @@ info:
   version: v0.2
   description: |
     This page lists current APIs.
-    As of v0.2, all APIs are subject to change without notice.
+
+    All v0.2 APIs are subject to change without notice.
+
+    Changelog at [https://github.com/DataBiosphere/terra-workspace-data-service/releases](https://github.com/DataBiosphere/terra-workspace-data-service/releases)
   termsOfService: https://github.com/DataBiosphere/terra-workspace-data-service
   license:
     name: BSD
