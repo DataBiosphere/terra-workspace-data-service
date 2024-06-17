@@ -36,7 +36,7 @@ jib {
 }
 
 ext {
-    parquet_mr_version = "1.14.0"
+    parquet_mr_version = "1.14.1"
     hadoop_version = "3.4.0"
     prometheus_rsocket_version = "1.5.3"
     spring_cloud_gcp_version = "5.4.1"
@@ -133,7 +133,7 @@ dependencies {
     testImplementation 'org.junit-pioneer:junit-pioneer:2.2.0'
 
     // google bucket mock
-    testImplementation 'com.google.cloud:google-cloud-nio:0.127.18'
+    testImplementation 'com.google.cloud:google-cloud-nio:0.127.19'
 
     constraints {
         implementation('org.json:json:20240303') {
@@ -143,7 +143,7 @@ dependencies {
         implementation('org.apache.commons:commons-compress:1.26.2') {
             because("CVE-2023-42503")
         }
-        implementation('org.apache.commons:commons-configuration2:2.10.1') {
+        implementation('org.apache.commons:commons-configuration2:2.11.0') {
             because("CVE-2024-29131, CVE-2024-29133")
         }
         implementation('org.xerial.snappy:snappy-java:1.1.10.5') {
