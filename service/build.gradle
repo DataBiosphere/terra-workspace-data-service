@@ -47,7 +47,7 @@ dependencies {
     implementation 'org.zalando:logbook-spring-boot-starter:3.9.0'
 
     // Azure libraries
-    implementation 'com.microsoft.azure:applicationinsights-runtime-attach:3.4.19'
+    implementation 'com.microsoft.azure:applicationinsights-runtime-attach:3.5.3'
     implementation 'com.azure:azure-storage-blob:12.26.1'
     implementation 'com.azure:azure-identity-extensions:1.1.16' // postgres password plugin
 
