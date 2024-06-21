@@ -4,7 +4,6 @@
     "service.version": "${RELEASE_NAME}"
   },
   "sampling": {
-    "requestsPerSecond": 5.0,
     "overrides": [
       {
         "telemetryType": "request",
