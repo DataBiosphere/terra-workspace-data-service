@@ -20,7 +20,7 @@ jobs:
         id: extract-inputs
         run: >
           echo "branch=${{ inputs.branch || 'develop' }}" >> "$GITHUB_OUTPUT"
-          echo "delete-bee=${{ inputs.delete-bee || false }}" >> "$GITHUB_OUTPUT"
+          echo "delete-bee=${{ inputs.delete-bee || true }}" >> "$GITHUB_OUTPUT"
   params-gen:
     runs-on: ubuntu-latest
     outputs:
