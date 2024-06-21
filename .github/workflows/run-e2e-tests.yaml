@@ -14,13 +14,11 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       branch: '${{ steps.extract-inputs.outputs.branch }}'
-      delete-bee: '${{ steps.extract-inputs.outputs.delete-bee }}'
     steps:
       - name: Get inputs or use defaults
         id: extract-inputs
         run: >
           echo "branch=${{ inputs.branch || 'develop' }}" >> "$GITHUB_OUTPUT"
-          echo "delete-bee=${{ inputs.delete-bee || false }}" >> "$GITHUB_OUTPUT"
   params-gen:
     runs-on: ubuntu-latest
     outputs:
@@ -100,7 +98,7 @@ jobs:
     needs:
       - run-e2e-test-job
       - init-github-context
-    if: '${{ needs.init-github-context.outputs.delete-bee && always() }}'
+    if: always()
     steps:
       - name: dispatch to terra-github-workflows
         uses: broadinstitute/workflow-dispatch@v4
