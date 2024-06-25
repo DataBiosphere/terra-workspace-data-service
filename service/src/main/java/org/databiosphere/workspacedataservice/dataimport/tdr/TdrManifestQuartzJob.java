@@ -125,7 +125,7 @@ public class TdrManifestQuartzJob extends QuartzJob {
 
   // TODO AJ-1523 unit tests
   @Override
-  protected void executeInternal(UUID jobId, JobExecutionContext context) {
+  protected void executeInternal(UUID jobId, JobExecutionContext context, Observation observation) {
     // Grab the manifest uri from the job's data map
     JobDataMapReader jobData = JobDataMapReader.fromContext(context);
     URI uri = jobData.getURI(ARG_URL);
@@ -199,6 +199,9 @@ public class TdrManifestQuartzJob extends QuartzJob {
       if (options.syncPermissions() && isTdrPermissionSyncingEnabled) {
         syncPermissions(details.workspaceId(), snapshotId);
       }
+
+      observation.highCardinalityKeyValue("numUpdates", result.getTotalUpdatedCount().toString());
+
       // complete the RecordSink
       recordSink.success();
     } catch (Exception e) {

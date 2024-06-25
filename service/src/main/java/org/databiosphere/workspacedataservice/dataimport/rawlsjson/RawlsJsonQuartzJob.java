@@ -52,7 +52,7 @@ public class RawlsJsonQuartzJob extends QuartzJob {
   }
 
   @Override
-  protected void executeInternal(UUID jobId, JobExecutionContext context) {
+  protected void executeInternal(UUID jobId, JobExecutionContext context, Observation observation) {
     JobDataMapReader jobData = JobDataMapReader.fromContext(context);
     ImportDetails details = importDetailsRetriever.fetch(jobId, jobData, PrefixStrategy.NONE);
     ImportJobInput jobInput = details.importJobInput();

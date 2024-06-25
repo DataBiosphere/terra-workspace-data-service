@@ -89,7 +89,7 @@ public class PfbQuartzJob extends QuartzJob {
   }
 
   @Override
-  protected void executeInternal(UUID jobId, JobExecutionContext context) {
+  protected void executeInternal(UUID jobId, JobExecutionContext context, Observation observation) {
     // Grab the PFB uri from the job's data map
     JobDataMapReader jobData = JobDataMapReader.fromContext(context);
     URI uri = jobData.getURI(ARG_URL);
@@ -122,6 +122,9 @@ public class PfbQuartzJob extends QuartzJob {
       //   counted
       result.merge(withPfbStream(uri, stream -> importTables(stream, recordSink, RELATIONS)));
       // complete the RecordSink
+
+      observation.highCardinalityKeyValue("numUpdates", result.getTotalUpdatedCount().toString());
+
       recordSink.success();
     } catch (DataImportException e) {
       throw new PfbImportException(e.getMessage(), e);
