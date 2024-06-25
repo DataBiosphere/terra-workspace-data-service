@@ -30,6 +30,7 @@ import org.databiosphere.workspacedataservice.dataimport.snapshotsupport.Snapsho
 import org.databiosphere.workspacedataservice.dataimport.snapshotsupport.SnapshotSupportFactory;
 import org.databiosphere.workspacedataservice.jobexec.JobDataMapReader;
 import org.databiosphere.workspacedataservice.jobexec.QuartzJob;
+import org.databiosphere.workspacedataservice.metrics.ImportMetrics;
 import org.databiosphere.workspacedataservice.recordsink.RawlsAttributePrefixer.PrefixStrategy;
 import org.databiosphere.workspacedataservice.recordsink.RecordSink;
 import org.databiosphere.workspacedataservice.recordsink.RecordSinkFactory;
@@ -62,6 +63,7 @@ public class PfbQuartzJob extends QuartzJob {
   private final RecordSinkFactory recordSinkFactory;
   private final SnapshotSupportFactory snapshotSupportFactory;
   private final ImportDetailsRetriever importDetailsRetriever;
+  private final ImportMetrics importMetrics;
 
   public PfbQuartzJob(
       JobDao jobDao,
@@ -70,6 +72,7 @@ public class PfbQuartzJob extends QuartzJob {
       BatchWriteService batchWriteService,
       ActivityLogger activityLogger,
       ObservationRegistry observationRegistry,
+      ImportMetrics importMetrics,
       SnapshotSupportFactory snapshotSupportFactory,
       DataImportProperties dataImportProperties,
       ImportDetailsRetriever importDetailsRetriever) {
@@ -80,6 +83,7 @@ public class PfbQuartzJob extends QuartzJob {
     this.activityLogger = activityLogger;
     this.snapshotSupportFactory = snapshotSupportFactory;
     this.importDetailsRetriever = importDetailsRetriever;
+    this.importMetrics = importMetrics;
   }
 
   @Override
@@ -89,7 +93,7 @@ public class PfbQuartzJob extends QuartzJob {
   }
 
   @Override
-  protected void executeInternal(UUID jobId, JobExecutionContext context, Observation observation) {
+  protected void executeInternal(UUID jobId, JobExecutionContext context) {
     // Grab the PFB uri from the job's data map
     JobDataMapReader jobData = JobDataMapReader.fromContext(context);
     URI uri = jobData.getURI(ARG_URL);
@@ -123,7 +127,10 @@ public class PfbQuartzJob extends QuartzJob {
       result.merge(withPfbStream(uri, stream -> importTables(stream, recordSink, RELATIONS)));
       // complete the RecordSink
 
-      observation.highCardinalityKeyValue("numUpdates", result.getTotalUpdatedCount().toString());
+      importMetrics
+          .recordUpsertDistributionSummary()
+          .distributionSummary()
+          .record(result.getTotalUpdatedCount());
 
       recordSink.success();
     } catch (DataImportException e) {

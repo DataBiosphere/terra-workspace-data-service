@@ -79,7 +79,7 @@ public abstract class QuartzJob implements Job {
       JobContextHolder.setAttribute(ATTRIBUTE_NAME_TOKEN, authToken);
 
       // execute the specifics of this job
-      executeInternal(jobId, context, observation);
+      executeInternal(jobId, context);
 
       // if we reached here, and config says we should, mark this job as successful
       if (dataImportProperties.isSucceedOnCompletion()) {
@@ -100,8 +100,7 @@ public abstract class QuartzJob implements Job {
     }
   }
 
-  protected abstract void executeInternal(
-      UUID jobId, JobExecutionContext context, Observation observation);
+  protected abstract void executeInternal(UUID jobId, JobExecutionContext context);
 
   // try to retrieve MDC id from job context and add to this thread; don't fail if this errors out
   private void propagateMdc(JobDataMapReader reader) {

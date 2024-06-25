@@ -111,8 +111,7 @@ class QuartzJobTest extends TestBase {
     }
 
     @Override
-    protected void executeInternal(
-        UUID jobId, JobExecutionContext context, Observation observation) {
+    protected void executeInternal(UUID jobId, JobExecutionContext context) {
       assertEquals(expectedToken, TokenContextUtil.getToken().getValue());
       if (shouldThrowError) {
         throw new JobExecutionException("Forced job to fail");

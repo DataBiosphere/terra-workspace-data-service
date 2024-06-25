@@ -18,6 +18,7 @@ import org.databiosphere.workspacedataservice.dataimport.ImportDetailsRetriever;
 import org.databiosphere.workspacedataservice.dataimport.ImportJobInput;
 import org.databiosphere.workspacedataservice.jobexec.JobDataMapReader;
 import org.databiosphere.workspacedataservice.jobexec.QuartzJob;
+import org.databiosphere.workspacedataservice.metrics.ImportMetrics;
 import org.databiosphere.workspacedataservice.pubsub.PubSub;
 import org.databiosphere.workspacedataservice.pubsub.RawlsJsonPublisher;
 import org.databiosphere.workspacedataservice.recordsink.RawlsAttributePrefixer.PrefixStrategy;
@@ -35,6 +36,7 @@ public class RawlsJsonQuartzJob extends QuartzJob {
   public RawlsJsonQuartzJob(
       DataImportProperties dataImportProperties,
       ObservationRegistry observationRegistry,
+      ImportMetrics importMetrics,
       JobDao jobDao,
       ImportDetailsRetriever importDetailsRetriever,
       GcsStorage storage,
@@ -52,7 +54,7 @@ public class RawlsJsonQuartzJob extends QuartzJob {
   }
 
   @Override
-  protected void executeInternal(UUID jobId, JobExecutionContext context, Observation observation) {
+  protected void executeInternal(UUID jobId, JobExecutionContext context) {
     JobDataMapReader jobData = JobDataMapReader.fromContext(context);
     ImportDetails details = importDetailsRetriever.fetch(jobId, jobData, PrefixStrategy.NONE);
     ImportJobInput jobInput = details.importJobInput();

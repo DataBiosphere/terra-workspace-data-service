@@ -51,6 +51,7 @@ import org.databiosphere.workspacedataservice.dataimport.snapshotsupport.Snapsho
 import org.databiosphere.workspacedataservice.jobexec.JobDataMapReader;
 import org.databiosphere.workspacedataservice.jobexec.JobExecutionException;
 import org.databiosphere.workspacedataservice.jobexec.QuartzJob;
+import org.databiosphere.workspacedataservice.metrics.ImportMetrics;
 import org.databiosphere.workspacedataservice.recordsink.RawlsAttributePrefixer.PrefixStrategy;
 import org.databiosphere.workspacedataservice.recordsink.RecordSink;
 import org.databiosphere.workspacedataservice.recordsink.RecordSinkFactory;
@@ -89,6 +90,7 @@ public class TdrManifestQuartzJob extends QuartzJob {
   private final ImportDetailsRetriever importDetailsRetriever;
   private final InstantSource instantSource;
   private final boolean shouldAddImportMetadata;
+  private final ImportMetrics importMetrics;
 
   public TdrManifestQuartzJob(
       JobDao jobDao,
@@ -98,6 +100,7 @@ public class TdrManifestQuartzJob extends QuartzJob {
       ActivityLogger activityLogger,
       ObjectMapper mapper,
       ObservationRegistry observationRegistry,
+      ImportMetrics importMetrics,
       DataImportProperties dataImportProperties,
       SnapshotSupportFactory snapshotSupportFactory,
       SamDao samDao,
@@ -115,6 +118,7 @@ public class TdrManifestQuartzJob extends QuartzJob {
     this.importDetailsRetriever = importDetailsRetriever;
     this.instantSource = instantSource;
     this.shouldAddImportMetadata = dataImportProperties.shouldAddImportMetadata();
+    this.importMetrics = importMetrics;
   }
 
   @Override
@@ -125,7 +129,7 @@ public class TdrManifestQuartzJob extends QuartzJob {
 
   // TODO AJ-1523 unit tests
   @Override
-  protected void executeInternal(UUID jobId, JobExecutionContext context, Observation observation) {
+  protected void executeInternal(UUID jobId, JobExecutionContext context) {
     // Grab the manifest uri from the job's data map
     JobDataMapReader jobData = JobDataMapReader.fromContext(context);
     URI uri = jobData.getURI(ARG_URL);
@@ -200,7 +204,10 @@ public class TdrManifestQuartzJob extends QuartzJob {
         syncPermissions(details.workspaceId(), snapshotId);
       }
 
-      observation.highCardinalityKeyValue("numUpdates", result.getTotalUpdatedCount().toString());
+      importMetrics
+          .recordUpsertDistributionSummary()
+          .distributionSummary()
+          .record(result.getTotalUpdatedCount());
 
       // complete the RecordSink
       recordSink.success();

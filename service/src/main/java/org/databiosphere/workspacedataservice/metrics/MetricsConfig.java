@@ -5,6 +5,7 @@ import static io.micrometer.core.instrument.config.MeterFilter.deny;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.ImmutableList;
+import io.micrometer.core.instrument.DistributionSummary;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Tag;
 import java.util.Set;
@@ -59,5 +60,18 @@ public class MetricsConfig {
                     .add(Tag.of("service", "wds"))
                     .add(Tag.of("version", buildProperties.getVersion()))
                     .build());
+  }
+
+  @Bean
+  RecordUpsertDistributionSummary entityUpsertCountDistributionSummary(
+      MeterRegistry meterRegistry) {
+    DistributionSummary distributionSummary =
+        DistributionSummary.builder("wds.import.upsetCount")
+            .baseUnit("record upserts")
+            .publishPercentiles(0.3, 0.5, 0.95, 0.99)
+            .publishPercentileHistogram()
+            .register(meterRegistry);
+
+    return new RecordUpsertDistributionSummary(distributionSummary);
   }
 }

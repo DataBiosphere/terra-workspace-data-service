@@ -22,7 +22,6 @@ import bio.terra.datarepo.model.RelationshipTermModel;
 import bio.terra.datarepo.model.SnapshotExportResponseModel;
 import bio.terra.workspace.model.ResourceList;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import io.micrometer.observation.Observation;
 import java.io.IOException;
 import java.net.URI;
 import java.time.Instant;
@@ -271,7 +270,7 @@ class TdrManifestQuartzJobTest extends TestBase {
 
     // ACT
     // execute the job
-    tdrManifestQuartzJob.executeInternal(jobId, mockContext, Observation.NOOP);
+    tdrManifestQuartzJob.executeInternal(jobId, mockContext);
 
     // ASSERT
     verify(wsmDao).enumerateDataRepoSnapshotReferences(eq(workspaceId), anyInt(), anyInt());
@@ -307,7 +306,7 @@ class TdrManifestQuartzJobTest extends TestBase {
 
     // ACT
     // execute the job
-    tdrManifestQuartzJob.executeInternal(jobId, mockContext, Observation.NOOP);
+    tdrManifestQuartzJob.executeInternal(jobId, mockContext);
 
     // ASSERT
     ArgumentCaptor<String> roleCaptor = ArgumentCaptor.forClass(String.class);
@@ -349,7 +348,7 @@ class TdrManifestQuartzJobTest extends TestBase {
 
     // Act
     // Execute the job
-    tdrManifestQuartzJob.executeInternal(jobId, mockContext, Observation.NOOP);
+    tdrManifestQuartzJob.executeInternal(jobId, mockContext);
 
     // ASSERT
     // Get all records written to sink.

@@ -9,6 +9,7 @@ import org.databiosphere.workspacedataservice.config.DataImportProperties;
 import org.databiosphere.workspacedataservice.dao.JobDao;
 import org.databiosphere.workspacedataservice.dataimport.ImportDetailsRetriever;
 import org.databiosphere.workspacedataservice.dataimport.snapshotsupport.SnapshotSupportFactory;
+import org.databiosphere.workspacedataservice.metrics.ImportMetrics;
 import org.databiosphere.workspacedataservice.recordsink.RecordSinkFactory;
 import org.databiosphere.workspacedataservice.recordsource.RecordSourceFactory;
 import org.databiosphere.workspacedataservice.sam.SamDao;
@@ -29,6 +30,7 @@ class TdrTestSupport {
   @Autowired private ActivityLogger activityLogger;
   @Autowired private ObjectMapper objectMapper;
   @Autowired private ObservationRegistry observationRegistry;
+  @Autowired private ImportMetrics importMetrics;
   @Autowired private DataImportProperties dataImportProperties;
   @Autowired private SnapshotSupportFactory snapshotSupportFactory;
   @Autowired private InstantSource instantSource;
@@ -43,6 +45,7 @@ class TdrTestSupport {
         activityLogger,
         objectMapper,
         observationRegistry,
+        importMetrics,
         dataImportProperties,
         snapshotSupportFactory,
         samDao,
