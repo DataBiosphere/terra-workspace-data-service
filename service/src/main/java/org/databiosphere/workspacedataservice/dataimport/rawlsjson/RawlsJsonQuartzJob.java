@@ -18,7 +18,6 @@ import org.databiosphere.workspacedataservice.dataimport.ImportDetailsRetriever;
 import org.databiosphere.workspacedataservice.dataimport.ImportJobInput;
 import org.databiosphere.workspacedataservice.jobexec.JobDataMapReader;
 import org.databiosphere.workspacedataservice.jobexec.QuartzJob;
-import org.databiosphere.workspacedataservice.metrics.ImportMetrics;
 import org.databiosphere.workspacedataservice.pubsub.PubSub;
 import org.databiosphere.workspacedataservice.pubsub.RawlsJsonPublisher;
 import org.databiosphere.workspacedataservice.recordsink.RawlsAttributePrefixer.PrefixStrategy;
@@ -36,7 +35,6 @@ public class RawlsJsonQuartzJob extends QuartzJob {
   public RawlsJsonQuartzJob(
       DataImportProperties dataImportProperties,
       ObservationRegistry observationRegistry,
-      ImportMetrics importMetrics,
       JobDao jobDao,
       ImportDetailsRetriever importDetailsRetriever,
       GcsStorage storage,

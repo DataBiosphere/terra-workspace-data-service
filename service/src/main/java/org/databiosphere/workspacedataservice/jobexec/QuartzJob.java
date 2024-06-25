@@ -67,7 +67,6 @@ public abstract class QuartzJob implements Job {
             .contextualName("job-execution")
             .highCardinalityKeyValue("jobId", jobId.toString());
     annotateObservation(observation);
-
     try {
       // mark this job as running
       jobDao.running(jobId);

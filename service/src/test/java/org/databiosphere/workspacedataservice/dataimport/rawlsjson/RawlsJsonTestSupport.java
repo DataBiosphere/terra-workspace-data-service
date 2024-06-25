@@ -17,7 +17,6 @@ import org.databiosphere.workspacedataservice.dao.JobDao;
 import org.databiosphere.workspacedataservice.dataimport.ImportDetailsRetriever;
 import org.databiosphere.workspacedataservice.dataimport.ImportJobInput;
 import org.databiosphere.workspacedataservice.generated.ImportRequestServerModel;
-import org.databiosphere.workspacedataservice.metrics.ImportMetrics;
 import org.databiosphere.workspacedataservice.pubsub.PubSub;
 import org.databiosphere.workspacedataservice.service.ImportService;
 import org.databiosphere.workspacedataservice.storage.GcsStorage;
@@ -32,7 +31,6 @@ import org.springframework.stereotype.Component;
 public class RawlsJsonTestSupport {
   @Autowired private DataImportProperties dataImportProperties;
   @Autowired private ObservationRegistry observations;
-  @Autowired private ImportMetrics importMetrics;
   @Autowired private JobDao jobDao;
   @Autowired private ImportDetailsRetriever importDetailsRetriever;
   @Autowired private GcsStorage storage;
@@ -40,13 +38,7 @@ public class RawlsJsonTestSupport {
 
   RawlsJsonQuartzJob buildRawlsJsonQuartzJob() {
     return new RawlsJsonQuartzJob(
-        dataImportProperties,
-        observations,
-        importMetrics,
-        jobDao,
-        importDetailsRetriever,
-        storage,
-        pubSub);
+        dataImportProperties, observations, jobDao, importDetailsRetriever, storage, pubSub);
   }
 
   static JobExecutionContext stubJobContext(UUID jobId, URI resourceUri, UUID collectionId) {
