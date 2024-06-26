@@ -70,8 +70,9 @@ public class MetricsConfig {
         DistributionSummary.builder("wds.import.upsertCount")
             .baseUnit("upserts")
             .description("Number of upserts in this import job")
-            .publishPercentiles(0.3, 0.5, 0.95, 0.99)
             .publishPercentileHistogram()
+            .minimumExpectedValue(1.0) // setting a min/max helps keep prometheus metrics smaller
+            .maximumExpectedValue(500000.0)
             .register(meterRegistry);
 
     return new RecordUpsertDistributionSummary(distributionSummary);
