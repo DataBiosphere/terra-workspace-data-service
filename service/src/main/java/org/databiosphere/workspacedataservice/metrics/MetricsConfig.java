@@ -66,8 +66,9 @@ public class MetricsConfig {
   RecordUpsertDistributionSummary entityUpsertCountDistributionSummary(
       MeterRegistry meterRegistry) {
     DistributionSummary distributionSummary =
-        DistributionSummary.builder("wds.import.upsetCount")
-            .baseUnit("record upserts")
+        DistributionSummary.builder("wds.import.upsertCount")
+            .baseUnit("upserts")
+            .description("Number of upserts in this import job")
             .publishPercentiles(0.3, 0.5, 0.95, 0.99)
             .publishPercentileHistogram()
             .register(meterRegistry);
