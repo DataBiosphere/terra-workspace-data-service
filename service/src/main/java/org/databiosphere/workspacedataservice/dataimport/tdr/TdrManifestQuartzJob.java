@@ -46,6 +46,7 @@ import org.databiosphere.workspacedataservice.dataimport.FileDownloadHelper;
 import org.databiosphere.workspacedataservice.dataimport.ImportDetails;
 import org.databiosphere.workspacedataservice.dataimport.ImportDetailsRetriever;
 import org.databiosphere.workspacedataservice.dataimport.ImportJobInput;
+import org.databiosphere.workspacedataservice.dataimport.snapshotsupport.SnapshotLinkResult;
 import org.databiosphere.workspacedataservice.dataimport.snapshotsupport.SnapshotSupport;
 import org.databiosphere.workspacedataservice.dataimport.snapshotsupport.SnapshotSupportFactory;
 import org.databiosphere.workspacedataservice.jobexec.JobDataMapReader;
@@ -482,7 +483,18 @@ public class TdrManifestQuartzJob extends QuartzJob {
     // list existing snapshots linked to this workspace
     SnapshotSupport snapshotSupport = snapshotSupportFactory.buildSnapshotSupport(workspaceId);
     // TODO AJ-1673: don't use the env-var workspaceId here
-    snapshotSupport.linkSnapshots(snapshotIds);
+    SnapshotLinkResult snapshotLinkResult = snapshotSupport.linkSnapshots(snapshotIds);
+
+    // record metrics
+    importMetrics
+        .snapshotsConsideredDistributionSummary()
+        .distributionSummary()
+        .record(snapshotLinkResult.numSnapshotsConsidered());
+
+    importMetrics
+        .snapshotsLinkedDistributionSummary()
+        .distributionSummary()
+        .record(snapshotLinkResult.numSnapshotsLinked());
   }
 
   /**

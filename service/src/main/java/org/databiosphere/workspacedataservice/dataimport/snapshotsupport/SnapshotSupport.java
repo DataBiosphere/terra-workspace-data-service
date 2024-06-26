@@ -76,7 +76,7 @@ public abstract class SnapshotSupport {
    *
    * @param snapshotIds the list of snapshot ids to create or verify references.
    */
-  public void linkSnapshots(Set<UUID> snapshotIds) {
+  public SnapshotLinkResult linkSnapshots(Set<UUID> snapshotIds) {
     // list existing snapshots linked to this workspace
     Set<UUID> existingSnapshotIds = Set.copyOf(existingPolicySnapshotIds(/* pageSize= */ 50));
     // find the snapshots that are not already linked to this workspace
@@ -89,13 +89,17 @@ public abstract class SnapshotSupport {
         newSnapshotIds.size());
 
     // pass snapshotIds to underlying client to link
+    int successfulLinks = 0;
     for (UUID uuid : newSnapshotIds) {
       try {
         linkSnapshot(uuid);
+        successfulLinks++;
       } catch (RestException re) {
         throw new DataImportException("Error processing data import: " + re.getMessage(), re);
       }
     }
+
+    return new SnapshotLinkResult(snapshotIds.size(), successfulLinks);
   }
 
   /**

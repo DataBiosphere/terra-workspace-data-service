@@ -75,4 +75,32 @@ public class MetricsConfig {
 
     return new RecordUpsertDistributionSummary(distributionSummary);
   }
+
+  // central definition for the wds.import.snapshotsLinked distribution summary
+  @Bean
+  SnapshotsLinkedDistributionSummary snapshotsLinkedDistributionSummary(
+      MeterRegistry meterRegistry) {
+    DistributionSummary distributionSummary =
+        DistributionSummary.builder("wds.import.snapshotsLinked")
+            .baseUnit("snapshots")
+            .description("Number of snapshots actually linked by an import job")
+            .publishPercentiles(0.25, 0.5, 0.75, 0.95, 0.99)
+            .register(meterRegistry);
+
+    return new SnapshotsLinkedDistributionSummary(distributionSummary);
+  }
+
+  // central definition for the wds.import.snapshotsConsidered distribution summary
+  @Bean
+  SnapshotsConsideredDistributionSummary snapshotsConsideredDistributionSummary(
+      MeterRegistry meterRegistry) {
+    DistributionSummary distributionSummary =
+        DistributionSummary.builder("wds.import.snapshotsConsidered")
+            .baseUnit("snapshots")
+            .description("Number of snapshots mentioned by an import source")
+            .publishPercentiles(0.25, 0.5, 0.75, 0.95, 0.99)
+            .register(meterRegistry);
+
+    return new SnapshotsConsideredDistributionSummary(distributionSummary);
+  }
 }
