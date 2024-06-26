@@ -50,7 +50,7 @@ dependencies {
     // do not upgrade app insights past 3.5.1 until AJ-1897 is resolved
     implementation 'com.microsoft.azure:applicationinsights-runtime-attach:3.5.1'
     implementation 'com.azure:azure-storage-blob:12.26.1'
-    implementation 'com.azure:azure-identity-extensions:1.1.16' // postgres password plugin
+    implementation 'com.azure:azure-identity-extensions:1.1.17' // postgres password plugin
 
     implementation 'org.springframework.boot:spring-boot-starter'
     implementation 'org.springframework.boot:spring-boot-starter-jdbc'
