@@ -6,6 +6,7 @@ import static org.databiosphere.workspacedataservice.dataimport.tdr.TdrManifestT
 import static org.databiosphere.workspacedataservice.sam.SamAuthorizationDao.WORKSPACE_ROLES;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
@@ -22,6 +23,8 @@ import bio.terra.datarepo.model.RelationshipTermModel;
 import bio.terra.datarepo.model.SnapshotExportResponseModel;
 import bio.terra.workspace.model.ResourceList;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.micrometer.core.instrument.DistributionSummary;
+import io.micrometer.core.instrument.MeterRegistry;
 import java.io.IOException;
 import java.net.URI;
 import java.time.Instant;
@@ -72,6 +75,7 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.ArgumentCaptor;
 import org.quartz.JobExecutionContext;
+import org.quartz.JobExecutionException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -101,6 +105,7 @@ class TdrManifestQuartzJobTest extends TestBase {
   @Autowired ObjectMapper objectMapper;
   @Autowired TdrTestSupport testSupport;
   @Autowired MockInstantSource mockInstantSource;
+  @Autowired MeterRegistry meterRegistry;
 
   // test resources used below
   @Value("classpath:tdrmanifest/azure_small.json")
@@ -121,6 +126,9 @@ class TdrManifestQuartzJobTest extends TestBase {
   // this one contains properties not defined in the Java models
   @Value("classpath:tdrmanifest/extra_properties.json")
   Resource manifestWithUnknownProperties;
+
+  @Value("classpath:tdrmanifest/with-entity-reference-lists.json")
+  Resource withEntityReferenceListsResource;
 
   @BeforeEach
   void beforeEach() {
@@ -246,6 +254,51 @@ class TdrManifestQuartzJobTest extends TestBase {
               tdrManifestQuartzJob.importTable(
                   malformedFile, table, recordSink, ImportMode.BASE_ATTRIBUTES, Optional.empty()));
     }
+  }
+
+  @Test
+  void upsertCountMetricsAreRecorded() throws IOException, JobExecutionException {
+    // get the starting state of the upsertCount distribution summary
+    // since other test cases may write to this meter, we can't predict its starting state
+    DistributionSummary summary = meterRegistry.find("wds.import.upsertCount").summary();
+    assertNotNull(summary);
+    long startingCount = summary.count();
+    double startingTotal = summary.totalAmount();
+
+    // ARRANGE
+    // set up ids
+    WorkspaceId workspaceId = WorkspaceId.of(UUID.randomUUID());
+    CollectionId collectionId = CollectionId.of(UUID.randomUUID());
+    UUID jobId = UUID.randomUUID();
+    // mock collection service to return this workspace id for this collection id
+    when(collectionService.getWorkspaceId(collectionId)).thenReturn(workspaceId);
+    // WSM should report no snapshots already linked to this workspace
+    // note that if enumerateDataRepoSnapshotReferences is called with the wrong workspaceId,
+    // this test will fail
+    when(wsmDao.enumerateDataRepoSnapshotReferences(eq(workspaceId), anyInt(), anyInt()))
+        .thenReturn(new ResourceList());
+
+    // set up the job
+    TdrManifestQuartzJob tdrManifestQuartzJob = testSupport.buildTdrManifestQuartzJob();
+    JobExecutionContext mockContext =
+        stubJobContext(jobId, withEntityReferenceListsResource, collectionId.id());
+
+    // ACT
+    // execute the job
+    tdrManifestQuartzJob.executeInternal(jobId, mockContext);
+
+    // get the ending state of the upsertCount distribution summary, now that we've run a job
+    long endingCount = summary.count();
+    double endingTotal = summary.totalAmount();
+    // we should have incremented the summary count by 1
+    assertEquals(1, endingCount - startingCount);
+    // and we should have incremented the total by 5018.
+    // This test uses the with-entity-reference-lists.json manifest. This manifest contains:
+    //   * 5 rows of type "sample"
+    //   * 3 rows of type "person"; each row has relations to the sample type
+    // Since relations are upserted in a second pass, we expect a count of 11:
+    //   (5 sample base attributes + 3 person base attributes + 3 person relations)
+    assertEquals(11, endingTotal - startingTotal);
   }
 
   @Test

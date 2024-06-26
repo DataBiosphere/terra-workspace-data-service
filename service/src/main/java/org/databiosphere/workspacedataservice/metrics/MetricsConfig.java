@@ -62,6 +62,7 @@ public class MetricsConfig {
                     .build());
   }
 
+  // central definition for the wds.import.upsertCount distribution summary
   @Bean
   RecordUpsertDistributionSummary entityUpsertCountDistributionSummary(
       MeterRegistry meterRegistry) {
