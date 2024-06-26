@@ -75,7 +75,6 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.ArgumentCaptor;
 import org.quartz.JobExecutionContext;
-import org.quartz.JobExecutionException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -257,7 +256,7 @@ class TdrManifestQuartzJobTest extends TestBase {
   }
 
   @Test
-  void upsertCountMetricsAreRecorded() throws IOException, JobExecutionException {
+  void upsertCountMetricsAreRecorded() throws IOException {
     // get the starting state of the upsertCount distribution summary
     // since other test cases may write to this meter, we can't predict its starting state
     DistributionSummary summary = meterRegistry.find("wds.import.upsertCount").summary();
