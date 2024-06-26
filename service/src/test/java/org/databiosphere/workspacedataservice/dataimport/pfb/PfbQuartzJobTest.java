@@ -4,6 +4,7 @@ import static org.databiosphere.workspacedataservice.TestTags.SLOW;
 import static org.databiosphere.workspacedataservice.dataimport.pfb.PfbTestUtils.stubJobContext;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.eq;
@@ -20,6 +21,8 @@ import bio.terra.workspace.model.ResourceAttributesUnion;
 import bio.terra.workspace.model.ResourceDescription;
 import bio.terra.workspace.model.ResourceList;
 import bio.terra.workspace.model.ResourceMetadata;
+import io.micrometer.core.instrument.DistributionSummary;
+import io.micrometer.core.instrument.MeterRegistry;
 import java.io.IOException;
 import java.util.List;
 import java.util.Random;
@@ -34,6 +37,7 @@ import org.databiosphere.workspacedataservice.service.BatchWriteService;
 import org.databiosphere.workspacedataservice.service.CollectionService;
 import org.databiosphere.workspacedataservice.service.model.BatchWriteResult;
 import org.databiosphere.workspacedataservice.shared.model.CollectionId;
+import org.databiosphere.workspacedataservice.shared.model.RecordType;
 import org.databiosphere.workspacedataservice.shared.model.WorkspaceId;
 import org.databiosphere.workspacedataservice.workspacemanager.WorkspaceManagerDao;
 import org.junit.jupiter.api.Tag;
@@ -61,6 +65,7 @@ class PfbQuartzJobTest extends TestBase {
   @MockBean CollectionService collectionService;
   @MockBean ActivityLogger activityLogger;
   @Autowired PfbTestSupport testSupport;
+  @Autowired MeterRegistry meterRegistry;
 
   // test resources used below
   @Value("classpath:avro/minimal_data.avro")
@@ -242,6 +247,49 @@ class PfbQuartzJobTest extends TestBase {
                 new SnapshotModelMatcher(UUID.fromString("790795c4-49b1-4ac8-a060-207b92ea08c5"))));
     // Job should succeed
     verify(jobDao).succeeded(jobId);
+  }
+
+  @Test
+  void upsertCountMetricsAreRecorded() throws IOException, JobExecutionException {
+    // get the starting state of the upsertCount distribution summary
+    // since other test cases may write to this meter, we can't predict its starting state
+    DistributionSummary summary = meterRegistry.find("wds.import.upsertCount").summary();
+    assertNotNull(summary);
+    long startingCount = summary.count();
+    double startingTotal = summary.totalAmount();
+
+    // set up the mock import
+    UUID jobId = UUID.randomUUID();
+    CollectionId collectionId = CollectionId.of(UUID.randomUUID());
+    WorkspaceId workspaceId = WorkspaceId.of(UUID.randomUUID());
+    JobExecutionContext mockContext =
+        stubJobContext(jobId, minimalDataAvroResource, collectionId.id());
+
+    when(collectionService.getWorkspaceId(collectionId)).thenReturn(workspaceId);
+
+    // WSM should report no snapshots already linked to this workspace
+    when(wsmDao.enumerateDataRepoSnapshotReferences(any(), anyInt(), anyInt()))
+        .thenReturn(new ResourceList());
+    // BatchWriteService returns a BatchWriteResult of 1234 upserts
+    BatchWriteResult result = BatchWriteResult.empty();
+    result.increaseCount(RecordType.valueOf("fooType"), 1234);
+    when(batchWriteService.batchWrite(any(), any(), any(), any())).thenReturn(result);
+
+    testSupport.buildPfbQuartzJob().execute(mockContext);
+
+    // Job should succeed
+    verify(jobDao).succeeded(jobId);
+
+    // get the ending state of the upsertCount distribution summary, now that we've run a job
+    long endingCount = summary.count();
+    double endingTotal = summary.totalAmount();
+    // we should have incremented the summary count by 1
+    assertEquals(1, endingCount - startingCount);
+    // and we should have incremented the total by 2468.
+    // our mock returns a BatchWriteResult of 1234, but import has two passes - base attributes
+    // and relations. Thus, it is expected that each pass will return 1234 and the expected metric
+    // is (1234 * 2), which is 2468.
+    assertEquals(2468, endingTotal - startingTotal);
   }
 
   private record SnapshotModelMatcher(UUID expectedSnapshotId)

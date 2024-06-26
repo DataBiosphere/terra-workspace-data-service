@@ -134,4 +134,14 @@ class BatchWriteResultTest {
     batchWriteResultOne.merge(batchWriteResultThree);
     assertEquals(8, batchWriteResultOne.getUpdatedCount(RecordType.valueOf("fourth")));
   }
+
+  @Test
+  void calculateTotalCount() {
+    BatchWriteResult batchWriteResult = BatchWriteResult.empty();
+    batchWriteResult.increaseCount(RecordType.valueOf("first"), 1);
+    batchWriteResult.increaseCount(RecordType.valueOf("second"), 2);
+    batchWriteResult.increaseCount(RecordType.valueOf("third"), 3);
+
+    assertEquals(6, batchWriteResult.getTotalUpdatedCount());
+  }
 }

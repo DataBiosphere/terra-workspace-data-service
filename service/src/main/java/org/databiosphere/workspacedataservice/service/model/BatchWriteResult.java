@@ -25,6 +25,10 @@ public class BatchWriteResult {
     return resultCounts.get(recordType);
   }
 
+  public Integer getTotalUpdatedCount() {
+    return resultCounts.values().stream().reduce(0, Integer::sum);
+  }
+
   public void merge(BatchWriteResult other) {
     other.resultCounts.forEach((key, value) -> this.resultCounts.merge(key, value, Integer::sum));
   }
