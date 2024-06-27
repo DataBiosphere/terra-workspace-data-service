@@ -26,6 +26,7 @@ import org.databiosphere.workspacedataservice.config.DataImportProperties;
 import org.databiosphere.workspacedataservice.dao.JobDao;
 import org.databiosphere.workspacedataservice.dataimport.ImportDetails;
 import org.databiosphere.workspacedataservice.dataimport.ImportDetailsRetriever;
+import org.databiosphere.workspacedataservice.dataimport.snapshotsupport.SnapshotLinkResult;
 import org.databiosphere.workspacedataservice.dataimport.snapshotsupport.SnapshotSupport;
 import org.databiosphere.workspacedataservice.dataimport.snapshotsupport.SnapshotSupportFactory;
 import org.databiosphere.workspacedataservice.jobexec.JobDataMapReader;
@@ -228,7 +229,18 @@ public class PfbQuartzJob extends QuartzJob {
   protected void linkSnapshots(Set<UUID> snapshotIds, WorkspaceId workspaceId) {
     // list existing snapshots linked to this workspace
     SnapshotSupport snapshotSupport = snapshotSupportFactory.buildSnapshotSupport(workspaceId);
-    snapshotSupport.linkSnapshots(snapshotIds);
+    SnapshotLinkResult snapshotLinkResult = snapshotSupport.linkSnapshots(snapshotIds);
+
+    // record metrics
+    importMetrics
+        .snapshotsConsideredDistributionSummary()
+        .distributionSummary()
+        .record(snapshotLinkResult.numSnapshotsConsidered());
+
+    importMetrics
+        .snapshotsLinkedDistributionSummary()
+        .distributionSummary()
+        .record(snapshotLinkResult.numSnapshotsLinked());
   }
 
   @Nullable

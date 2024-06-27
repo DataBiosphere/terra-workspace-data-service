@@ -251,12 +251,24 @@ class PfbQuartzJobTest extends TestBase {
 
   @Test
   void upsertCountMetricsAreRecorded() throws IOException, JobExecutionException {
-    // get the starting state of the upsertCount distribution summary
-    // since other test cases may write to this meter, we can't predict its starting state
-    DistributionSummary summary = meterRegistry.find("wds.import.upsertCount").summary();
-    assertNotNull(summary);
-    long startingCount = summary.count();
-    double startingTotal = summary.totalAmount();
+    // get the starting state of the distribution summaries
+    // since other test cases may write metrics, we can't predict their starting state
+    DistributionSummary upsertCountSummary = meterRegistry.find("wds.import.upsertCount").summary();
+    assertNotNull(upsertCountSummary);
+    long startingUpsertCount = upsertCountSummary.count();
+    double startingUpsertTotal = upsertCountSummary.totalAmount();
+
+    DistributionSummary snapshotsConsideredSummary =
+        meterRegistry.find("wds.import.snapshotsConsidered").summary();
+    assertNotNull(snapshotsConsideredSummary);
+    long startingSnapshotsConsideredCount = snapshotsConsideredSummary.count();
+    double startingSnapshotsConsideredTotal = snapshotsConsideredSummary.totalAmount();
+
+    DistributionSummary snapshotsLinkedSummary =
+        meterRegistry.find("wds.import.snapshotsLinked").summary();
+    assertNotNull(snapshotsLinkedSummary);
+    long startingSnapshotsLinkedCount = snapshotsLinkedSummary.count();
+    double startingSnapshotsLinkedTotal = snapshotsLinkedSummary.totalAmount();
 
     // set up the mock import
     UUID jobId = UUID.randomUUID();
@@ -281,15 +293,27 @@ class PfbQuartzJobTest extends TestBase {
     verify(jobDao).succeeded(jobId);
 
     // get the ending state of the upsertCount distribution summary, now that we've run a job
-    long endingCount = summary.count();
-    double endingTotal = summary.totalAmount();
+    long endingUpsertCount = upsertCountSummary.count();
+    double endingUpsertTotal = upsertCountSummary.totalAmount();
     // we should have incremented the summary count by 1
-    assertEquals(1, endingCount - startingCount);
+    assertEquals(1, endingUpsertCount - startingUpsertCount);
     // and we should have incremented the total by 2468.
     // our mock returns a BatchWriteResult of 1234, but import has two passes - base attributes
     // and relations. Thus, it is expected that each pass will return 1234 and the expected metric
     // is (1234 * 2), which is 2468.
-    assertEquals(2468, endingTotal - startingTotal);
+    assertEquals(2468, endingUpsertTotal - startingUpsertTotal);
+
+    // The PFB being imported does not mention any snapshots. So, we should see the *count* for
+    // these metrics increase, but the *total* should stay the same.
+    long endingSnapshotsConsideredCount = snapshotsConsideredSummary.count();
+    double endingSnapshotsConsideredTotal = snapshotsConsideredSummary.totalAmount();
+    assertEquals(1, endingSnapshotsConsideredCount - startingSnapshotsConsideredCount);
+    assertEquals(0, endingSnapshotsConsideredTotal - startingSnapshotsConsideredTotal);
+
+    long endingSnapshotsLinkedCount = snapshotsLinkedSummary.count();
+    double endingSnapshotsLinkedTotal = snapshotsLinkedSummary.totalAmount();
+    assertEquals(1, endingSnapshotsLinkedCount - startingSnapshotsLinkedCount);
+    assertEquals(0, endingSnapshotsLinkedTotal - startingSnapshotsLinkedTotal);
   }
 
   private record SnapshotModelMatcher(UUID expectedSnapshotId)

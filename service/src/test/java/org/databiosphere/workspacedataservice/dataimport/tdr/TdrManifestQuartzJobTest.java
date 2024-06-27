@@ -256,13 +256,25 @@ class TdrManifestQuartzJobTest extends TestBase {
   }
 
   @Test
-  void upsertCountMetricsAreRecorded() throws IOException {
-    // get the starting state of the upsertCount distribution summary
-    // since other test cases may write to this meter, we can't predict its starting state
-    DistributionSummary summary = meterRegistry.find("wds.import.upsertCount").summary();
-    assertNotNull(summary);
-    long startingCount = summary.count();
-    double startingTotal = summary.totalAmount();
+  void metricsAreRecorded() throws IOException {
+    // get the starting state of the distribution summaries
+    // since other test cases may write metrics, we can't predict their starting state
+    DistributionSummary upsertCountSummary = meterRegistry.find("wds.import.upsertCount").summary();
+    assertNotNull(upsertCountSummary);
+    long startingUpsertCount = upsertCountSummary.count();
+    double startingUpsertTotal = upsertCountSummary.totalAmount();
+
+    DistributionSummary snapshotsConsideredSummary =
+        meterRegistry.find("wds.import.snapshotsConsidered").summary();
+    assertNotNull(snapshotsConsideredSummary);
+    long startingSnapshotsConsideredCount = snapshotsConsideredSummary.count();
+    double startingSnapshotsConsideredTotal = snapshotsConsideredSummary.totalAmount();
+
+    DistributionSummary snapshotsLinkedSummary =
+        meterRegistry.find("wds.import.snapshotsLinked").summary();
+    assertNotNull(snapshotsLinkedSummary);
+    long startingSnapshotsLinkedCount = snapshotsLinkedSummary.count();
+    double startingSnapshotsLinkedTotal = snapshotsLinkedSummary.totalAmount();
 
     // ARRANGE
     // set up ids
@@ -287,17 +299,27 @@ class TdrManifestQuartzJobTest extends TestBase {
     tdrManifestQuartzJob.executeInternal(jobId, mockContext);
 
     // get the ending state of the upsertCount distribution summary, now that we've run a job
-    long endingCount = summary.count();
-    double endingTotal = summary.totalAmount();
+    long endingUpsertCount = upsertCountSummary.count();
+    double endingUpsertTotal = upsertCountSummary.totalAmount();
     // we should have incremented the summary count by 1
-    assertEquals(1, endingCount - startingCount);
+    assertEquals(1, endingUpsertCount - startingUpsertCount);
     // and we should have incremented the total by 5018.
     // This test uses the with-entity-reference-lists.json manifest. This manifest contains:
     //   * 5 rows of type "sample"
     //   * 3 rows of type "person"; each row has relations to the sample type
     // Since relations are upserted in a second pass, we expect a count of 11:
     //   (5 sample base attributes + 3 person base attributes + 3 person relations)
-    assertEquals(11, endingTotal - startingTotal);
+    assertEquals(11, endingUpsertTotal - startingUpsertTotal);
+
+    long endingSnapshotsConsideredCount = snapshotsConsideredSummary.count();
+    double endingSnapshotsConsideredTotal = snapshotsConsideredSummary.totalAmount();
+    assertEquals(1, endingSnapshotsConsideredCount - startingSnapshotsConsideredCount);
+    assertEquals(1, endingSnapshotsConsideredTotal - startingSnapshotsConsideredTotal);
+
+    long endingSnapshotsLinkedCount = snapshotsLinkedSummary.count();
+    double endingSnapshotsLinkedTotal = snapshotsLinkedSummary.totalAmount();
+    assertEquals(1, endingSnapshotsLinkedCount - startingSnapshotsLinkedCount);
+    assertEquals(1, endingSnapshotsLinkedTotal - startingSnapshotsLinkedTotal);
   }
 
   @Test

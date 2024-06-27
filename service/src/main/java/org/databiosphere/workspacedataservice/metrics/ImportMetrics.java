@@ -9,4 +9,7 @@ import org.springframework.stereotype.Component;
  *     import
  */
 @Component
-public record ImportMetrics(RecordUpsertDistributionSummary recordUpsertDistributionSummary) {}
+public record ImportMetrics(
+    RecordUpsertDistributionSummary recordUpsertDistributionSummary,
+    SnapshotsConsideredDistributionSummary snapshotsConsideredDistributionSummary,
+    SnapshotsLinkedDistributionSummary snapshotsLinkedDistributionSummary) {}
