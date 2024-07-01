@@ -39,7 +39,7 @@ ext {
     parquet_mr_version = "1.14.1"
     hadoop_version = "3.4.0"
     prometheus_rsocket_version = "1.5.3"
-    spring_cloud_gcp_version = "5.4.1"
+    spring_cloud_gcp_version = "5.4.3"
 }
 
 dependencies {
@@ -87,7 +87,7 @@ dependencies {
     implementation 'com.squareup.okhttp3:okhttp' // required by Sam client
     implementation "bio.terra:datarepo-client:2.13.0-SNAPSHOT"
     implementation "bio.terra:workspace-manager-client:0.254.983-SNAPSHOT"
-    implementation "bio.terra:java-pfb-library:0.46.0"
+    implementation "bio.terra:java-pfb-library:0.47.0"
     implementation project(path: ':client')
 
     // Parquet, used for TDR snapshot import
@@ -134,7 +134,7 @@ dependencies {
     testImplementation 'org.junit-pioneer:junit-pioneer:2.2.0'
 
     // google bucket mock
-    testImplementation 'com.google.cloud:google-cloud-nio:0.127.19'
+    testImplementation 'com.google.cloud:google-cloud-nio:0.127.20'
 
     constraints {
         implementation('org.json:json:20240303') {
