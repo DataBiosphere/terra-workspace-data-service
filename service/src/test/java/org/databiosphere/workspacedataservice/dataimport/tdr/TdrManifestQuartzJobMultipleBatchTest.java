@@ -84,8 +84,10 @@ class TdrManifestQuartzJobMultipleBatchTest extends TestBase {
     collectionService.deleteCollection(collectionId, "v0.2");
   }
 
-  // this test targets AJ-1909, which concerns a SQL exception thrown when importing.
-  // the import will fail if the exception is present. This test verifies the import succeeds,
+  // This test targets AJ-1909, which concerns a SQL exception thrown when importing, wherein
+  // we retried to re-add the primary key column a second time. The second attempt would fail
+  // because the column already existed.
+  // The import will fail if the exception is present. This test verifies the import succeeds,
   // and doesn't verify too much else about the import results.
   @Test
   @Tag(SLOW)
