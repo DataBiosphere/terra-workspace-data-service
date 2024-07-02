@@ -51,7 +51,7 @@ public class WdsRecordSink implements RecordSink {
           collectionId.id(),
           recordType,
           schema,
-          recordDao.getExistingTableSchemaLessPrimaryKey(collectionId.id(), recordType),
+          recordDao.getExistingTableSchema(collectionId.id(), recordType),
           records);
     }
     return schema;
