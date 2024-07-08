@@ -24,7 +24,7 @@ import jakarta.annotation.Generated;
  */
 
 @JsonTypeName("ImportRequest")
-@Generated(value = "org.openapitools.codegen.languages.SpringCodegen", comments = "Generator version: 7.6.0")
+@Generated(value = "org.openapitools.codegen.languages.SpringCodegen", comments = "Generator version: 7.7.0")
 public class ImportRequestServerModel {
 
   /**
@@ -91,7 +91,7 @@ public class ImportRequestServerModel {
   /**
    * format of file to import
    * @return type
-  */
+   */
   @NotNull 
   @Schema(name = "type", description = "format of file to import", requiredMode = Schema.RequiredMode.REQUIRED)
   @JsonProperty("type")
@@ -111,7 +111,7 @@ public class ImportRequestServerModel {
   /**
    * url from which to import
    * @return url
-  */
+   */
   @NotNull @Valid 
   @Schema(name = "url", description = "url from which to import", requiredMode = Schema.RequiredMode.REQUIRED)
   @JsonProperty("url")
@@ -139,7 +139,7 @@ public class ImportRequestServerModel {
   /**
    * key-value pairs to configure this import. Options vary based on the import file type.
    * @return options
-  */
+   */
   
   @Schema(name = "options", description = "key-value pairs to configure this import. Options vary based on the import file type.", requiredMode = Schema.RequiredMode.NOT_REQUIRED)
   @JsonProperty("options")
