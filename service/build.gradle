@@ -8,7 +8,7 @@ plugins {
     id 'org.openapi.generator'
     id 'com.diffplug.spotless'
     id 'jacoco'
-    id "au.com.dius.pact" version "4.6.10"
+    id "au.com.dius.pact" version "4.6.11"
     id 'jvm-test-suite'
 }
 
@@ -67,7 +67,7 @@ dependencies {
     implementation 'org.postgresql:postgresql'
     implementation 'org.webjars:webjars-locator-core' // versioned by spring dependency management
     implementation 'com.fasterxml.jackson.dataformat:jackson-dataformat-csv'
-    implementation 'io.sentry:sentry-logback:7.10.0'
+    implementation 'io.sentry:sentry-logback:7.11.0'
     implementation 'net.logstash.logback:logstash-logback-encoder:7.4'
     implementation 'org.codehaus.janino:janino'
     implementation 'org.liquibase:liquibase-core'
@@ -129,8 +129,8 @@ dependencies {
     testImplementation 'org.springframework.boot:spring-boot-starter-test'
     testImplementation 'org.junit.jupiter:junit-jupiter'
     testImplementation project(':client')
-    testImplementation 'au.com.dius.pact.provider:spring:4.6.10'
-    testImplementation 'au.com.dius.pact.consumer:junit5:4.6.10'
+    testImplementation 'au.com.dius.pact.provider:spring:4.6.11'
+    testImplementation 'au.com.dius.pact.consumer:junit5:4.6.11'
     testImplementation 'org.junit-pioneer:junit-pioneer:2.2.0'
 
     // google bucket mock
