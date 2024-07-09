@@ -1,32 +1,9 @@
 {
   "customDimensions": {
     "workspaceId": "${WORKSPACE_ID}",
-    "service.version": "${RELEASE_NAME}"
+    "service.version": "davidan-local-testing"
   },
   "sampling": {
-    "overrides": [
-      {
-        "telemetryType": "request",
-        "attributes": [
-          {
-            "key": "url.path",
-            "value": "/status/liveness",
-            "matchType": "strict"
-          }
-        ],
-        "percentage": 0
-      },
-      {
-        "telemetryType": "request",
-        "attributes": [
-          {
-            "key": "url.path",
-            "value": "/status/readiness",
-            "matchType": "strict"
-          }
-        ],
-        "percentage": 0
-      }
-    ]
+    "percentage": 100
   }
 }
