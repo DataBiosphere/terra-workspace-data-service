@@ -64,6 +64,7 @@ jobs:
             if [ "$TOTAL_COUNT" -gt 0 ]; then
               echo "Artifacts found."
               echo "JSON=$JSON_RESP"
+              break
             else
               echo "No artifacts found."
               RETRY_COUNT=$((RETRY_COUNT+1))
