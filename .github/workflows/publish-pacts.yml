@@ -9,10 +9,6 @@ on:
       - main
     paths-ignore: [ '**.md' ]
 
-concurrency:
-  group: ${{ github.workflow }}-${{ github.head_ref || github.ref }}
-  cancel-in-progress: true
-
 env:
   WDS_RUN_ID: ${{ github.event.repository.name }}-${{ github.run_id }}
   PUBLISH_CONTRACT_RUN_NAME: 'publish-contracts-${{ github.event.repository.name }}-${{ github.run_id }}-${{ github.run_attempt }}'
@@ -21,17 +17,6 @@ env:
   CAN_I_DEPLOY_RUN_NAME: 'can-i-deploy-${{ github.event.repository.name }}-${{ github.run_id }}-${{ github.run_attempt }}'
 
 jobs:
-  bump-check:
-    runs-on: ubuntu-latest
-    outputs:
-      is-bump: ${{ steps.bumpcheck.outputs.is-bump }}
-    steps:
-      - uses: actions/checkout@v4
-      - name: Skip version bump merges
-        id: bumpcheck
-        uses: ./.github/actions/bump-skip
-        with:
-          event-name: ${{ github.event_name }}
   # The primary objective of this section is to carefully control the dispatching of tags,
   # ensuring it only occurs during the 'Tag, publish, deploy' workflow.
   # However, a challenge arises with contract tests, as they require knowledge of the upcoming tag
@@ -52,20 +37,38 @@ jobs:
   #
   # Note: All workflows from the same PR merge should have the same copy of settings.gradle on disk,
   # which should be the one from the HEAD of the main branch before the workflow starts running
-  regulated-tag-job:
-    needs: [ bump-check ]
-    if: ${{ needs.bump-check.outputs.is-bump == 'no' }}
-    uses: ./.github/workflows/tag.yml
-    with:
-      # The 'ref' parameter ensures that the consumer version is postfixed with the HEAD commit of the PR branch,
-      # facilitating cross-referencing of a pact between Pact Broker and GitHub.
-      ref: ${{ github.head_ref || '' }}
-      # The 'dry-run' parameter prevents the new tag from being dispatched.
-      dry-run: true
-      release-branches: main
-    secrets: inherit
+  tag-job:
+    if: "!startsWith(github.event.head_commit.message, 'bump ')"
+    runs-on: ubuntu-latest
+    concurrency:
+      group: ${{ github.repository_owner }}-${{ github.event.repository.name }}-${{ github.ref_name }}-bumper
+      cancel-in-progress: false
+    outputs:
+      # new_tag - The value of the newly created tag.
+      # tag - The value of the latest tag after running this action.
+      # part - The part of version which was bumped.
+      new_tag: ${{ steps.bumper.outputs.new_tag }}
+      tag: ${{ steps.bumper.outputs.tag }}
+      part: ${{ steps.bumper.outputs.part }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.BROADBOT_TOKEN }}
+      - id: bumper
+        # https://github.com/DataBiosphere/github-actions/tree/master/actions/bumper
+        uses: databiosphere/github-actions/actions/bumper@bumper-0.4.0
+        env:
+          GITHUB_TOKEN: ${{ secrets.BROADBOT_TOKEN }}
+          HOTFIX_BRANCHES: hotfix.*
+          DEFAULT_BUMP: patch
+          DRY_RUN: true
+          RELEASE_BRANCHES: main
+          VERSION_FILE_PATH: build.gradle
+          VERSION_LINE_MATCH: "^\\s*version\\s*=\\s*'.*'"
+          VERSION_SUFFIX: SNAPSHOT
 
   init-github-context:
+    if: false
     runs-on: ubuntu-latest
     outputs:
       sha-short: ${{ steps.extract-branch.outputs.sha-short }}
@@ -101,6 +104,7 @@ jobs:
           echo "repo-version=${{ steps.extract-branch.outputs.repo-version }}"
 
   run-consumer-contract-tests:
+    if: false
     runs-on: ubuntu-latest
     needs: [ init-github-context ]
     outputs:
@@ -134,8 +138,9 @@ jobs:
           retention-days: 1
 
   publish-pacts-job:
+    if: false
     runs-on: ubuntu-latest
-    needs: [ regulated-tag-job, init-github-context, run-consumer-contract-tests ]
+    needs: [ tag-job, init-github-context, run-consumer-contract-tests ]
     strategy:
       matrix:
         pact_path: ${{ fromJson(needs.run-consumer-contract-tests.outputs.pact-paths) }}
@@ -171,8 +176,9 @@ jobs:
           }'
 
   can-i-deploy: # The can-i-deploy job will run as a result of a PR. It reports the pact verification statuses on all deployed environments.
+    if: false
     runs-on: ubuntu-latest
-    needs: [ run-consumer-contract-tests, regulated-tag-job ]
+    needs: [ run-consumer-contract-tests, tag-job ]
     strategy:
       matrix:
         pacticipant-name: ["wds", "cwds"]
