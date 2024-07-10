@@ -54,7 +54,7 @@ jobs:
             -H 'Authorization: Bearer ${{ secrets.BROADBOT_TOKEN }}'                        \
             https://api.github.com/repos/${{ github.repository_owner }}/${{ github.event.repository.name }/actions/artifacts?name=${{ github.event.pull_request.head.sha }}"
           echo "URL=$CMD"
-          while [[ $RETRY_COUNT -lt $MAX_RETRIES && $SCODE != $TARGET_STATUS]]; do
+          while [[ $RETRY_COUNT -lt $MAX_RETRIES && $SCODE != $TARGET_STATUS ]]; do
             API_RESP=$(eval "CMD")
             SCODE=$(echo "$API_RESP" | tail -c 4)
             JSON_RESP=$(echo "$API_RESP")
