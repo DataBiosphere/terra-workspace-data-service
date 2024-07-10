@@ -74,9 +74,9 @@ jobs:
     steps:
       - name: Echo tag
         run: |
-          echo "new_tag=${{ jobs.tag-job.outputs.new_tag }}"
-          echo "tag=${{ jobs.tag-job.outputs.tag }}"
-          echo "part=${{ jobs.tag-job.outputs.part }}"
+          echo "new_tag=${{ needs.tag-job.outputs.new_tag }}"
+          echo "tag=${{ needs.tag-job.outputs.tag }}"
+          echo "part=${{ needs.tag-job.outputs.part }}"
 
   init-github-context:
     if: false
