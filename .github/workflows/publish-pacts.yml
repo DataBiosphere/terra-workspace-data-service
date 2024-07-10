@@ -47,7 +47,7 @@ jobs:
           RETRY_DELAY=5
           TARGET_STATUS="302"
           SCODE=""
-          CMD="curl -s -w \"%{http_code}\"                                                  \
+          CMD="curl -w \"%{http_code}\"                                                  \
             -L                                                                              \
             -H 'Accept: application/vnd.github+json'                                        \
             -H 'X-GitHub-Api-Version: 2022-11-28'                                           \
@@ -55,7 +55,7 @@ jobs:
             \"https://api.github.com/repos/${{ github.repository_owner }}/${{ github.event.repository.name }}/actions/artifacts?name=${{ github.event.pull_request.head.sha }}\""
           echo "URL=$CMD"
           while [[ $RETRY_COUNT -lt $MAX_RETRIES && $SCODE != $TARGET_STATUS ]]; do
-            API_RESP=$(eval "CMD")
+            API_RESP=$(eval "$CMD")
             SCODE=$(echo "$API_RESP" | tail -c 4)
             JSON_RESP=$(echo "$API_RESP")
             JSON_RESP=${JSON_RESP%$SCODE}
