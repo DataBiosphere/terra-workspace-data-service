@@ -41,7 +41,7 @@ jobs:
     if: "!startsWith(github.event.head_commit.message, 'bump ')"
     runs-on: ubuntu-latest
     concurrency:
-      group: ${{ github.repository_owner }}-${{ github.event.repository.name }}-${{ github.ref_name }}-bumper
+      group: ${{ github.repository_owner }}-${{ github.event.repository.name }}-${{ github.event_name == 'pull_request' && github.event.pull_request.head.ref || 'main' }}-bumper
       cancel-in-progress: false
     outputs:
       # new_tag - The value of the newly created tag.
@@ -74,7 +74,7 @@ jobs:
     steps:
       - name: Echo tag
         run: |
-          echo "ref=${{ github.ref_name }}"
+          echo "branch=${{ github.event_name == 'pull_request' && github.event.pull_request.head.ref || 'main' }}"
           echo "new_tag=${{ needs.tag-job.outputs.new_tag }}"
           echo "tag=${{ needs.tag-job.outputs.tag }}"
           echo "part=${{ needs.tag-job.outputs.part }}"
