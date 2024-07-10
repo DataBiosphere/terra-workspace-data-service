@@ -45,7 +45,7 @@ jobs:
           RETRY_COUNT=0
           MAX_RETRIES=5
           RETRY_DELAY=5
-          TARGET_STATUS="302"
+          TARGET_STATUS="200"
           SCODE=""
           CMD="curl -w \"%{http_code}\"                                                  \
             -L                                                                              \
