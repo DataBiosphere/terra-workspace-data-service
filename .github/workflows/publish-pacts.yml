@@ -74,6 +74,7 @@ jobs:
     steps:
       - name: Echo tag
         run: |
+          echo "ref=${{ github.ref_name }}"
           echo "new_tag=${{ needs.tag-job.outputs.new_tag }}"
           echo "tag=${{ needs.tag-job.outputs.tag }}"
           echo "part=${{ needs.tag-job.outputs.part }}"
