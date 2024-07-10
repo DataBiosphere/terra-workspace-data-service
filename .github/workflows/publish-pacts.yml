@@ -52,7 +52,7 @@ jobs:
             -H 'Accept: application/vnd.github+json'                                        \
             -H 'X-GitHub-Api-Version: 2022-11-28'                                           \
             -H 'Authorization: Bearer ${{ secrets.BROADBOT_TOKEN }}'                        \
-            https://api.github.com/repos/${{ github.repository_owner }}/${{ github.event.repository.name }/actions/artifacts?name=${{ github.event.pull_request.head.sha }}"
+            https://api.github.com/repos/${{ github.repository_owner }}/${{ github.event.repository.name }}/actions/artifacts?name=${{ github.event.pull_request.head.sha }}"
           echo "URL=$CMD"
           while [[ $RETRY_COUNT -lt $MAX_RETRIES && $SCODE != $TARGET_STATUS ]]; do
             API_RESP=$(eval "CMD")
