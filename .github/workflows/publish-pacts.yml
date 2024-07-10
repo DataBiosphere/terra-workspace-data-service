@@ -37,47 +37,37 @@ jobs:
   #
   # Note: All workflows from the same PR merge should have the same copy of settings.gradle on disk,
   # which should be the one from the HEAD of the main branch before the workflow starts running
-  tag-job:
-    if: "!startsWith(github.event.head_commit.message, 'bump ')"
+  read-app-version:
     runs-on: ubuntu-latest
-    concurrency:
-      group: ${{ github.repository_owner }}-${{ github.event.repository.name }}-${{ github.event_name == 'pull_request' && github.event.pull_request.head.ref || 'main' }}-bumper
-      cancel-in-progress: false
-    outputs:
-      # new_tag - The value of the newly created tag.
-      # tag - The value of the latest tag after running this action.
-      # part - The part of version which was bumped.
-      new_tag: ${{ steps.bumper.outputs.new_tag }}
-      tag: ${{ steps.bumper.outputs.tag }}
-      part: ${{ steps.bumper.outputs.part }}
     steps:
-      - uses: actions/checkout@v4
-        with:
-          ref: ${{ github.event.pull_request.head.sha || github.sha }}
-          token: ${{ secrets.BROADBOT_TOKEN }}
-      - id: bumper
-        # https://github.com/DataBiosphere/github-actions/tree/master/actions/bumper
-        uses: databiosphere/github-actions/actions/bumper@bumper-0.4.0
-        env:
-          GITHUB_TOKEN: ${{ secrets.BROADBOT_TOKEN }}
-          HOTFIX_BRANCHES: hotfix.*
-          DEFAULT_BUMP: patch
-          DRY_RUN: ${{ github.event_name == 'pull_request' || github.ref != 'refs/heads/main' }}
-          RELEASE_BRANCHES: main
-          VERSION_FILE_PATH: build.gradle
-          VERSION_LINE_MATCH: "^\\s*version\\s*=\\s*'.*'"
-          VERSION_SUFFIX: SNAPSHOT
-
-  echo-tag:
-    runs-on: ubuntu-latest
-    needs: [ tag-job ]
-    steps:
-      - name: Echo tag
+      - name: Read App Version
         run: |
-          echo "branch=${{ github.event_name == 'pull_request' && github.event.pull_request.head.ref || 'main' }}"
-          echo "new_tag=${{ needs.tag-job.outputs.new_tag }}"
-          echo "tag=${{ needs.tag-job.outputs.tag }}"
-          echo "part=${{ needs.tag-job.outputs.part }}"
+          RETRY_COUNT=0
+          MAX_RETRIES=5
+          RETRY_DELAY=5
+          TARGET_STATUS="302"
+          SCODE=""
+          CMD="curl -s -w \"%{http_code}\"                                                  \
+            -L                                                                              \
+            -H 'Accept: application/vnd.github+json'                                        \
+            -H 'X-GitHub-Api-Version: 2022-11-28'                                           \
+            -H 'Authorization: Bearer ${{ secrets.BROADBOT_TOKEN }}'                        \
+            https://api.github.com/repos/${{ github.repository_owner }}/${{ github.event.repository.name }/actions/artifacts?name=${{ github.event.pull_request.head.sha }}"
+          echo "URL=$CMD"
+          while [[ $RETRY_COUNT -lt $MAX_RETRIES && $SCODE != $TARGET_STATUS]]; do
+            API_RESP=$(eval "CMD")
+            SCODE=$(echo "$API_RESP" | tail -c 4)
+            JSON_RESP=$(echo "$API_RESP")
+            JSON_RESP=${JSON_RESP%$SCODE}
+            echo "SCODE=$SCODE"
+            if [[ $SCODE != $TARGET_STATUS ]]; then
+              RETRY_COUNT=$((RETRY_COUNT+1))
+              echo "RETRY_COUNT=$RETRY_COUNT"
+              sleep $RETRY_DELAY
+            else
+              echo "JSON=$JSON_RESP"
+            fi
+          done
 
   init-github-context:
     if: false
@@ -152,7 +142,7 @@ jobs:
   publish-pacts-job:
     if: false
     runs-on: ubuntu-latest
-    needs: [ tag-job, init-github-context, run-consumer-contract-tests ]
+    needs: [ read-app-version, init-github-context, run-consumer-contract-tests ]
     strategy:
       matrix:
         pact_path: ${{ fromJson(needs.run-consumer-contract-tests.outputs.pact-paths) }}
@@ -190,7 +180,7 @@ jobs:
   can-i-deploy: # The can-i-deploy job will run as a result of a PR. It reports the pact verification statuses on all deployed environments.
     if: false
     runs-on: ubuntu-latest
-    needs: [ run-consumer-contract-tests, tag-job ]
+    needs: [ run-consumer-contract-tests, read-app-version ]
     strategy:
       matrix:
         pacticipant-name: ["wds", "cwds"]

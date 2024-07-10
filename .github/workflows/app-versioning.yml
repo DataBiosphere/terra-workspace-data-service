@@ -1,0 +1,61 @@
+name: App Versioning Workflow
+on:
+  pull_request:
+    branches:
+      - main
+    paths-ignore: [ '**.md' ]
+  push:
+    branches:
+      - main
+    paths-ignore: [ '**.md' ]
+
+jobs:
+  bumper-job:
+    if: "!startsWith(github.event.head_commit.message, 'bump ')"
+    runs-on: ubuntu-latest
+    concurrency:
+      group: ${{ github.repository_owner }}-${{ github.event.repository.name }}-${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || 'main' }}-bumper
+      cancel-in-progress: false
+    outputs:
+      # new_tag - The value of the newly created tag.
+      # tag - The value of the latest tag after running this action.
+      # part - The part of version which was bumped.
+      new_tag: ${{ steps.bumper.outputs.new_tag }}
+      tag: ${{ steps.bumper.outputs.tag }}
+      part: ${{ steps.bumper.outputs.part }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          token: ${{ secrets.BROADBOT_TOKEN }}
+      - id: bumper
+        # https://github.com/DataBiosphere/github-actions/tree/master/actions/bumper
+        uses: databiosphere/github-actions/actions/bumper@bumper-0.4.0
+        env:
+          GITHUB_TOKEN: ${{ secrets.BROADBOT_TOKEN }}
+          HOTFIX_BRANCHES: hotfix.*
+          DEFAULT_BUMP: patch
+          DRY_RUN: ${{ github.event_name == 'pull_request' || github.ref != 'refs/heads/main' }}
+          RELEASE_BRANCHES: main
+          VERSION_FILE_PATH: build.gradle
+          VERSION_LINE_MATCH: "^\\s*version\\s*=\\s*'.*'"
+          VERSION_SUFFIX: SNAPSHOT
+
+  echo-tag:
+    runs-on: ubuntu-latest
+    needs: [ bumper-job ]
+    steps:
+      - name: Echo tag
+        run: |
+          echo "branch=${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || 'main' }}"
+          echo "new_tag=${{ needs.bumper-job.outputs.new_tag }}"
+          echo "tag=${{ needs.bumper-job.outputs.tag }}"
+          echo "part=${{ needs.bumper-job.outputs.part }}"
+          echo ${{ needs.bumper-job.outputs.new_tag }} > new_tag.txt
+
+      - name: Upload new tag artifact
+          uses: actions/upload-artifact@v4
+          with:
+            name: ${{ github.event.pull_request.head.sha }}
+            path: new_tag.txt
+            retention-days: 1
