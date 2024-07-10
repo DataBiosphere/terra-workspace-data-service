@@ -48,7 +48,7 @@ dependencies {
 
     // Azure libraries
     // do not upgrade app insights past 3.5.1 until AJ-1897 is resolved
-    implementation 'com.microsoft.azure:applicationinsights-runtime-attach:3.5.1'
+    implementation 'com.microsoft.azure:applicationinsights-runtime-attach:3.5.3'
     implementation 'com.azure:azure-storage-blob:12.26.1'
     implementation 'com.azure:azure-identity-extensions:1.1.17' // postgres password plugin
 
@@ -106,6 +106,7 @@ dependencies {
         exclude(group: 'org.slf4j')
         exclude(group: 'io.netty')
         exclude(group: 'org.mortbay.jetty')
+        exclude(group: 'javax.servlet') // conflicts with applicationinsights among others
         exclude(group: 'javax.servlet.jsp')
         exclude(group: 'com.sun.jersey')
         exclude(group: 'com.sun.xml.bind')
