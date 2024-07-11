@@ -1,0 +1,34 @@
+name: 'Retrieve App Version'
+description: 'Retrieves the app version from artifacts or version file based on the context (PR or main merge).'
+inputs:
+  gh_token:
+    description: 'GitHub token for API access'
+    required: true
+  gh_repo:
+    description: 'GitHub repository being used: owner/repository'
+    required: true
+  max_retries:
+    description: 'Maximum number of retries'
+    required: false
+    default: '15'
+  sleep_time:
+    description: 'Sleep time between retries in seconds'
+    required: false
+    default: '5'
+outputs:
+  app_version:
+    description: 'The retrieved app version'
+    value: ${{ steps.get_app_version.outputs.app_version }}
+
+runs:
+  using: "composite"
+  steps:
+    - id: get_app_version
+      name: Retrieve App Version
+      run: ./scripts/ci-hooks/retrieve-app-version.sh
+      shell: bash
+      env:
+        GITHUB_TOKEN: ${{ inputs.gh_token }}
+        GITHUB_REPO: ${ inputs.gh_repo }
+        MAX_RETRIES: ${{ inputs.max_retries }}
+        SLEEP_TIME: ${{ inputs.sleep_time }}
