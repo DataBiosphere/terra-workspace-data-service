@@ -51,8 +51,12 @@ jobs:
         with:
           gh_token: ${{ secrets.BROADBOT_TOKEN }}
           gh_repo: ${GITHUB_REPOSITORY}
-          max_retries: 10
+          max_retries: 20
           sleep_time: 3
+
+      - name: Print App Version
+        run: |
+          echo "App Version: ${{ steps.get_app_version.outputs.app_version }}"
 
   init-github-context:
     if: false

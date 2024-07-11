@@ -65,9 +65,6 @@ function get_version_from_file {
 mask_token
 
 if [ "$GITHUB_EVENT_NAME" == "pull_request" ]; then
-  echo "GITHUB_EVENT_NAME=$GITHUB_EVENT_NAME"
-  echo "GITHUB_EVENT_PATH=$GITHUB_EVENT_PATH"
-  cat "$GITHUB_EVENT_PATH"
   PR_SHA=$(jq -r '.pull_request.head.sha' < "$GITHUB_EVENT_PATH")
   echo "PR_SHA=$PR_SHA"
   get_artifact "$PR_SHA"
