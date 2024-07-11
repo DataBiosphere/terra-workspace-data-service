@@ -62,12 +62,7 @@ jobs:
           max_retries: 20
           sleep_time: 3
 
-      - name: Print App Version
-        run: |
-          echo "App Version: ${{ steps.get_app_version.outputs.app_version }}"
-
   run-consumer-contract-tests:
-    if: false
     runs-on: ubuntu-latest
     outputs:
       pact-paths: ${{ steps.locate-pacts.outputs.pact-paths }}
@@ -105,13 +100,17 @@ jobs:
           retention-days: 1
 
   publish-pacts-job:
-    if: false
     runs-on: ubuntu-latest
     needs: [ retrieve-app-info, run-consumer-contract-tests ]
     strategy:
       matrix:
         pact_path: ${{ fromJson(needs.run-consumer-contract-tests.outputs.pact-paths) }}
     steps:
+      - name: App Summary
+        run: |
+          echo "App Branch: ${{ needs.retrieve-app-info.outputs.app_branch }}"
+          echo "App Version: ${{ needs.retrieve-app-info.outputs.app_version }}"
+
       - name: Download pact files from artifact
         id: download-pacts
         uses: actions/download-artifact@v4
@@ -143,7 +142,6 @@ jobs:
           }'
 
   can-i-deploy: # The can-i-deploy job will run as a result of a PR. It reports the pact verification statuses on all deployed environments.
-    if: false
     runs-on: ubuntu-latest
     needs: [ retrieve-app-info, run-consumer-contract-tests ]
     strategy:
