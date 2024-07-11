@@ -143,7 +143,7 @@ jobs:
 
   can-i-deploy: # The can-i-deploy job will run as a result of a PR. It reports the pact verification statuses on all deployed environments.
     runs-on: ubuntu-latest
-    needs: [ retrieve-app-info, run-consumer-contract-tests ]
+    needs: [ retrieve-app-info, publish-pacts-job ]
     strategy:
       matrix:
         pacticipant-name: ["wds", "cwds"]
