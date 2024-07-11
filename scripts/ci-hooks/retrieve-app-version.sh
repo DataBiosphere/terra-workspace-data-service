@@ -47,8 +47,11 @@ function get_artifact {
       cat $prop_file
       while IFS= read -r line; do
         echo "$line" >> $GITHUB_ENV
-        echo "$line" >> $GITHUB_OUTPUT
       done < $prop_file
+      echo "APP_VERSION=${APP_VERSION}" >> $GITHUB_OUTPUT
+      echo "APP_BRANCH=${APP_BRANCH}" >> $GITHUB_OUTPUT
+      echo "APP_SHA=${APP_SHA}" >> $GITHUB_OUTPUT
+      echo "APP_SHORT_SHA=${APP_SHORT_SHA}" >> $GITHUB_OUTPUT
       return
     else
       retry_count=$((retry_count + 1))
