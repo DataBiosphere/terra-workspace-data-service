@@ -40,38 +40,19 @@ jobs:
   read-app-version:
     runs-on: ubuntu-latest
     steps:
-      - name: Read App Version
-        run: |
-          RETRY_COUNT=0
-          MAX_RETRIES=5
-          RETRY_DELAY=5
-          SCODE=""
-          CMD="curl -w \"%{http_code}\"                                                  \
-            -L                                                                              \
-            -H 'Accept: application/vnd.github+json'                                        \
-            -H 'X-GitHub-Api-Version: 2022-11-28'                                           \
-            -H 'Authorization: Bearer ${{ secrets.BROADBOT_TOKEN }}'                        \
-            \"https://api.github.com/repos/${{ github.repository_owner }}/${{ github.event.repository.name }}/actions/artifacts?name=${{ github.event.pull_request.head.sha }}\""
-          echo "URL=$CMD"
-          while [[ $RETRY_COUNT -lt $MAX_RETRIES ]]; do
-            API_RESP=$(eval "$CMD")
-            SCODE=$(echo "$API_RESP" | tail -c 4)
-            JSON_RESP=$(echo "$API_RESP")
-            JSON_RESP=${JSON_RESP%$SCODE}
-            echo "SCODE=$SCODE"
-            TOTAL_COUNT=$(echo "$JSON_RESP" | jq '.total_count')
-            echo "Total count: $TOTAL_COUNT"
-            if [ "$TOTAL_COUNT" -gt 0 ]; then
-              echo "Artifacts found."
-              echo "JSON=$JSON_RESP"
-              break
-            else
-              echo "No artifacts found."
-              RETRY_COUNT=$((RETRY_COUNT+1))
-              echo "RETRY_COUNT=$RETRY_COUNT"
-              sleep $RETRY_DELAY
-            fi
-          done
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          token: ${{ secrets.BROADBOT_TOKEN }}
+
+      - name: Retrieve App Version
+        id: get_app_version
+        uses: ./.github/actions/retrieve-app-version
+        with:
+          gh_token: ${{ secrets.BROADBOT_TOKEN }}
+          gh_repo: ${GITHUB_REPOSITORY}
+          max_retries: 10
+          sleep_time: 3
 
   init-github-context:
     if: false
