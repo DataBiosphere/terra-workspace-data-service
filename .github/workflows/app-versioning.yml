@@ -51,11 +51,11 @@ jobs:
           echo "new_tag=${{ needs.bumper-job.outputs.new_tag }}"
           echo "tag=${{ needs.bumper-job.outputs.tag }}"
           echo "part=${{ needs.bumper-job.outputs.part }}"
-          echo ${{ needs.bumper-job.outputs.new_tag }} > new_tag.txt
+          echo ${{ needs.bumper-job.outputs.new_tag }} > app_version.txt
 
       - name: Upload new tag artifact
         uses: actions/upload-artifact@v4
         with:
           name: ${{ github.event.pull_request.head.sha }}
-          path: new_tag.txt
+          path: app_version.txt
           retention-days: 1
