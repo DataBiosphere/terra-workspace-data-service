@@ -4,7 +4,7 @@ on:
     branches:
       - main
     paths-ignore: [ '**.md' ]
-    types: [opened, synchronize, reopened]
+    types: [opened, synchronize, closed, reopened]
   push:
     branches:
       - main
@@ -29,6 +29,11 @@ jobs:
         with:
           ref: ${{ github.event.pull_request.head.sha || github.sha }}
           token: ${{ secrets.BROADBOT_TOKEN }}
+
+      - name: Action Type
+        run: |
+          echo "Action Type: ${{ github.event.action }}"
+
       - id: bumper
         # https://github.com/DataBiosphere/github-actions/tree/master/actions/bumper
         uses: databiosphere/github-actions/actions/bumper@bumper-0.4.0

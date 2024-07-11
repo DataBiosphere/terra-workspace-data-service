@@ -65,9 +65,11 @@ function get_version_from_file {
 mask_token
 
 if [ "$GITHUB_EVENT_NAME" == "pull_request" ]; then
-  PR_SHA=$(jq -r '.pull_request.head.sha' < "$GITHUB_EVENT_PATH")
-  echo "PR_SHA=$PR_SHA"
-  get_artifact "$PR_SHA"
+  action_type=$(jq -r '.action' "$GITHUB_EVENT_PATH")
+  echo "action_type=$action_type"
+  pr_sha=$(jq -r '.pull_request.head.sha' < "$GITHUB_EVENT_PATH")
+  echo "pr_sha=$pr_sha"
+  get_artifact "$pr_sha"
 elif [ "$GITHUB_REF" == "refs/heads/main" ]; then
   get_version_from_file
 else

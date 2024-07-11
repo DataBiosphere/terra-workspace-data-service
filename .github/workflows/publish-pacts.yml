@@ -4,7 +4,7 @@ on:
     branches:
       - main
     paths-ignore: [ '**.md' ]
-    types: [opened, synchronize, reopened]
+    types: [opened, synchronize, closed, reopened]
   push:
     branches:
       - main
@@ -38,13 +38,17 @@ jobs:
   #
   # Note: All workflows from the same PR merge should have the same copy of settings.gradle on disk,
   # which should be the one from the HEAD of the main branch before the workflow starts running
-  read-app-version:
+  retrieve-app-version:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
         with:
           ref: ${{ github.event.pull_request.head.sha || github.sha }}
           token: ${{ secrets.BROADBOT_TOKEN }}
+
+      - name: Action Type
+        run: |
+          echo "Action Type: ${{ github.event.action }}"
 
       - name: Retrieve App Version
         id: get_app_version
@@ -132,7 +136,7 @@ jobs:
   publish-pacts-job:
     if: false
     runs-on: ubuntu-latest
-    needs: [ read-app-version, init-github-context, run-consumer-contract-tests ]
+    needs: [ retrieve-app-version, init-github-context, run-consumer-contract-tests ]
     strategy:
       matrix:
         pact_path: ${{ fromJson(needs.run-consumer-contract-tests.outputs.pact-paths) }}
@@ -170,7 +174,7 @@ jobs:
   can-i-deploy: # The can-i-deploy job will run as a result of a PR. It reports the pact verification statuses on all deployed environments.
     if: false
     runs-on: ubuntu-latest
-    needs: [ run-consumer-contract-tests, read-app-version ]
+    needs: [ run-consumer-contract-tests, retrieve-app-version ]
     strategy:
       matrix:
         pacticipant-name: ["wds", "cwds"]
