@@ -41,9 +41,14 @@ function get_artifact {
 
     if [ -n "$artifact_url" ]; then
       curl -L -H "Authorization: Bearer $GITHUB_TOKEN" -o "${sha}.zip" "$artifact_url"
-      unzip "${sha}.zip" -d "artifact_${sha}"
-      app_version=$(cat "artifact_${sha}/app_version.txt")
-      echo "app_version=$app_version" >> $GITHUB_OUTPUT
+      unzip "${sha}.zip" -d "artifact"
+      short_sha=${sha:0:7}
+      prop_file="artifact/app_version_${short_sha}.properties"
+      cat $prop_file
+      while IFS= read -r line; do
+        echo "$line" >> $GITHUB_ENV
+        echo "$line" >> $GITHUB_OUTPUT
+      done < $prop_file
       return
     else
       retry_count=$((retry_count + 1))
