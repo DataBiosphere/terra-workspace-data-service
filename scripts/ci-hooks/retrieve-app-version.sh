@@ -47,9 +47,12 @@ function get_artifact {
       cat $prop_file
       while IFS= read -r line; do
         echo "$line" >> $GITHUB_ENV
-        echo "$line"
+
         k=$(echo "$line" | cut -d '=' -f 1)
         v=$(echo "$line" | cut -d '=' -f 2-)
+
+        echo "$k"
+        echo "$v"
 
         # Set the output variable
         echo "$k=$v" >> $GITHUB_OUTPUT
