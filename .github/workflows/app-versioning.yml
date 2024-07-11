@@ -68,7 +68,9 @@ jobs:
         run: |
           short_sha=${{ needs.bumper-job.outputs.app_short_sha }}
           prop_file="app_version_${short_sha}.properties"
+          echo "$prop_file"
           touch $prop_file
+          ls -l
           echo "APP_VERSION=${{ needs.bumper-job.outputs.new_tag }}" >> $prop_file
           echo "APP_BRANCH=${{ needs.bumper-job.outputs.app_branch }}" >> $prop_file
           echo "APP_SHA=${{ needs.bumper-job.outputs.app_sha }}" >> $prop_file
