@@ -38,12 +38,15 @@ jobs:
   #
   # Note: All workflows from the same PR merge should have the same copy of settings.gradle on disk,
   # which should be the one from the HEAD of the main branch before the workflow starts running
-  retrieve-app-version:
+  retrieve-app-info:
     runs-on: ubuntu-latest
+    outputs:
+      app_version: ${{ steps.get_app_version.outputs.app_version }}
+      app_branch: ${{ github.event_name == 'pull_request' && github.head_ref || 'main' }}
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          ref: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
           token: ${{ secrets.BROADBOT_TOKEN }}
 
       - name: Action Type
@@ -63,59 +66,27 @@ jobs:
         run: |
           echo "App Version: ${{ steps.get_app_version.outputs.app_version }}"
 
-  init-github-context:
-    if: false
-    runs-on: ubuntu-latest
-    outputs:
-      sha-short: ${{ steps.extract-branch.outputs.sha-short }}
-      repo-branch: ${{ steps.extract-branch.outputs.repo-branch }}
-      repo-version: ${{ steps.extract-branch.outputs.repo-version }}
-
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Extract branch
-        id: extract-branch
-        run: |
-          GITHUB_EVENT_NAME=${{ github.event_name }}
-          if [[ "$GITHUB_EVENT_NAME" == "push" ]]; then
-            GITHUB_REF=${{ github.ref }}
-            GITHUB_SHA=${{ github.sha }}
-          elif [[ "$GITHUB_EVENT_NAME" == "pull_request" ]]; then
-            GITHUB_REF=refs/heads/${{ github.head_ref }}
-            GITHUB_SHA=${{ github.event.pull_request.head.sha }}
-          elif [[ "$GITHUB_EVENT_NAME" == "merge_group" ]]; then
-            GITHUB_REF=refs/heads/${{ github.head_ref }}
-          else
-            echo "Failed to extract branch information"
-            exit 1
-          fi
-          echo "repo-branch=${GITHUB_REF/refs\/heads\//""}" >> $GITHUB_OUTPUT
-          echo "repo-version=${GITHUB_SHA}" >> $GITHUB_OUTPUT
-      - name: Echo repo and branch information
-        run: |
-          echo "repo-owner=${{ github.repository_owner }}"
-          echo "repo-name=${{ github.event.repository.name }}"
-          echo "repo-branch=${{ steps.extract-branch.outputs.repo-branch }}"
-          echo "repo-version=${{ steps.extract-branch.outputs.repo-version }}"
-
   run-consumer-contract-tests:
     if: false
     runs-on: ubuntu-latest
-    needs: [ init-github-context ]
     outputs:
       pact-paths: ${{ steps.locate-pacts.outputs.pact-paths }}
 
     steps:
-      - name: Checkout current code
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
+          token: ${{ secrets.BROADBOT_TOKEN }}
+
       - name: Set up JDK
         uses: actions/setup-java@v4
         with:
           java-version: '17'
           distribution: 'temurin'
+
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v3
+
       - name: Run consumer tests
         run: ./gradlew pactTests
 
@@ -136,7 +107,7 @@ jobs:
   publish-pacts-job:
     if: false
     runs-on: ubuntu-latest
-    needs: [ retrieve-app-version, init-github-context, run-consumer-contract-tests ]
+    needs: [ retrieve-app-info, run-consumer-contract-tests ]
     strategy:
       matrix:
         pact_path: ${{ fromJson(needs.run-consumer-contract-tests.outputs.pact-paths) }}
@@ -167,14 +138,14 @@ jobs:
             "pact-b64": "${{ steps.encode-pact.outputs.pact-b64 }}",
             "repo-owner": "${{ github.repository_owner }}",
             "repo-name": "${{ github.event.repository.name }}",
-            "repo-branch": "${{ needs.init-github-context.outputs.repo-branch }}",
-            "release-tag": "${{ needs.regulated-tag-job.outputs.new-tag }}"
+            "repo-branch": "${{ needs.retrieve-app-info.outputs.app_branch }}",
+            "release-tag": "${{ needs.retrieve-app-info.outputs.app_version }}"
           }'
 
   can-i-deploy: # The can-i-deploy job will run as a result of a PR. It reports the pact verification statuses on all deployed environments.
     if: false
     runs-on: ubuntu-latest
-    needs: [ run-consumer-contract-tests, retrieve-app-version ]
+    needs: [ retrieve-app-info, run-consumer-contract-tests ]
     strategy:
       matrix:
         pacticipant-name: ["wds", "cwds"]
@@ -190,5 +161,5 @@ jobs:
           inputs: '{
             "run-name": "${{ env.CAN_I_DEPLOY_RUN_NAME }}-${{ matrix.pacticipant-name }}",
             "pacticipant": "${{ matrix.pacticipant-name }}",
-            "version": "${{ needs.regulated-tag-job.outputs.new-tag }}"
+            "version": "${{ needs.retrieve-app-info.outputs.app_version }}"
           }'
