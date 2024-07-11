@@ -66,7 +66,7 @@ mask_token
 
 if [ "$GITHUB_EVENT_NAME" == "pull_request" ]; then
   echo "GITHUB_EVENT_NAME=$GITHUB_EVENT_NAME"
-  PR_SHA="$GITHUB_EVENT_PULL_REQUEST_HEAD_SHA"
+  PR_SHA="$GITHUB_WORKFLOW_SHA"
   get_artifact "$PR_SHA"
 elif [ "$GITHUB_REF" == "refs/heads/main" ]; then
   get_version_from_file
