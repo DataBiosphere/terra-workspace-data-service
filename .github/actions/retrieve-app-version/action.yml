@@ -29,6 +29,6 @@ runs:
       shell: bash
       env:
         GITHUB_TOKEN: ${{ inputs.gh_token }}
-        GITHUB_REPO: ${ inputs.gh_repo }
+        GITHUB_REPO: ${{ inputs.gh_repo }}
         MAX_RETRIES: ${{ inputs.max_retries }}
         SLEEP_TIME: ${{ inputs.sleep_time }}
