@@ -9,6 +9,9 @@ on:
     branches:
       - main
     paths-ignore: [ '**.md' ]
+env:
+  DEFAULT_BUMP: patch
+  MAINLINE: main
 
 jobs:
   bumper-job:
@@ -24,15 +27,24 @@ jobs:
       new_tag: ${{ steps.bumper.outputs.new_tag }}
       tag: ${{ steps.bumper.outputs.tag }}
       part: ${{ steps.bumper.outputs.part }}
+      app_branch: ${{ steps.ghctx.outputs.app_branch }}
+      app_sha: ${{ steps.ghctx.outputs.app_sha }}
+      app_short_sha: ${{ steps.ghctx.outputs.app_short_sha }}
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          ref: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
           token: ${{ secrets.BROADBOT_TOKEN }}
 
-      - name: Action Type
+      - id: ghctx
+        name: Useful GitHub Context
         run: |
           echo "Action Type: ${{ github.event.action }}"
+          echo "app_branch=${{ github.event_name == 'pull_request' && github.head_ref || env.MAINLINE }}" >> $GITHUB_OUTPUT
+          app_sha=${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
+          app_short_sha=${app_sha:0:7}
+          echo "app_sha=${app_sha}" >> $GITHUB_OUTPUT
+          echo "app_short_sha=${app_short_sha}" >> $GITHUB_OUTPUT
 
       - id: bumper
         # https://github.com/DataBiosphere/github-actions/tree/master/actions/bumper
@@ -40,28 +52,34 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.BROADBOT_TOKEN }}
           HOTFIX_BRANCHES: hotfix.*
-          DEFAULT_BUMP: patch
-          DRY_RUN: ${{ github.event_name == 'pull_request' || github.ref != 'refs/heads/main' }}
-          RELEASE_BRANCHES: main
+          DEFAULT_BUMP: ${{ env.DEFAULT_BUMP }}
+          DRY_RUN: ${{ github.event_name == 'pull_request' }}
+          RELEASE_BRANCHES: ${{ env.MAINLINE }}
           VERSION_FILE_PATH: build.gradle
           VERSION_LINE_MATCH: "^\\s*version\\s*=\\s*'.*'"
           VERSION_SUFFIX: SNAPSHOT
 
-  echo-tag:
+  upload-app-version-properties:
     runs-on: ubuntu-latest
     needs: [ bumper-job ]
     steps:
-      - name: Echo tag
+      - name: Assemble App Version Properties
+        id: assemble-app-version-properties
         run: |
-          echo "branch=${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || 'main' }}"
-          echo "new_tag=${{ needs.bumper-job.outputs.new_tag }}"
-          echo "tag=${{ needs.bumper-job.outputs.tag }}"
-          echo "part=${{ needs.bumper-job.outputs.part }}"
-          echo ${{ needs.bumper-job.outputs.new_tag }} > app_version.txt
+          short_sha=${{ needs.bumper-job.outputs.app_short_sha }}
+          prop_file="app_version_${short_sha}.properties"
+          touch $prop_file
+          echo "APP_VERSION=${{ needs.bumper-job.outputs.new_tag }}" >> $prop_file
+          echo "APP_BRANCH=${{ needs.bumper-job.outputs.app_branch }}" >> $prop_file
+          echo "APP_SHA=${{ needs.bumper-job.outputs.app_sha }}" >> $prop_file
+          echo "APP_SHORT_SHA=${short_sha}" >> $prop_file
+          echo "PART=${{ env.DEFAULT_BUMP }}" >> $prop_file
+          cat $prop_file
+          echo "properties_file=$prop_file" >> GITHUB_OUTPUT
 
-      - name: Upload new tag artifact
+      - name: Upload App Info
         uses: actions/upload-artifact@v4
         with:
-          name: ${{ github.event.pull_request.head.sha }}
-          path: app_version.txt
+          name: ${{ needs.bumper-job.outputs.app_sha }}
+          path: ${{ steps.assemble-app-version-properties.outputs.properties_file }}
           retention-days: 1

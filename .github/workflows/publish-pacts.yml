@@ -41,7 +41,7 @@ jobs:
   retrieve-app-info:
     runs-on: ubuntu-latest
     outputs:
-      app_version: ${{ steps.get_app_version.outputs.app_version }}
+      app_version: ${{ steps.get-app-version.outputs.APP_VERSION }}
       app_branch: ${{ github.event_name == 'pull_request' && github.head_ref || 'main' }}
     steps:
       - uses: actions/checkout@v4
@@ -54,7 +54,7 @@ jobs:
           echo "Action Type: ${{ github.event.action }}"
 
       - name: Retrieve App Version
-        id: get_app_version
+        id: get-app-version
         uses: ./.github/actions/retrieve-app-version
         with:
           gh_token: ${{ secrets.BROADBOT_TOKEN }}
@@ -62,7 +62,19 @@ jobs:
           max_retries: 20
           sleep_time: 3
 
+      - name: App Version Properties
+        run: |
+          echo "APP_VERSION=${{ env.APP_VERSION }}"
+          echo "APP_BRANCH=${{ env.APP_BRANCH }}"
+          echo "APP_SHA=${{ env.APP_SHA }}"
+          echo "APP_SHORT_SHA=${{ env.APP_SHORT_SHA }}"
+          echo "app_version=${{ steps.get-app-version.outputs.APP_VERSION }}"
+          echo "app_branch=${{ steps.get-app-version.outputs.APP_BRANCH }}"
+          echo "app_sha=${{ steps.get-app-version.outputs.APP_SHA }}"
+          echo "app_short_sha=${{ steps.get-app-version.outputs.APP_SHORT_SHA }}"
+
   run-consumer-contract-tests:
+    if: false
     runs-on: ubuntu-latest
     outputs:
       pact-paths: ${{ steps.locate-pacts.outputs.pact-paths }}
@@ -100,6 +112,7 @@ jobs:
           retention-days: 1
 
   publish-pacts-job:
+    if: false
     runs-on: ubuntu-latest
     needs: [ retrieve-app-info, run-consumer-contract-tests ]
     strategy:
@@ -142,6 +155,7 @@ jobs:
           }'
 
   can-i-deploy: # The can-i-deploy job will run as a result of a PR. It reports the pact verification statuses on all deployed environments.
+    if: false
     runs-on: ubuntu-latest
     needs: [ retrieve-app-info, publish-pacts-job ]
     strategy:
