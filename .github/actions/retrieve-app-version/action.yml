@@ -30,7 +30,7 @@ runs:
       env:
         GITHUB_ENV: ${{ env.GITHUB_ENV }}
         GITHUB_OUTPUT: ${{ env.GITHUB_OUTPUT }}
-        GITHUB_REPOSITORY: ${{ inputs.gh_token }}
-        GITHUB_TOKEN: ${{ inputs.gh_token }}
+        GITHUB_REPOSITORY: ${{ env.GITHUB_REPOSITORY }}
+        GITHUB_TOKEN: ${{ env.GITHUB_TOKEN }}
         MAX_RETRIES: ${{ inputs.max_retries }}
         SLEEP_TIME: ${{ inputs.sleep_time }}
