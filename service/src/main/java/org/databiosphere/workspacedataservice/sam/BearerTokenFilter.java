@@ -13,7 +13,6 @@ import java.util.Objects;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpHeaders;
-import org.springframework.stereotype.Component;
 import org.springframework.web.context.request.RequestAttributes;
 import org.springframework.web.context.request.RequestContextHolder;
 
@@ -24,7 +23,6 @@ import org.springframework.web.context.request.RequestContextHolder;
  * <p>Note that this filter does not validate or inspect the token; it just extracts it from the
  * request, allowing it to be sent as-is from WDS to other services such as Sam.
  */
-@Component
 public class BearerTokenFilter implements Filter {
   private static final Logger LOGGER = LoggerFactory.getLogger(BearerTokenFilter.class);
 
