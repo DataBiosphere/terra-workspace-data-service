@@ -54,9 +54,17 @@ jobs:
           echo "Action Type: ${{ github.event.action }}"
 
       - name: GITHUB
+        id: gh
+        run: |
+          echo "gh_env=$GITHUB_ENV" >> $GITHUB_OUTPUT
+          echo "gh_output=$GITHUB_OUTPUT" >> $GITHUB_OUTPUT
+
+      - name: Print location
         run: |
           echo "$GITHUB_ENV"
           echo "$GITHUB_OUTPUT"
+          echo "${{ steps.gh.outputs.gh_env }}
+          echo "${{ steps.gh.outputs.gh_output }}
 
       - name: Retrieve App Version
         id: get-app-version
