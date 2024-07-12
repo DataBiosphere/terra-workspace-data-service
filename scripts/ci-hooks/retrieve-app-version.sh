@@ -47,6 +47,7 @@ function get_artifact {
       cat $prop_file
       while IFS= read -r line; do
         echo "$line" >> $GITHUB_ENV
+        echo "$line" >> $GITHUB_OUTPUT
       done < $prop_file
       return
     else
