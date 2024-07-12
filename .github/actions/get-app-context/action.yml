@@ -56,6 +56,11 @@ outputs:
 runs:
   using: "composite"
   steps:
+    - uses: actions/checkout@v4
+      with:
+        ref: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
+        token: ${{ env.GITHUB_TOKEN }}
+
     - id: app-context
       name: App Context
       run: ./scripts/ci-hooks/get-app-context.sh

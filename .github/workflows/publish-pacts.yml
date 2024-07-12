@@ -45,11 +45,6 @@ jobs:
       app_branch: ${{ steps.get-app-context.outputs.app_branch }}
       app_sha: ${{ steps.get-app-context.outputs.app_sha }}
     steps:
-      - uses: actions/checkout@v4
-        with:
-          ref: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
-          token: ${{ secrets.BROADBOT_TOKEN }}
-
       - name: Action Type
         run: |
           echo "Action Type: ${{ github.event.action }}"
