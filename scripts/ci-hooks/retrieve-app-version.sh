@@ -48,9 +48,7 @@ function get_artifact {
 
       cat $prop_file >> $GITHUB_ENV
       cat $prop_file >> $GITHUB_OUTPUT
-      # while IFS= read -r line; do
-      #  echo "$line" >> $GITHUB_ENV
-      # done < $prop_file
+
       return
     else
       retry_count=$((retry_count + 1))
