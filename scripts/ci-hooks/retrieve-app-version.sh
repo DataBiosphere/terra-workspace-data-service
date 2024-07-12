@@ -45,15 +45,11 @@ function get_artifact {
       short_sha=${sha:0:7}
       prop_file="artifact/app_version_${short_sha}.properties"
       cat $prop_file
-      echo "$GITHUB_ENV"
-      echo "$GITHUB_OUTPUT"
-      echo "$GITHUB_ENV1"
-      echo "$GITHUB_OUTPUT1"
-      while IFS= read -r line; do
-        echo "$line" >> $GITHUB_ENV
-        echo "$GITHUB_OUTPUT"
-        echo "$line" >> $GITHUB_OUTPUT
-      done < $prop_file
+
+      cat $prop_file >> $GITHUB_ENV
+      # while IFS= read -r line; do
+      #  echo "$line" >> $GITHUB_ENV
+      # done < $prop_file
       return
     else
       retry_count=$((retry_count + 1))
