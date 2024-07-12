@@ -24,7 +24,7 @@ inputs:
 outputs:
   app_version:
     description: 'The retrieved app version'
-    value: ${{ steps.get_app_version.outputs.app_version }}
+    value: ${{ steps.retrieve-app-version.outputs.APP_VERSION }}
 
 runs:
   using: "composite"
