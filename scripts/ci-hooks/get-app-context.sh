@@ -10,7 +10,7 @@ function mask_token {
   echo "::add-mask::$GITHUB_TOKEN"
 }
 
-function get_artifact {
+function get_app_context_from_artifact {
   local sha=$1
   local retry_count=0
   local sleep_time=$((${SLEEP_TIME}))
@@ -39,21 +39,21 @@ function get_artifact {
       curl -L -H "Authorization: Bearer $GITHUB_TOKEN" -o "${sha}.zip" "$artifact_url"
       unzip "${sha}.zip" -d "artifact"
       short_sha=${sha:0:7}
-      prop_file="artifact/app_version_${short_sha}.properties"
-      cat $prop_file
+      dotenv="artifact/${short_sha}.env"
+      cat $dotenv
 
-      cat $prop_file >> $GITHUB_ENV
-      cat $prop_file >> $GITHUB_OUTPUT
+      cat $dotenv >> $GITHUB_ENV
+      cat $dotenv >> $GITHUB_OUTPUT
 
       return
     else
       retry_count=$((retry_count + 1))
-      echo "Artifact not found. Retry $retry_count/$MAX_RETRIES. Sleeping for $SLEEP_TIME seconds..."
+      echo "App Context for commit ${short_sha} not found. Retry $retry_count/$MAX_RETRIES. Sleeping for $SLEEP_TIME seconds..."
       sleep $sleep_time
     fi
   done
 
-  echo "Artifact not found after maximum retries"
+  echo "App Context for commit ${short_sha} after maximum retries."
   exit 1
 }
 
@@ -65,14 +65,12 @@ function get_version_from_file {
 
 mask_token
 
-echo "$GITHUB_REPO"
-
 if [ "$GITHUB_EVENT_NAME" == "pull_request" ]; then
   action_type=$(jq -r '.action' "$GITHUB_EVENT_PATH")
   echo "action_type=$action_type"
   pr_sha=$(jq -r '.pull_request.head.sha' < "$GITHUB_EVENT_PATH")
   echo "pr_sha=$pr_sha"
-  get_artifact "$pr_sha"
+  get_app_context_from_artifact "$pr_sha"
 elif [ "$GITHUB_REF" == "refs/heads/main" ]; then
   get_version_from_file
 else
