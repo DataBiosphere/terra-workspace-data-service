@@ -3,10 +3,10 @@ description: 'Retrieves the app version from artifacts or version file based on 
 inputs:
   gh_token:
     description: 'GitHub token for API access'
-    required: true
+    required: false
   gh_repo:
     description: 'GitHub repository being used: owner/repository'
-    required: true
+    required: false
   max_retries:
     description: 'Maximum number of retries'
     required: false
@@ -28,7 +28,8 @@ runs:
       run: ./scripts/ci-hooks/retrieve-app-version.sh
       shell: bash
       env:
-        GITHUB_TOKEN: ${{ inputs.gh_token }}
-        GITHUB_REPO: ${{ inputs.gh_repo }}
+        GITHUB_ENV: ${{ env.GITHUB_ENV }}
+        GITHUB_OUTPUT: ${{ env.GITHUB_OUTPUT }}
+        GITHUB_TOKEN: ${{ secrets.BROADBOT_TOKEN }}
         MAX_RETRIES: ${{ inputs.max_retries }}
         SLEEP_TIME: ${{ inputs.sleep_time }}
