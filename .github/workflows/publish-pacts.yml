@@ -72,7 +72,6 @@ jobs:
           echo "app_short_sha=${{ steps.get-app-context.outputs.app_short_sha }}"
 
   run-consumer-contract-tests:
-    if: false
     runs-on: ubuntu-latest
     needs: [ app-context ]
     outputs:
@@ -111,7 +110,6 @@ jobs:
           retention-days: 1
 
   publish-pacts-job:
-    if: false
     runs-on: ubuntu-latest
     needs: [ app-context, run-consumer-contract-tests ]
     strategy:
@@ -154,7 +152,6 @@ jobs:
           }'
 
   can-i-deploy: # The can-i-deploy job will run as a result of a PR. It reports the pact verification statuses on all deployed environments.
-    if: false
     runs-on: ubuntu-latest
     needs: [ app-context, publish-pacts-job ]
     strategy:
