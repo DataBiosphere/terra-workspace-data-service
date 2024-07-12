@@ -57,7 +57,7 @@ jobs:
         id: get-app-version
         uses: ./.github/actions/retrieve-app-version
         with:
-          gh_repo: $GITHUB_REPOSITORY
+          gh_repo: ${GITHUB_REPOSITORY}
           max_retries: 20
           sleep_time: 3
         env:
