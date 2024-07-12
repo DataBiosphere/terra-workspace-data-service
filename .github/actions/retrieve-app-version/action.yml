@@ -1,6 +1,12 @@
 name: 'Retrieve App Version'
 description: 'Retrieves the app version from artifacts or version file based on the context (PR or main merge).'
 inputs:
+  gh_env:
+    description: 'GitHub token for API access'
+    required: true
+  gh_output:
+    description: 'GitHub token for API access'
+    required: true
   gh_token:
     description: 'GitHub token for API access'
     required: true
@@ -30,6 +36,8 @@ runs:
       env:
         GITHUB_ENV: ${{ env.GITHUB_ENV }}
         GITHUB_OUTPUT: ${{ env.GITHUB_OUTPUT }}
+        GITHUB_ENV1: ${{ inputs.gh_env }}
+        GITHUB_OUTPUT1: ${{ inputs.gh_output }}
         GITHUB_REPOSITORY: ${{ env.GITHUB_REPOSITORY }}
         GITHUB_TOKEN: ${{ env.GITHUB_TOKEN }}
         MAX_RETRIES: ${{ inputs.max_retries }}

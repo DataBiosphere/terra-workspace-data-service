@@ -47,6 +47,8 @@ function get_artifact {
       cat $prop_file
       echo "$GITHUB_ENV"
       echo "$GITHUB_OUTPUT"
+      echo "$GITHUB_ENV1"
+      echo "$GITHUB_OUTPUT1"
       while IFS= read -r line; do
         echo "$line" >> $GITHUB_ENV
         echo "$line" >> $GITHUB_OUTPUT

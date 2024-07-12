@@ -63,13 +63,15 @@ jobs:
         uses: ./.github/actions/retrieve-app-version
         with:
           gh_token: ${{ secrets.BROADBOT_TOKEN }}
-          gh_repo: ${GITHUB_REPOSITORY}
+          gh_repo: $GITHUB_REPOSITORY
+          gh_env: $GITHUB_ENV
+          gh_output: $GITHUB_OUTPUT
           max_retries: 20
           sleep_time: 3
         env:
-          GITHUB_ENV: $GITHUB_ENV
-          GITHUB_OUTPUT: $GITHUB_OUTPUT
-          GITHUB_REPOSITORY: $GITHUB_REPOSITORY
+          GITHUB_ENV: "$GITHUB_ENV"
+          GITHUB_OUTPUT: "$GITHUB_OUTPUT"
+          GITHUB_REPOSITORY: "${GITHUB_REPOSITORY}"
           GITHUB_TOKEN: ${{ secrets.BROADBOT_TOKEN }}
 
 
