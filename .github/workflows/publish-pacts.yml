@@ -89,7 +89,7 @@ jobs:
           echo "APP_BRANCH=${{ env.APP_BRANCH }}"
           echo "APP_SHA=${{ env.APP_SHA }}"
           echo "APP_SHORT_SHA=${{ env.APP_SHORT_SHA }}"
-          echo "app_version=${{ steps.get-app-version.outputs.APP_VERSION }}"
+          echo "app_version=${{ steps.get-app-version.outputs.app_version }}"
           echo "app_branch=${{ steps.get-app-version.outputs.APP_BRANCH }}"
           echo "app_sha=${{ steps.get-app-version.outputs.APP_SHA }}"
           echo "app_short_sha=${{ steps.get-app-version.outputs.APP_SHORT_SHA }}"
