@@ -23,7 +23,7 @@ outputs:
 runs:
   using: "composite"
   steps:
-    - id: get_app_version
+    - id: retrieve-app-version
       name: Retrieve App Version
       run: ./scripts/ci-hooks/retrieve-app-version.sh
       shell: bash
