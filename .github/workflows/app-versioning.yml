@@ -72,7 +72,7 @@ jobs:
           APP_VERSION=${{ needs.bumper-job.outputs.new_tag }}
           APP_BRANCH=${{ needs.bumper-job.outputs.app_branch }}
           APP_SHA=${{ needs.bumper-job.outputs.app_sha }}
-          SHORT_HASH=${short_sha}
+          APP_SHORT_SHA=${short_sha}
           PART=${{ env.DEFAULT_BUMP }}
           EOF
           # touch $prop_file
