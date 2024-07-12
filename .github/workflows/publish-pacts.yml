@@ -53,6 +53,11 @@ jobs:
         run: |
           echo "Action Type: ${{ github.event.action }}"
 
+      - name: GITHUB
+        run: |
+          echo "$GITHUB_ENV"
+          echo "$GITHUB_OUTPUT"
+
       - name: Retrieve App Version
         id: get-app-version
         uses: ./.github/actions/retrieve-app-version

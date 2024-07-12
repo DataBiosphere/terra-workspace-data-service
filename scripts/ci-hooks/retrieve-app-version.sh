@@ -45,6 +45,8 @@ function get_artifact {
       short_sha=${sha:0:7}
       prop_file="artifact/app_version_${short_sha}.properties"
       cat $prop_file
+      echo "$GITHUB_ENV"
+      echo "$GITHUB_OUTPUT"
       while IFS= read -r line; do
         echo "$line" >> $GITHUB_ENV
         echo "$line" >> $GITHUB_OUTPUT
