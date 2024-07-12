@@ -3,10 +3,10 @@ description: 'Retrieves the app version from artifacts or version file based on 
 inputs:
   gh_token:
     description: 'GitHub token for API access'
-    required: false
+    required: true
   gh_repo:
     description: 'GitHub repository being used: owner/repository'
-    required: false
+    required: true
   max_retries:
     description: 'Maximum number of retries'
     required: false
@@ -30,6 +30,7 @@ runs:
       env:
         GITHUB_ENV: ${{ env.GITHUB_ENV }}
         GITHUB_OUTPUT: ${{ env.GITHUB_OUTPUT }}
-        GITHUB_TOKEN: ${{ secrets.BROADBOT_TOKEN }}
+        GITHUB_REPOSITORY: ${{ inputs.gh_token }}
+        GITHUB_TOKEN: ${{ inputs.gh_token }}
         MAX_RETRIES: ${{ inputs.max_retries }}
         SLEEP_TIME: ${{ inputs.sleep_time }}
