@@ -12,6 +12,7 @@ function mask_token {
 
 function get_app_context_from_artifact {
   local sha=$1
+  local short_sha=${sha:0:7}
   local retry_count=0
   local sleep_time=$((${SLEEP_TIME}))
   local max_retries=$((${MAX_RETRIES}))
@@ -38,7 +39,6 @@ function get_app_context_from_artifact {
     if [ -n "$artifact_url" ]; then
       curl -L -H "Authorization: Bearer $GITHUB_TOKEN" -o "${sha}.zip" "$artifact_url"
       unzip "${sha}.zip" -d "artifact"
-      short_sha=${sha:0:7}
       dotenv="artifact/${short_sha}.env"
       cat $dotenv
 
