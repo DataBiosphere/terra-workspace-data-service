@@ -45,6 +45,7 @@ jobs:
       app_branch: ${{ steps.get-app-context.outputs.app_branch }}
       app_sha: ${{ steps.get-app-context.outputs.app_sha }}
     steps:
+      - uses: actions/checkout@v4
       - name: Action Type
         run: |
           echo "Action Type: ${{ github.event.action }}"
