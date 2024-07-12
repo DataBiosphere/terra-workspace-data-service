@@ -1,5 +1,6 @@
 package org.databiosphere.workspacedataservice.sam;
 
+import java.util.List;
 import org.databiosphere.workspacedataservice.retry.RestClientRetry;
 import org.databiosphere.workspacedataservice.retry.RestClientRetry.RestCall;
 import org.databiosphere.workspacedataservice.shared.model.WorkspaceId;
@@ -33,6 +34,18 @@ public class HttpSamAuthorizationDao implements SamAuthorizationDao {
   @Override
   public boolean hasWriteWorkspacePermission() {
     return hasPermission(ACTION_WRITE, "Sam.hasWriteWorkspacePermission");
+  }
+
+  @Override
+  public List<String> getWorkspaceActions() {
+    LOGGER.debug(
+        "Retrieving user actions from Sam for {}/{} ...", RESOURCE_NAME_WORKSPACE, workspaceId);
+    RestCall<List<String>> samFunction =
+        () ->
+            samClientFactory
+                .getResourcesApi()
+                .resourceActionsV2(RESOURCE_NAME_WORKSPACE, workspaceId.toString());
+    return restClientRetry.withRetryAndErrorHandling(samFunction, "Sam.getWorkspaceActions");
   }
 
   /**

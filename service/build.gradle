@@ -59,6 +59,7 @@ dependencies {
     implementation 'org.springframework.boot:spring-boot-starter-batch'
     implementation 'org.springframework.boot:spring-boot-starter-quartz'
     implementation 'org.springframework.boot:spring-boot-starter-actuator'
+    implementation 'org.springframework.boot:spring-boot-starter-security'
     implementation 'io.micrometer:micrometer-registry-prometheus'
     implementation "io.micrometer.prometheus:prometheus-rsocket-spring:$prometheus_rsocket_version"
     implementation 'org.springframework.integration:spring-integration-jdbc'
@@ -128,11 +129,13 @@ dependencies {
     runtimeOnly 'org.webjars.npm:swagger-ui-dist:5.17.14'
     testImplementation 'io.micrometer:micrometer-observation-test'
     testImplementation 'org.springframework.boot:spring-boot-starter-test'
+    testImplementation 'org.springframework.security:spring-security-test'
     testImplementation 'org.junit.jupiter:junit-jupiter'
     testImplementation project(':client')
     testImplementation 'au.com.dius.pact.provider:spring:4.6.11'
     testImplementation 'au.com.dius.pact.consumer:junit5:4.6.11'
     testImplementation 'org.junit-pioneer:junit-pioneer:2.2.0'
+
 
     // google bucket mock
     testImplementation 'com.google.cloud:google-cloud-nio:0.127.20'

@@ -1,5 +1,6 @@
 package org.databiosphere.workspacedataservice.sam;
 
+import java.util.List;
 import org.mockito.Mockito;
 
 /**
@@ -33,5 +34,10 @@ public class MockSamAuthorizationDao implements SamAuthorizationDao {
   @Override
   public boolean hasWriteWorkspacePermission() {
     return defaultReturnValue;
+  }
+
+  @Override
+  public List<String> getWorkspaceActions() {
+    return List.of();
   }
 }
