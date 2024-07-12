@@ -1,0 +1,67 @@
+# The App Context includes the following information derived from GitHub Context:
+#
+# - App Version
+# - App Branch
+# - App SHA
+# - App Short SHA
+# - PART
+#
+# After successfully running this action, the following environment variables are available for use in subsequent steps within the same job:
+#
+# - APP_VERSION
+# - APP_BRANCH
+# - APP_SHA
+# - APP_SHORT_SHA
+# - PART
+#
+# Additionally, the step will output the following variables for use in subsequent steps or jobs:
+#
+# - app_version
+# - app_branch
+# - app_sha
+# - app_short_sha
+# - part
+#
+name: Determine App Context
+description: 'Determine the app context from artifacts or version file based on the GitHub Context (PR or mainline merge).'
+inputs:
+  gh_repo:
+    description: 'GitHub repository being used: owner/repository'
+    required: true
+  max_retries:
+    description: 'Maximum number of retries'
+    required: false
+    default: '15'
+  sleep_time:
+    description: 'Sleep time between retries in seconds'
+    required: false
+    default: '5'
+outputs:
+  app_version:
+    description: 'The context-dependent app version'
+    value: ${{ steps.app-context.outputs.APP_VERSION }}
+  app_branch:
+    description: 'The context-dependent app branch'
+    value: ${{ steps.app-context.outputs.APP_BRANCH }}
+  app_sha:
+    description: 'The context-dependent app sha'
+    value: ${{ steps.app-context.outputs.APP_SHA}}
+  app_short_sha:
+    description: 'The context-dependent app sha (short version)'
+    value: ${{ steps.app-context.outputs.APP_SHORT_SHA}}
+  part:
+    description: 'The semver bump mode used for calculating the app version: major, minor, patch'
+    value: ${{ steps.app-context.outputs.PART}}
+
+runs:
+  using: "composite"
+  steps:
+    - id: app-context
+      name: App Context
+      run: ./scripts/ci-hooks/get-app-context.sh
+      shell: bash
+      env:
+        GITHUB_REPO: ${{ inputs.gh_repo }}
+        GITHUB_TOKEN: ${{ env.GITHUB_TOKEN }}
+        MAX_RETRIES: ${{ inputs.max_retries }}
+        SLEEP_TIME: ${{ inputs.sleep_time }}

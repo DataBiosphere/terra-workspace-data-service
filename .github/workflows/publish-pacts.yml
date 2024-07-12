@@ -38,11 +38,12 @@ jobs:
   #
   # Note: All workflows from the same PR merge should have the same copy of settings.gradle on disk,
   # which should be the one from the HEAD of the main branch before the workflow starts running
-  retrieve-app-info:
+  app-context:
     runs-on: ubuntu-latest
     outputs:
-      app_version: ${{ steps.get-app-version.outputs.APP_VERSION }}
-      app_branch: ${{ github.event_name == 'pull_request' && github.head_ref || 'main' }}
+      app_version: ${{ steps.get-app-context.outputs.app_version }}
+      app_branch: ${{ steps.get-app-context.outputs.app_branch }}
+      app_sha: ${{ steps.get-app-context.outputs.app_sha }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -53,9 +54,9 @@ jobs:
         run: |
           echo "Action Type: ${{ github.event.action }}"
 
-      - name: Retrieve App Version
-        id: get-app-version
-        uses: ./.github/actions/retrieve-app-version
+      - name: Determine App Context
+        id: get-app-context
+        uses: ./.github/actions/get-app-context
         with:
           gh_repo: ${{ github.repository }}
           max_retries: 20
@@ -63,27 +64,28 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.BROADBOT_TOKEN }}
 
-      - name: App Version Properties
+      - name: App Context Properties
         run: |
           echo "APP_VERSION=${{ env.APP_VERSION }}"
           echo "APP_BRANCH=${{ env.APP_BRANCH }}"
           echo "APP_SHA=${{ env.APP_SHA }}"
           echo "APP_SHORT_SHA=${{ env.APP_SHORT_SHA }}"
-          echo "app_version=${{ steps.get-app-version.outputs.app_version }}"
-          echo "app_branch=${{ steps.get-app-version.outputs.APP_BRANCH }}"
-          echo "app_sha=${{ steps.get-app-version.outputs.APP_SHA }}"
-          echo "app_short_sha=${{ steps.get-app-version.outputs.APP_SHORT_SHA }}"
+          echo "app_version=${{ steps.get-app-context.outputs.app_version }}"
+          echo "app_branch=${{ steps.get-app-context.outputs.app_branch }}"
+          echo "app_sha=${{ steps.get-app-context.outputs.app_sha }}"
+          echo "app_short_sha=${{ steps.get-app-context.outputs.app_short_sha }}"
 
   run-consumer-contract-tests:
     if: false
     runs-on: ubuntu-latest
+    needs: [ app-context ]
     outputs:
       pact-paths: ${{ steps.locate-pacts.outputs.pact-paths }}
 
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
+          ref: ${{ needs.app-context.outputs.app_sha }}
           token: ${{ secrets.BROADBOT_TOKEN }}
 
       - name: Set up JDK
@@ -115,15 +117,15 @@ jobs:
   publish-pacts-job:
     if: false
     runs-on: ubuntu-latest
-    needs: [ retrieve-app-info, run-consumer-contract-tests ]
+    needs: [ app-context, run-consumer-contract-tests ]
     strategy:
       matrix:
         pact_path: ${{ fromJson(needs.run-consumer-contract-tests.outputs.pact-paths) }}
     steps:
-      - name: App Summary
+      - name: App Context Summary
         run: |
-          echo "App Branch: ${{ needs.retrieve-app-info.outputs.app_branch }}"
-          echo "App Version: ${{ needs.retrieve-app-info.outputs.app_version }}"
+          echo "App Branch: ${{ needs.app-context.outputs.app_branch }}"
+          echo "App Version: ${{ needs.app-context.outputs.app_version }}"
 
       - name: Download pact files from artifact
         id: download-pacts
@@ -151,14 +153,14 @@ jobs:
             "pact-b64": "${{ steps.encode-pact.outputs.pact-b64 }}",
             "repo-owner": "${{ github.repository_owner }}",
             "repo-name": "${{ github.event.repository.name }}",
-            "repo-branch": "${{ needs.retrieve-app-info.outputs.app_branch }}",
-            "release-tag": "${{ needs.retrieve-app-info.outputs.app_version }}"
+            "repo-branch": "${{ needs.app-context.outputs.app_branch }}",
+            "release-tag": "${{ needs.app-context.outputs.app_version }}"
           }'
 
   can-i-deploy: # The can-i-deploy job will run as a result of a PR. It reports the pact verification statuses on all deployed environments.
     if: false
     runs-on: ubuntu-latest
-    needs: [ retrieve-app-info, publish-pacts-job ]
+    needs: [ app-context, publish-pacts-job ]
     strategy:
       matrix:
         pacticipant-name: ["wds", "cwds"]
@@ -174,5 +176,5 @@ jobs:
           inputs: '{
             "run-name": "${{ env.CAN_I_DEPLOY_RUN_NAME }}-${{ matrix.pacticipant-name }}",
             "pacticipant": "${{ matrix.pacticipant-name }}",
-            "version": "${{ needs.retrieve-app-info.outputs.app_version }}"
+            "version": "${{ needs.app-context.outputs.app_version }}"
           }'
