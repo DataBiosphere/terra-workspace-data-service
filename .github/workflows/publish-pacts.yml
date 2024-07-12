@@ -66,6 +66,12 @@ jobs:
           gh_repo: ${GITHUB_REPOSITORY}
           max_retries: 20
           sleep_time: 3
+        env:
+          GITHUB_ENV: $GITHUB_ENV
+          GITHUB_OUTPUT: $GITHUB_OUTPUT
+          GITHUB_REPOSITORY: $GITHUB_REPOSITORY
+          GITHUB_TOKEN: ${{ secrets.BROADBOT_TOKEN }}
+
 
       - name: App Version Properties
         run: |
