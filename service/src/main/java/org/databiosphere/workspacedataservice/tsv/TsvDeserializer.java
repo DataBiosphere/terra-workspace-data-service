@@ -231,6 +231,9 @@ public class TsvDeserializer extends StdDeserializer<RecordAttributes> {
       return null;
     }
     if (element instanceof NumericNode nn) {
+      if (nn.isNaN()) {
+        return null;
+      }
       try {
         return new BigInteger(nn.numberValue().toString());
       } catch (NumberFormatException nfe) {
