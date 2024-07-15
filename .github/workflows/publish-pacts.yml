@@ -39,6 +39,7 @@ jobs:
   # Note: All workflows from the same PR merge should have the same copy of settings.gradle on disk,
   # which should be the one from the HEAD of the main branch before the workflow starts running
   app-context:
+    if: "!startsWith(github.event.head_commit.message, 'bump ')"
     runs-on: ubuntu-latest
     outputs:
       app_version: ${{ steps.get-app-context.outputs.app_version }}
