@@ -31,6 +31,7 @@ import org.databiosphere.workspacedataservice.shared.model.RecordAttributes;
 import org.databiosphere.workspacedataservice.shared.model.attributes.JsonAttribute;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.lang.Nullable;
 
 /**
  * Custom Jackson deserializer to be used by a CsvMapper. Deserializes the String values produced by
@@ -226,6 +227,7 @@ public class TsvDeserializer extends StdDeserializer<RecordAttributes> {
    * @param element the JSON array element
    * @return deserialized Java Object: Boolean, BigInteger, BigDecimal, String, null
    */
+  @Nullable
   public Object arrayElementToObject(JsonNode element) {
     if (element instanceof NullNode) {
       return null;
