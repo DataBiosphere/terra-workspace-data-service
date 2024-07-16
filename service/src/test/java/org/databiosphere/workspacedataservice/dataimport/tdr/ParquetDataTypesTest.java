@@ -1,7 +1,9 @@
 package org.databiosphere.workspacedataservice.dataimport.tdr;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
+import static org.junit.jupiter.api.Assertions.assertNull;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.ImmutableMap;
@@ -46,6 +48,10 @@ class ParquetDataTypesTest extends TestBase {
   // a BigQuery export; the BigQuery table contains NUMERIC and BIGNUMERIC columns
   @Value("classpath:parquet/numerics.parquet")
   Resource numericsParquet;
+
+  // a BigQuery export; the BigQuery table contains a NaN in its float column
+  @Value("classpath:parquet/nans.parquet")
+  Resource nansParquet;
 
   // contains a sample column which is an array of ints
   @Value("classpath:parquet/with-entity-reference-lists/person.parquet")
@@ -212,6 +218,60 @@ class ParquetDataTypesTest extends TestBase {
                   assertThat(getColumnValues(records, attributeName))
                       .describedAs("for column %s", attributeName)
                       .containsExactlyInAnyOrder(0, 0.01, 0.22));
+    }
+  }
+
+  @Test
+  void nans() throws IOException {
+    // ARRANGE - create all the objects we'll need to do the conversions below
+    TdrManifestImportTable testTable = makeTable("test", "int");
+    ParquetRecordConverter converter = new ParquetRecordConverter(testTable, mapper);
+
+    InputFile numericsFile =
+        HadoopInputFile.fromPath(new Path(nansParquet.getURL().toString()), new Configuration());
+
+    // ACT - read via ParquetReader and convert via ParquetRecordConverter
+    try (ParquetReader<GenericRecord> avroParquetReader =
+        TdrManifestQuartzJob.readerForFile(numericsFile)) {
+
+      // read the Parquet file into List<GenericRecord> via the parquet-hadoop library
+      List<GenericRecord> genericRecords = new ArrayList<>();
+      while (true) {
+        GenericRecord rec = avroParquetReader.read();
+        if (rec == null) {
+          break;
+        }
+        genericRecords.add(rec);
+      }
+
+      // convert the GenericRecords into WDS Records. For this test we only care about
+      // BASE_ATTRIBUTES
+      List<Record> records =
+          genericRecords.stream()
+              .map(
+                  genericRecord ->
+                      converter.convert(genericRecord, RecordSource.ImportMode.BASE_ATTRIBUTES))
+              .toList();
+
+      // ASSERT
+      // the expected number of records
+      assertThat(records).hasSize(4);
+
+      // the records that have an int of 1, 2, and 4 should also have a float of 1, 2, 4.
+      // the record that has an int of 3 should have a null float. We treat NaN as null.
+
+      records.forEach(
+          rec -> {
+            Number intAttr = (Number) rec.getAttributeValue("int");
+
+            var floatAttr = rec.getAttributeValue("float");
+
+            if (intAttr.intValue() == 3) {
+              assertNull(floatAttr);
+            } else {
+              assertEquals(intAttr.floatValue(), ((Number) floatAttr).floatValue());
+            }
+          });
     }
   }
 

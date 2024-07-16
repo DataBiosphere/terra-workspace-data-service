@@ -4,8 +4,7 @@ on:
     branches:
       - main
     paths-ignore: [ '**.md' ]
-    # By default, a workflow only runs when a pull_request event's activity type is opened, synchronize, or reopened.
-    # types: [opened, synchronize, reopened]
+    types: [opened, synchronize, reopened]
   push:
     branches:
       - main

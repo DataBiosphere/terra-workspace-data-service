@@ -183,11 +183,17 @@ public abstract class AvroRecordConverter {
 
     // Avro floats
     if (attribute instanceof Float floatAttr) {
+      if (Float.isNaN(floatAttr)) {
+        return null;
+      }
       return BigDecimal.valueOf(floatAttr);
     }
 
     // Avro doubles
     if (attribute instanceof Double doubleAttr) {
+      if (Double.isNaN(doubleAttr)) {
+        return null;
+      }
       return BigDecimal.valueOf(doubleAttr);
     }
 
