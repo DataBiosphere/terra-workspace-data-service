@@ -31,6 +31,8 @@ on:
 env:
   DEFAULT_BUMP: patch
   MAINLINE: main
+  VERSION_FILE_PATH: build.gradle
+  VERSION_LINE_MATCH: "^\\s*version\\s*=\\s*'.*'"
 
 jobs:
   bumper-job:
@@ -74,8 +76,8 @@ jobs:
           DEFAULT_BUMP: ${{ env.DEFAULT_BUMP }}
           DRY_RUN: ${{ github.event_name == 'pull_request' }}
           RELEASE_BRANCHES: ${{ env.MAINLINE }}
-          VERSION_FILE_PATH: build.gradle
-          VERSION_LINE_MATCH: "^\\s*version\\s*=\\s*'.*'"
+          VERSION_FILE_PATH: ${{ env.VERSION_FILE_PATH }}
+          VERSION_LINE_MATCH: ${{ env.VERSION_LINE_MATCH }}
           VERSION_SUFFIX: SNAPSHOT
 
   upload-app-context-dotenv:
@@ -95,6 +97,8 @@ jobs:
           APP_SHA=${{ needs.bumper-job.outputs.app_sha }}
           APP_SHORT_SHA=${short_sha}
           PART=${{ env.DEFAULT_BUMP }}
+          VERSION_FILE_PATH=${{ env.VERSION_FILE_PATH }}
+          VERSION_LINE_MATCH=${{ env.VERSION_LINE_MATCH }}
           EOF
 
           cat $dotenv
