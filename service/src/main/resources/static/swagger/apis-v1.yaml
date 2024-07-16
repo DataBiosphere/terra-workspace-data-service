@@ -172,7 +172,7 @@ paths:
             schema:
               $ref: '#/components/schemas/Collection'
       responses:
-        200:
+        201:
           description: The collection just created.
           content:
             application/json:
