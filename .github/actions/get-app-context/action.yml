@@ -1,10 +1,17 @@
 # The App Context includes the following information derived from GitHub Context:
 #
-# - App Version
-# - App Branch
-# - App SHA
-# - App Short SHA
-# - PART
+# - App Version:
+#     - Version tag recorded in Git / version file when code is integrated into mainline.
+# - App Branch:
+#     - Name of the branch that runs this workflow.
+# - App SHA:
+#     - Git hash recorded in history.
+#     - For PRs: This is the commit hash of the PR changes when the PR is opened, updated with merge commit, or updated with rebase.
+#     - For Push: This is the commit hash that results from merging the PR changes into the base (mainline) branch.
+# - App Short SHA:
+#     - First 7 characters of App SHA.
+# - PART:
+#     - The part of the version which was bumped.
 #
 # After successfully running this action, the following environment variables are available for use in subsequent steps within the same job:
 #

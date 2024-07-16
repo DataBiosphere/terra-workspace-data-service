@@ -12,6 +12,11 @@ on:
     paths-ignore: [ '**.md' ]
 
 jobs:
+  # The app-context job retrieves the App Context artifact that was uploaded
+  # through the compute-app-context.yml workflow. If the last commit was
+  # a version file bump, this workflow is skipped. Additionally, this workflow
+  # runs when a PR targeting mainline is opened, updated (with merge commit or rebase),
+  # or when there is a push to the mainline branch.
   app-context:
     if: "!startsWith(github.event.head_commit.message, 'bump ')"
     runs-on: ubuntu-latest
