@@ -63,9 +63,8 @@ jobs:
           echo "Action Type: ${{ github.event.action }}"
           echo "app_branch=${{ github.event_name == 'pull_request' && github.head_ref || env.MAINLINE }}" >> $GITHUB_OUTPUT
           app_sha=${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
-          app_short_sha=${app_sha:0:7}
           echo "app_sha=${app_sha}" >> $GITHUB_OUTPUT
-          echo "app_short_sha=${app_short_sha}" >> $GITHUB_OUTPUT
+          echo "app_short_sha=${app_sha:0:7}" >> $GITHUB_OUTPUT
 
       - id: bumper
         # https://github.com/DataBiosphere/github-actions/tree/master/actions/bumper
