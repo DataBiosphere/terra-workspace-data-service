@@ -8,10 +8,7 @@ import org.springframework.data.convert.ReadingConverter;
 
 @ReadingConverter
 public class WorkspaceIdReadingConverter implements Converter<UUID, WorkspaceId> {
-  /**
-   * @param source
-   * @return
-   */
+
   @Override
   public WorkspaceId convert(@NotNull UUID source) {
     return WorkspaceId.of(source);

@@ -8,10 +8,7 @@ import org.springframework.data.convert.ReadingConverter;
 
 @ReadingConverter
 public class CollectionIdReadingConverter implements Converter<UUID, CollectionId> {
-  /**
-   * @param source
-   * @return
-   */
+
   @Override
   public CollectionId convert(@NotNull UUID source) {
     return CollectionId.of(source);

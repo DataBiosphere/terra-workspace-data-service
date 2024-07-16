@@ -6,6 +6,7 @@ import org.springframework.data.domain.Persistable;
 import org.springframework.data.relational.core.mapping.Column;
 import org.springframework.data.relational.core.mapping.Table;
 
+/** Spring Data-annotated model to represent a WDS Collection. */
 @Table(schema = "sys_wds", name = "collection")
 public class WdsCollection implements Persistable<CollectionId> {
   private final WorkspaceId workspaceId;
