@@ -27,6 +27,8 @@ tags:
     description: Import APIs
   - name: Job
     description: Job APIs
+  - name: Collection
+    description: Collection APIs
   - name: Instances
     description: Instance APIs
   - name: Schema
@@ -349,6 +351,14 @@ paths:
     $ref: 'apis-v1.yaml#/paths/~1job~1v1~1{jobId}'
   /job/v1/instance/{instanceUuid}:
     $ref: 'apis-v1.yaml#/paths/~1job~1v1~1instance~1{instanceUuid}'
+
+  ##############################
+  # Collection APIs
+  ##############################
+  /collections/v1/{workspaceId}:
+    $ref: 'apis-v1.yaml#/paths/~1collections~1v1~1{workspaceId}'
+  /collections/v1/{workspaceId}/{collectionId}:
+    $ref: 'apis-v1.yaml#/paths/~1collections~1v1~1{workspaceId}~1{collectionId}'
 
   ##############################
   # Instances APIs

@@ -1,7 +1,9 @@
 package org.databiosphere.workspacedataservice.controller;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -11,9 +13,11 @@ import java.sql.SQLException;
 import java.util.Map;
 import java.util.UUID;
 import org.databiosphere.workspacedataservice.generated.CollectionServerModel;
+import org.databiosphere.workspacedataservice.service.CollectionServiceV1;
 import org.databiosphere.workspacedataservice.shared.model.CollectionId;
 import org.databiosphere.workspacedataservice.shared.model.WdsCollection;
 import org.databiosphere.workspacedataservice.shared.model.WorkspaceId;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -31,6 +35,13 @@ public class CollectionControllerMockMvcTest extends MockMvcTestBase {
 
   @Autowired private ObjectMapper objectMapper;
   @Autowired private NamedParameterJdbcTemplate namedTemplate;
+  @Autowired private CollectionServiceV1 collectionServiceV1;
+
+  @BeforeEach
+  void beforeEach() {
+    // empty out the collection table so each test starts fresh
+    namedTemplate.update("delete from sys_wds.collection", Map.of());
+  }
 
   @Test
   // create a collection, specifying the collection id in the request
@@ -63,17 +74,7 @@ public class CollectionControllerMockMvcTest extends MockMvcTestBase {
     assertEquals(description, actualResponse.getDescription(), "incorrect collection description");
 
     // the collection should exist in the db
-    WdsCollection actualDb =
-        namedTemplate.queryForObject(
-            "select id, workspace_id, name, description from sys_wds.collection where workspace_id = :workspaceId and name = :name",
-            new MapSqlParameterSource(Map.of("workspaceId", workspaceId.id(), "name", name)),
-            new CollectionRowMapper());
-
-    assertNotNull(actualDb);
-    assertEquals(workspaceId, actualDb.workspaceId(), "incorrect workspace id");
-    assertEquals(collectionId, actualDb.collectionId(), "incorrect collection id");
-    assertEquals(name, actualDb.name(), "incorrect collection name");
-    assertEquals(description, actualDb.description(), "incorrect collection description");
+    assertCollectionExists(workspaceId, collectionId, name, description);
   }
 
   @Test
@@ -105,16 +106,7 @@ public class CollectionControllerMockMvcTest extends MockMvcTestBase {
     assertEquals(description, actualResponse.getDescription(), "incorrect collection description");
 
     // the collection should exist in the db
-    WdsCollection actual =
-        namedTemplate.queryForObject(
-            "select id, workspace_id, name, description from sys_wds.collection where workspace_id = :workspaceId and name = :name",
-            new MapSqlParameterSource(Map.of("workspaceId", workspaceId.id(), "name", name)),
-            new CollectionRowMapper());
-
-    assertNotNull(actual);
-    assertEquals(workspaceId, actual.workspaceId(), "incorrect workspace id");
-    assertEquals(name, actual.name(), "incorrect collection name");
-    assertEquals(description, actual.description(), "incorrect collection description");
+    assertCollectionExists(workspaceId, name, description);
   }
 
   @Disabled
@@ -137,8 +129,69 @@ public class CollectionControllerMockMvcTest extends MockMvcTestBase {
   @Test
   void createCollectionNoWorkspacePermission() {}
 
-  static class CollectionRowMapper implements RowMapper<WdsCollection> {
+  @Test
+  void deleteCollection() throws Exception {
+    // create a collection as setup, so we can ensure it deletes
+    WorkspaceId workspaceId = WorkspaceId.of(UUID.randomUUID());
+    CollectionId collectionId = CollectionId.of(UUID.randomUUID());
+    String name = "test-name";
+    String description = "unit test description";
 
+    CollectionServerModel collectionServerModel = new CollectionServerModel(name, description);
+    collectionServerModel.id(collectionId.id());
+
+    collectionServiceV1.save(workspaceId, collectionServerModel);
+
+    // assert it was created correctly
+    assertCollectionExists(workspaceId, collectionId, name, description);
+
+    // now delete it
+    MvcResult mvcResult =
+        mockMvc
+            .perform(
+                delete("/collections/v1/{workspaceId}/{collectionId}", workspaceId, collectionId))
+            .andExpect(status().isNoContent())
+            .andReturn();
+
+    // assert collection no longer exists
+    assertFalse(
+        namedTemplate.queryForObject(
+            "select exists(select from sys_wds.collection where id = :collectionId)",
+            new MapSqlParameterSource(Map.of("collectionId", collectionId.id())),
+            Boolean.class),
+        "collection should no longer exist");
+  }
+
+  private void assertCollectionExists(
+      WorkspaceId workspaceId, CollectionId collectionId, String name, String description) {
+    WdsCollection actual =
+        namedTemplate.queryForObject(
+            "select id, workspace_id, name, description from sys_wds.collection where workspace_id = :workspaceId and name = :name",
+            new MapSqlParameterSource(Map.of("workspaceId", workspaceId.id(), "name", name)),
+            new CollectionRowMapper());
+
+    assertNotNull(actual);
+    assertEquals(collectionId, actual.collectionId(), "incorrect collection id");
+    assertEquals(workspaceId, actual.workspaceId(), "incorrect workspace id");
+    assertEquals(name, actual.name(), "incorrect collection name");
+    assertEquals(description, actual.description(), "incorrect collection description");
+  }
+
+  private void assertCollectionExists(WorkspaceId workspaceId, String name, String description) {
+    WdsCollection actual =
+        namedTemplate.queryForObject(
+            "select id, workspace_id, name, description from sys_wds.collection where workspace_id = :workspaceId and name = :name",
+            new MapSqlParameterSource(Map.of("workspaceId", workspaceId.id(), "name", name)),
+            new CollectionRowMapper());
+
+    assertNotNull(actual);
+    assertNotNull(actual.collectionId(), "collection id should not be null");
+    assertEquals(workspaceId, actual.workspaceId(), "incorrect workspace id");
+    assertEquals(name, actual.name(), "incorrect collection name");
+    assertEquals(description, actual.description(), "incorrect collection description");
+  }
+
+  static class CollectionRowMapper implements RowMapper<WdsCollection> {
     @Override
     public WdsCollection mapRow(ResultSet rs, int rowNum) throws SQLException {
       CollectionId collectionId = CollectionId.of(UUID.fromString(rs.getString("id")));

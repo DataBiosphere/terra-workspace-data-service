@@ -9,11 +9,12 @@ import org.springframework.data.relational.core.mapping.Table;
 /** Spring Data-annotated model to represent a WDS Collection. */
 @Table(schema = "sys_wds", name = "collection")
 public class WdsCollection implements Persistable<CollectionId> {
-  private final WorkspaceId workspaceId;
 
   @Id
   @Column("id")
   private final CollectionId collectionId;
+
+  private final WorkspaceId workspaceId;
 
   private final String name;
   private final String description;
@@ -27,13 +28,20 @@ public class WdsCollection implements Persistable<CollectionId> {
   }
 
   /**
-   * @return
+   * Required by Persistable.
+   *
+   * @return the collection id
    */
   @Override
   public CollectionId getId() {
     return collectionId;
   }
 
+  /**
+   * Required by Persistable.
+   *
+   * @return always false. See also WdsCollectionCreateRequest.
+   */
   public boolean isNew() {
     return false;
   }

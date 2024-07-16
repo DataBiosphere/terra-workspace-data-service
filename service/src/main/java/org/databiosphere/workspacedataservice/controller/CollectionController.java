@@ -6,6 +6,7 @@ import org.databiosphere.workspacedataservice.annotations.DeploymentMode.DataPla
 import org.databiosphere.workspacedataservice.generated.CollectionApi;
 import org.databiosphere.workspacedataservice.generated.CollectionServerModel;
 import org.databiosphere.workspacedataservice.service.CollectionServiceV1;
+import org.databiosphere.workspacedataservice.shared.model.CollectionId;
 import org.databiosphere.workspacedataservice.shared.model.WorkspaceId;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -35,7 +36,6 @@ public class CollectionController implements CollectionApi {
       UUID workspaceId, CollectionServerModel collectionServerModel) {
     CollectionServerModel coll =
         collectionServiceV1.save(WorkspaceId.of(workspaceId), collectionServerModel);
-
     return new ResponseEntity<>(coll, HttpStatus.CREATED);
   }
 
@@ -48,7 +48,8 @@ public class CollectionController implements CollectionApi {
    */
   @Override
   public ResponseEntity<Void> deleteCollectionV1(UUID workspaceId, UUID collectionId) {
-    return CollectionApi.super.deleteCollectionV1(workspaceId, collectionId);
+    collectionServiceV1.delete(WorkspaceId.of(workspaceId), CollectionId.of(collectionId));
+    return new ResponseEntity<>(HttpStatus.NO_CONTENT);
   }
 
   /**
@@ -61,6 +62,7 @@ public class CollectionController implements CollectionApi {
   @Override
   public ResponseEntity<CollectionServerModel> getCollectionV1(
       UUID workspaceId, UUID collectionId) {
+    // TODO: implement
     return CollectionApi.super.getCollectionV1(workspaceId, collectionId);
   }
 
@@ -72,7 +74,8 @@ public class CollectionController implements CollectionApi {
    */
   @Override
   public ResponseEntity<List<CollectionServerModel>> listCollectionsV1(UUID workspaceId) {
-    return CollectionApi.super.listCollectionsV1(workspaceId);
+    List<CollectionServerModel> collections = collectionServiceV1.list(WorkspaceId.of(workspaceId));
+    return new ResponseEntity<>(collections, HttpStatus.OK);
   }
 
   /**
@@ -88,6 +91,7 @@ public class CollectionController implements CollectionApi {
   @Override
   public ResponseEntity<CollectionServerModel> updateCollectionV1(
       UUID workspaceId, UUID collectionId, CollectionServerModel collectionServerModel) {
+    // TODO: implement
     return CollectionApi.super.updateCollectionV1(workspaceId, collectionId, collectionServerModel);
   }
 }
