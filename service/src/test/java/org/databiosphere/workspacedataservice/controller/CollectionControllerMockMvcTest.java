@@ -11,8 +11,8 @@ import java.sql.SQLException;
 import java.util.Map;
 import java.util.UUID;
 import org.databiosphere.workspacedataservice.generated.CollectionServerModel;
-import org.databiosphere.workspacedataservice.shared.model.Collection;
 import org.databiosphere.workspacedataservice.shared.model.CollectionId;
+import org.databiosphere.workspacedataservice.shared.model.WdsCollection;
 import org.databiosphere.workspacedataservice.shared.model.WorkspaceId;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
@@ -63,9 +63,9 @@ public class CollectionControllerMockMvcTest extends MockMvcTestBase {
     assertEquals(description, actualResponse.getDescription(), "incorrect collection description");
 
     // the collection should exist in the db
-    Collection actualDb =
+    WdsCollection actualDb =
         namedTemplate.queryForObject(
-            "select id, workspace_id, name, description from sys_wds.collection where workspace_id = :collectionId and name = :name",
+            "select id, workspace_id, name, description from sys_wds.collection where workspace_id = :workspaceId and name = :name",
             new MapSqlParameterSource(Map.of("workspaceId", workspaceId.id(), "name", name)),
             new CollectionRowMapper());
 
@@ -105,9 +105,9 @@ public class CollectionControllerMockMvcTest extends MockMvcTestBase {
     assertEquals(description, actualResponse.getDescription(), "incorrect collection description");
 
     // the collection should exist in the db
-    Collection actual =
+    WdsCollection actual =
         namedTemplate.queryForObject(
-            "select id, workspace_id, name, description from sys_wds.collection where workspace_id = :collectionId and name = :name",
+            "select id, workspace_id, name, description from sys_wds.collection where workspace_id = :workspaceId and name = :name",
             new MapSqlParameterSource(Map.of("workspaceId", workspaceId.id(), "name", name)),
             new CollectionRowMapper());
 
@@ -137,15 +137,15 @@ public class CollectionControllerMockMvcTest extends MockMvcTestBase {
   @Test
   void createCollectionNoWorkspacePermission() {}
 
-  static class CollectionRowMapper implements RowMapper<Collection> {
+  static class CollectionRowMapper implements RowMapper<WdsCollection> {
 
     @Override
-    public Collection mapRow(ResultSet rs, int rowNum) throws SQLException {
+    public WdsCollection mapRow(ResultSet rs, int rowNum) throws SQLException {
       CollectionId collectionId = CollectionId.of(UUID.fromString(rs.getString("id")));
       WorkspaceId workspaceId = WorkspaceId.of(UUID.fromString(rs.getString("workspace_id")));
       String name = rs.getString("name");
       String description = rs.getString("description");
-      return new Collection(workspaceId, collectionId, name, description);
+      return new WdsCollection(workspaceId, collectionId, name, description);
     }
   }
 }
