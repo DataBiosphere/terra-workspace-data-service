@@ -238,6 +238,14 @@ To run a single test, run
 ./gradlew test --tests '*RecordDaoTest.testGetSingleRecord'
 ```
 
+## Troubleshooting
+
+Some problems during build and test may be solved by running the Gradle `clean` task: 
+
+```bash
+./gradlew clean
+```
+
 ## Postgres
 
 When running the local docker postgres, you can access the shell directly:
