@@ -17,6 +17,8 @@ tags:
     description: Import APIs
   - name: Job
     description: Job APIs
+  - name: Collection
+    description: Collection APIs
   - name: Capabilities
     description: Describes the features of WDS
 
@@ -127,6 +129,114 @@ paths:
                 type: array
                 items:
                   $ref: '#/components/schemas/GenericJob'
+
+  ##############################
+  # Collection APIs
+  ##############################
+  /collections/v1/{workspaceId}:
+    get:
+      summary: List all collections in this workspace.
+      operationId: listCollectionsV1
+      security:
+        - bearerAuth: [ ]
+      tags:
+        - Collection
+      parameters:
+        - $ref: '#/components/parameters/workspaceIdPathParam'
+      responses:
+        200:
+          description: List of collections in this workspace.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Collection'
+    post:
+      summary: Create a collection in this workspace.
+      description: |
+        If collection id is specified in the request body, it must be a valid UUID.
+        If omitted, the system will generate an id.
+      operationId: createCollectionV1
+      security:
+        - bearerAuth: [ ]
+      tags:
+        - Collection
+      parameters:
+        - $ref: '#/components/parameters/workspaceIdPathParam'
+      requestBody:
+        description: The collection to create
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Collection'
+      responses:
+        200:
+          description: The collection just created.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Collection'
+  /collections/v1/{workspaceId}/{collectionId}:
+    get:
+      summary: Retrieve a single collection.
+      operationId: getCollectionV1
+      security:
+        - bearerAuth: [ ]
+      tags:
+        - Collection
+      parameters:
+        - $ref: '#/components/parameters/workspaceIdPathParam'
+        - $ref: '#/components/parameters/collectionIdPathParam'
+      responses:
+        200:
+          description: The collection object.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Collection'
+    put:
+      summary: Update the specified collection.
+      description: |
+        Collection id is optional in the request body. If specified, it must match the collection id
+        specified in the url.
+      operationId: updateCollectionV1
+      security:
+        - bearerAuth: [ ]
+      tags:
+        - Collection
+      parameters:
+        - $ref: '#/components/parameters/workspaceIdPathParam'
+        - $ref: '#/components/parameters/collectionIdPathParam'
+      requestBody:
+        description: The collection to update
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Collection'
+      responses:
+        200:
+          description: The collection just updated.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Collection'
+    delete:
+      summary: Delete the specified collection.
+      operationId: deleteCollectionV1
+      security:
+        - bearerAuth: [ ]
+      tags:
+        - Collection
+      parameters:
+        - $ref: '#/components/parameters/workspaceIdPathParam'
+        - $ref: '#/components/parameters/collectionIdPathParam'
+      responses:
+        204:
+          description: Collection has been deleted.
+
   ##############################
   # Capabilities APIs
   ##############################
@@ -152,6 +262,14 @@ components:
       scheme: bearer
 
   parameters:
+    collectionIdPathParam:
+      name: collectionId
+      in: path
+      description: Collection id
+      required: true
+      schema:
+        type: string
+        format: uuid
     # instanceUuidPathParam is very close to duplicating instanceIdPathParam from v0.2,
     # but this one specifies format: uuid, which creates Java UUID objects in generated
     # code instead of a String.
@@ -159,6 +277,14 @@ components:
       name: instanceUuid
       in: path
       description: WDS instance id; by convention equal to workspace id
+      required: true
+      schema:
+        type: string
+        format: uuid
+    workspaceIdPathParam:
+      name: workspaceId
+      in: path
+      description: Workspace id
       required: true
       schema:
         type: string
@@ -172,6 +298,25 @@ components:
           type: boolean
       additionalProperties:
         type: boolean
+    Collection:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+          pattern: '[a-zA-Z0-9-_]{1,128}'
+          description: Letters, numbers, dash and underscore only. Max 128 characters.
+        description:
+          type: string
+      required:
+        - name
+        - description
+      example:
+        id: 00112233-4455-6677-8899-aabbccddeeff
+        name: my-collection-name
+        description: This is a human-readable description for the collection.
     GenericJob:
       x-all-of-name: GenericJob
       description: |
