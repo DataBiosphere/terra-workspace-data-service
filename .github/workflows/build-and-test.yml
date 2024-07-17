@@ -93,7 +93,6 @@ jobs:
         # Needed by sonar to get the git history for the branch the PR will be merged into.
         with:
           ref: ${{ needs.app-context.outputs.app_sha }}
-          token: ${{ secrets.BROADBOT_TOKEN }}
           fetch-depth: 0
 
       - name: Initialize Postgres DB
