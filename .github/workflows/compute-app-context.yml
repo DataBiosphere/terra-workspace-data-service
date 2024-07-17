@@ -48,10 +48,15 @@ jobs:
       - uses: actions/checkout@v4
         with:
           ref: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
+      - id: last-commit
+        run: |
+          LAST_COMMIT_MSG=$(git log -1 --pretty=format:%s)
+          echo "$LAST_COMMIT_MSG"
+          echo "msg=$LAST_COMMIT_MSG" >> $GITHUB_OUTPUT
       - uses: actions-ecosystem/action-regex-match@v2
         id: version-file-bump
         with:
-          text: ${{ github.event.pull_request.title }}
+          text: ${{ steps.last-commit.outputs.msg }}
           regex: ${{ env.VERSION_FILE_BUMP_COMMIT_MSG }}
       - run: |
           echo "match=${{ steps.version-file-bump.outputs.match }}"
