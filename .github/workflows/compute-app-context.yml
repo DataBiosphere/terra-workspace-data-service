@@ -36,7 +36,7 @@ env:
 
 jobs:
   bumper-job:
-    if: "github.event.head_commit.committer.name != 'bumptabot'"
+    if: "github.event.head_commit.committer.name != 'bumptagbot'"
     runs-on: ubuntu-latest
     concurrency:
       group: ${{ github.repository_owner }}-${{ github.event.repository.name }}-${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || 'main' }}-bumper
