@@ -51,10 +51,10 @@ jobs:
       - uses: actions-ecosystem/action-regex-match@v2
         id: version-file-bump
         with:
-          text: ${{ github.event.head_commit.message }}
+          text: ${{ github.event.pull_request.title }}
           regex: ${{ env.VERSION_FILE_BUMP_COMMIT_MSG }}
       - run: |
-          echo "match=echo "V=${{ steps.version-file-bump.outputs.match }}"
+          echo "match=${{ steps.version-file-bump.outputs.match }}"
           echo "V=${{ steps.version-file-bump.outputs.group1 }}"
           echo "major=${{ steps.version-file-bump.outputs.group2 }}"
           echo "minor=${{ steps.version-file-bump.outputs.group3 }}"
