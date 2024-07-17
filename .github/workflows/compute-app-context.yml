@@ -33,41 +33,11 @@ env:
   MAINLINE: main
   VERSION_FILE_PATH: build.gradle
   VERSION_LINE_MATCH: "^\\s*version\\s*=\\s*'.*'"
-  VERSION_FILE_BUMP_COMMIT_MSG: '^bump\s+([vV]?)([0-9]+)\.([0-9]+)\.([0-9]+)$'
 
 jobs:
-  ignore-version-file-bump:
-    runs-on: ubuntu-latest
-    outputs:
-      match: ${{ steps.version-file-bump.outputs.match }}
-      V: ${{ steps.version-file-bump.outputs.group1 }}
-      major: ${{ steps.version-file-bump.outputs.group2 }}
-      minor: ${{ steps.version-file-bump.outputs.group3 }}
-      patch: ${{ steps.version-file-bump.outputs.group4 }}
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          ref: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
-      - id: last-commit
-        run: |
-          LAST_COMMIT_MSG=$(git log -1 --pretty=format:%s)
-          echo "$LAST_COMMIT_MSG"
-          echo "msg=$LAST_COMMIT_MSG" >> $GITHUB_OUTPUT
-      - uses: actions-ecosystem/action-regex-match@v2
-        id: version-file-bump
-        with:
-          text: ${{ steps.last-commit.outputs.msg }}
-          regex: ${{ env.VERSION_FILE_BUMP_COMMIT_MSG }}
-      - run: |
-          echo "match=${{ steps.version-file-bump.outputs.match }}"
-          echo "V=${{ steps.version-file-bump.outputs.group1 }}"
-          echo "major=${{ steps.version-file-bump.outputs.group2 }}"
-          echo "minor=${{ steps.version-file-bump.outputs.group3 }}"
-          echo "patch=${{ steps.version-file-bump.outputs.group4 }}"
-
   bumper-job:
     needs: [ ignore-version-file-bump ]
-    if: "!startsWith(github.event.head_commit.message, 'bump  ')"
+    if: "github.event.head_commit.committer.name != 'bumptabot'"
     runs-on: ubuntu-latest
     concurrency:
       group: ${{ github.repository_owner }}-${{ github.event.repository.name }}-${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || 'main' }}-bumper

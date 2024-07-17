@@ -25,7 +25,7 @@ jobs:
   # runs when a PR targeting mainline is opened, updated (with merge commit or rebase),
   # or when there is a push to the mainline branch.
   app-context:
-    if: "!startsWith(github.event.head_commit.message, 'bump ')"
+    if: "github.event.head_commit.committer.name != 'bumptabot'"
     runs-on: ubuntu-latest
     outputs:
       app_version: ${{ steps.get-app-context.outputs.app_version }}
