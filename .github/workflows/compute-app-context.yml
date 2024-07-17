@@ -67,7 +67,7 @@ jobs:
 
   bumper-job:
     needs: [ ignore-version-file-bump ]
-    if: "!startsWith(github.event.head_commit.message, 'bump ')"
+    if: "!startsWith(github.event.head_commit.message, 'bump  ')"
     runs-on: ubuntu-latest
     concurrency:
       group: ${{ github.repository_owner }}-${{ github.event.repository.name }}-${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || 'main' }}-bumper
