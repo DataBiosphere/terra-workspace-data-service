@@ -37,6 +37,14 @@ public class CollectionControllerMockMvcTest extends MockMvcTestBase {
   @Autowired private NamedParameterJdbcTemplate namedTemplate;
   @Autowired private CollectionServiceV1 collectionServiceV1;
 
+  /* TODO: this test causes other unit tests to fail.
+      A WDS "collection" is two things: a row in the sys_wds.collection table, and a Postgres
+      schema.
+      Because I haven't fully implemented CollectionServiceV1 yet, we are adding rows to the
+      collection table but not creating the schemas. This gets things out of sync and other
+      tests have a problem with that.
+  */
+
   @BeforeEach
   void beforeEach() {
     // empty out the collection table so each test starts fresh

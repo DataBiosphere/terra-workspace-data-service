@@ -12,6 +12,10 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.RestController;
 
+/**
+ * Implementations for collection API routes. This implements CollectionApi, which is auto-generated
+ * from our OpenAPI spec.
+ */
 @DataPlane
 @RestController
 public class CollectionController implements CollectionApi {
