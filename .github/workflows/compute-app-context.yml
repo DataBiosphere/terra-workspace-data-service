@@ -36,7 +36,6 @@ env:
 
 jobs:
   bumper-job:
-    needs: [ ignore-version-file-bump ]
     if: "github.event.head_commit.committer.name != 'bumptabot'"
     runs-on: ubuntu-latest
     concurrency:
