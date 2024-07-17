@@ -34,6 +34,7 @@ public class CollectionServiceV1 {
   public CollectionServerModel save(
       WorkspaceId workspaceId, CollectionServerModel collectionServerModel) {
     // TODO: check if user has write permission on this workspace
+    // TODO: create the schema in Postgres
 
     // if user did not specify an id, generate one
     CollectionId collectionId;
@@ -68,6 +69,7 @@ public class CollectionServiceV1 {
   public void delete(WorkspaceId workspaceId, CollectionId collectionId) {
     // TODO: ensure this collection belongs to this workspace
     // TODO: check if user has write permission on this workspace
+    // TODO: delete the schema from Postgres
 
     collectionRepository.deleteById(collectionId.id());
   }
