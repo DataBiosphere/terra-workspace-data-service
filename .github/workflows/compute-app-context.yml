@@ -33,7 +33,7 @@ env:
   MAINLINE: main
   VERSION_FILE_PATH: build.gradle
   VERSION_LINE_MATCH: "^\\s*version\\s*=\\s*'.*'"
-  VERSION_FILE_BUMP_COMMIT_MSG: '^bump\s+[vV]?[0-9]+\.[0-9]+\.[0-9]+$'
+  VERSION_FILE_BUMP_COMMIT_MSG: '^bump\s+([vV]?)([0-9]+)\.([0-9]+)\.([0-9]+)$'
 
 jobs:
   ignore-version-file-bump:
