@@ -51,7 +51,7 @@ jobs:
         if: steps.FirstAttemptCreateBee.outcome == 'failure'
         uses: ./.github/actions/create-bee
         with:
-          bee_name: ${{ env.BEE_NAME }}-2
+          bee_name: ${{ env.BEE_NAME }}-retry
           token: ${{ env.TOKEN }}
 
   attach-landing-zone-to-bee-workflow:
