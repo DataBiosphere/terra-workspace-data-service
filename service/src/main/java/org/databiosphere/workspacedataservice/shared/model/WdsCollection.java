@@ -4,6 +4,7 @@ import java.util.Objects;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.domain.Persistable;
 import org.springframework.data.relational.core.mapping.Column;
+import org.springframework.data.relational.core.mapping.InsertOnlyProperty;
 import org.springframework.data.relational.core.mapping.Table;
 
 /** Spring Data-annotated model to represent a WDS Collection. */
@@ -14,7 +15,8 @@ public class WdsCollection implements Persistable<CollectionId> {
   @Column("id")
   private final CollectionId collectionId;
 
-  private final WorkspaceId workspaceId;
+  // for safety - workspaceId cannot be changed after insert
+  @InsertOnlyProperty private final WorkspaceId workspaceId;
 
   private final String name;
   private final String description;
@@ -46,6 +48,8 @@ public class WdsCollection implements Persistable<CollectionId> {
     return false;
   }
 
+  // for safety - workspaceId cannot be changed after insert
+  @InsertOnlyProperty
   public WorkspaceId workspaceId() {
     return workspaceId;
   }

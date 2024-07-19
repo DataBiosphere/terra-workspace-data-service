@@ -8,10 +8,15 @@ import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 import org.databiosphere.workspacedataservice.dao.CollectionRepository;
 import org.databiosphere.workspacedataservice.generated.CollectionServerModel;
+import org.databiosphere.workspacedataservice.service.model.exception.ConflictException;
 import org.databiosphere.workspacedataservice.shared.model.CollectionId;
 import org.databiosphere.workspacedataservice.shared.model.WdsCollection;
 import org.databiosphere.workspacedataservice.shared.model.WdsCollectionCreateRequest;
 import org.databiosphere.workspacedataservice.shared.model.WorkspaceId;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.dao.DuplicateKeyException;
+import org.springframework.data.relational.core.conversion.DbActionExecutionException;
 import org.springframework.stereotype.Component;
 
 /** Service to power v1 collection APIs. */
@@ -19,6 +24,8 @@ import org.springframework.stereotype.Component;
 public class CollectionServiceV1 {
 
   private final CollectionRepository collectionRepository;
+
+  private static final Logger logger = LoggerFactory.getLogger(CollectionServiceV1.class);
 
   public CollectionServiceV1(CollectionRepository collectionRepository) {
     this.collectionRepository = collectionRepository;
@@ -33,7 +40,9 @@ public class CollectionServiceV1 {
    */
   public CollectionServerModel save(
       WorkspaceId workspaceId, CollectionServerModel collectionServerModel) {
+
     // TODO: check if user has write permission on this workspace
+    // TODO: validate name against the CollectionServerModel.getName() pattern
     // TODO: create the schema in Postgres
 
     // if user did not specify an id, generate one
@@ -50,9 +59,14 @@ public class CollectionServiceV1 {
             collectionId,
             collectionServerModel.getName(),
             collectionServerModel.getDescription());
-    // save
-    WdsCollection actual = collectionRepository.save(wdsCollectionRequest);
 
+    // save
+    WdsCollection actual = null;
+    try {
+      actual = collectionRepository.save(wdsCollectionRequest);
+    } catch (DbActionExecutionException dbActionExecutionException) {
+      handleDbException(dbActionExecutionException);
+    }
     // translate back to CollectionServerModel
     CollectionServerModel response = new CollectionServerModel(actual.name(), actual.description());
     response.id(actual.collectionId().id());
@@ -98,5 +112,28 @@ public class CollectionServiceV1 {
               return serverModel;
             })
         .toList();
+  }
+
+  // exception handling
+  private void handleDbException(DbActionExecutionException dbActionExecutionException) {
+    Throwable cause = dbActionExecutionException.getCause();
+    if (cause == null) {
+      throw dbActionExecutionException;
+    }
+    if (cause instanceof DuplicateKeyException duplicateKeyException) {
+      // kinda ugly: we need to determine if the DuplicateKeyException is due to an id conflict
+      // or a name conflict.
+      String msg = duplicateKeyException.getMessage();
+      if (msg.contains("duplicate key value violates unique constraint")
+          && msg.contains("instance_pkey")) {
+        // TODO: this allows phishing for collection ids.
+        throw new ConflictException("Collection with this id already exists");
+      } else if (msg.contains("duplicate key value violates unique constraint")
+          && msg.contains("instance_workspace_id_name_key")) {
+        throw new ConflictException("Collection with this name already exists in this workspace");
+      }
+      throw new ConflictException("Collection name or id conflict");
+    }
+    throw dbActionExecutionException;
   }
 }
