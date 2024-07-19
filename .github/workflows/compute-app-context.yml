@@ -39,7 +39,7 @@ jobs:
     if: "github.event.head_commit.committer.name != 'bumptagbot'"
     runs-on: ubuntu-latest
     concurrency:
-      group: ${{ github.repository_owner }}-${{ github.event.repository.name }}-${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || env.MAINLINE }}-bumper
+      group: ${{ github.repository_owner }}-${{ github.event.repository.name }}-${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || 'main' }}-bumper
       cancel-in-progress: false
     outputs:
       # new_tag - The value of the newly created tag.
