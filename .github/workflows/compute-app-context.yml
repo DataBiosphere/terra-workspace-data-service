@@ -39,7 +39,7 @@ jobs:
     if: "github.event.head_commit.committer.name != 'bumptagbot'"
     runs-on: ubuntu-latest
     concurrency:
-      group: ${{ github.repository_owner }}-${{ github.event.repository.name }}-${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || 'main' }}-bumper
+      group: ${{ github.repository_owner }}-${{ github.event.repository.name }}-${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || env.MAINLINE }}-bumper
       cancel-in-progress: false
     outputs:
       # new_tag - The value of the newly created tag.
@@ -94,7 +94,12 @@ jobs:
           APP_BRANCH=${{ needs.bumper-job.outputs.app_branch }}
           APP_SHA=${{ needs.bumper-job.outputs.app_sha }}
           APP_SHORT_SHA=${short_sha}
+          GITHUB_EVENT_NAME=${{ github.event_name }}
+          GITHUB_EVENT_ACTION=${{ github.event.action }}
           PART=${{ env.DEFAULT_BUMP }}
+          REPOSITORY_NAME=${{ github.event.repository.name }}
+          REPOSITORY_OWNER=${{ github.repository_owner }}
+          REPOSITORY_URL=https://github.com/${{ github.repository }}
           VERSION_FILE_PATH=${{ env.VERSION_FILE_PATH }}
           VERSION_LINE_MATCH=${{ env.VERSION_LINE_MATCH }}
           EOF
