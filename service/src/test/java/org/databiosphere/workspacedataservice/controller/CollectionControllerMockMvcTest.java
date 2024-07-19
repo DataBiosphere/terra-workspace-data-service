@@ -154,12 +154,10 @@ public class CollectionControllerMockMvcTest extends MockMvcTestBase {
     assertCollectionExists(workspaceId, collectionId, name, description);
 
     // now delete it
-    MvcResult mvcResult =
-        mockMvc
-            .perform(
-                delete("/collections/v1/{workspaceId}/{collectionId}", workspaceId, collectionId))
-            .andExpect(status().isNoContent())
-            .andReturn();
+    mockMvc
+        .perform(delete("/collections/v1/{workspaceId}/{collectionId}", workspaceId, collectionId))
+        .andExpect(status().isNoContent())
+        .andReturn();
 
     // assert collection no longer exists
     assertFalse(
@@ -170,22 +168,39 @@ public class CollectionControllerMockMvcTest extends MockMvcTestBase {
         "collection should no longer exist");
   }
 
+  @Disabled
+  @Test
+  void deleteNonexistentCollection() {}
+
+  @Disabled
+  @Test
+  void deleteCollectionReadonlyWorkspacePermission() {}
+
+  @Disabled
+  @Test
+  void deleteCollectionNoWorkspacePermission() {}
+
+  @Disabled
+  @Test
+  void listCollections() {}
+
+  @Disabled
+  @Test
+  void listCollectionsEmpty() {}
+
+  @Disabled
+  @Test
+  void listCollectionsNoWorkspacePermission() {}
+
   private void assertCollectionExists(
       WorkspaceId workspaceId, CollectionId collectionId, String name, String description) {
-    WdsCollection actual =
-        namedTemplate.queryForObject(
-            "select id, workspace_id, name, description from sys_wds.collection where workspace_id = :workspaceId and name = :name",
-            new MapSqlParameterSource(Map.of("workspaceId", workspaceId.id(), "name", name)),
-            new CollectionRowMapper());
+    CollectionId actualCollectionId = assertCollectionExists(workspaceId, name, description);
 
-    assertNotNull(actual);
-    assertEquals(collectionId, actual.collectionId(), "incorrect collection id");
-    assertEquals(workspaceId, actual.workspaceId(), "incorrect workspace id");
-    assertEquals(name, actual.name(), "incorrect collection name");
-    assertEquals(description, actual.description(), "incorrect collection description");
+    assertEquals(collectionId, actualCollectionId, "incorrect collection id");
   }
 
-  private void assertCollectionExists(WorkspaceId workspaceId, String name, String description) {
+  private CollectionId assertCollectionExists(
+      WorkspaceId workspaceId, String name, String description) {
     WdsCollection actual =
         namedTemplate.queryForObject(
             "select id, workspace_id, name, description from sys_wds.collection where workspace_id = :workspaceId and name = :name",
@@ -197,6 +212,7 @@ public class CollectionControllerMockMvcTest extends MockMvcTestBase {
     assertEquals(workspaceId, actual.workspaceId(), "incorrect workspace id");
     assertEquals(name, actual.name(), "incorrect collection name");
     assertEquals(description, actual.description(), "incorrect collection description");
+    return actual.collectionId();
   }
 
   static class CollectionRowMapper implements RowMapper<WdsCollection> {
