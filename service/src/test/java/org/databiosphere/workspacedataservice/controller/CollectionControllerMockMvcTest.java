@@ -2,7 +2,11 @@ package org.databiosphere.workspacedataservice.controller;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.Mockito.spy;
+import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -13,14 +17,22 @@ import java.sql.SQLException;
 import java.util.Map;
 import java.util.UUID;
 import org.databiosphere.workspacedataservice.generated.CollectionServerModel;
+import org.databiosphere.workspacedataservice.sam.MockSamAuthorizationDao;
+import org.databiosphere.workspacedataservice.sam.SamAuthorizationDao;
+import org.databiosphere.workspacedataservice.sam.SamAuthorizationDaoFactory;
 import org.databiosphere.workspacedataservice.service.CollectionServiceV1;
+import org.databiosphere.workspacedataservice.service.model.exception.AuthenticationMaskableException;
+import org.databiosphere.workspacedataservice.service.model.exception.AuthorizationException;
+import org.databiosphere.workspacedataservice.service.model.exception.ConflictException;
 import org.databiosphere.workspacedataservice.shared.model.CollectionId;
 import org.databiosphere.workspacedataservice.shared.model.WdsCollection;
 import org.databiosphere.workspacedataservice.shared.model.WorkspaceId;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
+import org.mockito.stubbing.OngoingStubbing;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.MediaType;
 import org.springframework.jdbc.core.RowMapper;
 import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
@@ -36,6 +48,10 @@ public class CollectionControllerMockMvcTest extends MockMvcTestBase {
   @Autowired private ObjectMapper objectMapper;
   @Autowired private NamedParameterJdbcTemplate namedTemplate;
   @Autowired private CollectionServiceV1 collectionServiceV1;
+
+  @MockBean SamAuthorizationDaoFactory samAuthorizationDaoFactory;
+
+  private final SamAuthorizationDao samAuthorizationDao = spy(MockSamAuthorizationDao.allowAll());
 
   /* TODO: this test causes other unit tests to fail.
       A WDS "collection" is two things: a row in the sys_wds.collection table, and a Postgres
@@ -61,6 +77,8 @@ public class CollectionControllerMockMvcTest extends MockMvcTestBase {
 
     CollectionServerModel collectionServerModel = new CollectionServerModel(name, description);
     collectionServerModel.id(collectionId.id());
+
+    stubWriteWorkspacePermission(workspaceId).thenReturn(true);
 
     // calling the API should result in 201 Created
     MvcResult mvcResult =
@@ -94,6 +112,8 @@ public class CollectionControllerMockMvcTest extends MockMvcTestBase {
 
     CollectionServerModel collectionServerModel = new CollectionServerModel(name, description);
 
+    stubWriteWorkspacePermission(workspaceId).thenReturn(true);
+
     // calling the API should result in 201 Created
     MvcResult mvcResult =
         mockMvc
@@ -117,25 +137,187 @@ public class CollectionControllerMockMvcTest extends MockMvcTestBase {
     assertCollectionExists(workspaceId, name, description);
   }
 
-  @Disabled
   @Test
-  void createCollectionIdConflict() {}
+  void createCollectionIdConflict() throws Exception {
+    WorkspaceId workspaceId = WorkspaceId.of(UUID.randomUUID());
+    CollectionId collectionId = CollectionId.of(UUID.randomUUID());
+    String name = "test-name";
+    String description = "unit test description";
 
-  @Disabled
-  @Test
-  void createCollectionNameConflict() {}
+    CollectionServerModel collectionServerModel = new CollectionServerModel(name, description);
+    collectionServerModel.id(collectionId.id());
 
-  @Disabled
-  @Test
-  void createCollectionInvalidName() {}
+    stubWriteWorkspacePermission(workspaceId).thenReturn(true);
 
-  @Disabled
-  @Test
-  void createCollectionReadonlyWorkspacePermission() {}
+    // create the collection
+    collectionServiceV1.save(workspaceId, collectionServerModel);
+    // assert it created
+    assertCollectionExists(workspaceId, collectionId, name, description);
 
-  @Disabled
+    // generate a new collection request with a different name/description but the same id
+    CollectionServerModel conflictRequest =
+        new CollectionServerModel("different name", "different description");
+    conflictRequest.id(collectionId.id());
+
+    // attempt to create the same id again via the API; should result in 409 Conflict
+    MvcResult mvcResult =
+        mockMvc
+            .perform(
+                post("/collections/v1/{workspaceId}", workspaceId)
+                    .content(toJson(conflictRequest))
+                    .contentType(MediaType.APPLICATION_JSON))
+            .andExpect(status().isConflict())
+            .andReturn();
+
+    // verify error message
+    assertInstanceOf(ConflictException.class, mvcResult.getResolvedException());
+    assertEquals(
+        "Collection with this id already exists", mvcResult.getResolvedException().getMessage());
+
+    // original collection should remain untouched
+    assertCollectionExists(workspaceId, collectionId, name, description);
+  }
+
   @Test
-  void createCollectionNoWorkspacePermission() {}
+  void createCollectionNameConflict() throws Exception {
+    WorkspaceId workspaceId = WorkspaceId.of(UUID.randomUUID());
+    CollectionId collectionId = CollectionId.of(UUID.randomUUID());
+    String name = "test-name";
+    String description = "unit test description";
+
+    CollectionServerModel collectionServerModel = new CollectionServerModel(name, description);
+    collectionServerModel.id(collectionId.id());
+
+    stubWriteWorkspacePermission(workspaceId).thenReturn(true);
+
+    // create the collection
+    collectionServiceV1.save(workspaceId, collectionServerModel);
+    // assert it created
+    assertCollectionExists(workspaceId, collectionId, name, description);
+
+    // generate a new collection request with a different id and description but the same name
+    CollectionId conflictId = CollectionId.of(UUID.randomUUID());
+    CollectionServerModel conflictRequest =
+        new CollectionServerModel(name, "different description");
+    conflictRequest.id(conflictId.id());
+
+    // attempt to create the same id again via the API; should result in 409 Conflict
+    MvcResult mvcResult =
+        mockMvc
+            .perform(
+                post("/collections/v1/{workspaceId}", workspaceId)
+                    .content(toJson(conflictRequest))
+                    .contentType(MediaType.APPLICATION_JSON))
+            .andExpect(status().isConflict())
+            .andReturn();
+
+    // verify error message
+    assertInstanceOf(ConflictException.class, mvcResult.getResolvedException());
+    assertEquals(
+        "Collection with this name already exists in this workspace",
+        mvcResult.getResolvedException().getMessage());
+
+    // new collection should not have been created
+    assertCollectionDoesNotExist(conflictId);
+    // original collection should remain untouched
+    assertCollectionExists(workspaceId, collectionId, name, description);
+  }
+
+  @Test
+  void createCollectionInvalidName() throws Exception {
+    WorkspaceId workspaceId = WorkspaceId.of(UUID.randomUUID());
+    CollectionId collectionId = CollectionId.of(UUID.randomUUID());
+    String name = "whoa! this is an illegal name with spaces and an exclamation mark";
+    String description = "unit test description";
+
+    CollectionServerModel collectionServerModel = new CollectionServerModel(name, description);
+    collectionServerModel.id(collectionId.id());
+
+    stubWriteWorkspacePermission(workspaceId).thenReturn(true);
+
+    // create the collection
+    // attempt to create the same id again via the API; should result in 409 Conflict
+    MvcResult mvcResult =
+        mockMvc
+            .perform(
+                post("/collections/v1/{workspaceId}", workspaceId)
+                    .content(toJson(collectionServerModel))
+                    .contentType(MediaType.APPLICATION_JSON))
+            .andExpect(status().isConflict())
+            .andReturn();
+
+    // verify error message
+    assertInstanceOf(ConflictException.class, mvcResult.getResolvedException());
+    assertEquals(
+        "Collection with this id already exists", mvcResult.getResolvedException().getMessage());
+
+    // new collection should not have been created
+    assertCollectionDoesNotExist(collectionId);
+  }
+
+  @Test
+  void createCollectionReadonlyWorkspacePermission() throws Exception {
+    WorkspaceId workspaceId = WorkspaceId.of(UUID.randomUUID());
+    CollectionId collectionId = CollectionId.of(UUID.randomUUID());
+    String name = "test-name";
+    String description = "unit test description";
+
+    CollectionServerModel collectionServerModel = new CollectionServerModel(name, description);
+    collectionServerModel.id(collectionId.id());
+
+    stubWriteWorkspacePermission(workspaceId).thenReturn(false);
+    stubReadWorkspacePermission(workspaceId).thenReturn(true);
+
+    MvcResult mvcResult =
+        mockMvc
+            .perform(
+                post("/collections/v1/{workspaceId}", workspaceId)
+                    .content(toJson(collectionServerModel))
+                    .contentType(MediaType.APPLICATION_JSON))
+            .andExpect(status().isForbidden())
+            .andReturn();
+
+    // verify error message
+    assertInstanceOf(AuthorizationException.class, mvcResult.getResolvedException());
+    assertEquals(
+        "TODO: message about requiring write permission",
+        mvcResult.getResolvedException().getMessage());
+
+    // new collection should not have been created
+    assertCollectionDoesNotExist(collectionId);
+  }
+
+  @Test
+  void createCollectionNoWorkspacePermission() throws Exception {
+    WorkspaceId workspaceId = WorkspaceId.of(UUID.randomUUID());
+    CollectionId collectionId = CollectionId.of(UUID.randomUUID());
+    String name = "test-name";
+    String description = "unit test description";
+
+    CollectionServerModel collectionServerModel = new CollectionServerModel(name, description);
+    collectionServerModel.id(collectionId.id());
+
+    stubWriteWorkspacePermission(workspaceId).thenReturn(false);
+    stubReadWorkspacePermission(workspaceId).thenReturn(false);
+
+    MvcResult mvcResult =
+        mockMvc
+            .perform(
+                post("/collections/v1/{workspaceId}", workspaceId)
+                    .content(toJson(collectionServerModel))
+                    .contentType(MediaType.APPLICATION_JSON))
+            .andExpect(status().isNotFound())
+            .andReturn();
+
+    // verify error message
+    assertInstanceOf(AuthenticationMaskableException.class, mvcResult.getResolvedException());
+    assertEquals(
+        "Workspace not found or you do not have permission to use it",
+        mvcResult.getResolvedException().getMessage());
+
+    // new collection should not have been created
+    assertCollectionDoesNotExist(collectionId);
+  }
 
   @Test
   void deleteCollection() throws Exception {
@@ -192,6 +374,8 @@ public class CollectionControllerMockMvcTest extends MockMvcTestBase {
   @Test
   void listCollectionsNoWorkspacePermission() {}
 
+  // ==================== test utilities
+
   private void assertCollectionExists(
       WorkspaceId workspaceId, CollectionId collectionId, String name, String description) {
     CollectionId actualCollectionId = assertCollectionExists(workspaceId, name, description);
@@ -213,6 +397,28 @@ public class CollectionControllerMockMvcTest extends MockMvcTestBase {
     assertEquals(name, actual.name(), "incorrect collection name");
     assertEquals(description, actual.description(), "incorrect collection description");
     return actual.collectionId();
+  }
+
+  private void assertCollectionDoesNotExist(CollectionId collectionId) {
+    assertThrows(
+        Exception.class,
+        () ->
+            namedTemplate.queryForObject(
+                "select id, workspace_id, name, description from sys_wds.collection where id = :collectionId",
+                new MapSqlParameterSource(Map.of("collectionId", collectionId.id())),
+                new CollectionRowMapper()));
+  }
+
+  private OngoingStubbing<Boolean> stubReadWorkspacePermission(WorkspaceId workspaceId) {
+    when(samAuthorizationDaoFactory.getSamAuthorizationDao(workspaceId))
+        .thenReturn(samAuthorizationDao);
+    return when(samAuthorizationDao.hasReadWorkspacePermission());
+  }
+
+  private OngoingStubbing<Boolean> stubWriteWorkspacePermission(WorkspaceId workspaceId) {
+    when(samAuthorizationDaoFactory.getSamAuthorizationDao(workspaceId))
+        .thenReturn(samAuthorizationDao);
+    return when(samAuthorizationDao.hasWriteWorkspacePermission());
   }
 
   static class CollectionRowMapper implements RowMapper<WdsCollection> {
