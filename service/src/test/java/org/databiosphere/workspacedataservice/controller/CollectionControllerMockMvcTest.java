@@ -24,7 +24,7 @@ import org.databiosphere.workspacedataservice.generated.CollectionServerModel;
 import org.databiosphere.workspacedataservice.sam.MockSamAuthorizationDao;
 import org.databiosphere.workspacedataservice.sam.SamAuthorizationDao;
 import org.databiosphere.workspacedataservice.sam.SamAuthorizationDaoFactory;
-import org.databiosphere.workspacedataservice.service.CollectionServiceV1;
+import org.databiosphere.workspacedataservice.service.CollectionService;
 import org.databiosphere.workspacedataservice.service.model.exception.AuthenticationMaskableException;
 import org.databiosphere.workspacedataservice.service.model.exception.AuthorizationException;
 import org.databiosphere.workspacedataservice.service.model.exception.ConflictException;
@@ -50,7 +50,7 @@ public class CollectionControllerMockMvcTest extends MockMvcTestBase {
 
   @Autowired private ObjectMapper objectMapper;
   @Autowired private NamedParameterJdbcTemplate namedTemplate;
-  @Autowired private CollectionServiceV1 collectionServiceV1;
+  @Autowired private CollectionService collectionService;
 
   @MockBean SamAuthorizationDaoFactory samAuthorizationDaoFactory;
 
@@ -59,7 +59,7 @@ public class CollectionControllerMockMvcTest extends MockMvcTestBase {
   /* TODO: this test causes other unit tests to fail.
       A WDS "collection" is two things: a row in the sys_wds.collection table, and a Postgres
       schema.
-      Because I haven't fully implemented CollectionServiceV1 yet, we are adding rows to the
+      Because I haven't fully implemented CollectionService yet, we are adding rows to the
       collection table but not creating the schemas. This gets things out of sync and other
       tests have a problem with that.
   */
@@ -153,7 +153,7 @@ public class CollectionControllerMockMvcTest extends MockMvcTestBase {
     stubWriteWorkspacePermission(workspaceId).thenReturn(true);
 
     // create the collection
-    collectionServiceV1.save(workspaceId, collectionServerModel);
+    collectionService.save(workspaceId, collectionServerModel);
     // assert it created
     assertCollectionExists(workspaceId, collectionId, name, description);
 
@@ -194,7 +194,7 @@ public class CollectionControllerMockMvcTest extends MockMvcTestBase {
     stubWriteWorkspacePermission(workspaceId).thenReturn(true);
 
     // create the collection
-    collectionServiceV1.save(workspaceId, collectionServerModel);
+    collectionService.save(workspaceId, collectionServerModel);
     // assert it created
     assertCollectionExists(workspaceId, collectionId, name, description);
 
@@ -333,7 +333,7 @@ public class CollectionControllerMockMvcTest extends MockMvcTestBase {
     CollectionServerModel collectionServerModel = new CollectionServerModel(name, description);
     collectionServerModel.id(collectionId.id());
 
-    collectionServiceV1.save(workspaceId, collectionServerModel);
+    collectionService.save(workspaceId, collectionServerModel);
 
     // assert it was created correctly
     assertCollectionExists(workspaceId, collectionId, name, description);
@@ -402,7 +402,7 @@ public class CollectionControllerMockMvcTest extends MockMvcTestBase {
     stubWriteWorkspacePermission(workspaceId).thenReturn(false);
     stubReadWorkspacePermission(workspaceId).thenReturn(true);
 
-    collectionServiceV1.save(workspaceId, collectionServerModel);
+    collectionService.save(workspaceId, collectionServerModel);
 
     // assert it was created correctly
     assertCollectionExists(workspaceId, collectionId, name, description);
@@ -432,7 +432,7 @@ public class CollectionControllerMockMvcTest extends MockMvcTestBase {
     stubWriteWorkspacePermission(workspaceId).thenReturn(false);
     stubReadWorkspacePermission(workspaceId).thenReturn(false);
 
-    collectionServiceV1.save(workspaceId, collectionServerModel);
+    collectionService.save(workspaceId, collectionServerModel);
 
     // assert it was created correctly
     assertCollectionExists(workspaceId, collectionId, name, description);
@@ -464,7 +464,7 @@ public class CollectionControllerMockMvcTest extends MockMvcTestBase {
       CollectionServerModel collectionServerModel = new CollectionServerModel(name, description);
       collectionServerModel.id(collectionId.id());
 
-      collectionServiceV1.save(workspaceId, collectionServerModel);
+      collectionService.save(workspaceId, collectionServerModel);
 
       // assert it was created correctly
       assertCollectionExists(workspaceId, collectionId, name, description);
@@ -524,7 +524,7 @@ public class CollectionControllerMockMvcTest extends MockMvcTestBase {
     stubWriteWorkspacePermission(workspaceId).thenReturn(false);
     stubReadWorkspacePermission(workspaceId).thenReturn(false);
 
-    collectionServiceV1.save(workspaceId, collectionServerModel);
+    collectionService.save(workspaceId, collectionServerModel);
 
     // assert it was created correctly
     assertCollectionExists(workspaceId, collectionId, name, description);

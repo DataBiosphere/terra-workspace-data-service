@@ -5,7 +5,7 @@ import java.util.UUID;
 import org.databiosphere.workspacedataservice.annotations.DeploymentMode.DataPlane;
 import org.databiosphere.workspacedataservice.generated.CollectionApi;
 import org.databiosphere.workspacedataservice.generated.CollectionServerModel;
-import org.databiosphere.workspacedataservice.service.CollectionServiceV1;
+import org.databiosphere.workspacedataservice.service.CollectionService;
 import org.databiosphere.workspacedataservice.shared.model.CollectionId;
 import org.databiosphere.workspacedataservice.shared.model.WorkspaceId;
 import org.springframework.http.HttpStatus;
@@ -20,10 +20,10 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 public class CollectionController implements CollectionApi {
 
-  private final CollectionServiceV1 collectionServiceV1;
+  private final CollectionService collectionService;
 
-  public CollectionController(CollectionServiceV1 collectionServiceV1) {
-    this.collectionServiceV1 = collectionServiceV1;
+  public CollectionController(CollectionService collectionService) {
+    this.collectionService = collectionService;
   }
 
   /**
@@ -39,7 +39,7 @@ public class CollectionController implements CollectionApi {
   public ResponseEntity<CollectionServerModel> createCollectionV1(
       UUID workspaceId, CollectionServerModel collectionServerModel) {
     CollectionServerModel coll =
-        collectionServiceV1.save(WorkspaceId.of(workspaceId), collectionServerModel);
+        collectionService.save(WorkspaceId.of(workspaceId), collectionServerModel);
     return new ResponseEntity<>(coll, HttpStatus.CREATED);
   }
 
@@ -52,7 +52,7 @@ public class CollectionController implements CollectionApi {
    */
   @Override
   public ResponseEntity<Void> deleteCollectionV1(UUID workspaceId, UUID collectionId) {
-    collectionServiceV1.delete(WorkspaceId.of(workspaceId), CollectionId.of(collectionId));
+    collectionService.delete(WorkspaceId.of(workspaceId), CollectionId.of(collectionId));
     return new ResponseEntity<>(HttpStatus.NO_CONTENT);
   }
 
@@ -78,7 +78,7 @@ public class CollectionController implements CollectionApi {
    */
   @Override
   public ResponseEntity<List<CollectionServerModel>> listCollectionsV1(UUID workspaceId) {
-    List<CollectionServerModel> collections = collectionServiceV1.list(WorkspaceId.of(workspaceId));
+    List<CollectionServerModel> collections = collectionService.list(WorkspaceId.of(workspaceId));
     return new ResponseEntity<>(collections, HttpStatus.OK);
   }
 
