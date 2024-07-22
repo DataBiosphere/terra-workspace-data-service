@@ -17,6 +17,7 @@ import org.databiosphere.workspacedataservice.dao.CollectionRepository;
 import org.databiosphere.workspacedataservice.generated.CollectionServerModel;
 import org.databiosphere.workspacedataservice.sam.SamAuthorizationDao;
 import org.databiosphere.workspacedataservice.sam.SamAuthorizationDaoFactory;
+import org.databiosphere.workspacedataservice.service.model.exception.AuthenticationMaskableException;
 import org.databiosphere.workspacedataservice.service.model.exception.AuthorizationException;
 import org.databiosphere.workspacedataservice.service.model.exception.CollectionException;
 import org.databiosphere.workspacedataservice.service.model.exception.ConflictException;
@@ -78,7 +79,10 @@ public class CollectionService {
   public CollectionServerModel save(
       WorkspaceId workspaceId, CollectionServerModel collectionServerModel) {
 
-    // TODO: check if user has write permission on this workspace
+    // check that the current user has permission on the parent workspace
+    if (!canCreateCollection(workspaceId)) {
+      throw new AuthorizationException("Caller does not have permission to create collection.");
+    }
     // TODO: validate name against the CollectionServerModel.getName() pattern
     // TODO: create the schema in Postgres
 
@@ -120,6 +124,10 @@ public class CollectionService {
   public void delete(WorkspaceId workspaceId, CollectionId collectionId) {
     // TODO: ensure this collection belongs to this workspace
     // TODO: check if user has write permission on this workspace
+    // check that the current user has permission to delete the Sam resource
+    if (!canDeleteCollection(collectionId)) {
+      throw new AuthorizationException("Caller does not have permission to delete collection.");
+    }
     // TODO: delete the schema from Postgres
 
     collectionRepository.deleteById(collectionId.id());
@@ -132,7 +140,9 @@ public class CollectionService {
    * @return all collections in the given workspace
    */
   public List<CollectionServerModel> list(WorkspaceId workspaceId) {
-    // TODO: check if user has read permission on this workspace
+    if (!canListCollections(workspaceId)) {
+      throw new AuthenticationMaskableException("Workspace");
+    }
 
     Iterable<WdsCollection> found = collectionRepository.findByWorkspace(workspaceId);
     // map the WdsCollection to CollectionServerModel
@@ -254,6 +264,10 @@ public class CollectionService {
     if (!collectionDao.collectionSchemaExists(CollectionId.of(collectionId))) {
       throw new MissingObjectException("Collection");
     }
+  }
+
+  public boolean canListCollections(WorkspaceId workspaceId) {
+    return getSamAuthorizationDao(workspaceId).hasReadWorkspacePermission();
   }
 
   public boolean canReadCollection(CollectionId collectionId) {
