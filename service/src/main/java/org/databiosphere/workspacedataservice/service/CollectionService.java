@@ -81,10 +81,17 @@ public class CollectionService {
 
     // check that the current user has permission on the parent workspace
     if (!canCreateCollection(workspaceId)) {
-      throw new AuthorizationException("Caller does not have permission to create collection.");
+      // the user doesn't have permission to create a new collection.
+      // do they have permission to read the workspace at all?
+      if (canReadWorkspace(workspaceId)) {
+        throw new AuthorizationException("Caller does not have permission to create collection.");
+      } else {
+        throw new AuthenticationMaskableException("Workspace");
+      }
     }
     // TODO: validate name against the CollectionServerModel.getName() pattern
     // TODO: create the schema in Postgres
+    // TODO: activity logging
 
     // if user did not specify an id, generate one
     CollectionId collectionId;
@@ -124,11 +131,17 @@ public class CollectionService {
   public void delete(WorkspaceId workspaceId, CollectionId collectionId) {
     // TODO: ensure this collection belongs to this workspace
     // TODO: check if user has write permission on this workspace
-    // check that the current user has permission to delete the Sam resource
+    // check that the current user has permission to delete the collection
     if (!canDeleteCollection(collectionId)) {
-      throw new AuthorizationException("Caller does not have permission to delete collection.");
+      // if they can't delete, check read permissions to determine the appropriate error
+      if (canListCollections(workspaceId)) {
+        throw new AuthorizationException("Caller does not have permission to delete collection.");
+      } else {
+        throw new AuthenticationMaskableException("Workspace");
+      }
     }
     // TODO: delete the schema from Postgres
+    // TODO: activity logging
 
     collectionRepository.deleteById(collectionId.id());
   }
@@ -267,23 +280,31 @@ public class CollectionService {
   }
 
   public boolean canListCollections(WorkspaceId workspaceId) {
-    return getSamAuthorizationDao(workspaceId).hasReadWorkspacePermission();
+    return canReadWorkspace(workspaceId);
   }
 
   public boolean canReadCollection(CollectionId collectionId) {
-    return getSamAuthorizationDao(getWorkspaceId(collectionId)).hasReadWorkspacePermission();
+    return canReadWorkspace(getWorkspaceId(collectionId));
   }
 
   public boolean canWriteCollection(CollectionId collectionId) {
-    return getSamAuthorizationDao(getWorkspaceId(collectionId)).hasWriteWorkspacePermission();
+    return canWriteWorkspace(getWorkspaceId(collectionId));
   }
 
   private boolean canCreateCollection(WorkspaceId workspaceId) {
-    return getSamAuthorizationDao(workspaceId).hasWriteWorkspacePermission();
+    return canWriteWorkspace(workspaceId);
   }
 
   private boolean canDeleteCollection(CollectionId collectionId) {
-    return getSamAuthorizationDao(getWorkspaceId(collectionId)).hasWriteWorkspacePermission();
+    return canWriteWorkspace(getWorkspaceId(collectionId));
+  }
+
+  private boolean canReadWorkspace(WorkspaceId workspaceId) {
+    return getSamAuthorizationDao(workspaceId).hasReadWorkspacePermission();
+  }
+
+  private boolean canWriteWorkspace(WorkspaceId workspaceId) {
+    return getSamAuthorizationDao(workspaceId).hasWriteWorkspacePermission();
   }
 
   /**

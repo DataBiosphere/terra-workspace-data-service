@@ -19,6 +19,7 @@ import java.sql.SQLException;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import org.databiosphere.workspacedata.model.ErrorResponse;
 import org.databiosphere.workspacedataservice.generated.CollectionServerModel;
 import org.databiosphere.workspacedataservice.sam.MockSamAuthorizationDao;
 import org.databiosphere.workspacedataservice.sam.SamAuthorizationDao;
@@ -316,10 +317,15 @@ public class CollectionControllerMockMvcTest extends MockMvcTestBase {
             .andReturn();
 
     // verify error message
-    assertInstanceOf(AuthenticationMaskableException.class, mvcResult.getResolvedException());
+    AuthenticationMaskableException actual =
+        assertInstanceOf(AuthenticationMaskableException.class, mvcResult.getResolvedException());
+    assertEquals("Workspace", actual.getObjectType());
+
+    ErrorResponse errorResponse =
+        objectMapper.readValue(mvcResult.getResponse().getContentAsString(), ErrorResponse.class);
     assertEquals(
-        "Workspace not found or you do not have permission to use it",
-        mvcResult.getResolvedException().getMessage());
+        "Workspace does not exist or you do not have permission to see it",
+        errorResponse.getMessage());
 
     // new collection should not have been created
     assertCollectionDoesNotExist(collectionId);
