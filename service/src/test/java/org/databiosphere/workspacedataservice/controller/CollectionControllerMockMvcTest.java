@@ -1,5 +1,6 @@
 package org.databiosphere.workspacedataservice.controller;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
@@ -8,12 +9,15 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import org.databiosphere.workspacedataservice.generated.CollectionServerModel;
@@ -28,7 +32,6 @@ import org.databiosphere.workspacedataservice.shared.model.CollectionId;
 import org.databiosphere.workspacedataservice.shared.model.WdsCollection;
 import org.databiosphere.workspacedataservice.shared.model.WorkspaceId;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.mockito.stubbing.OngoingStubbing;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -243,7 +246,7 @@ public class CollectionControllerMockMvcTest extends MockMvcTestBase {
                 post("/collections/v1/{workspaceId}", workspaceId)
                     .content(toJson(collectionServerModel))
                     .contentType(MediaType.APPLICATION_JSON))
-            .andExpect(status().isConflict())
+            .andExpect(status().isBadRequest())
             .andReturn();
 
     // verify error message
@@ -335,6 +338,8 @@ public class CollectionControllerMockMvcTest extends MockMvcTestBase {
     // assert it was created correctly
     assertCollectionExists(workspaceId, collectionId, name, description);
 
+    stubWriteWorkspacePermission(workspaceId).thenReturn(true);
+
     // now delete it
     mockMvc
         .perform(delete("/collections/v1/{workspaceId}/{collectionId}", workspaceId, collectionId))
@@ -350,29 +355,186 @@ public class CollectionControllerMockMvcTest extends MockMvcTestBase {
         "collection should no longer exist");
   }
 
-  @Disabled
   @Test
-  void deleteNonexistentCollection() {}
+  void deleteNonexistentCollectionReadPemission() throws Exception {
+    WorkspaceId workspaceId = WorkspaceId.of(UUID.randomUUID());
+    CollectionId collectionId = CollectionId.of(UUID.randomUUID());
 
-  @Disabled
-  @Test
-  void deleteCollectionReadonlyWorkspacePermission() {}
+    // mock read-only permission
+    stubWriteWorkspacePermission(workspaceId).thenReturn(false);
+    stubReadWorkspacePermission(workspaceId).thenReturn(true);
 
-  @Disabled
-  @Test
-  void deleteCollectionNoWorkspacePermission() {}
+    // attempt to delete a random UUID
+    mockMvc
+        .perform(delete("/collections/v1/{workspaceId}/{collectionId}", workspaceId, collectionId))
+        .andExpect(status().isNotFound())
+        .andReturn();
+  }
 
-  @Disabled
   @Test
-  void listCollections() {}
+  void deleteNonexistentCollectionNoPemission() throws Exception {
+    WorkspaceId workspaceId = WorkspaceId.of(UUID.randomUUID());
+    CollectionId collectionId = CollectionId.of(UUID.randomUUID());
 
-  @Disabled
-  @Test
-  void listCollectionsEmpty() {}
+    // mock no permission
+    stubWriteWorkspacePermission(workspaceId).thenReturn(false);
+    stubReadWorkspacePermission(workspaceId).thenReturn(false);
 
-  @Disabled
+    // attempt to delete a random UUID
+    mockMvc
+        .perform(delete("/collections/v1/{workspaceId}/{collectionId}", workspaceId, collectionId))
+        .andExpect(status().isNotFound())
+        .andReturn();
+  }
+
   @Test
-  void listCollectionsNoWorkspacePermission() {}
+  void deleteCollectionReadonlyWorkspacePermission() throws Exception {
+    // create a collection as setup, so we can ensure it deletes
+    WorkspaceId workspaceId = WorkspaceId.of(UUID.randomUUID());
+    CollectionId collectionId = CollectionId.of(UUID.randomUUID());
+    String name = "test-name";
+    String description = "unit test description";
+
+    CollectionServerModel collectionServerModel = new CollectionServerModel(name, description);
+    collectionServerModel.id(collectionId.id());
+
+    // mock read-only permission
+    stubWriteWorkspacePermission(workspaceId).thenReturn(false);
+    stubReadWorkspacePermission(workspaceId).thenReturn(true);
+
+    collectionServiceV1.save(workspaceId, collectionServerModel);
+
+    // assert it was created correctly
+    assertCollectionExists(workspaceId, collectionId, name, description);
+
+    // now delete it
+    mockMvc
+        .perform(delete("/collections/v1/{workspaceId}/{collectionId}", workspaceId, collectionId))
+        .andExpect(status().isForbidden())
+        .andReturn();
+
+    // assert collection was not deleted
+    assertCollectionExists(workspaceId, collectionId, name, description);
+  }
+
+  @Test
+  void deleteCollectionNoWorkspacePermission() throws Exception {
+    // create a collection as setup, so we can ensure it deletes
+    WorkspaceId workspaceId = WorkspaceId.of(UUID.randomUUID());
+    CollectionId collectionId = CollectionId.of(UUID.randomUUID());
+    String name = "test-name";
+    String description = "unit test description";
+
+    CollectionServerModel collectionServerModel = new CollectionServerModel(name, description);
+    collectionServerModel.id(collectionId.id());
+
+    // mock no permission
+    stubWriteWorkspacePermission(workspaceId).thenReturn(false);
+    stubReadWorkspacePermission(workspaceId).thenReturn(false);
+
+    collectionServiceV1.save(workspaceId, collectionServerModel);
+
+    // assert it was created correctly
+    assertCollectionExists(workspaceId, collectionId, name, description);
+
+    // now delete it
+    mockMvc
+        .perform(delete("/collections/v1/{workspaceId}/{collectionId}", workspaceId, collectionId))
+        .andExpect(status().isNotFound())
+        .andReturn();
+
+    // assert collection was not deleted
+    assertCollectionExists(workspaceId, collectionId, name, description);
+  }
+
+  @Test
+  void listCollections() throws Exception {
+    var testSize = 4;
+    WorkspaceId workspaceId = WorkspaceId.of(UUID.randomUUID());
+
+    // mock read permission
+    stubReadWorkspacePermission(workspaceId).thenReturn(true);
+
+    for (int i = 0; i < testSize; i++) {
+      // create another collection
+      CollectionId collectionId = CollectionId.of(UUID.randomUUID());
+      String name = "test-name-" + i;
+      String description = "unit test description " + i;
+
+      CollectionServerModel collectionServerModel = new CollectionServerModel(name, description);
+      collectionServerModel.id(collectionId.id());
+
+      collectionServiceV1.save(workspaceId, collectionServerModel);
+
+      // assert it was created correctly
+      assertCollectionExists(workspaceId, collectionId, name, description);
+
+      // list collections
+      MvcResult mvcResult =
+          mockMvc
+              .perform(get("/collections/v1/{workspaceId}", workspaceId))
+              .andExpect(status().isOk())
+              .andReturn();
+
+      List<CollectionServerModel> collectionServerModelList =
+          objectMapper.readValue(
+              mvcResult.getResponse().getContentAsString(), new TypeReference<>() {});
+
+      assertEquals(i, collectionServerModelList.size());
+      List<UUID> ids =
+          collectionServerModelList.stream().map(CollectionServerModel::getId).toList();
+      assertThat(ids).contains(collectionId.id());
+    }
+  }
+
+  @Test
+  void listCollectionsEmpty() throws Exception {
+    // create a collection as setup, so we can ensure it deletes
+    WorkspaceId workspaceId = WorkspaceId.of(UUID.randomUUID());
+
+    // mock read-only permission
+    stubReadWorkspacePermission(workspaceId).thenReturn(true);
+
+    // list collections
+    MvcResult mvcResult =
+        mockMvc
+            .perform(get("/collections/v1/{workspaceId}", workspaceId))
+            .andExpect(status().isOk())
+            .andReturn();
+
+    List<CollectionServerModel> collectionServerModelList =
+        objectMapper.readValue(
+            mvcResult.getResponse().getContentAsString(), new TypeReference<>() {});
+
+    assertEquals(0, collectionServerModelList.size());
+  }
+
+  @Test
+  void listCollectionsNoWorkspacePermission() throws Exception {
+    // create a collection as setup, so we can ensure it deletes
+    WorkspaceId workspaceId = WorkspaceId.of(UUID.randomUUID());
+    CollectionId collectionId = CollectionId.of(UUID.randomUUID());
+    String name = "test-name";
+    String description = "unit test description";
+
+    CollectionServerModel collectionServerModel = new CollectionServerModel(name, description);
+    collectionServerModel.id(collectionId.id());
+
+    // mock no permission
+    stubWriteWorkspacePermission(workspaceId).thenReturn(false);
+    stubReadWorkspacePermission(workspaceId).thenReturn(false);
+
+    collectionServiceV1.save(workspaceId, collectionServerModel);
+
+    // assert it was created correctly
+    assertCollectionExists(workspaceId, collectionId, name, description);
+
+    // now delete it
+    mockMvc
+        .perform(get("/collections/v1/{workspaceId}", workspaceId))
+        .andExpect(status().isNotFound())
+        .andReturn();
+  }
 
   // ==================== test utilities
 
