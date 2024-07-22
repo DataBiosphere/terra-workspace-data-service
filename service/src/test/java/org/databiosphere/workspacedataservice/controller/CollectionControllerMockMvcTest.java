@@ -455,7 +455,7 @@ public class CollectionControllerMockMvcTest extends MockMvcTestBase {
     // mock read permission
     stubReadWorkspacePermission(workspaceId).thenReturn(true);
 
-    for (int i = 0; i < testSize; i++) {
+    for (int i = 1; i < testSize; i++) {
       // create another collection
       CollectionId collectionId = CollectionId.of(UUID.randomUUID());
       String name = "test-name-" + i;
