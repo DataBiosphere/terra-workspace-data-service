@@ -91,7 +91,7 @@ jobs:
 
           if [[ -n "${{ env.VERSION_FILE_PATH }}" && -n "${{ env.VERSION_LINE_MATCH }}" ]]; then
             while IFS= read -r line; do
-              if [[ $line =~ ${{ env.VERSION_LINE_MATCH }} ]]; then
+              if [[ $line =~ "${{ env.VERSION_LINE_MATCH }}" ]]; then
                 # Extract the captured group (version line match)
                 version_line="${BASH_REMATCH[1]}"
                 echo "Version line: $version_line"
