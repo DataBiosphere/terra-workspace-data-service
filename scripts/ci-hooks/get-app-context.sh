@@ -61,7 +61,7 @@ mask_token
 
 action_type=$(jq -r '.action' "$GITHUB_EVENT_PATH")
 echo "action_type=$action_type"
-if [ "$GITHUB_EVENT_NAME" == "pull_request" ]]; then
+if [ "$GITHUB_EVENT_NAME" == "pull_request" ]; then
   pr_sha=$(jq -r '.pull_request.head.sha' < "$GITHUB_EVENT_PATH")
   echo "pr_sha=${pr_sha}"
   get_app_context_from_artifact "$pr_sha"
