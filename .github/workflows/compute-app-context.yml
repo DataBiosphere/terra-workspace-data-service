@@ -32,7 +32,7 @@ env:
   DEFAULT_BUMP: patch
   MAINLINE: main
   VERSION_FILE_PATH: build.gradle
-  VERSION_LINE_MATCH: "^\\s*version\\s*=\\s*'.*'"
+  VERSION_LINE_MATCH: "^[ \t]*version[ \t]*=[ \t]*'(.*)'"
 
 jobs:
   bumper-job:
@@ -89,6 +89,16 @@ jobs:
           short_sha=${{ needs.bumper-job.outputs.app_short_sha }}
           dotenv="${short_sha}.env"
 
+          if [[ -n "${{ env.VERSION_FILE_PATH }}" && -n "${{ env.VERSION_LINE_MATCH }}" ]]; then
+            while IFS= read -r line; do
+              if [[ $line =~ ${{ env.VERSION_LINE_MATCH }} ]]; then
+                # Extract the captured group (version line match)
+                version_line="${BASH_REMATCH[1]}"
+                echo "Version line: $version_line"
+              fi
+            done < ${{ env.VERSION_FILE_PATH }}
+          fi
+
           cat <<EOF > $dotenv
           APP_VERSION=${{ needs.bumper-job.outputs.new_tag }}
           APP_BRANCH=${{ needs.bumper-job.outputs.app_branch }}
@@ -101,7 +111,8 @@ jobs:
           REPOSITORY_OWNER=${{ github.repository_owner }}
           REPOSITORY_URL=https://github.com/${{ github.repository }}
           VERSION_FILE_PATH=${{ env.VERSION_FILE_PATH }}
-          VERSION_LINE_MATCH=${{ env.VERSION_LINE_MATCH }}
+          VERSION_LINE_PATTERN=${{ env.VERSION_LINE_MATCH }}
+          VERSION_LINE_MATCH=${version_line}
           EOF
 
           cat $dotenv

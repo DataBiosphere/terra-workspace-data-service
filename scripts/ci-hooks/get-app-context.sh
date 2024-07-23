@@ -57,12 +57,6 @@ function get_app_context_from_artifact {
   exit 1
 }
 
-function get_version_from_file {
-  local version_file='./path/to/version_file.txt'
-  app_version=$(cat $version_file)
-  echo "app_version=$app_version" >> $GITHUB_OUTPUT
-}
-
 mask_token
 
 if [ "$GITHUB_EVENT_NAME" == "pull_request" ]; then
