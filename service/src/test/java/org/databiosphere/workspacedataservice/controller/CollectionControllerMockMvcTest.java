@@ -573,10 +573,15 @@ public class CollectionControllerMockMvcTest extends MockMvcTestBase {
             .andExpect(status().isNotFound())
             .andReturn();
 
-    assertInstanceOf(AuthenticationMaskableException.class, mvcResult.getResolvedException());
+    AuthenticationMaskableException actual =
+        assertInstanceOf(AuthenticationMaskableException.class, mvcResult.getResolvedException());
+    assertEquals("Workspace", actual.getObjectType());
+
+    ErrorResponse errorResponse =
+        objectMapper.readValue(mvcResult.getResponse().getContentAsString(), ErrorResponse.class);
     assertEquals(
-        "Workspace not found or you do not have permission to use it",
-        mvcResult.getResolvedException().getMessage());
+        "Workspace does not exist or you do not have permission to see it",
+        errorResponse.getMessage());
   }
 
   // ==================== test utilities
