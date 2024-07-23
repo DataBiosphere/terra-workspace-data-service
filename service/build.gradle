@@ -49,7 +49,7 @@ dependencies {
     // Azure libraries
     // do not upgrade app insights past 3.5.1 until AJ-1897 is resolved
     implementation 'com.microsoft.azure:applicationinsights-runtime-attach:3.5.3'
-    implementation 'com.azure:azure-storage-blob:12.26.1'
+    implementation 'com.azure:azure-storage-blob:12.27.0'
     implementation 'com.azure:azure-identity-extensions:1.1.17' // postgres password plugin
 
     implementation 'org.springframework.boot:spring-boot-starter'
@@ -67,7 +67,7 @@ dependencies {
     implementation 'org.postgresql:postgresql'
     implementation 'org.webjars:webjars-locator-core' // versioned by spring dependency management
     implementation 'com.fasterxml.jackson.dataformat:jackson-dataformat-csv'
-    implementation 'io.sentry:sentry-logback:7.11.0'
+    implementation 'io.sentry:sentry-logback:7.12.0'
     implementation 'net.logstash.logback:logstash-logback-encoder:7.4'
     implementation 'org.codehaus.janino:janino'
     implementation 'org.liquibase:liquibase-core'
@@ -87,7 +87,7 @@ dependencies {
     implementation 'com.squareup.okhttp3:okhttp' // required by Sam client
     implementation "bio.terra:datarepo-client:2.13.0-SNAPSHOT"
     implementation "bio.terra:workspace-manager-client:0.254.983-SNAPSHOT"
-    implementation "bio.terra:java-pfb-library:0.48.0"
+    implementation "bio.terra:java-pfb-library:0.49.0"
     implementation project(path: ':client')
 
     // Parquet, used for TDR snapshot import
