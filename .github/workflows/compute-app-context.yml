@@ -32,7 +32,7 @@ env:
   DEFAULT_BUMP: patch
   MAINLINE: main
   VERSION_FILE_PATH: build.gradle
-  VERSION_LINE_MATCH: "^[ \t]*version[ \t]*=[ \t]*'(.*)'"
+  VERSION_LINE_MATCH: "^[ \\t]*version[ \\t]*=[ \\t]*'(.*)'"
 
 jobs:
   bumper-job:
@@ -51,6 +51,7 @@ jobs:
       app_branch: ${{ steps.ghctx.outputs.app_branch }}
       app_sha: ${{ steps.ghctx.outputs.app_sha }}
       app_short_sha: ${{ steps.ghctx.outputs.app_short_sha }}
+      version_line: ${{ steps.match-version-line.outputs.version_line }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -78,6 +79,18 @@ jobs:
           VERSION_LINE_MATCH: ${{ env.VERSION_LINE_MATCH }}
           VERSION_SUFFIX: SNAPSHOT
 
+      - id: match-version-line
+        run: |
+          if [[ -n "${{ env.VERSION_FILE_PATH }}" && -n "${{ env.VERSION_LINE_MATCH }}" ]]; then
+            while IFS= read -r line; do
+              if [[ $line =~ "${{ env.VERSION_LINE_MATCH }}" ]]; then
+                # Extract the captured group (version line match)
+                version_line="${BASH_REMATCH[1]}"
+                echo "version_line=$version_line" >> $GITHUB_OUTPUT
+              fi
+            done < ${{ env.VERSION_FILE_PATH }}
+          fi
+
   upload-app-context-dotenv:
     runs-on: ubuntu-latest
     needs: [ bumper-job ]
@@ -88,16 +101,6 @@ jobs:
           # App Context related info is stored in .env file
           short_sha=${{ needs.bumper-job.outputs.app_short_sha }}
           dotenv="${short_sha}.env"
-
-          if [[ -n "${{ env.VERSION_FILE_PATH }}" && -n "${{ env.VERSION_LINE_MATCH }}" ]]; then
-            while IFS= read -r line; do
-              if [[ $line =~ "${{ env.VERSION_LINE_MATCH }}" ]]; then
-                # Extract the captured group (version line match)
-                version_line="${BASH_REMATCH[1]}"
-                echo "Version line: $version_line"
-              fi
-            done < ${{ env.VERSION_FILE_PATH }}
-          fi
 
           cat <<EOF > $dotenv
           APP_VERSION=${{ needs.bumper-job.outputs.new_tag }}
@@ -112,7 +115,7 @@ jobs:
           REPOSITORY_URL=https://github.com/${{ github.repository }}
           VERSION_FILE_PATH=${{ env.VERSION_FILE_PATH }}
           VERSION_LINE_PATTERN=${{ env.VERSION_LINE_MATCH }}
-          VERSION_LINE_MATCH=${version_line}
+          VERSION_LINE_MATCH=${{ needs.bumper-job.outputs.version_line }}
           EOF
 
           cat $dotenv
