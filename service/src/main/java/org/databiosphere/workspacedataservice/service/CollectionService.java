@@ -22,6 +22,7 @@ import org.databiosphere.workspacedataservice.service.model.exception.Authorizat
 import org.databiosphere.workspacedataservice.service.model.exception.CollectionException;
 import org.databiosphere.workspacedataservice.service.model.exception.ConflictException;
 import org.databiosphere.workspacedataservice.service.model.exception.MissingObjectException;
+import org.databiosphere.workspacedataservice.service.model.exception.ValidationException;
 import org.databiosphere.workspacedataservice.shared.model.CollectionId;
 import org.databiosphere.workspacedataservice.shared.model.WdsCollection;
 import org.databiosphere.workspacedataservice.shared.model.WdsCollectionCreateRequest;
@@ -129,17 +130,30 @@ public class CollectionService {
    * @param collectionId id of the collection to be deleted
    */
   public void delete(WorkspaceId workspaceId, CollectionId collectionId) {
-    // TODO: ensure this collection belongs to this workspace
-    // TODO: check if user has write permission on this workspace
+    // validate permissions
+    boolean canWriteWorkspace = canWriteWorkspace(workspaceId);
+    boolean canReadWorkspace = canReadWorkspace(workspaceId);
+
     // check that the current user has permission to delete the collection
-    if (!canDeleteCollection(collectionId)) {
-      // if they can't delete, check read permissions to determine the appropriate error
-      if (canListCollections(workspaceId)) {
-        throw new AuthorizationException("Caller does not have permission to delete collection.");
+    if (!canWriteWorkspace) {
+      // the user doesn't have permission to delete the collection.
+      // do they have permission to list collections in the workspace?
+      if (canReadWorkspace) {
+        throw new AuthorizationException(
+            "Caller does not have permission to delete collections from this workspace.");
       } else {
         throw new AuthenticationMaskableException("Workspace");
       }
     }
+
+    // user is permitted to delete collections (can write the workspace); now, validate the
+    // collection
+    WorkspaceId collectionWorkspace = getWorkspaceId(collectionId);
+    // ensure this collection belongs to this workspace
+    if (!collectionWorkspace.equals(workspaceId)) {
+      throw new ValidationException("Collection does not belong to the specified workspace");
+    }
+
     // TODO: delete the schema from Postgres
     // TODO: activity logging
 

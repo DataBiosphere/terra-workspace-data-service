@@ -28,7 +28,6 @@ import org.databiosphere.workspacedataservice.service.CollectionService;
 import org.databiosphere.workspacedataservice.service.model.exception.AuthenticationMaskableException;
 import org.databiosphere.workspacedataservice.service.model.exception.AuthorizationException;
 import org.databiosphere.workspacedataservice.service.model.exception.ConflictException;
-import org.databiosphere.workspacedataservice.service.model.exception.MissingObjectException;
 import org.databiosphere.workspacedataservice.service.model.exception.ValidationException;
 import org.databiosphere.workspacedataservice.shared.model.CollectionId;
 import org.databiosphere.workspacedataservice.shared.model.WdsCollection;
@@ -359,16 +358,23 @@ public class CollectionControllerMockMvcTest extends MockMvcTestBase {
     stubWriteWorkspacePermission(workspaceId).thenReturn(false);
     stubReadWorkspacePermission(workspaceId).thenReturn(true);
 
+    // this test has two failure conditions:
+    // 1) the user doesn't have permissions to delete collections
+    // 2) the collection doesn't exist
+    // our code checks the first condition first, so that's the error we expect below
+
     // attempt to delete a random UUID
     MvcResult mvcResult =
         mockMvc
             .perform(
                 delete("/collections/v1/{workspaceId}/{collectionId}", workspaceId, collectionId))
-            .andExpect(status().isNotFound())
+            .andExpect(status().isForbidden())
             .andReturn();
 
-    assertInstanceOf(MissingObjectException.class, mvcResult.getResolvedException());
-    assertEquals("Collection does not exist", mvcResult.getResolvedException().getMessage());
+    assertInstanceOf(AuthorizationException.class, mvcResult.getResolvedException());
+    assertEquals(
+        "403 FORBIDDEN \"Caller does not have permission to delete collections from this workspace.\"",
+        mvcResult.getResolvedException().getMessage());
   }
 
   @Test
@@ -388,10 +394,15 @@ public class CollectionControllerMockMvcTest extends MockMvcTestBase {
             .andExpect(status().isNotFound())
             .andReturn();
 
-    assertInstanceOf(AuthenticationMaskableException.class, mvcResult.getResolvedException());
+    AuthenticationMaskableException actual =
+        assertInstanceOf(AuthenticationMaskableException.class, mvcResult.getResolvedException());
+    assertEquals("Workspace", actual.getObjectType());
+
+    ErrorResponse errorResponse =
+        objectMapper.readValue(mvcResult.getResponse().getContentAsString(), ErrorResponse.class);
     assertEquals(
-        "Collection does not exist or you do not have permission to use it",
-        mvcResult.getResolvedException().getMessage());
+        "Workspace does not exist or you do not have permission to see it",
+        errorResponse.getMessage());
   }
 
   @Test
