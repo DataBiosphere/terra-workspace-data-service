@@ -1,6 +1,7 @@
 package org.databiosphere.workspacedataservice.controller;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.databiosphere.workspacedataservice.dao.SqlUtils.quote;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -32,8 +33,10 @@ import org.databiosphere.workspacedataservice.service.model.exception.Validation
 import org.databiosphere.workspacedataservice.shared.model.CollectionId;
 import org.databiosphere.workspacedataservice.shared.model.WdsCollection;
 import org.databiosphere.workspacedataservice.shared.model.WorkspaceId;
+import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestInstance;
 import org.mockito.stubbing.OngoingStubbing;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.mock.mockito.MockBean;
@@ -49,6 +52,7 @@ import org.springframework.test.web.servlet.MvcResult;
 @ActiveProfiles(profiles = {"mock-sam"})
 @DirtiesContext
 @TestPropertySource(properties = {"twds.tenancy.enforce-collections-match-workspace-id=false"})
+@TestInstance(TestInstance.Lifecycle.PER_CLASS)
 public class CollectionControllerMockMvcTest extends MockMvcTestBase {
 
   @Autowired private ObjectMapper objectMapper;
@@ -59,18 +63,29 @@ public class CollectionControllerMockMvcTest extends MockMvcTestBase {
 
   private final SamAuthorizationDao samAuthorizationDao = spy(MockSamAuthorizationDao.allowAll());
 
-  /* TODO: this test causes other unit tests to fail.
-      A WDS "collection" is two things: a row in the sys_wds.collection table, and a Postgres
-      schema.
-      Because I haven't fully implemented CollectionService yet, we are adding rows to the
-      collection table but not creating the schemas. This gets things out of sync and other
-      tests have a problem with that.
-  */
+  // delete all collections, across all workspaces
+  private void cleanupAll() {
+    List<UUID> collIds =
+        namedTemplate.queryForList(
+            "select distinct id from sys_wds.collection", Map.of(), UUID.class);
+    collIds.forEach(
+        collId -> {
+          CollectionId collectionId = CollectionId.of(collId);
+          namedTemplate
+              .getJdbcTemplate()
+              .update("drop schema " + quote(collectionId.toString()) + " cascade");
+        });
+    namedTemplate.getJdbcTemplate().update("delete from sys_wds.collection");
+  }
 
   @BeforeEach
   void beforeEach() {
-    // empty out the collection table so each test starts fresh
-    namedTemplate.update("delete from sys_wds.collection", Map.of());
+    cleanupAll();
+  }
+
+  @AfterAll
+  void afterAll() {
+    cleanupAll();
   }
 
   @Test
@@ -426,7 +441,7 @@ public class CollectionControllerMockMvcTest extends MockMvcTestBase {
 
     assertInstanceOf(AuthorizationException.class, mvcResult.getResolvedException());
     assertEquals(
-        "403 FORBIDDEN \"Caller does not have permission to delete collection.\"",
+        "403 FORBIDDEN \"Caller does not have permission to delete collections from this workspace.\"",
         mvcResult.getResolvedException().getMessage());
 
     // assert collection was not deleted
@@ -517,6 +532,7 @@ public class CollectionControllerMockMvcTest extends MockMvcTestBase {
     WorkspaceId workspaceId = WorkspaceId.of(UUID.randomUUID());
 
     // mock read permission
+    stubWriteWorkspacePermission(workspaceId).thenReturn(true);
     stubReadWorkspacePermission(workspaceId).thenReturn(true);
 
     for (int i = 1; i < testSize; i++) {
