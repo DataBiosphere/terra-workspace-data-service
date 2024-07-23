@@ -12,17 +12,17 @@
 #     - First 7 characters of App SHA.
 # - PART:
 #     - The part of the version which was bumped.
-# - REPOSITORY_NAME:
+# - Repository name:
 #     - The name of the GitHub repository where the action is running.
-# - REPOSITORY_OWNER:
+# - Repository owner:
 #     - The owner of the GitHub repository.
-# - REPOSITORY_URL:
+# - Repository URL:
 #     - The URL to the GitHub repository.
-# - VERSION_FILE_PATH:
+# - Version file path:
 #     - The version file within the repository where the app version is specified.
-# - VERSION_LINE_PATTERN:
+# - Version line pattern:
 #     - The regex pattern used to identify the version line in the version file.
-# - VERSION_LINE_MATCH:
+# - Version line match:
 #     - The matched version line captured from the version file based on the specified pattern.
 #
 # After successfully running this action, the following environment variables are available for use in subsequent steps within the same job:
