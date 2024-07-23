@@ -1,5 +1,6 @@
 package org.databiosphere.workspacedataservice.service;
 
+import static org.databiosphere.workspacedataservice.dao.SqlUtils.quote;
 import static org.databiosphere.workspacedataservice.service.RecordUtils.validateVersion;
 
 import java.util.List;
@@ -34,6 +35,7 @@ import org.springframework.dao.DuplicateKeyException;
 import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.data.relational.core.conversion.DbActionExecutionException;
 import org.springframework.http.HttpStatus;
+import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.lang.Nullable;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
@@ -47,6 +49,7 @@ public class CollectionService {
   private final TenancyProperties tenancyProperties;
 
   private final CollectionRepository collectionRepository;
+  private final NamedParameterJdbcTemplate namedTemplate;
 
   @Nullable private WorkspaceId workspaceId;
 
@@ -55,12 +58,14 @@ public class CollectionService {
       SamAuthorizationDaoFactory samAuthorizationDaoFactory,
       ActivityLogger activityLogger,
       TenancyProperties tenancyProperties,
-      CollectionRepository collectionRepository) {
+      CollectionRepository collectionRepository,
+      NamedParameterJdbcTemplate namedTemplate) {
     this.collectionDao = collectionDao;
     this.samAuthorizationDaoFactory = samAuthorizationDaoFactory;
     this.activityLogger = activityLogger;
     this.tenancyProperties = tenancyProperties;
     this.collectionRepository = collectionRepository;
+    this.namedTemplate = namedTemplate;
   }
 
   @Autowired(required = false) // control plane won't have workspaceId
@@ -91,8 +96,6 @@ public class CollectionService {
       }
     }
     // TODO: validate name against the CollectionServerModel.getName() pattern
-    // TODO: create the schema in Postgres
-    // TODO: activity logging
 
     // if user did not specify an id, generate one
     CollectionId collectionId;
@@ -116,6 +119,13 @@ public class CollectionService {
     } catch (DbActionExecutionException dbActionExecutionException) {
       handleDbException(dbActionExecutionException);
     }
+
+    // create the postgres schema itself
+    namedTemplate.getJdbcTemplate().update("create schema " + quote(collectionId.toString()));
+
+    activityLogger.saveEventForCurrentUser(
+        user -> user.created().collection().withUuid(collectionId.id()));
+
     // translate back to CollectionServerModel
     CollectionServerModel response = new CollectionServerModel(actual.name(), actual.description());
     response.id(actual.collectionId().id());
@@ -154,10 +164,15 @@ public class CollectionService {
       throw new ValidationException("Collection does not belong to the specified workspace");
     }
 
-    // TODO: delete the schema from Postgres
-    // TODO: activity logging
+    // delete the schema from Postgres
+    namedTemplate
+        .getJdbcTemplate()
+        .update("drop schema " + quote(collectionId.toString()) + " cascade");
 
     collectionRepository.deleteById(collectionId.id());
+
+    activityLogger.saveEventForCurrentUser(
+        user -> user.deleted().collection().withUuid(collectionId.id()));
   }
 
   /**
