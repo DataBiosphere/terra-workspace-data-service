@@ -59,14 +59,16 @@ function get_app_context_from_artifact {
 
 mask_token
 
-if [ "$GITHUB_EVENT_NAME" == "pull_request" ]; then
-  action_type=$(jq -r '.action' "$GITHUB_EVENT_PATH")
-  echo "action_type=$action_type"
+action_type=$(jq -r '.action' "$GITHUB_EVENT_PATH")
+echo "action_type=$action_type"
+if [ "$GITHUB_EVENT_NAME" == "pull_request" ]]; then
   pr_sha=$(jq -r '.pull_request.head.sha' < "$GITHUB_EVENT_PATH")
-  echo "pr_sha=$pr_sha"
+  echo "pr_sha=${pr_sha}"
   get_app_context_from_artifact "$pr_sha"
 elif [ "$GITHUB_REF" == "refs/heads/main" ]; then
-  get_version_from_file
+  merge_sha=$(jq -r '.after' < "$GITHUB_EVENT_PATH")
+  echo "merge_sha=${merge_sha}"
+  get_app_context_from_artifact "$merge_sha"
 else
   echo "Unsupported event context"
   exit 1

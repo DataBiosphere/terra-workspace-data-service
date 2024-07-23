@@ -47,10 +47,12 @@ jobs:
           echo "APP_BRANCH=${{ env.APP_BRANCH }}"
           echo "APP_SHA=${{ env.APP_SHA }}"
           echo "APP_SHORT_SHA=${{ env.APP_SHORT_SHA }}"
+          echo "VERSION_LINE_MATCH=${{ env.VERSION_LINE_MATCH }}"
           echo "app_version=${{ steps.get-app-context.outputs.app_version }}"
           echo "app_branch=${{ steps.get-app-context.outputs.app_branch }}"
           echo "app_sha=${{ steps.get-app-context.outputs.app_sha }}"
           echo "app_short_sha=${{ steps.get-app-context.outputs.app_short_sha }}"
+          echo "version_line_match=${{ steps.get-app-context.outputs.version_line_match }}"
 
   build:
     runs-on: ubuntu-latest

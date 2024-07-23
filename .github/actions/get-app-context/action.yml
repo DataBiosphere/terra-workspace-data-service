@@ -12,6 +12,18 @@
 #     - First 7 characters of App SHA.
 # - PART:
 #     - The part of the version which was bumped.
+# - REPOSITORY_NAME:
+#     - The name of the GitHub repository where the action is running.
+# - REPOSITORY_OWNER:
+#     - The owner of the GitHub repository.
+# - REPOSITORY_URL:
+#     - The URL to the GitHub repository.
+# - VERSION_FILE_PATH:
+#     - The version file within the repository where the app version is specified.
+# - VERSION_LINE_PATTERN:
+#     - The regex pattern used to identify the version line in the version file.
+# - VERSION_LINE_MATCH:
+#     - The matched version line captured from the version file based on the specified pattern.
 #
 # After successfully running this action, the following environment variables are available for use in subsequent steps within the same job:
 #
@@ -20,6 +32,12 @@
 # - APP_SHA
 # - APP_SHORT_SHA
 # - PART
+# - REPOSITORY_NAME
+# - REPOSITORY_OWNER
+# - REPOSITORY_URL
+# - VERSION_FILE_PATH
+# - VERSION_LINE_PATTERN
+# - VERSION_LINE_MATCH
 #
 # Additionally, the step will output the following variables for use in subsequent steps or jobs:
 #
@@ -28,6 +46,12 @@
 # - app_sha
 # - app_short_sha
 # - part
+# - repository_name
+# - repository_owner
+# - repository_url
+# - version_file_path
+# - version_line_pattern
+# - version_line_match
 #
 name: Determine App Context
 description: 'Determine the app context from artifacts or version file based on the GitHub Context (PR or mainline merge).'
@@ -59,6 +83,24 @@ outputs:
   part:
     description: 'The semver bump mode used for calculating the app version: major, minor, patch'
     value: ${{ steps.app-context.outputs.PART}}
+  repository_name:
+    description: 'The name of the GitHub repository where the action is running'
+    value: ${{ steps.app-context.outputs.REPOSITORY_NAME}}
+  repository_owner:
+    description: 'The owner of the GitHub repository'
+    value: ${{ steps.app-context.outputs.REPOSITORY_OWNER}}
+  repository_url:
+    description: 'The URL to the GitHub repository'
+    value: ${{ steps.app-context.outputs.REPOSITORY_URL}}
+  version_file_path:
+    description: 'The version file within the repository where the app version is specified'
+    value: ${{ steps.app-context.outputs.VERSION_FILE_PATH}}
+  version_line_pattern:
+    description: 'The regex pattern used to identify the version line in the version file'
+    value: ${{ steps.app-context.outputs.VERSION_LINE_PATTERN}}
+  version_line_match:
+    description: 'The matched version line captured from the version file based on the specified pattern'
+    value: ${{ steps.app-context.outputs.VERSION_LINE_MATCH}}
 
 runs:
   using: "composite"
