@@ -1,7 +1,10 @@
 # The App Context includes the following information derived from GitHub Context:
 #
 # - App Version:
-#     - Version tag recorded in Git / version file when code is integrated into mainline.
+#     - The version tag is recorded in Git / version file when code is integrated into the mainline.
+#     - For PRs, the version will be a string in the format `<next semver tag>-<pr hash>`.
+#       - PRs do not dispatch tags.
+#       - The PR hash is recorded in Git history and can be used as a reference to check out a code snapshot.
 # - App Branch:
 #     - Name of the branch that runs this workflow.
 # - App SHA:
