@@ -81,7 +81,7 @@ jobs:
 
       - id: match-version-line
         run: |
-          pattern="^[ \t]*version[ \t]*=[ \t]*'(.*)'"
+          pattern="${{ env.VERSION_LINE_MATCH }}"
           if [[ -n "${{ env.VERSION_FILE_PATH }}" && -n "${{ env.VERSION_LINE_MATCH }}" ]]; then
             while IFS= read -r line; do
               echo "$line"
