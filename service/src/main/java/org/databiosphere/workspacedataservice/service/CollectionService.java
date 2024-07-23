@@ -140,15 +140,12 @@ public class CollectionService {
    * @param collectionId id of the collection to be deleted
    */
   public void delete(WorkspaceId workspaceId, CollectionId collectionId) {
-    // validate permissions
-    boolean canWriteWorkspace = canWriteWorkspace(workspaceId);
-    boolean canReadWorkspace = canReadWorkspace(workspaceId);
 
     // check that the current user has permission to delete the collection
-    if (!canWriteWorkspace) {
+    if (!canWriteWorkspace(workspaceId)) {
       // the user doesn't have permission to delete the collection.
       // do they have permission to list collections in the workspace?
-      if (canReadWorkspace) {
+      if (canReadWorkspace(workspaceId)) {
         throw new AuthorizationException(
             "Caller does not have permission to delete collections from this workspace.");
       } else {
@@ -203,7 +200,7 @@ public class CollectionService {
         .toList();
   }
 
-  // exception handling
+  // exception handling for save()
   private void handleDbException(DbActionExecutionException dbActionExecutionException) {
     Throwable cause = dbActionExecutionException.getCause();
     if (cause == null) {

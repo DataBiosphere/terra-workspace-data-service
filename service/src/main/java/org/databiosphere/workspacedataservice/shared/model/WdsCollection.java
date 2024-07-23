@@ -48,14 +48,10 @@ public class WdsCollection implements Persistable<CollectionId> {
     return false;
   }
 
-  // for safety - workspaceId cannot be changed after insert
-  @InsertOnlyProperty
   public WorkspaceId workspaceId() {
     return workspaceId;
   }
 
-  @Id
-  @Column("id")
   public CollectionId collectionId() {
     return collectionId;
   }
