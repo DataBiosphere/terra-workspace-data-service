@@ -225,15 +225,19 @@ public class CollectionService {
 
   // ============================== v0.2 methods ==============================
 
+  /**
+   * @deprecated Use {@link #list(WorkspaceId)} instead.
+   */
+  @Deprecated(forRemoval = true, since = "v0.14.0")
   public List<UUID> listCollections(String version) {
     validateVersion(version);
     return collectionDao.listCollectionSchemas().stream().map(CollectionId::id).toList();
   }
 
   /**
-   * @deprecated Use {@link #createCollection(WorkspaceId, CollectionId, String)}
+   * @deprecated Use {@link #save(WorkspaceId, CollectionServerModel)} instead.
    */
-  @Deprecated
+  @Deprecated(forRemoval = true, since = "v0.14.0")
   public void createCollection(UUID collectionId, String version) {
     if (tenancyProperties.getAllowVirtualCollections()) {
       throw new CollectionException(
@@ -247,15 +251,9 @@ public class CollectionService {
   }
 
   /**
-   * Creates a WDS collection, comprised of a Postgres schema and a Sam resource of type
-   * "workspace". The Postgres schema will have an id of `collectionId`, which will match the Sam
-   * resource's`workspaceId` unless otherwise specified.
-   *
-   * <p>TODO(AJ-1662): wire workspaceId down through collectionDao
-   *
-   * @param collectionId id of the collection to create
-   * @param version WDS API version
+   * @deprecated Use {@link #save(WorkspaceId, CollectionServerModel)} instead.
    */
+  @Deprecated(forRemoval = true, since = "v0.14.0")
   public void createCollection(WorkspaceId workspaceId, CollectionId collectionId, String version) {
     validateVersion(version);
 
@@ -277,6 +275,10 @@ public class CollectionService {
         user -> user.created().collection().withUuid(collectionId.id()));
   }
 
+  /**
+   * @deprecated Use {@link #delete(WorkspaceId, CollectionId)} instead.
+   */
+  @Deprecated(forRemoval = true, since = "v0.14.0")
   public void deleteCollection(UUID collectionUuid, String version) {
     validateVersion(version);
     validateCollection(collectionUuid);

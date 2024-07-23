@@ -368,6 +368,7 @@ paths:
       summary: List instances
       description: List all instances in this server.
       operationId: listWDSInstances
+      deprecated: true
       tags:
         - Instances
       parameters:
@@ -387,6 +388,7 @@ paths:
       summary: Create an instance
       description: Create an instance with the given UUID.
       operationId: createWDSInstance
+      deprecated: true
       security:
         - bearerAuth: [ ]
       tags:
@@ -410,6 +412,7 @@ paths:
 
         THIS WILL DELETE ALL DATA WITHIN THE INSTANCE. Be certain this is what you want to do.
       operationId: deleteWDSInstance
+      deprecated: true
       security:
         - bearerAuth: [ ]
       tags:
