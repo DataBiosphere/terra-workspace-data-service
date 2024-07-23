@@ -99,7 +99,6 @@ jobs:
           pattern="${{ env.VERSION_LINE_MATCH }}"
           if [[ -n "${{ env.VERSION_FILE_PATH }}" && -n "${{ env.VERSION_LINE_MATCH }}" ]]; then
             while IFS= read -r line; do
-              echo "$line"
               if [[ $line =~ $pattern ]]; then
                 # Extract the captured group (version line match)
                 version_line="${BASH_REMATCH[1]}"
