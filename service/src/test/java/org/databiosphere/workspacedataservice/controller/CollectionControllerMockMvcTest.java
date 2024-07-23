@@ -54,7 +54,7 @@ import org.springframework.test.web.servlet.MvcResult;
 @DirtiesContext
 @TestPropertySource(properties = {"twds.tenancy.enforce-collections-match-workspace-id=false"})
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
-public class CollectionControllerMockMvcTest extends MockMvcTestBase {
+class CollectionControllerMockMvcTest extends MockMvcTestBase {
 
   @Autowired private ObjectMapper objectMapper;
   @Autowired private NamedParameterJdbcTemplate namedTemplate;
@@ -245,7 +245,7 @@ public class CollectionControllerMockMvcTest extends MockMvcTestBase {
     assertCollectionExists(workspaceId, collectionId, name, description);
   }
 
-  @Disabled
+  @Disabled("for a future PR")
   @Test
   void createCollectionInvalidName() throws Exception {
     WorkspaceId workspaceId = WorkspaceId.of(UUID.randomUUID());
@@ -518,8 +518,6 @@ public class CollectionControllerMockMvcTest extends MockMvcTestBase {
         "Collection does not belong to the specified workspace",
         mvcResult.getResolvedException().getMessage());
 
-    // TODO: is there opportunity to phish for collection:workspace associations?
-
     // assert collection was not deleted
     assertCollectionExists(
         workspaceId,
@@ -594,7 +592,7 @@ public class CollectionControllerMockMvcTest extends MockMvcTestBase {
   void listCollectionsNoWorkspacePermission() throws Exception {
     // create a collection as setup; it should not be returned in the list
     WorkspaceId workspaceId = WorkspaceId.of(UUID.randomUUID());
-    CollectionServerModel collectionServerModel = insertCollection(workspaceId);
+    insertCollection(workspaceId);
 
     // mock no permission
     stubWriteWorkspacePermission(workspaceId).thenReturn(false);

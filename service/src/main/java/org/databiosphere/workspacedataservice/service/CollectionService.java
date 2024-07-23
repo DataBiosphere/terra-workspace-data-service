@@ -51,6 +51,9 @@ public class CollectionService {
   private final CollectionRepository collectionRepository;
   private final NamedParameterJdbcTemplate namedTemplate;
 
+  // for use in error messages when user doesn't have permission to a workspace
+  private static final String WORKSPACE = "Workspace";
+
   @Nullable private WorkspaceId workspaceId;
 
   public CollectionService(
@@ -92,7 +95,7 @@ public class CollectionService {
       if (canReadWorkspace(workspaceId)) {
         throw new AuthorizationException("Caller does not have permission to create collection.");
       } else {
-        throw new AuthenticationMaskableException("Workspace");
+        throw new AuthenticationMaskableException(WORKSPACE);
       }
     }
     // TODO: validate name against the CollectionServerModel.getName() pattern
@@ -149,7 +152,7 @@ public class CollectionService {
         throw new AuthorizationException(
             "Caller does not have permission to delete collections from this workspace.");
       } else {
-        throw new AuthenticationMaskableException("Workspace");
+        throw new AuthenticationMaskableException(WORKSPACE);
       }
     }
 
@@ -180,7 +183,7 @@ public class CollectionService {
    */
   public List<CollectionServerModel> list(WorkspaceId workspaceId) {
     if (!canListCollections(workspaceId)) {
-      throw new AuthenticationMaskableException("Workspace");
+      throw new AuthenticationMaskableException(WORKSPACE);
     }
 
     Iterable<WdsCollection> found = collectionRepository.findByWorkspace(workspaceId);
