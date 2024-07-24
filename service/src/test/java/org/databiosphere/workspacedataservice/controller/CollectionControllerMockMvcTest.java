@@ -38,7 +38,6 @@ import org.databiosphere.workspacedataservice.shared.model.WdsCollection;
 import org.databiosphere.workspacedataservice.shared.model.WorkspaceId;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
 import org.mockito.stubbing.OngoingStubbing;
@@ -52,6 +51,7 @@ import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.web.servlet.MvcResult;
+import org.springframework.web.bind.MethodArgumentNotValidException;
 
 @ActiveProfiles(profiles = {"mock-sam"})
 @DirtiesContext
@@ -248,7 +248,6 @@ class CollectionControllerMockMvcTest extends MockMvcTestBase {
     assertCollectionExists(workspaceId, collectionId, name, description);
   }
 
-  @Disabled("for a future PR")
   @Test
   void createCollectionInvalidName() throws Exception {
     WorkspaceId workspaceId = WorkspaceId.of(UUID.randomUUID());
@@ -273,9 +272,11 @@ class CollectionControllerMockMvcTest extends MockMvcTestBase {
             .andReturn();
 
     // verify error message
-    assertInstanceOf(ConflictException.class, mvcResult.getResolvedException());
-    assertEquals(
-        "Collection with this id already exists", mvcResult.getResolvedException().getMessage());
+    assertInstanceOf(MethodArgumentNotValidException.class, mvcResult.getResolvedException());
+
+    ErrorResponse errorResponse =
+        objectMapper.readValue(mvcResult.getResponse().getContentAsString(), ErrorResponse.class);
+    assertEquals("name: must match \"[a-zA-Z0-9-_]{1,128}\"", errorResponse.getMessage());
 
     // new collection should not have been created
     assertCollectionDoesNotExist(collectionId);

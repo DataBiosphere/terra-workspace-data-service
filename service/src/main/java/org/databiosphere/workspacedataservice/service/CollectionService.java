@@ -99,7 +99,6 @@ public class CollectionService {
         throw new AuthenticationMaskableException(WORKSPACE);
       }
     }
-    // TODO: validate name against the CollectionServerModel.getName() pattern
 
     // if user did not specify an id, generate one
     CollectionId collectionId;
