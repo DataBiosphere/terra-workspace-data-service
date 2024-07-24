@@ -88,6 +88,12 @@ public class CollectionService {
   public CollectionServerModel save(
       WorkspaceId workspaceId, CollectionServerModel collectionServerModel) {
 
+    // if WDS is running in single-tenant mode, ensure the specified workspace matches
+    if (tenancyProperties.getEnforceCollectionsMatchWorkspaceId()
+        && !workspaceId.equals(this.workspaceId)) {
+      throw new ValidationException("Cannot create collection in this workspace.");
+    }
+
     // check that the current user has permission on the parent workspace
     if (!canCreateCollection(workspaceId)) {
       // the user doesn't have permission to create a new collection.
