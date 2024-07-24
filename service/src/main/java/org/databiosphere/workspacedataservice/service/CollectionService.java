@@ -1,26 +1,41 @@
 package org.databiosphere.workspacedataservice.service;
 
+import static org.databiosphere.workspacedataservice.dao.SqlUtils.quote;
 import static org.databiosphere.workspacedataservice.service.RecordUtils.validateVersion;
 
 import java.util.List;
 import java.util.Objects;
+import java.util.Spliterator;
+import java.util.Spliterators;
 import java.util.UUID;
+import java.util.stream.Stream;
+import java.util.stream.StreamSupport;
 import org.databiosphere.workspacedataservice.activitylog.ActivityLogger;
 import org.databiosphere.workspacedataservice.annotations.SingleTenant;
 import org.databiosphere.workspacedataservice.config.TenancyProperties;
 import org.databiosphere.workspacedataservice.dao.CollectionDao;
+import org.databiosphere.workspacedataservice.dao.CollectionRepository;
+import org.databiosphere.workspacedataservice.generated.CollectionServerModel;
 import org.databiosphere.workspacedataservice.sam.SamAuthorizationDao;
 import org.databiosphere.workspacedataservice.sam.SamAuthorizationDaoFactory;
+import org.databiosphere.workspacedataservice.service.model.exception.AuthenticationMaskableException;
 import org.databiosphere.workspacedataservice.service.model.exception.AuthorizationException;
 import org.databiosphere.workspacedataservice.service.model.exception.CollectionException;
+import org.databiosphere.workspacedataservice.service.model.exception.ConflictException;
 import org.databiosphere.workspacedataservice.service.model.exception.MissingObjectException;
+import org.databiosphere.workspacedataservice.service.model.exception.ValidationException;
 import org.databiosphere.workspacedataservice.shared.model.CollectionId;
+import org.databiosphere.workspacedataservice.shared.model.WdsCollection;
+import org.databiosphere.workspacedataservice.shared.model.WdsCollectionCreateRequest;
 import org.databiosphere.workspacedataservice.shared.model.WorkspaceId;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.dao.DuplicateKeyException;
 import org.springframework.dao.EmptyResultDataAccessException;
+import org.springframework.data.relational.core.conversion.DbActionExecutionException;
 import org.springframework.http.HttpStatus;
+import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.lang.Nullable;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
@@ -33,17 +48,27 @@ public class CollectionService {
   private final ActivityLogger activityLogger;
   private final TenancyProperties tenancyProperties;
 
+  private final CollectionRepository collectionRepository;
+  private final NamedParameterJdbcTemplate namedTemplate;
+
+  // for use in error messages when user doesn't have permission to a workspace
+  private static final String WORKSPACE = "Workspace";
+
   @Nullable private WorkspaceId workspaceId;
 
   public CollectionService(
       CollectionDao collectionDao,
       SamAuthorizationDaoFactory samAuthorizationDaoFactory,
       ActivityLogger activityLogger,
-      TenancyProperties tenancyProperties) {
+      TenancyProperties tenancyProperties,
+      CollectionRepository collectionRepository,
+      NamedParameterJdbcTemplate namedTemplate) {
     this.collectionDao = collectionDao;
     this.samAuthorizationDaoFactory = samAuthorizationDaoFactory;
     this.activityLogger = activityLogger;
     this.tenancyProperties = tenancyProperties;
+    this.collectionRepository = collectionRepository;
+    this.namedTemplate = namedTemplate;
   }
 
   @Autowired(required = false) // control plane won't have workspaceId
@@ -51,15 +76,171 @@ public class CollectionService {
     this.workspaceId = workspaceId;
   }
 
+  // ============================== v1 methods ==============================
+
+  /**
+   * Insert a new collection
+   *
+   * @param workspaceId the workspace to contain this collection
+   * @param collectionServerModel the collection definition
+   * @return the created collection
+   */
+  public CollectionServerModel save(
+      WorkspaceId workspaceId, CollectionServerModel collectionServerModel) {
+
+    // check that the current user has permission on the parent workspace
+    if (!canCreateCollection(workspaceId)) {
+      // the user doesn't have permission to create a new collection.
+      // do they have permission to read the workspace at all?
+      if (canReadWorkspace(workspaceId)) {
+        throw new AuthorizationException("Caller does not have permission to create collection.");
+      } else {
+        throw new AuthenticationMaskableException(WORKSPACE);
+      }
+    }
+    // TODO: validate name against the CollectionServerModel.getName() pattern
+
+    // if user did not specify an id, generate one
+    CollectionId collectionId;
+    if (collectionServerModel.getId() != null) {
+      collectionId = CollectionId.of(collectionServerModel.getId());
+    } else {
+      collectionId = CollectionId.of(UUID.randomUUID());
+    }
+    // translate CollectionServerModel to WdsCollection
+    WdsCollection wdsCollectionRequest =
+        new WdsCollectionCreateRequest(
+            workspaceId,
+            collectionId,
+            collectionServerModel.getName(),
+            collectionServerModel.getDescription());
+
+    // save
+    WdsCollection actual = null;
+    try {
+      actual = collectionRepository.save(wdsCollectionRequest);
+    } catch (DbActionExecutionException dbActionExecutionException) {
+      handleDbException(dbActionExecutionException);
+    }
+
+    // create the postgres schema itself
+    namedTemplate.getJdbcTemplate().update("create schema " + quote(collectionId.toString()));
+
+    activityLogger.saveEventForCurrentUser(
+        user -> user.created().collection().withUuid(collectionId.id()));
+
+    // translate back to CollectionServerModel
+    CollectionServerModel response = new CollectionServerModel(actual.name(), actual.description());
+    response.id(actual.collectionId().id());
+
+    return response;
+  }
+
+  /**
+   * Delete a collection.
+   *
+   * @param workspaceId the workspace containing the collection to be deleted
+   * @param collectionId id of the collection to be deleted
+   */
+  public void delete(WorkspaceId workspaceId, CollectionId collectionId) {
+
+    // check that the current user has permission to delete the collection
+    if (!canWriteWorkspace(workspaceId)) {
+      // the user doesn't have permission to delete the collection.
+      // do they have permission to list collections in the workspace?
+      if (canReadWorkspace(workspaceId)) {
+        throw new AuthorizationException(
+            "Caller does not have permission to delete collections from this workspace.");
+      } else {
+        throw new AuthenticationMaskableException(WORKSPACE);
+      }
+    }
+
+    // user is permitted to delete collections (can write the workspace); now, validate the
+    // collection
+    WorkspaceId collectionWorkspace = getWorkspaceId(collectionId);
+    // ensure this collection belongs to this workspace
+    if (!collectionWorkspace.equals(workspaceId)) {
+      throw new ValidationException("Collection does not belong to the specified workspace");
+    }
+
+    // delete the schema from Postgres
+    namedTemplate
+        .getJdbcTemplate()
+        .update("drop schema " + quote(collectionId.toString()) + " cascade");
+
+    collectionRepository.deleteById(collectionId.id());
+
+    activityLogger.saveEventForCurrentUser(
+        user -> user.deleted().collection().withUuid(collectionId.id()));
+  }
+
+  /**
+   * List all collections in a given workspace. Does not paginate.
+   *
+   * @param workspaceId the workspace in which to list collections.
+   * @return all collections in the given workspace
+   */
+  public List<CollectionServerModel> list(WorkspaceId workspaceId) {
+    if (!canListCollections(workspaceId)) {
+      throw new AuthenticationMaskableException(WORKSPACE);
+    }
+
+    Iterable<WdsCollection> found = collectionRepository.findByWorkspace(workspaceId);
+    // map the WdsCollection to CollectionServerModel
+    Stream<WdsCollection> colls =
+        StreamSupport.stream(
+            Spliterators.spliteratorUnknownSize(found.iterator(), Spliterator.ORDERED), false);
+
+    return colls
+        .map(
+            wdsCollection -> {
+              CollectionServerModel serverModel =
+                  new CollectionServerModel(wdsCollection.name(), wdsCollection.description());
+              serverModel.id(wdsCollection.collectionId().id());
+              return serverModel;
+            })
+        .toList();
+  }
+
+  // exception handling for save()
+  private void handleDbException(DbActionExecutionException dbActionExecutionException) {
+    Throwable cause = dbActionExecutionException.getCause();
+    if (cause == null) {
+      throw dbActionExecutionException;
+    }
+    if (cause instanceof DuplicateKeyException duplicateKeyException) {
+      // kinda ugly: we need to determine if the DuplicateKeyException is due to an id conflict
+      // or a name conflict.
+      String msg = duplicateKeyException.getMessage();
+      if (msg.contains("duplicate key value violates unique constraint")
+          && msg.contains("instance_pkey")) {
+        // TODO: this allows phishing for collection ids.
+        throw new ConflictException("Collection with this id already exists");
+      } else if (msg.contains("duplicate key value violates unique constraint")
+          && msg.contains("instance_workspace_id_name_key")) {
+        throw new ConflictException("Collection with this name already exists in this workspace");
+      }
+      throw new ConflictException("Collection name or id conflict");
+    }
+    throw dbActionExecutionException;
+  }
+
+  // ============================== v0.2 methods ==============================
+
+  /**
+   * @deprecated Use {@link #list(WorkspaceId)} instead.
+   */
+  @Deprecated(forRemoval = true, since = "v0.14.0")
   public List<UUID> listCollections(String version) {
     validateVersion(version);
     return collectionDao.listCollectionSchemas().stream().map(CollectionId::id).toList();
   }
 
   /**
-   * @deprecated Use {@link #createCollection(WorkspaceId, CollectionId, String)}
+   * @deprecated Use {@link #save(WorkspaceId, CollectionServerModel)} instead.
    */
-  @Deprecated
+  @Deprecated(forRemoval = true, since = "v0.14.0")
   public void createCollection(UUID collectionId, String version) {
     if (tenancyProperties.getAllowVirtualCollections()) {
       throw new CollectionException(
@@ -73,15 +254,9 @@ public class CollectionService {
   }
 
   /**
-   * Creates a WDS collection, comprised of a Postgres schema and a Sam resource of type
-   * "workspace". The Postgres schema will have an id of `collectionId`, which will match the Sam
-   * resource's`workspaceId` unless otherwise specified.
-   *
-   * <p>TODO(AJ-1662): wire workspaceId down through collectionDao
-   *
-   * @param collectionId id of the collection to create
-   * @param version WDS API version
+   * @deprecated Use {@link #save(WorkspaceId, CollectionServerModel)} instead.
    */
+  @Deprecated(forRemoval = true, since = "v0.14.0")
   public void createCollection(WorkspaceId workspaceId, CollectionId collectionId, String version) {
     validateVersion(version);
 
@@ -103,6 +278,10 @@ public class CollectionService {
         user -> user.created().collection().withUuid(collectionId.id()));
   }
 
+  /**
+   * @deprecated Use {@link #delete(WorkspaceId, CollectionId)} instead.
+   */
+  @Deprecated(forRemoval = true, since = "v0.14.0")
   public void deleteCollection(UUID collectionUuid, String version) {
     validateVersion(version);
     validateCollection(collectionUuid);
@@ -131,20 +310,32 @@ public class CollectionService {
     }
   }
 
+  public boolean canListCollections(WorkspaceId workspaceId) {
+    return canReadWorkspace(workspaceId);
+  }
+
   public boolean canReadCollection(CollectionId collectionId) {
-    return getSamAuthorizationDao(getWorkspaceId(collectionId)).hasReadWorkspacePermission();
+    return canReadWorkspace(getWorkspaceId(collectionId));
   }
 
   public boolean canWriteCollection(CollectionId collectionId) {
-    return getSamAuthorizationDao(getWorkspaceId(collectionId)).hasWriteWorkspacePermission();
+    return canWriteWorkspace(getWorkspaceId(collectionId));
   }
 
   private boolean canCreateCollection(WorkspaceId workspaceId) {
-    return getSamAuthorizationDao(workspaceId).hasWriteWorkspacePermission();
+    return canWriteWorkspace(workspaceId);
   }
 
   private boolean canDeleteCollection(CollectionId collectionId) {
-    return getSamAuthorizationDao(getWorkspaceId(collectionId)).hasWriteWorkspacePermission();
+    return canWriteWorkspace(getWorkspaceId(collectionId));
+  }
+
+  private boolean canReadWorkspace(WorkspaceId workspaceId) {
+    return getSamAuthorizationDao(workspaceId).hasReadWorkspacePermission();
+  }
+
+  private boolean canWriteWorkspace(WorkspaceId workspaceId) {
+    return getSamAuthorizationDao(workspaceId).hasWriteWorkspacePermission();
   }
 
   /**
