@@ -7,6 +7,7 @@ import java.util.Date;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import org.apache.commons.lang3.StringUtils;
 import org.databiosphere.workspacedataservice.service.model.exception.AuthenticationMaskableException;
 import org.databiosphere.workspacedataservice.service.model.exception.MissingObjectException;
@@ -17,12 +18,15 @@ import org.springframework.http.HttpStatusCode;
 import org.springframework.http.MediaType;
 import org.springframework.http.ProblemDetail;
 import org.springframework.http.ResponseEntity;
+import org.springframework.lang.Nullable;
+import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.context.request.ServletWebRequest;
 import org.springframework.web.context.request.WebRequest;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 import org.springframework.web.servlet.mvc.method.annotation.ResponseEntityExceptionHandler;
+import org.springframework.web.util.BindErrorUtils;
 
 @ControllerAdvice
 public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
@@ -51,7 +55,7 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
   @NotNull
   @Override
   protected ResponseEntity<Object> createResponseEntity(
-      Object body,
+      @Nullable Object body,
       @NotNull HttpHeaders headers,
       @NotNull HttpStatusCode statusCode,
       @NotNull WebRequest request) {
@@ -95,6 +99,38 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
   }
 
   /**
+   * @param ex the exception in question
+   * @param headers the response headers
+   * @param status the response status
+   * @param request the request
+   * @return the desired response
+   */
+  @Override
+  protected ResponseEntity<Object> handleMethodArgumentNotValid(
+      MethodArgumentNotValidException ex,
+      HttpHeaders headers,
+      @NotNull HttpStatusCode status,
+      WebRequest request) {
+
+    // extract nicely-formatted error messages from the exception
+    String allErrors = BindErrorUtils.resolveAndJoin(ex.getAllErrors());
+
+    // extract request path from the request
+    String path = "";
+    if (request instanceof ServletWebRequest servletWebRequest) {
+      path = servletWebRequest.getRequest().getRequestURI();
+    }
+
+    // extract title
+    String title = Objects.requireNonNullElse(ex.getBody().getDetail(), status.toString());
+
+    // build response body
+    Object responseBody = buildBody(status.value(), title, allErrors, path);
+
+    return createResponseEntity(responseBody, headers, status, request);
+  }
+
+  /**
    * Handler for AuthenticationMaskableException. Rewrites the response to be a 404, using the same
    * message that MissingObjectException would produce. This prevents auth exceptions from leaking
    * existence/non-existence of resources.
@@ -115,17 +151,29 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
   // helper method for @ExceptionHandlers to build the response payload
   private ResponseEntity<Map<String, Object>> generateResponse(
       HttpStatus httpStatus, String errorMessage, HttpServletRequest servletRequest) {
-    Map<String, Object> errorBody = new LinkedHashMap<>();
-
-    errorBody.put(TIMESTAMP, new Date());
-    errorBody.put(STATUS, httpStatus.value());
-    errorBody.put(ERROR, httpStatus.getReasonPhrase());
-    errorBody.put(MESSAGE, errorMessage);
-    errorBody.put(PATH, servletRequest.getRequestURI());
+    Map<String, Object> errorBody =
+        buildBody(
+            httpStatus.value(),
+            httpStatus.getReasonPhrase(),
+            errorMessage,
+            servletRequest.getRequestURI());
 
     return ResponseEntity.status(httpStatus)
         .contentType(MediaType.APPLICATION_JSON)
         .body(errorBody);
+  }
+
+  // generate a response compatible with the ErrorResponse model
+  private Map<String, Object> buildBody(int statusCode, String error, String message, String path) {
+    Map<String, Object> errorBody = new LinkedHashMap<>();
+
+    errorBody.put(TIMESTAMP, new Date());
+    errorBody.put(STATUS, statusCode);
+    errorBody.put(ERROR, error);
+    errorBody.put(MESSAGE, message);
+    errorBody.put(PATH, path);
+
+    return errorBody;
   }
 
   @VisibleForTesting
