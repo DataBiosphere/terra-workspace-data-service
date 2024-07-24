@@ -1,7 +1,6 @@
 package org.databiosphere.workspacedataservice.shared.model;
 
 import java.util.Objects;
-import org.databiosphere.workspacedataservice.generated.CollectionServerModel;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.domain.Persistable;
 import org.springframework.data.relational.core.mapping.Column;
@@ -28,15 +27,6 @@ public class WdsCollection implements Persistable<CollectionId> {
     this.collectionId = collectionId;
     this.name = name;
     this.description = description;
-  }
-
-  public static WdsCollection from(
-      WorkspaceId workspaceId, CollectionServerModel collectionServerModel) {
-    return new WdsCollection(
-        workspaceId,
-        CollectionId.of(collectionServerModel.getId()),
-        collectionServerModel.getName(),
-        collectionServerModel.getDescription());
   }
 
   /**

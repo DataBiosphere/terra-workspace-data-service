@@ -1,6 +1,8 @@
 package org.databiosphere.workspacedataservice.dao;
 
+import java.util.Optional;
 import java.util.UUID;
+import org.databiosphere.workspacedataservice.shared.model.CollectionId;
 import org.databiosphere.workspacedataservice.shared.model.WdsCollection;
 import org.databiosphere.workspacedataservice.shared.model.WorkspaceId;
 import org.springframework.data.jdbc.repository.query.Query;
@@ -23,4 +25,9 @@ public interface CollectionRepository extends CrudRepository<WdsCollection, UUID
   // custom method to list collections by workspace
   @Query("SELECT * FROM sys_wds.collection WHERE workspace_id = :workspaceId")
   Iterable<WdsCollection> findByWorkspace(WorkspaceId workspaceId);
+
+  // custom method to get a collection by workspaceId and collectionId
+  @Query(
+      "SELECT * FROM sys_wds.collection WHERE workspace_id = :workspaceId and id = :collectionId")
+  Optional<WdsCollection> find(WorkspaceId workspaceId, CollectionId collectionId);
 }

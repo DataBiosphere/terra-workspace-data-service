@@ -203,6 +203,27 @@ public class CollectionService {
         .toList();
   }
 
+  public CollectionServerModel get(WorkspaceId workspaceId, CollectionId collectionId) {
+    // verify permission to read collections
+    if (!canListCollections(workspaceId)) {
+      throw new AuthenticationMaskableException(WORKSPACE);
+    }
+
+    // retrieve the collection; throw if collection not found
+    WdsCollection found =
+        collectionRepository
+            .find(workspaceId, collectionId)
+            .orElseThrow(() -> new MissingObjectException("Collection"));
+
+    // translate to the response model
+    CollectionServerModel serverModel =
+        new CollectionServerModel(found.name(), found.description());
+    serverModel.id(found.collectionId().id());
+
+    // and return
+    return serverModel;
+  }
+
   // exception handling for save()
   private void handleDbException(DbActionExecutionException dbActionExecutionException) {
     Throwable cause = dbActionExecutionException.getCause();

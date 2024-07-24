@@ -634,12 +634,11 @@ class CollectionControllerMockMvcTest extends MockMvcTestBase {
             .andExpect(status().isOk())
             .andReturn();
 
-    WdsCollection actual =
-        objectMapper.readValue(mvcResult.getResponse().getContentAsString(), WdsCollection.class);
+    CollectionServerModel actual =
+        objectMapper.readValue(
+            mvcResult.getResponse().getContentAsString(), CollectionServerModel.class);
 
-    WdsCollection expected = WdsCollection.from(workspaceId, collectionServerModel);
-
-    assertEquals(expected, actual);
+    assertEquals(collectionServerModel, actual);
   }
 
   @Test
@@ -746,10 +745,9 @@ class CollectionControllerMockMvcTest extends MockMvcTestBase {
             .andReturn();
 
     assertInstanceOf(MissingObjectException.class, mvcResult.getResolvedException());
-
-    ErrorResponse errorResponse =
-        objectMapper.readValue(mvcResult.getResponse().getContentAsString(), ErrorResponse.class);
-    assertEquals("Collection does not exist in this workspace", errorResponse.getMessage());
+    assertEquals(
+        "Collection does not exist or you do not have permission to see it",
+        mvcResult.getResolvedException().getMessage());
   }
 
   @Test
