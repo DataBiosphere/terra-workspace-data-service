@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.databiosphere.workspacedataservice.dao.SqlUtils.quote;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.spy;
@@ -20,6 +21,7 @@ import java.sql.SQLException;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.stream.IntStream;
 import org.databiosphere.workspacedata.model.ErrorResponse;
 import org.databiosphere.workspacedataservice.generated.CollectionServerModel;
 import org.databiosphere.workspacedataservice.sam.MockSamAuthorizationDao;
@@ -566,6 +568,46 @@ class CollectionControllerMockMvcTest extends MockMvcTestBase {
           collectionServerModelList.stream().map(CollectionServerModel::getId).toList();
       assertThat(ids).contains(collectionId.id());
     }
+  }
+
+  @Test
+  void listCollectionsByWorkspace() throws Exception {
+    WorkspaceId workspaceIdOne = WorkspaceId.of(UUID.randomUUID());
+    WorkspaceId workspaceIdTwo = WorkspaceId.of(UUID.randomUUID());
+
+    var testSize = 3;
+
+    // insert {testSize} collections into both workspace one and workspace two
+    List<UUID> collectionIdsOne =
+        IntStream.range(0, testSize)
+            .mapToObj(i -> insertCollection(workspaceIdOne, "name" + i, "description").getId())
+            .toList();
+    List<UUID> collectionIdsTwo =
+        IntStream.range(0, testSize)
+            .mapToObj(i -> insertCollection(workspaceIdTwo, "name" + i, "description").getId())
+            .toList();
+
+    // assert the inserts are different
+    assertNotEquals(collectionIdsOne, collectionIdsTwo);
+
+    // mock read permission on both workspaces
+    stubReadWorkspacePermission(workspaceIdOne).thenReturn(true);
+    stubReadWorkspacePermission(workspaceIdTwo).thenReturn(true);
+
+    // list collections for workspace one
+    MvcResult mvcResult =
+        mockMvc
+            .perform(get("/collections/v1/{workspaceId}", workspaceIdOne))
+            .andExpect(status().isOk())
+            .andReturn();
+
+    List<CollectionServerModel> collectionServerModelList =
+        objectMapper.readValue(
+            mvcResult.getResponse().getContentAsString(), new TypeReference<>() {});
+
+    List<UUID> actual =
+        collectionServerModelList.stream().map(CollectionServerModel::getId).toList();
+    assertEquals(collectionIdsOne, actual);
   }
 
   @Test
