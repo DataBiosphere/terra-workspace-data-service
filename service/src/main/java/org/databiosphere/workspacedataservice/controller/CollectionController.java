@@ -96,7 +96,9 @@ public class CollectionController implements CollectionApi {
   @Override
   public ResponseEntity<CollectionServerModel> updateCollectionV1(
       UUID workspaceId, UUID collectionId, CollectionServerModel collectionServerModel) {
-    // TODO: implement
-    return CollectionApi.super.updateCollectionV1(workspaceId, collectionId, collectionServerModel);
+    CollectionServerModel coll =
+        collectionService.update(
+            WorkspaceId.of(workspaceId), CollectionId.of(collectionId), collectionServerModel);
+    return new ResponseEntity<>(coll, HttpStatus.OK);
   }
 }

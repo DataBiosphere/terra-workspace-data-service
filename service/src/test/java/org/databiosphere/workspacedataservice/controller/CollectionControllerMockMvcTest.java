@@ -1283,10 +1283,16 @@ class CollectionControllerMockMvcTest extends MockMvcTestBase {
             .andExpect(status().isNotFound())
             .andReturn();
 
-    assertInstanceOf(AuthorizationException.class, mvcResult.getResolvedException());
+    // verify error message
+    AuthenticationMaskableException actual =
+        assertInstanceOf(AuthenticationMaskableException.class, mvcResult.getResolvedException());
+    assertEquals("Workspace", actual.getObjectType());
+
+    ErrorResponse errorResponse =
+        objectMapper.readValue(mvcResult.getResponse().getContentAsString(), ErrorResponse.class);
     assertEquals(
-        "403 FORBIDDEN \"Caller does not have permission to update collection.\"",
-        mvcResult.getResolvedException().getMessage());
+        "Workspace does not exist or you do not have permission to see it",
+        errorResponse.getMessage());
 
     // collection should not exist
     assertCollectionDoesNotExist(collectionId);
@@ -1540,7 +1546,7 @@ class CollectionControllerMockMvcTest extends MockMvcTestBase {
                         collectionServerModelTwo.getId())
                     .content(toJson(updateRequest))
                     .contentType(MediaType.APPLICATION_JSON))
-            .andExpect(status().isForbidden())
+            .andExpect(status().isNotFound())
             .andReturn();
 
     // verify error message

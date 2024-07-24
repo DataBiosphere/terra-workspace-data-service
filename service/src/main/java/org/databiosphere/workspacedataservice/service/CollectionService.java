@@ -115,23 +115,14 @@ public class CollectionService {
             collectionServerModel.getName(),
             collectionServerModel.getDescription());
 
-    // save
-    WdsCollection actual = null;
-    try {
-      actual = collectionRepository.save(wdsCollectionRequest);
-    } catch (DbActionExecutionException dbActionExecutionException) {
-      handleDbException(dbActionExecutionException);
-    }
+    // save, handle exceptions, and translate to the response model
+    CollectionServerModel response = saveAndHandleExceptions(wdsCollectionRequest);
 
     // create the postgres schema itself
     namedTemplate.getJdbcTemplate().update("create schema " + quote(collectionId.toString()));
 
     activityLogger.saveEventForCurrentUser(
         user -> user.created().collection().withUuid(collectionId.id()));
-
-    // translate back to CollectionServerModel
-    CollectionServerModel response = new CollectionServerModel(actual.name(), actual.description());
-    response.id(actual.collectionId().id());
 
     return response;
   }
@@ -224,7 +215,73 @@ public class CollectionService {
     return serverModel;
   }
 
-  // exception handling for save()
+  public CollectionServerModel update(
+      WorkspaceId workspaceId,
+      CollectionId collectionId,
+      CollectionServerModel collectionServerModel) {
+
+    // if collection id is specified in the CollectionServerModel, ensure it matches
+    if (collectionServerModel.getId() != null
+        && !collectionServerModel.getId().equals(collectionId.id())) {
+      throw new ValidationException(
+          "Collection id in request body does not match collection id in URL. You can omit the collection id from the request body.");
+    }
+
+    // verify permission to update collections
+    if (!canWriteWorkspace(workspaceId)) {
+      // the user doesn't have permission to update collections.
+      // do they have permission to list collections in the workspace?
+      if (canReadWorkspace(workspaceId)) {
+        throw new AuthorizationException("Caller does not have permission to update collection.");
+      } else {
+        throw new AuthenticationMaskableException(WORKSPACE);
+      }
+    }
+
+    // retrieve the collection; throw if collection not found
+    WdsCollection found =
+        collectionRepository
+            .find(workspaceId, collectionId)
+            .orElseThrow(() -> new MissingObjectException(COLLECTION));
+
+    // update the found object with the supplied name and description
+    WdsCollection updateRequest =
+        new WdsCollection(
+            found.workspaceId(),
+            found.collectionId(),
+            collectionServerModel.getName(),
+            collectionServerModel.getDescription());
+
+    // save, handle exceptions, and translate to the response model
+    CollectionServerModel response = saveAndHandleExceptions(updateRequest);
+
+    activityLogger.saveEventForCurrentUser(
+        user -> user.updated().collection().withUuid(collectionId.id()));
+
+    // respond
+    return response;
+  }
+
+  // common logic for save() and update()
+  private CollectionServerModel saveAndHandleExceptions(WdsCollection saveRequest) {
+    // save
+    WdsCollection actual = null;
+    try {
+      actual = collectionRepository.save(saveRequest);
+    } catch (DbActionExecutionException dbActionExecutionException) {
+      handleDbException(dbActionExecutionException);
+    }
+
+    // translate to the response model
+    CollectionServerModel serverModel =
+        new CollectionServerModel(actual.name(), actual.description());
+    serverModel.id(actual.collectionId().id());
+
+    // and return
+    return serverModel;
+  }
+
+  // exception handling for save() and update()
   private void handleDbException(DbActionExecutionException dbActionExecutionException) {
     Throwable cause = dbActionExecutionException.getCause();
     if (cause == null) {
