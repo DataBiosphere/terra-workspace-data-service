@@ -109,7 +109,7 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
   protected ResponseEntity<Object> handleMethodArgumentNotValid(
       MethodArgumentNotValidException ex,
       HttpHeaders headers,
-      HttpStatusCode status,
+      @NotNull HttpStatusCode status,
       WebRequest request) {
 
     // extract nicely-formatted error messages from the exception
