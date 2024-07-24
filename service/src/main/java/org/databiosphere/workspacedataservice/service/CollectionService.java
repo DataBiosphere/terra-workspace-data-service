@@ -51,8 +51,9 @@ public class CollectionService {
   private final CollectionRepository collectionRepository;
   private final NamedParameterJdbcTemplate namedTemplate;
 
-  // for use in error messages when user doesn't have permission to a workspace
+  // strings for use in error messages
   private static final String WORKSPACE = "Workspace";
+  private static final String COLLECTION = "Collection";
 
   @Nullable private WorkspaceId workspaceId;
 
@@ -213,7 +214,7 @@ public class CollectionService {
     WdsCollection found =
         collectionRepository
             .find(workspaceId, collectionId)
-            .orElseThrow(() -> new MissingObjectException("Collection"));
+            .orElseThrow(() -> new MissingObjectException(COLLECTION));
 
     // translate to the response model
     CollectionServerModel serverModel =
@@ -327,7 +328,7 @@ public class CollectionService {
     }
     // else, check if this collection has a row in the collections table
     if (!collectionDao.collectionSchemaExists(CollectionId.of(collectionId))) {
-      throw new MissingObjectException("Collection");
+      throw new MissingObjectException(COLLECTION);
     }
   }
 
@@ -388,7 +389,7 @@ public class CollectionService {
       }
     } catch (EmptyResultDataAccessException e) {
       if (!tenancyProperties.getAllowVirtualCollections()) {
-        throw new MissingObjectException("Collection");
+        throw new MissingObjectException(COLLECTION);
       }
     }
 
