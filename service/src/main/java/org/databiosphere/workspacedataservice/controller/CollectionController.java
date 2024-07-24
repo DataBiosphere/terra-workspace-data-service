@@ -66,8 +66,9 @@ public class CollectionController implements CollectionApi {
   @Override
   public ResponseEntity<CollectionServerModel> getCollectionV1(
       UUID workspaceId, UUID collectionId) {
-    // TODO: implement
-    return CollectionApi.super.getCollectionV1(workspaceId, collectionId);
+    CollectionServerModel coll =
+        collectionService.get(WorkspaceId.of(workspaceId), CollectionId.of(collectionId));
+    return new ResponseEntity<>(coll, HttpStatus.OK);
   }
 
   /**

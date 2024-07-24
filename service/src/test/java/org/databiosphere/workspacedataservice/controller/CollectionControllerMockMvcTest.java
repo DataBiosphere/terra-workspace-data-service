@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.databiosphere.workspacedataservice.dao.SqlUtils.quote;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.spy;
@@ -20,6 +21,7 @@ import java.sql.SQLException;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.stream.IntStream;
 import org.databiosphere.workspacedata.model.ErrorResponse;
 import org.databiosphere.workspacedataservice.generated.CollectionServerModel;
 import org.databiosphere.workspacedataservice.sam.MockSamAuthorizationDao;
@@ -29,6 +31,7 @@ import org.databiosphere.workspacedataservice.service.CollectionService;
 import org.databiosphere.workspacedataservice.service.model.exception.AuthenticationMaskableException;
 import org.databiosphere.workspacedataservice.service.model.exception.AuthorizationException;
 import org.databiosphere.workspacedataservice.service.model.exception.ConflictException;
+import org.databiosphere.workspacedataservice.service.model.exception.MissingObjectException;
 import org.databiosphere.workspacedataservice.service.model.exception.ValidationException;
 import org.databiosphere.workspacedataservice.shared.model.CollectionId;
 import org.databiosphere.workspacedataservice.shared.model.WdsCollection;
@@ -569,6 +572,46 @@ class CollectionControllerMockMvcTest extends MockMvcTestBase {
   }
 
   @Test
+  void listCollectionsByWorkspace() throws Exception {
+    WorkspaceId workspaceIdOne = WorkspaceId.of(UUID.randomUUID());
+    WorkspaceId workspaceIdTwo = WorkspaceId.of(UUID.randomUUID());
+
+    var testSize = 3;
+
+    // insert {testSize} collections into both workspace one and workspace two
+    List<UUID> collectionIdsOne =
+        IntStream.range(0, testSize)
+            .mapToObj(i -> insertCollection(workspaceIdOne, "name" + i, "description").getId())
+            .toList();
+    List<UUID> collectionIdsTwo =
+        IntStream.range(0, testSize)
+            .mapToObj(i -> insertCollection(workspaceIdTwo, "name" + i, "description").getId())
+            .toList();
+
+    // assert the inserts are different
+    assertNotEquals(collectionIdsOne, collectionIdsTwo);
+
+    // mock read permission on both workspaces
+    stubReadWorkspacePermission(workspaceIdOne).thenReturn(true);
+    stubReadWorkspacePermission(workspaceIdTwo).thenReturn(true);
+
+    // list collections for workspace one
+    MvcResult mvcResult =
+        mockMvc
+            .perform(get("/collections/v1/{workspaceId}", workspaceIdOne))
+            .andExpect(status().isOk())
+            .andReturn();
+
+    List<CollectionServerModel> collectionServerModelList =
+        objectMapper.readValue(
+            mvcResult.getResponse().getContentAsString(), new TypeReference<>() {});
+
+    List<UUID> actual =
+        collectionServerModelList.stream().map(CollectionServerModel::getId).toList();
+    assertEquals(collectionIdsOne, actual);
+  }
+
+  @Test
   void listCollectionsEmpty() throws Exception {
     WorkspaceId workspaceId = WorkspaceId.of(UUID.randomUUID());
 
@@ -605,6 +648,176 @@ class CollectionControllerMockMvcTest extends MockMvcTestBase {
             .perform(get("/collections/v1/{workspaceId}", workspaceId))
             .andExpect(status().isNotFound())
             .andReturn();
+
+    AuthenticationMaskableException actual =
+        assertInstanceOf(AuthenticationMaskableException.class, mvcResult.getResolvedException());
+    assertEquals("Workspace", actual.getObjectType());
+
+    ErrorResponse errorResponse =
+        objectMapper.readValue(mvcResult.getResponse().getContentAsString(), ErrorResponse.class);
+    assertEquals(
+        "Workspace does not exist or you do not have permission to see it",
+        errorResponse.getMessage());
+  }
+
+  @Test
+  void getCollection() throws Exception {
+    // create a collection as setup
+    WorkspaceId workspaceId = WorkspaceId.of(UUID.randomUUID());
+    CollectionServerModel collectionServerModel = insertCollection(workspaceId);
+    CollectionId collectionId = CollectionId.of(collectionServerModel.getId());
+
+    // ensure read permission
+    stubReadWorkspacePermission(workspaceId).thenReturn(true);
+
+    // attempt to get the collection
+    MvcResult mvcResult =
+        mockMvc
+            .perform(get("/collections/v1/{workspaceId}/{collectionId}", workspaceId, collectionId))
+            .andExpect(status().isOk())
+            .andReturn();
+
+    CollectionServerModel actual =
+        objectMapper.readValue(
+            mvcResult.getResponse().getContentAsString(), CollectionServerModel.class);
+
+    assertEquals(collectionServerModel, actual);
+  }
+
+  @Test
+  void getCollectionNoPermission() throws Exception {
+    // create a collection as setup
+    WorkspaceId workspaceId = WorkspaceId.of(UUID.randomUUID());
+    CollectionServerModel collectionServerModel = insertCollection(workspaceId);
+    CollectionId collectionId = CollectionId.of(collectionServerModel.getId());
+
+    // ensure no permission
+    stubReadWorkspacePermission(workspaceId).thenReturn(false);
+    stubWriteWorkspacePermission(workspaceId).thenReturn(false);
+
+    // attempt to get the collection
+    MvcResult mvcResult =
+        mockMvc
+            .perform(get("/collections/v1/{workspaceId}/{collectionId}", workspaceId, collectionId))
+            .andExpect(status().isNotFound())
+            .andReturn();
+
+    AuthenticationMaskableException actual =
+        assertInstanceOf(AuthenticationMaskableException.class, mvcResult.getResolvedException());
+    assertEquals("Workspace", actual.getObjectType());
+
+    ErrorResponse errorResponse =
+        objectMapper.readValue(mvcResult.getResponse().getContentAsString(), ErrorResponse.class);
+    assertEquals(
+        "Workspace does not exist or you do not have permission to see it",
+        errorResponse.getMessage());
+  }
+
+  @Test
+  void getNonexistentCollection() throws Exception {
+    WorkspaceId workspaceId = WorkspaceId.of(UUID.randomUUID());
+
+    // ensure read permission
+    stubReadWorkspacePermission(workspaceId).thenReturn(true);
+
+    // attempt to get a nonexistent collection
+    MvcResult mvcResult =
+        mockMvc
+            .perform(
+                get("/collections/v1/{workspaceId}/{collectionId}", workspaceId, UUID.randomUUID()))
+            .andExpect(status().isNotFound())
+            .andReturn();
+
+    assertInstanceOf(MissingObjectException.class, mvcResult.getResolvedException());
+    assertEquals(
+        "Collection does not exist or you do not have permission to see it",
+        mvcResult.getResolvedException().getMessage());
+  }
+
+  @Test
+  void getNonexistentCollectionNoPermission() throws Exception {
+    WorkspaceId workspaceId = WorkspaceId.of(UUID.randomUUID());
+
+    // ensure no permission
+    stubReadWorkspacePermission(workspaceId).thenReturn(false);
+    stubWriteWorkspacePermission(workspaceId).thenReturn(false);
+
+    // attempt to get a nonexistent collection
+    MvcResult mvcResult =
+        mockMvc
+            .perform(
+                get("/collections/v1/{workspaceId}/{collectionId}", workspaceId, UUID.randomUUID()))
+            .andExpect(status().isNotFound())
+            .andReturn();
+
+    // this test has two failure conditions:
+    // 1) the user doesn't have permissions to read collections (i.e. read the workspace)
+    // 2) the collection doesn't exist
+    // our code checks the first condition first, so that's the error we expect below
+
+    AuthenticationMaskableException actual =
+        assertInstanceOf(AuthenticationMaskableException.class, mvcResult.getResolvedException());
+    assertEquals("Workspace", actual.getObjectType());
+
+    ErrorResponse errorResponse =
+        objectMapper.readValue(mvcResult.getResponse().getContentAsString(), ErrorResponse.class);
+    assertEquals(
+        "Workspace does not exist or you do not have permission to see it",
+        errorResponse.getMessage());
+  }
+
+  // collection does exist, but in a different workspace
+  @Test
+  void getCollectionMismatchedWorkspaceId() throws Exception {
+    WorkspaceId workspaceIdOne = WorkspaceId.of(UUID.randomUUID());
+    WorkspaceId workspaceIdTwo = WorkspaceId.of(UUID.randomUUID());
+
+    // create a collection as setup, in workspace one
+    CollectionServerModel collectionServerModel = insertCollection(workspaceIdOne);
+    CollectionId collectionId = CollectionId.of(collectionServerModel.getId());
+
+    // ensure read permission on workspace two
+    stubReadWorkspacePermission(workspaceIdTwo).thenReturn(true);
+
+    // attempt to get the collection from workspace two (collection belongs to workspace one)
+    MvcResult mvcResult =
+        mockMvc
+            .perform(
+                get("/collections/v1/{workspaceId}/{collectionId}", workspaceIdTwo, collectionId))
+            .andExpect(status().isNotFound())
+            .andReturn();
+
+    assertInstanceOf(MissingObjectException.class, mvcResult.getResolvedException());
+    assertEquals(
+        "Collection does not exist or you do not have permission to see it",
+        mvcResult.getResolvedException().getMessage());
+  }
+
+  @Test
+  void getCollectionMismatchedWorkspaceIdNoPermission() throws Exception {
+    WorkspaceId workspaceIdOne = WorkspaceId.of(UUID.randomUUID());
+    WorkspaceId workspaceIdTwo = WorkspaceId.of(UUID.randomUUID());
+
+    // create a collection as setup, in workspace one
+    CollectionServerModel collectionServerModel = insertCollection(workspaceIdOne);
+    CollectionId collectionId = CollectionId.of(collectionServerModel.getId());
+
+    // ensure no permission on workspace two
+    stubReadWorkspacePermission(workspaceIdTwo).thenReturn(false);
+    stubWriteWorkspacePermission(workspaceIdTwo).thenReturn(false);
+
+    // attempt to get the collection from workspace two (collection belongs to workspace one)
+    MvcResult mvcResult =
+        mockMvc
+            .perform(
+                get("/collections/v1/{workspaceId}/{collectionId}", workspaceIdTwo, collectionId))
+            .andExpect(status().isNotFound())
+            .andReturn();
+
+    // this test has two failure conditions:
+    // 1) the user doesn't have permissions to read collections (i.e. read the workspace)
+    // 2) the collection doesn't exist in workspace two
+    // our code checks the first condition first, so that's the error we expect below
 
     AuthenticationMaskableException actual =
         assertInstanceOf(AuthenticationMaskableException.class, mvcResult.getResolvedException());

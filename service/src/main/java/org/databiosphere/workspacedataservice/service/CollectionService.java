@@ -51,8 +51,9 @@ public class CollectionService {
   private final CollectionRepository collectionRepository;
   private final NamedParameterJdbcTemplate namedTemplate;
 
-  // for use in error messages when user doesn't have permission to a workspace
+  // strings for use in error messages
   private static final String WORKSPACE = "Workspace";
+  private static final String COLLECTION = "Collection";
 
   @Nullable private WorkspaceId workspaceId;
 
@@ -202,6 +203,27 @@ public class CollectionService {
         .toList();
   }
 
+  public CollectionServerModel get(WorkspaceId workspaceId, CollectionId collectionId) {
+    // verify permission to read collections
+    if (!canListCollections(workspaceId)) {
+      throw new AuthenticationMaskableException(WORKSPACE);
+    }
+
+    // retrieve the collection; throw if collection not found
+    WdsCollection found =
+        collectionRepository
+            .find(workspaceId, collectionId)
+            .orElseThrow(() -> new MissingObjectException(COLLECTION));
+
+    // translate to the response model
+    CollectionServerModel serverModel =
+        new CollectionServerModel(found.name(), found.description());
+    serverModel.id(found.collectionId().id());
+
+    // and return
+    return serverModel;
+  }
+
   // exception handling for save()
   private void handleDbException(DbActionExecutionException dbActionExecutionException) {
     Throwable cause = dbActionExecutionException.getCause();
@@ -305,7 +327,7 @@ public class CollectionService {
     }
     // else, check if this collection has a row in the collections table
     if (!collectionDao.collectionSchemaExists(CollectionId.of(collectionId))) {
-      throw new MissingObjectException("Collection");
+      throw new MissingObjectException(COLLECTION);
     }
   }
 
@@ -366,7 +388,7 @@ public class CollectionService {
       }
     } catch (EmptyResultDataAccessException e) {
       if (!tenancyProperties.getAllowVirtualCollections()) {
-        throw new MissingObjectException("Collection");
+        throw new MissingObjectException(COLLECTION);
       }
     }
 
