@@ -47,7 +47,6 @@ jobs:
 
       - name: App Context Properties
         run: |
-          echo ${{ github.workflow }}
           echo "APP_VERSION=${{ env.APP_VERSION }}"
           echo "APP_BRANCH=${{ env.APP_BRANCH }}"
           echo "APP_SHA=${{ env.APP_SHA }}"
