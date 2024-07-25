@@ -244,6 +244,15 @@ public class CollectionService {
             .find(workspaceId, collectionId)
             .orElseThrow(() -> new MissingObjectException(COLLECTION));
 
+    // optimization: if the request doesn't change anything, don't bother writing to the db
+    if (found.name().equals(collectionServerModel.getName())
+        && found.description().equals(collectionServerModel.getDescription())) {
+      // make sure this response has an id
+      CollectionServerModel response = new CollectionServerModel(found.name(), found.description());
+      response.id(found.collectionId().id());
+      return response;
+    }
+
     // update the found object with the supplied name and description
     WdsCollection updateRequest =
         new WdsCollection(
