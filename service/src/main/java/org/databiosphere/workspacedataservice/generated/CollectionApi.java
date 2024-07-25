@@ -48,7 +48,7 @@ public interface CollectionApi {
      *
      * @param workspaceId Workspace id (required)
      * @param collectionServerModel The collection to create (required)
-     * @return The collection just created. (status code 200)
+     * @return The collection just created. (status code 201)
      */
     @Operation(
         operationId = "createCollectionV1",
@@ -56,7 +56,7 @@ public interface CollectionApi {
         description = "If collection id is specified in the request body, it must be a valid UUID. If omitted, the system will generate an id. ",
         tags = { "Collection" },
         responses = {
-            @ApiResponse(responseCode = "200", description = "The collection just created.", content = {
+            @ApiResponse(responseCode = "201", description = "The collection just created.", content = {
                 @Content(mediaType = "application/json", schema = @Schema(implementation = CollectionServerModel.class))
             })
         },
