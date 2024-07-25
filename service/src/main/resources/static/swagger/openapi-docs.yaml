@@ -365,8 +365,8 @@ paths:
   ##############################
   /instances/{v}:
     get:
-      summary: List instances
-      description: List all instances in this server.
+      summary: This API will be deleted on or after August 25, 2024.
+      description: Use GET /collections/v1/{workspaceId} instead.
       operationId: listWDSInstances
       deprecated: true
       tags:
@@ -385,8 +385,8 @@ paths:
                   format: uuid
   /instances/{v}/{instanceid}:
     post:
-      summary: Create an instance
-      description: Create an instance with the given UUID.
+      summary: This API will be deleted on or after August 25, 2024.
+      description: Use POST /collections/v1/{workspaceId} instead.
       operationId: createWDSInstance
       deprecated: true
       security:
@@ -406,11 +406,8 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
     delete:
-      summary: Delete an instance
-      description: |
-        Delete the instance with the given UUID. This API is liable to change.
-
-        THIS WILL DELETE ALL DATA WITHIN THE INSTANCE. Be certain this is what you want to do.
+      summary: This API will be deleted on or after August 25, 2024.
+      description: Use DELETE /collections/v1/{workspaceId}/{collectionId} instead.
       operationId: deleteWDSInstance
       deprecated: true
       security:
