@@ -12,6 +12,10 @@ on:
       - main
     paths-ignore: [ '**.md' ]
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.head_ref || 'main' }}
+  cancel-in-progress: true
+
 jobs:
   # The app-context job retrieves the App Context artifact that was uploaded
   # through the compute-app-context.yml workflow. If the last commit was
@@ -43,6 +47,7 @@ jobs:
 
       - name: App Context Properties
         run: |
+          echo ${{ github.workflow }}
           echo "APP_VERSION=${{ env.APP_VERSION }}"
           echo "APP_BRANCH=${{ env.APP_BRANCH }}"
           echo "APP_SHA=${{ env.APP_SHA }}"
