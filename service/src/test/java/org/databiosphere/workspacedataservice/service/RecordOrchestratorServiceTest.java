@@ -191,7 +191,7 @@ class RecordOrchestratorServiceTest extends TestBase {
     testCreateRecord("one", TEST_KEY, "value1");
 
     SearchRequest searchRequest = new SearchRequest();
-    searchRequest.setSortAttribute("sys_wds"); // default primary key name for testCreateRecord()
+    searchRequest.setSortAttribute("sys_name"); // default primary key name for testCreateRecord()
     searchRequest.setSort(SortDirection.DESC);
 
     RecordQueryResponse resp =
