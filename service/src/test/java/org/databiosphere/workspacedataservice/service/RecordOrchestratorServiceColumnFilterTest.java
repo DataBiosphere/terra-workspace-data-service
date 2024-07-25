@@ -188,9 +188,52 @@ class RecordOrchestratorServiceColumnFilterTest extends TestBase {
   void filterForNull() {}
 
   // can users search multiple columns at once?
-  @Disabled("need to write the test")
   @Test
-  void filterMultipleColumns() {}
+  void filterMultipleColumns() {
+    // init the record type. This allows us to query the table prior to inserting any records.
+    Map<String, DataTypeMapping> schema =
+        Map.of(TEST_COLUMN, DataTypeMapping.STRING, CONTROL_COLUMN, DataTypeMapping.STRING);
+    recordDao.createRecordType(
+        COLLECTION_UUID, schema, TEST_TYPE, RelationCollection.empty(), PRIMARY_KEY);
+
+    String criteria1 = "mack";
+    String criteria2 = "bentley";
+
+    // build the by-column filters: separate criteria for test and control columns
+    List<FilterColumn> filterColumns =
+        List.of(
+            new FilterColumn().column(TEST_COLUMN).find(criteria1),
+            new FilterColumn().column(CONTROL_COLUMN).find(criteria2));
+
+    SearchFilter searchFilter = new SearchFilter(Optional.empty(), Optional.of(filterColumns));
+
+    SearchRequest searchRequest = new SearchRequest();
+    searchRequest.setFilter(Optional.of(searchFilter));
+
+    // what value should we use for the control column?
+    Supplier<Object> controlValueSupplier = () -> UUID.randomUUID().toString();
+
+    // perform the filter, should return zero
+    filterAndExpect(0, List.of(), searchRequest);
+
+    // insert a few filler records, then filter again; should still return zero
+    insertFillerRecords(3, criteria1, controlValueSupplier);
+    filterAndExpect(0, List.of(), searchRequest);
+
+    // insert a findable record and a few more filler records, then filter; should return 1
+    // these findable records use insertFillerRecords() to create records with findable
+    // criteria in the control column.
+    List<String> findOne = insertFillerRecords(1, criteria2, () -> criteria1);
+    insertFillerRecords(3, criteria1, controlValueSupplier);
+    filterAndExpect(1, findOne, searchRequest);
+
+    // insert two more findable records, then filter; should return 3
+    // these findable records use insertFillerRecords() to create records with findable
+    // criteria in the control column.
+    List<String> findTwo = insertFillerRecords(2, criteria2, () -> criteria1);
+    List<String> findOneAndTwo = Stream.concat(findOne.stream(), findTwo.stream()).toList();
+    filterAndExpect(3, findOneAndTwo, searchRequest);
+  }
 
   // the "totalRecords" value in the response is the *unfiltered* count. Should it be the filtered
   // count? Should we add a new value in the response for the filtered count? If a new value,
