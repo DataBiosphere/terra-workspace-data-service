@@ -3,6 +3,7 @@ package org.databiosphere.workspacedataservice.service;
 import static org.databiosphere.workspacedataservice.dao.SqlUtils.quote;
 import static org.databiosphere.workspacedataservice.service.RecordUtils.validateVersion;
 
+import bio.terra.common.db.WriteTransaction;
 import java.util.List;
 import java.util.Objects;
 import java.util.Spliterator;
@@ -86,6 +87,7 @@ public class CollectionService {
    * @param collectionServerModel the collection definition
    * @return the created collection
    */
+  @WriteTransaction
   public CollectionServerModel save(
       WorkspaceId workspaceId, CollectionServerModel collectionServerModel) {
 
@@ -121,23 +123,14 @@ public class CollectionService {
             collectionServerModel.getName(),
             collectionServerModel.getDescription());
 
-    // save
-    WdsCollection actual = null;
-    try {
-      actual = collectionRepository.save(wdsCollectionRequest);
-    } catch (DbActionExecutionException dbActionExecutionException) {
-      handleDbException(dbActionExecutionException);
-    }
+    // save, handle exceptions, and translate to the response model
+    CollectionServerModel response = saveAndHandleExceptions(wdsCollectionRequest);
 
     // create the postgres schema itself
     namedTemplate.getJdbcTemplate().update("create schema " + quote(collectionId.toString()));
 
     activityLogger.saveEventForCurrentUser(
         user -> user.created().collection().withUuid(collectionId.id()));
-
-    // translate back to CollectionServerModel
-    CollectionServerModel response = new CollectionServerModel(actual.name(), actual.description());
-    response.id(actual.collectionId().id());
 
     return response;
   }
@@ -148,6 +141,7 @@ public class CollectionService {
    * @param workspaceId the workspace containing the collection to be deleted
    * @param collectionId id of the collection to be deleted
    */
+  @WriteTransaction
   public void delete(WorkspaceId workspaceId, CollectionId collectionId) {
 
     // check that the current user has permission to delete the collection
@@ -209,6 +203,13 @@ public class CollectionService {
         .toList();
   }
 
+  /**
+   * Retrieve a single collection by its workspaceId and collectionId.
+   *
+   * @param workspaceId the workspace containing the collection to be retrieved
+   * @param collectionId id of the collection to be retrieved
+   * @return the collection
+   */
   public CollectionServerModel get(WorkspaceId workspaceId, CollectionId collectionId) {
     // verify permission to read collections
     if (!canListCollections(workspaceId)) {
@@ -230,7 +231,92 @@ public class CollectionService {
     return serverModel;
   }
 
-  // exception handling for save()
+  /**
+   * Updates the name and/or description for a collection. Updates to the collection's id or
+   * workspaceId are not allowed.
+   *
+   * @param workspaceId the workspace containing the collection to be updated
+   * @param collectionId id of the collection to be updated
+   * @param collectionServerModel object containing the updated name and description. Collection id
+   *     is optional in this object. If specified, it must match the collectionId argument.
+   * @return the updated collection
+   */
+  public CollectionServerModel update(
+      WorkspaceId workspaceId,
+      CollectionId collectionId,
+      CollectionServerModel collectionServerModel) {
+
+    // if collection id is specified in the CollectionServerModel, ensure it matches
+    if (collectionServerModel.getId() != null
+        && !collectionServerModel.getId().equals(collectionId.id())) {
+      throw new ValidationException(
+          "Collection id in request body does not match collection id in URL. You can omit the collection id from the request body.");
+    }
+
+    // verify permission to update collections
+    if (!canWriteWorkspace(workspaceId)) {
+      // the user doesn't have permission to update collections.
+      // do they have permission to list collections in the workspace?
+      if (canReadWorkspace(workspaceId)) {
+        throw new AuthorizationException("Caller does not have permission to update collection.");
+      } else {
+        throw new AuthenticationMaskableException(WORKSPACE);
+      }
+    }
+
+    // retrieve the collection; throw if collection not found
+    WdsCollection found =
+        collectionRepository
+            .find(workspaceId, collectionId)
+            .orElseThrow(() -> new MissingObjectException(COLLECTION));
+
+    // optimization: if the request doesn't change anything, don't bother writing to the db
+    if (found.name().equals(collectionServerModel.getName())
+        && found.description().equals(collectionServerModel.getDescription())) {
+      // make sure this response has an id
+      CollectionServerModel response = new CollectionServerModel(found.name(), found.description());
+      response.id(found.collectionId().id());
+      return response;
+    }
+
+    // update the found object with the supplied name and description
+    WdsCollection updateRequest =
+        new WdsCollection(
+            found.workspaceId(),
+            found.collectionId(),
+            collectionServerModel.getName(),
+            collectionServerModel.getDescription());
+
+    // save, handle exceptions, and translate to the response model
+    CollectionServerModel response = saveAndHandleExceptions(updateRequest);
+
+    activityLogger.saveEventForCurrentUser(
+        user -> user.updated().collection().withUuid(collectionId.id()));
+
+    // respond
+    return response;
+  }
+
+  // common logic for save() and update()
+  private CollectionServerModel saveAndHandleExceptions(WdsCollection saveRequest) {
+    // save
+    WdsCollection actual = null;
+    try {
+      actual = collectionRepository.save(saveRequest);
+    } catch (DbActionExecutionException dbActionExecutionException) {
+      handleDbException(dbActionExecutionException);
+    }
+
+    // translate to the response model
+    CollectionServerModel serverModel =
+        new CollectionServerModel(actual.name(), actual.description());
+    serverModel.id(actual.collectionId().id());
+
+    // and return
+    return serverModel;
+  }
+
+  // exception handling for save() and update()
   private void handleDbException(DbActionExecutionException dbActionExecutionException) {
     Throwable cause = dbActionExecutionException.getCause();
     if (cause == null) {
@@ -325,6 +411,8 @@ public class CollectionService {
     activityLogger.saveEventForCurrentUser(
         user -> user.deleted().collection().withUuid(collectionUuid));
   }
+
+  // ============================== helpers ==============================
 
   public void validateCollection(UUID collectionId) {
     // if this deployment allows virtual collections, there is nothing to validate
