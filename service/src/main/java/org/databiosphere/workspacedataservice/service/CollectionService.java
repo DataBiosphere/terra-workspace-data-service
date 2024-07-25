@@ -3,6 +3,7 @@ package org.databiosphere.workspacedataservice.service;
 import static org.databiosphere.workspacedataservice.dao.SqlUtils.quote;
 import static org.databiosphere.workspacedataservice.service.RecordUtils.validateVersion;
 
+import bio.terra.common.db.WriteTransaction;
 import java.util.List;
 import java.util.Objects;
 import java.util.Spliterator;
@@ -86,6 +87,7 @@ public class CollectionService {
    * @param collectionServerModel the collection definition
    * @return the created collection
    */
+  @WriteTransaction
   public CollectionServerModel save(
       WorkspaceId workspaceId, CollectionServerModel collectionServerModel) {
 
@@ -133,6 +135,7 @@ public class CollectionService {
    * @param workspaceId the workspace containing the collection to be deleted
    * @param collectionId id of the collection to be deleted
    */
+  @WriteTransaction
   public void delete(WorkspaceId workspaceId, CollectionId collectionId) {
 
     // check that the current user has permission to delete the collection
