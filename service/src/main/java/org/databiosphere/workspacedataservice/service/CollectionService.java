@@ -412,6 +412,8 @@ public class CollectionService {
         user -> user.deleted().collection().withUuid(collectionUuid));
   }
 
+  // ============================== helpers ==============================
+
   public void validateCollection(UUID collectionId) {
     // if this deployment allows virtual collections, there is nothing to validate
     if (tenancyProperties.getAllowVirtualCollections()) {
