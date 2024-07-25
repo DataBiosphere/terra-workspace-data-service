@@ -270,43 +270,15 @@ public class RecordDao {
       return List.of();
     }
 
-    // init a where clause (as the empty string) and bind params (as an empty map)
-    StringBuilder whereClause = new StringBuilder();
-    MapSqlParameterSource sqlParams = new MapSqlParameterSource();
+    // find primary key column name
+    String pkColumn = primaryKeyDao.getPrimaryKeyColumn(recordType, collectionId);
 
-    // if this query has specified filter.ids, populate the where clause and bind params
-    if (filterIds.isPresent()) {
-      // we know ids is non-empty due to the check above
-      whereClause.append(" where ");
-      whereClause.append(quote(primaryKeyDao.getPrimaryKeyColumn(recordType, collectionId)));
-      whereClause.append(" in (:filterIds) ");
-      sqlParams.addValue("filterIds", filterIds.get());
-    }
-
-    // if this query has specified filter.filters, populate the where clause and bind params
-    Optional<List<FilterColumn>> filterColumns = searchFilter.flatMap(SearchFilter::filters);
-    if (filterColumns.isPresent() && !filterColumns.get().isEmpty()) {
-      if (whereClause.isEmpty()) {
-        whereClause.append(" where 1=1");
-      }
-
-      var idx = 0;
-      for (FilterColumn filter : filterColumns.get()) {
-        // bind parameter names have syntax limitations, so we use an artificial one based on
-        // the filter index
-        var paramName = "filter" + idx;
-        whereClause.append(" and ");
-        whereClause.append(quote(filter.getColumn()));
-        whereClause.append(" = :");
-        whereClause.append(paramName);
-        sqlParams.addValue(paramName, filter.getFind());
-      }
-    }
+    WhereClause where = generateQueryWhereClause(pkColumn, searchFilter);
 
     return namedTemplate.query(
         "select * from "
             + getQualifiedTableName(recordType, collectionId)
-            + whereClause
+            + where.sql()
             + " order by "
             + (sortAttribute == null
                 ? quote(primaryKeyDao.getPrimaryKeyColumn(recordType, collectionId))
@@ -317,8 +289,51 @@ public class RecordDao {
             + pageSize
             + " offset "
             + offset,
-        sqlParams,
+        where.params(),
         new RecordRowMapper(recordType, objectMapper, collectionId));
+  }
+
+  // helper method to generate the SQL where clause for queryForRecords()
+  @VisibleForTesting
+  static WhereClause generateQueryWhereClause(
+      String pkColumn, Optional<SearchFilter> searchFilter) {
+    // init an empty list of clauses and empty map of bind params
+    List<String> clauses = new ArrayList<>();
+    MapSqlParameterSource sqlParams = new MapSqlParameterSource();
+
+    // extract potential record ids from the `filter` param
+    Optional<List<String>> filterIds = searchFilter.flatMap(SearchFilter::ids);
+
+    // if this query has specified filter.ids, populate the where clause and bind params
+    if (filterIds.isPresent()) {
+      // we know ids is non-empty due to the check in queryForRecords above
+      clauses.add(quote(pkColumn) + " in (:filterIds)");
+      sqlParams.addValue("filterIds", filterIds.get());
+    }
+
+    // if this query has specified filter.filters, populate the where clause and bind params
+    Optional<List<FilterColumn>> filterColumns = searchFilter.flatMap(SearchFilter::filters);
+    if (filterColumns.isPresent() && !filterColumns.get().isEmpty()) {
+
+      var idx = 0;
+      for (FilterColumn filter : filterColumns.get()) {
+        // bind parameter names have syntax limitations, so we use an artificial one based on
+        // the filter index
+        var paramName = "filter" + idx;
+        clauses.add(quote(filter.getColumn()) + " = :" + paramName);
+        sqlParams.addValue(paramName, filter.getFind());
+        idx++;
+      }
+    }
+
+    // translate the list of individual clauses into a single SQL fragment
+    String sqlFragment = "";
+    if (!clauses.isEmpty()) {
+      // prepend with "where" and join clauses
+      sqlFragment = " where " + StringUtils.join(clauses, " and ");
+    }
+
+    return new WhereClause(sqlFragment, sqlParams);
   }
 
   public List<String> getAllAttributeNames(UUID collectionId, RecordType recordType) {
@@ -1307,4 +1322,8 @@ public class RecordDao {
                 + " drop column "
                 + quote(SqlUtils.validateSqlString(attribute, ATTRIBUTE)));
   }
+
+  // helper tuple class for use by generateQueryWhereClause()
+  @VisibleForTesting
+  record WhereClause(String sql, MapSqlParameterSource params) {}
 }
