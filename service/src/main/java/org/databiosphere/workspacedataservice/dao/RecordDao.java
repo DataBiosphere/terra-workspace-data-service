@@ -37,6 +37,7 @@ import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 import javax.sql.DataSource;
 import org.apache.commons.lang3.StringUtils;
+import org.databiosphere.workspacedata.model.FilterColumn;
 import org.databiosphere.workspacedataservice.service.DataTypeInferer;
 import org.databiosphere.workspacedataservice.service.RelationUtils;
 import org.databiosphere.workspacedataservice.service.model.DataTypeMapping;
@@ -270,17 +271,36 @@ public class RecordDao {
     }
 
     // init a where clause (as the empty string) and bind params (as an empty map)
-    String whereClause = "";
+    StringBuilder whereClause = new StringBuilder();
     MapSqlParameterSource sqlParams = new MapSqlParameterSource();
 
     // if this query has specified filter.ids, populate the where clause and bind params
     if (filterIds.isPresent()) {
       // we know ids is non-empty due to the check above
-      whereClause =
-          " where "
-              + quote(primaryKeyDao.getPrimaryKeyColumn(recordType, collectionId))
-              + " in (:filterIds) ";
+      whereClause.append(" where ");
+      whereClause.append(quote(primaryKeyDao.getPrimaryKeyColumn(recordType, collectionId)));
+      whereClause.append(" in (:filterIds) ");
       sqlParams.addValue("filterIds", filterIds.get());
+    }
+
+    // if this query has specified filter.filters, populate the where clause and bind params
+    Optional<List<FilterColumn>> filterColumns = searchFilter.flatMap(SearchFilter::filters);
+    if (filterColumns.isPresent() && !filterColumns.get().isEmpty()) {
+      if (whereClause.isEmpty()) {
+        whereClause.append(" where 1=1");
+      }
+
+      var idx = 0;
+      for (FilterColumn filter : filterColumns.get()) {
+        // bind parameter names have syntax limitations, so we use an artificial one based on
+        // the filter index
+        var paramName = "filter" + idx;
+        whereClause.append(" and ");
+        whereClause.append(quote(filter.getColumn()));
+        whereClause.append(" = :");
+        whereClause.append(paramName);
+        sqlParams.addValue(paramName, filter.getFind());
+      }
     }
 
     return namedTemplate.query(

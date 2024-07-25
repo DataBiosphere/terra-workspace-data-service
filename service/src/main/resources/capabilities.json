@@ -4,5 +4,6 @@
   "dataimport.tdrmanifest": false,
   "edit.deleteAttribute": true,
   "edit.renameAttribute": true,
-  "search.filter.ids": true
+  "search.filter.ids": true,
+  "search.filter.bycolumn": true
 }
