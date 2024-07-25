@@ -1624,14 +1624,13 @@ class CollectionControllerMockMvcTest extends MockMvcTestBase {
     stubWriteWorkspacePermission(workspaceId).thenReturn(true);
 
     // attempt to update the collection, but don't specify any changes
-    MvcResult mvcResult =
-        mockMvc
-            .perform(
-                put("/collections/v1/{workspaceId}/{collectionId}", workspaceId, collectionId)
-                    .content(toJson(collectionServerModel))
-                    .contentType(MediaType.APPLICATION_JSON))
-            .andExpect(status().isOk())
-            .andReturn();
+    mockMvc
+        .perform(
+            put("/collections/v1/{workspaceId}/{collectionId}", workspaceId, collectionId)
+                .content(toJson(collectionServerModel))
+                .contentType(MediaType.APPLICATION_JSON))
+        .andExpect(status().isOk())
+        .andReturn();
 
     // collection should not be updated (collection should exist with original name/description)
     assertCollectionExists(
