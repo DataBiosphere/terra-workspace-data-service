@@ -203,6 +203,13 @@ public class CollectionService {
         .toList();
   }
 
+  /**
+   * Retrieve a single collection by its workspaceId and collectionId.
+   *
+   * @param workspaceId the workspace containing the collection to be retrieved
+   * @param collectionId id of the collection to be retrieved
+   * @return the collection
+   */
   public CollectionServerModel get(WorkspaceId workspaceId, CollectionId collectionId) {
     // verify permission to read collections
     if (!canListCollections(workspaceId)) {
@@ -224,6 +231,16 @@ public class CollectionService {
     return serverModel;
   }
 
+  /**
+   * Updates the name and/or description for a collection. Updates to the collection's id or
+   * workspaceId are not allowed.
+   *
+   * @param workspaceId the workspace containing the collection to be updated
+   * @param collectionId id of the collection to be updated
+   * @param collectionServerModel object containing the updated name and description. Collection id
+   *     is optional in this object. If specified, it must match the collectionId argument.
+   * @return the updated collection
+   */
   public CollectionServerModel update(
       WorkspaceId workspaceId,
       CollectionId collectionId,
