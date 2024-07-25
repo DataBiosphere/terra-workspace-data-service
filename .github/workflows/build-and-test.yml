@@ -12,6 +12,10 @@ on:
       - main
     paths-ignore: [ '**.md' ]
 
+# Prevents multiple 'Build and Test' workflows from being triggered when:
+# - Several PR commits to the same branch happen in quick succession
+# - Multiple merges to the mainline happen in quick succession
+# Ensures that only the 'Build and Test' workflow from the most recent commit will be running effectively.
 concurrency:
   group: ${{ github.workflow }}-${{ github.head_ref || 'main' }}
   cancel-in-progress: true
