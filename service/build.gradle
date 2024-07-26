@@ -117,6 +117,7 @@ dependencies {
         exclude(group: 'org.apache.kerby')
         exclude(group: 'com.google.protobuf')
         exclude(group: 'org.bouncycastle')
+        exclude(group: 'dnsjava')
     }
     implementation "org.apache.hadoop:hadoop-common:$hadoop_version", withoutHadoopExcludes
     implementation "org.apache.hadoop:hadoop-mapreduce-client-core:$hadoop_version", withoutHadoopExcludes
