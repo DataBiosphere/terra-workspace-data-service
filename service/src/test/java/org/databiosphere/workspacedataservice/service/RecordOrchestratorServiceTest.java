@@ -121,8 +121,8 @@ class RecordOrchestratorServiceTest extends TestBase {
   void sortAscending() {
     // insert records out of any order to ensure native db order doesn't give false positives
     testCreateRecord("two", TEST_KEY, "value2");
-    testCreateRecord("three", TEST_KEY, "value3");
     testCreateRecord("one", TEST_KEY, "value1");
+    testCreateRecord("three", TEST_KEY, "value3");
 
     SearchRequest searchRequest = new SearchRequest();
     searchRequest.setSortAttribute(TEST_KEY);
@@ -143,8 +143,8 @@ class RecordOrchestratorServiceTest extends TestBase {
   void sortDescending() {
     // insert records out of any order to ensure native db order doesn't give false positives
     testCreateRecord("two", TEST_KEY, "value2");
-    testCreateRecord("three", TEST_KEY, "value3");
     testCreateRecord("one", TEST_KEY, "value1");
+    testCreateRecord("three", TEST_KEY, "value3");
 
     SearchRequest searchRequest = new SearchRequest();
     searchRequest.setSortAttribute(TEST_KEY);
@@ -165,8 +165,8 @@ class RecordOrchestratorServiceTest extends TestBase {
   void sortPrimaryKeyImplicit() {
     // insert records out of any order to ensure native db order doesn't give false positives
     testCreateRecord("two", TEST_KEY, "value2");
-    testCreateRecord("three", TEST_KEY, "value3");
     testCreateRecord("one", TEST_KEY, "value1");
+    testCreateRecord("three", TEST_KEY, "value3");
 
     SearchRequest searchRequest = new SearchRequest();
     // omitting the sort attribute will implicitly sort by primary key
@@ -187,8 +187,8 @@ class RecordOrchestratorServiceTest extends TestBase {
   void sortPrimaryKeyExplicit() {
     // insert records out of any order to ensure native db order doesn't give false positives
     testCreateRecord("two", TEST_KEY, "value2");
-    testCreateRecord("three", TEST_KEY, "value3");
     testCreateRecord("one", TEST_KEY, "value1");
+    testCreateRecord("three", TEST_KEY, "value3");
 
     SearchRequest searchRequest = new SearchRequest();
     searchRequest.setSortAttribute("sys_name"); // default primary key name for testCreateRecord()
