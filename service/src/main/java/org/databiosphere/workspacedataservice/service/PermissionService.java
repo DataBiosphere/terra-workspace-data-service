@@ -51,6 +51,7 @@ public class PermissionService {
     checkWriteAndThrow(workspaceId, "Collection");
   }
 
+  // private implementation method for write permissions
   private void checkWriteAndThrow(WorkspaceId workspaceId, String objectType) {
     if (canWriteWorkspace(workspaceId)) {
       return;
@@ -83,6 +84,7 @@ public class PermissionService {
     checkReadAndThrow(workspaceId, "Collection");
   }
 
+  // private implementation method for read permissions
   private void checkReadAndThrow(WorkspaceId workspaceId, String objectType) {
     if (canReadWorkspace(workspaceId)) {
       return;
