@@ -130,8 +130,8 @@ public class ImportService {
     return switch (importType) {
       case PFB -> new PfbSchedulable(jobId.toString(), "PFB import", arguments);
       case RAWLSJSON -> new RawlsJsonSchedulable(jobId.toString(), "RAWLSJSON import", arguments);
-      case TDRMANIFEST ->
-          new TdrManifestSchedulable(jobId.toString(), "TDR manifest import", arguments);
+      case TDRMANIFEST -> new TdrManifestSchedulable(
+          jobId.toString(), "TDR manifest import", arguments);
     };
   }
 }

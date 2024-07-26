@@ -77,11 +77,10 @@ public class JobService {
 
       switch (newStatus) {
         case SUCCEEDED -> jobDao.succeeded(jobId);
-        case ERROR ->
-            jobDao.fail(jobId, requireNonNullElse(update.errorMessage(), "Unknown error"));
-        default ->
-            throw new ValidationException(
-                "Unexpected status from Rawls for job %s: %s".formatted(jobId, newStatus));
+        case ERROR -> jobDao.fail(
+            jobId, requireNonNullElse(update.errorMessage(), "Unknown error"));
+        default -> throw new ValidationException(
+            "Unexpected status from Rawls for job %s: %s".formatted(jobId, newStatus));
       }
     } catch (EmptyResultDataAccessException e) {
       throw new MissingObjectException("Job");

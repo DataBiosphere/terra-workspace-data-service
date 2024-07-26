@@ -27,11 +27,9 @@ public class CloningController {
   private final PermissionService permissionService;
 
   public CloningController(
-      BackupRestoreService backupRestoreService,
-      PermissionService permissionService,
-      PermissionService permissionService1) {
+      BackupRestoreService backupRestoreService, PermissionService permissionService) {
     this.backupRestoreService = backupRestoreService;
-    this.permissionService = permissionService1;
+    this.permissionService = permissionService;
   }
 
   @PostMapping("/backup/{version}")
