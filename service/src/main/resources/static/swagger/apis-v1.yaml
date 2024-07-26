@@ -11,6 +11,9 @@ info:
   title: Workspace Data Service
   version: v1
 
+security:
+  - bearerAuth: [ ]
+
 tags:
   # Tags should be listed in the order they should appear in the UI
   - name: Import
@@ -31,8 +34,6 @@ paths:
       summary: Import from a file
       description: Imports records from the specified URL.
       operationId: importV1
-      security:
-        - bearerAuth: [ ]
       tags:
         - Import
       parameters:
@@ -76,8 +77,6 @@ paths:
     get:
       summary: Get status of a long-running job.
       operationId: jobStatusV1
-      security:
-        - bearerAuth: [ ]
       tags:
         - Job
       parameters:
@@ -104,8 +103,6 @@ paths:
     get:
       summary: Get all jobs with a certain status under a particular instance.
       operationId: jobsInInstanceV1
-      security:
-        - bearerAuth: [ ]
       tags:
         - Job
       parameters:
@@ -137,8 +134,6 @@ paths:
     get:
       summary: List all collections in this workspace.
       operationId: listCollectionsV1
-      security:
-        - bearerAuth: [ ]
       tags:
         - Collection
       parameters:
@@ -158,8 +153,6 @@ paths:
         If collection id is specified in the request body, it must be a valid UUID.
         If omitted, the system will generate an id.
       operationId: createCollectionV1
-      security:
-        - bearerAuth: [ ]
       tags:
         - Collection
       parameters:
@@ -182,8 +175,6 @@ paths:
     get:
       summary: Retrieve a single collection.
       operationId: getCollectionV1
-      security:
-        - bearerAuth: [ ]
       tags:
         - Collection
       parameters:
@@ -202,8 +193,6 @@ paths:
         Collection id is optional in the request body. If specified, it must match the collection id
         specified in the url.
       operationId: updateCollectionV1
-      security:
-        - bearerAuth: [ ]
       tags:
         - Collection
       parameters:
@@ -226,8 +215,6 @@ paths:
     delete:
       summary: Delete the specified collection.
       operationId: deleteCollectionV1
-      security:
-        - bearerAuth: [ ]
       tags:
         - Collection
       parameters:
@@ -246,6 +233,7 @@ paths:
       operationId: capabilities
       tags:
         - Capabilities
+      security: [ ]
       responses:
         200:
           description: key-value pairs describing capabilities
