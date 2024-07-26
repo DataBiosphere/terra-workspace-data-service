@@ -1,5 +1,6 @@
 package org.databiosphere.workspacedataservice.service;
 
+import org.databiosphere.workspacedataservice.config.TwdsProperties;
 import org.databiosphere.workspacedataservice.sam.SamAuthorizationDao;
 import org.databiosphere.workspacedataservice.sam.SamAuthorizationDaoFactory;
 import org.databiosphere.workspacedataservice.service.model.exception.AuthenticationMaskableException;
@@ -14,11 +15,15 @@ public class PermissionService {
 
   private final SamAuthorizationDaoFactory samAuthorizationDaoFactory;
   private final CollectionService collectionService;
+  private final TwdsProperties twdsProperties;
 
   public PermissionService(
-      SamAuthorizationDaoFactory samAuthorizationDaoFactory, CollectionService collectionService) {
+      SamAuthorizationDaoFactory samAuthorizationDaoFactory,
+      CollectionService collectionService,
+      TwdsProperties twdsProperties) {
     this.samAuthorizationDaoFactory = samAuthorizationDaoFactory;
     this.collectionService = collectionService;
+    this.twdsProperties = twdsProperties;
   }
 
   /**
@@ -83,6 +88,28 @@ public class PermissionService {
       return;
     }
     throw new AuthenticationMaskableException(objectType);
+  }
+
+  /**
+   * Check read permission on the single-tenant workspace id set in the environment.
+   *
+   * @deprecated Use {@link #requireReadPermission(WorkspaceId)} or {@link
+   *     #requireReadPermission(CollectionId)} instead.
+   */
+  @Deprecated
+  public void requireReadPermissionSingleTenant() {
+    requireReadPermission(twdsProperties.workspaceId());
+  }
+
+  /**
+   * Check write permission on the single-tenant workspace id set in the environment.
+   *
+   * @deprecated Use {@link #requireWritePermission(WorkspaceId)} or {@link
+   *     #requireWritePermission(CollectionId)} instead.
+   */
+  @Deprecated
+  public void requireWritePermissionSingleTenant() {
+    requireWritePermission(twdsProperties.workspaceId());
   }
 
   /**

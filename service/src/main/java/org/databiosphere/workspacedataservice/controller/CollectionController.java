@@ -6,6 +6,7 @@ import org.databiosphere.workspacedataservice.annotations.DeploymentMode.DataPla
 import org.databiosphere.workspacedataservice.generated.CollectionApi;
 import org.databiosphere.workspacedataservice.generated.CollectionServerModel;
 import org.databiosphere.workspacedataservice.service.CollectionService;
+import org.databiosphere.workspacedataservice.service.PermissionService;
 import org.databiosphere.workspacedataservice.shared.model.CollectionId;
 import org.databiosphere.workspacedataservice.shared.model.WorkspaceId;
 import org.springframework.http.HttpStatus;
@@ -21,9 +22,12 @@ import org.springframework.web.bind.annotation.RestController;
 public class CollectionController implements CollectionApi {
 
   private final CollectionService collectionService;
+  private final PermissionService permissionService;
 
-  public CollectionController(CollectionService collectionService) {
+  public CollectionController(
+      CollectionService collectionService, PermissionService permissionService) {
     this.collectionService = collectionService;
+    this.permissionService = permissionService;
   }
 
   /**
@@ -38,6 +42,7 @@ public class CollectionController implements CollectionApi {
   @Override
   public ResponseEntity<CollectionServerModel> createCollectionV1(
       UUID workspaceId, CollectionServerModel collectionServerModel) {
+    permissionService.requireWritePermission(WorkspaceId.of(workspaceId));
     CollectionServerModel coll =
         collectionService.save(WorkspaceId.of(workspaceId), collectionServerModel);
     return new ResponseEntity<>(coll, HttpStatus.CREATED);
@@ -52,6 +57,7 @@ public class CollectionController implements CollectionApi {
    */
   @Override
   public ResponseEntity<Void> deleteCollectionV1(UUID workspaceId, UUID collectionId) {
+    permissionService.requireWritePermission(WorkspaceId.of(workspaceId));
     collectionService.delete(WorkspaceId.of(workspaceId), CollectionId.of(collectionId));
     return new ResponseEntity<>(HttpStatus.NO_CONTENT);
   }
@@ -66,6 +72,7 @@ public class CollectionController implements CollectionApi {
   @Override
   public ResponseEntity<CollectionServerModel> getCollectionV1(
       UUID workspaceId, UUID collectionId) {
+    permissionService.requireReadPermission(WorkspaceId.of(workspaceId));
     CollectionServerModel coll =
         collectionService.get(WorkspaceId.of(workspaceId), CollectionId.of(collectionId));
     return new ResponseEntity<>(coll, HttpStatus.OK);
@@ -79,6 +86,7 @@ public class CollectionController implements CollectionApi {
    */
   @Override
   public ResponseEntity<List<CollectionServerModel>> listCollectionsV1(UUID workspaceId) {
+    permissionService.requireWritePermission(WorkspaceId.of(workspaceId));
     List<CollectionServerModel> collections = collectionService.list(WorkspaceId.of(workspaceId));
     return new ResponseEntity<>(collections, HttpStatus.OK);
   }
@@ -96,6 +104,7 @@ public class CollectionController implements CollectionApi {
   @Override
   public ResponseEntity<CollectionServerModel> updateCollectionV1(
       UUID workspaceId, UUID collectionId, CollectionServerModel collectionServerModel) {
+    permissionService.requireWritePermission(WorkspaceId.of(workspaceId));
     CollectionServerModel coll =
         collectionService.update(
             WorkspaceId.of(workspaceId), CollectionId.of(collectionId), collectionServerModel);
