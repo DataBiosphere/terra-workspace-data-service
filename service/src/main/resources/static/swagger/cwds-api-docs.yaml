@@ -11,6 +11,9 @@ info:
     name: BSD
     url: https://opensource.org/licenses/BSD-3-Clause
 
+security:
+  - bearerAuth: [ ]
+
 tags:
   # Tags should be listed in the order they should appear in the UI
   - name: Import
