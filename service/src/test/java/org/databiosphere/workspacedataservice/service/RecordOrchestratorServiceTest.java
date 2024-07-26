@@ -33,6 +33,7 @@ import org.databiosphere.workspacedataservice.shared.model.RecordRequest;
 import org.databiosphere.workspacedataservice.shared.model.RecordResponse;
 import org.databiosphere.workspacedataservice.shared.model.RecordType;
 import org.databiosphere.workspacedataservice.shared.model.SearchRequest;
+import org.databiosphere.workspacedataservice.shared.model.SortDirection;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -114,6 +115,94 @@ class RecordOrchestratorServiceTest extends TestBase {
     testContainsRecord(secondRecord, TEST_KEY, secondVal, resp.records());
     testContainsRecord(thirdRecord, TEST_KEY, thirdVal, resp.records());
     assertEquals(3, resp.totalRecords());
+  }
+
+  @Test
+  void sortAscending() {
+    // insert records out of any order to ensure native db order doesn't give false positives
+    testCreateRecord("two", TEST_KEY, "value2");
+    testCreateRecord("one", TEST_KEY, "value1");
+    testCreateRecord("three", TEST_KEY, "value3");
+
+    SearchRequest searchRequest = new SearchRequest();
+    searchRequest.setSortAttribute(TEST_KEY);
+    searchRequest.setSort(SortDirection.ASC);
+
+    RecordQueryResponse resp =
+        recordOrchestratorService.queryForRecords(
+            COLLECTION_UUID, TEST_TYPE, VERSION, searchRequest);
+
+    assertEquals(3, resp.totalRecords());
+
+    // extract actual ids, in order, from the response
+    List<String> actualIds = resp.records().stream().map(RecordResponse::recordId).toList();
+    assertEquals(List.of("one", "two", "three"), actualIds);
+  }
+
+  @Test
+  void sortDescending() {
+    // insert records out of any order to ensure native db order doesn't give false positives
+    testCreateRecord("two", TEST_KEY, "value2");
+    testCreateRecord("one", TEST_KEY, "value1");
+    testCreateRecord("three", TEST_KEY, "value3");
+
+    SearchRequest searchRequest = new SearchRequest();
+    searchRequest.setSortAttribute(TEST_KEY);
+    searchRequest.setSort(SortDirection.DESC);
+
+    RecordQueryResponse resp =
+        recordOrchestratorService.queryForRecords(
+            COLLECTION_UUID, TEST_TYPE, VERSION, searchRequest);
+
+    assertEquals(3, resp.totalRecords());
+
+    // extract actual ids, in order, from the response
+    List<String> actualIds = resp.records().stream().map(RecordResponse::recordId).toList();
+    assertEquals(List.of("three", "two", "one"), actualIds);
+  }
+
+  @Test
+  void sortPrimaryKeyImplicit() {
+    // insert records out of any order to ensure native db order doesn't give false positives
+    testCreateRecord("two", TEST_KEY, "value2");
+    testCreateRecord("one", TEST_KEY, "value1");
+    testCreateRecord("three", TEST_KEY, "value3");
+
+    SearchRequest searchRequest = new SearchRequest();
+    // omitting the sort attribute will implicitly sort by primary key
+    searchRequest.setSort(SortDirection.DESC);
+
+    RecordQueryResponse resp =
+        recordOrchestratorService.queryForRecords(
+            COLLECTION_UUID, TEST_TYPE, VERSION, searchRequest);
+
+    assertEquals(3, resp.totalRecords());
+
+    // extract actual ids, in order, from the response
+    List<String> actualIds = resp.records().stream().map(RecordResponse::recordId).toList();
+    assertEquals(List.of("two", "three", "one"), actualIds); // descending alpha sort on pk
+  }
+
+  @Test
+  void sortPrimaryKeyExplicit() {
+    // insert records out of any order to ensure native db order doesn't give false positives
+    testCreateRecord("two", TEST_KEY, "value2");
+    testCreateRecord("one", TEST_KEY, "value1");
+    testCreateRecord("three", TEST_KEY, "value3");
+
+    SearchRequest searchRequest = new SearchRequest();
+    searchRequest.setSortAttribute("sys_name"); // default primary key name for testCreateRecord()
+    searchRequest.setSort(SortDirection.DESC);
+
+    RecordQueryResponse resp =
+        recordOrchestratorService.queryForRecords(
+            COLLECTION_UUID, TEST_TYPE, VERSION, searchRequest);
+
+    assertEquals(3, resp.totalRecords());
+
+    // extract actual ids, in order, from the response
+    List<String> actualIds = resp.records().stream().map(RecordResponse::recordId).toList();
+    assertEquals(List.of("two", "three", "one"), actualIds); // descending alpha sort on pk
   }
 
   @Test

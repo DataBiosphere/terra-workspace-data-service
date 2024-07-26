@@ -192,7 +192,7 @@ public class RecordOrchestratorService { // TODO give me a better name
     }
     if (searchRequest.getSortAttribute() != null
         && !recordDao
-            .getExistingTableSchemaLessPrimaryKey(collectionId, recordType)
+            .getExistingTableSchema(collectionId, recordType)
             .containsKey(searchRequest.getSortAttribute())) {
       throw new MissingObjectException("Requested sort attribute");
     }
