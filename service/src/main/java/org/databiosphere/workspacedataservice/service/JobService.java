@@ -11,7 +11,6 @@ import org.databiosphere.workspacedataservice.dao.JobDao;
 import org.databiosphere.workspacedataservice.generated.GenericJobServerModel;
 import org.databiosphere.workspacedataservice.generated.GenericJobServerModel.StatusEnum;
 import org.databiosphere.workspacedataservice.pubsub.JobStatusUpdate;
-import org.databiosphere.workspacedataservice.service.model.exception.AuthenticationMaskableException;
 import org.databiosphere.workspacedataservice.service.model.exception.MissingObjectException;
 import org.databiosphere.workspacedataservice.service.model.exception.ValidationException;
 import org.databiosphere.workspacedataservice.shared.model.CollectionId;
@@ -36,11 +35,7 @@ public class JobService {
 
   public GenericJobServerModel getJob(UUID jobId) {
     try {
-      GenericJobServerModel result = jobDao.getJob(jobId);
-      if (!collectionService.canReadCollection(CollectionId.of(result.getInstanceId()))) {
-        throw new AuthenticationMaskableException("Job");
-      }
-      return result;
+      return jobDao.getJob(jobId);
     } catch (EmptyResultDataAccessException e) {
       throw new MissingObjectException("Job");
     }
@@ -50,10 +45,6 @@ public class JobService {
       CollectionId collectionId, Optional<List<String>> statuses) {
     // verify collection exists
     collectionService.validateCollection(collectionId.id());
-    // check permissions
-    if (!collectionService.canReadCollection(collectionId)) {
-      throw new AuthenticationMaskableException("Collection");
-    }
     return jobDao.getJobsForCollection(collectionId, statuses);
   }
 
@@ -86,10 +77,11 @@ public class JobService {
 
       switch (newStatus) {
         case SUCCEEDED -> jobDao.succeeded(jobId);
-        case ERROR -> jobDao.fail(
-            jobId, requireNonNullElse(update.errorMessage(), "Unknown error"));
-        default -> throw new ValidationException(
-            "Unexpected status from Rawls for job %s: %s".formatted(jobId, newStatus));
+        case ERROR ->
+            jobDao.fail(jobId, requireNonNullElse(update.errorMessage(), "Unknown error"));
+        default ->
+            throw new ValidationException(
+                "Unexpected status from Rawls for job %s: %s".formatted(jobId, newStatus));
       }
     } catch (EmptyResultDataAccessException e) {
       throw new MissingObjectException("Job");
