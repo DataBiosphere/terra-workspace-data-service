@@ -1,6 +1,7 @@
 package org.databiosphere.workspacedataservice.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.spy;
@@ -13,10 +14,10 @@ import org.databiosphere.workspacedataservice.sam.SamAuthorizationDao;
 import org.databiosphere.workspacedataservice.sam.SamAuthorizationDaoFactory;
 import org.databiosphere.workspacedataservice.service.model.exception.AuthenticationMaskableException;
 import org.databiosphere.workspacedataservice.service.model.exception.AuthorizationException;
+import org.databiosphere.workspacedataservice.service.model.exception.CollectionException;
 import org.databiosphere.workspacedataservice.service.model.exception.MissingObjectException;
 import org.databiosphere.workspacedataservice.shared.model.CollectionId;
 import org.databiosphere.workspacedataservice.shared.model.WorkspaceId;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.mockito.stubbing.OngoingStubbing;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -26,10 +27,11 @@ import org.springframework.test.annotation.DirtiesContext;
 
 @DirtiesContext
 @SpringBootTest
-public class PermissionServiceTest extends TestBase {
+class PermissionServiceTest extends TestBase {
   @Autowired PermissionService permissionService;
   @MockBean SamAuthorizationDaoFactory samAuthorizationDaoFactory;
   @MockBean CollectionService collectionService;
+  // @MockBean TwdsProperties twdsProperties;
 
   private final SamAuthorizationDao samAuthorizationDao = spy(MockSamAuthorizationDao.allowAll());
 
@@ -38,14 +40,14 @@ public class PermissionServiceTest extends TestBase {
   void readPermissionPassWorkspaceId() {
     WorkspaceId workspaceId = WorkspaceId.of(UUID.randomUUID());
     stubReadWorkspacePermission(workspaceId).thenReturn(true);
-    permissionService.requireReadPermission(workspaceId);
+    assertDoesNotThrow(() -> permissionService.requireReadPermission(workspaceId));
   }
 
   @Test
   void writePermissionPassWorkspaceId() {
     WorkspaceId workspaceId = WorkspaceId.of(UUID.randomUUID());
     stubWriteWorkspacePermission(workspaceId).thenReturn(true);
-    permissionService.requireWritePermission(workspaceId);
+    assertDoesNotThrow(() -> permissionService.requireWritePermission(workspaceId));
   }
 
   @Test
@@ -91,7 +93,7 @@ public class PermissionServiceTest extends TestBase {
     when(collectionService.getWorkspaceId(collectionId)).thenReturn(workspaceId);
 
     stubReadWorkspacePermission(workspaceId).thenReturn(true);
-    permissionService.requireReadPermission(collectionId);
+    assertDoesNotThrow(() -> permissionService.requireReadPermission(collectionId));
   }
 
   @Test
@@ -101,7 +103,7 @@ public class PermissionServiceTest extends TestBase {
     when(collectionService.getWorkspaceId(collectionId)).thenReturn(workspaceId);
 
     stubWriteWorkspacePermission(workspaceId).thenReturn(true);
-    permissionService.requireWritePermission(collectionId);
+    assertDoesNotThrow(() -> permissionService.requireWritePermission(collectionId));
   }
 
   @Test
@@ -166,9 +168,25 @@ public class PermissionServiceTest extends TestBase {
     assertThat(actual.getMessage()).startsWith("Collection");
   }
 
-  @Disabled
   @Test
-  void mismatchedWorkspaceId() {}
+  void mismatchedWorkspaceId() {
+    WorkspaceId workspaceId = WorkspaceId.of(UUID.randomUUID());
+    CollectionId collectionId = CollectionId.of(UUID.randomUUID());
+    when(collectionService.getWorkspaceId(collectionId)).thenReturn(workspaceId);
+
+    stubWriteWorkspacePermission(workspaceId)
+        .thenThrow(
+            new CollectionException(
+                "Found unexpected workspaceId for collection %s.".formatted(collectionId)));
+
+    CollectionException actual =
+        assertThrows(
+            CollectionException.class,
+            () -> permissionService.requireWritePermission(collectionId));
+    assertEquals(
+        "Found unexpected workspaceId for collection %s.".formatted(collectionId),
+        actual.getMessage());
+  }
 
   private OngoingStubbing<Boolean> stubReadWorkspacePermission(WorkspaceId workspaceId) {
     when(samAuthorizationDaoFactory.getSamAuthorizationDao(workspaceId))
