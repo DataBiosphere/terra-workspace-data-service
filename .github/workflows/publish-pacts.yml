@@ -4,14 +4,12 @@ on:
     branches:
       - main
     paths-ignore: [ '**.md' ]
+    # By default, a workflow only runs when a pull_request event's activity type is opened, synchronize, or reopened.
+    # types: [opened, synchronize, reopened]
   push:
     branches:
       - main
     paths-ignore: [ '**.md' ]
-
-concurrency:
-  group: ${{ github.workflow }}-${{ github.head_ref || github.ref }}
-  cancel-in-progress: true
 
 env:
   WDS_RUN_ID: ${{ github.event.repository.name }}-${{ github.run_id }}
@@ -21,101 +19,66 @@ env:
   CAN_I_DEPLOY_RUN_NAME: 'can-i-deploy-${{ github.event.repository.name }}-${{ github.run_id }}-${{ github.run_attempt }}'
 
 jobs:
-  bump-check:
+  # The app-context job retrieves the App Context artifact that was uploaded
+  # through the compute-app-context.yml workflow. If the last commit was
+  # a version file bump, this workflow is skipped. Additionally, this workflow
+  # runs when a PR targeting mainline is opened, updated (with merge commit or rebase),
+  # or when there is a push to the mainline branch.
+  app-context:
+    if: "github.event.head_commit.committer.name != 'bumptagbot'"
     runs-on: ubuntu-latest
     outputs:
-      is-bump: ${{ steps.bumpcheck.outputs.is-bump }}
+      app_version: ${{ steps.get-app-context.outputs.app_version }}
+      app_branch: ${{ steps.get-app-context.outputs.app_branch }}
+      app_sha: ${{ steps.get-app-context.outputs.app_sha }}
     steps:
       - uses: actions/checkout@v4
-      - name: Skip version bump merges
-        id: bumpcheck
-        uses: ./.github/actions/bump-skip
+      - name: Action Type
+        run: |
+          echo "Action Type: ${{ github.event.action }}"
+
+      - name: Determine App Context
+        id: get-app-context
+        uses: ./.github/actions/get-app-context
         with:
-          event-name: ${{ github.event_name }}
-  # The primary objective of this section is to carefully control the dispatching of tags,
-  # ensuring it only occurs during the 'Tag, publish, deploy' workflow.
-  # However, a challenge arises with contract tests, as they require knowledge of the upcoming tag
-  # before the actual deployment. To address this, we leverage the dry run feature provided by bumper.
-  # This allows us to obtain the next tag for publishing contracts and verifying consumer pacts without
-  # triggering the tag dispatch. This approach sidesteps the need for orchestrating multiple workflows,
-  # simplifying our implementation.
-  #
-  # We regulate the tag job to meet the following requirements according to the trigger event type:
-  # 1. pull_request event (due to opening or updating of PR branch):
-  #      dry-run flag is set to false
-  #         this allows the new semver tag #major.#minor.#patch-#commit to be used to identity pacticipant version for development purpose
-  #         PR has no effect on the value of the latest tag in settings.gradle on disk
-  # 2. PR merge to main, this triggers a push event on the main branch:
-  #      dry-run flag is set to true
-  #         this allows the new semver tag #major.#minor.#patch to be used to identity pacticipant version, and
-  #         this action will not update the value of the latest tag in settings.gradle on disk
-  #
-  # Note: All workflows from the same PR merge should have the same copy of settings.gradle on disk,
-  # which should be the one from the HEAD of the main branch before the workflow starts running
-  regulated-tag-job:
-    needs: [ bump-check ]
-    if: ${{ needs.bump-check.outputs.is-bump == 'no' }}
-    uses: ./.github/workflows/tag.yml
-    with:
-      # The 'ref' parameter ensures that the consumer version is postfixed with the HEAD commit of the PR branch,
-      # facilitating cross-referencing of a pact between Pact Broker and GitHub.
-      ref: ${{ github.head_ref || '' }}
-      # The 'dry-run' parameter prevents the new tag from being dispatched.
-      dry-run: true
-      release-branches: main
-    secrets: inherit
+          gh_repo: ${{ github.repository }}
+          max_retries: 20
+          sleep_time: 3
+        env:
+          GITHUB_TOKEN: ${{ secrets.BROADBOT_TOKEN }}
 
-  init-github-context:
-    runs-on: ubuntu-latest
-    outputs:
-      sha-short: ${{ steps.extract-branch.outputs.sha-short }}
-      repo-branch: ${{ steps.extract-branch.outputs.repo-branch }}
-      repo-version: ${{ steps.extract-branch.outputs.repo-version }}
-
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Extract branch
-        id: extract-branch
+      - name: App Context Properties
         run: |
-          GITHUB_EVENT_NAME=${{ github.event_name }}
-          if [[ "$GITHUB_EVENT_NAME" == "push" ]]; then
-            GITHUB_REF=${{ github.ref }}
-            GITHUB_SHA=${{ github.sha }}
-          elif [[ "$GITHUB_EVENT_NAME" == "pull_request" ]]; then
-            GITHUB_REF=refs/heads/${{ github.head_ref }}
-            GITHUB_SHA=${{ github.event.pull_request.head.sha }}
-          elif [[ "$GITHUB_EVENT_NAME" == "merge_group" ]]; then
-            GITHUB_REF=refs/heads/${{ github.head_ref }}
-          else
-            echo "Failed to extract branch information"
-            exit 1
-          fi
-          echo "repo-branch=${GITHUB_REF/refs\/heads\//""}" >> $GITHUB_OUTPUT
-          echo "repo-version=${GITHUB_SHA}" >> $GITHUB_OUTPUT
-      - name: Echo repo and branch information
-        run: |
-          echo "repo-owner=${{ github.repository_owner }}"
-          echo "repo-name=${{ github.event.repository.name }}"
-          echo "repo-branch=${{ steps.extract-branch.outputs.repo-branch }}"
-          echo "repo-version=${{ steps.extract-branch.outputs.repo-version }}"
+          echo "APP_VERSION=${{ env.APP_VERSION }}"
+          echo "APP_BRANCH=${{ env.APP_BRANCH }}"
+          echo "APP_SHA=${{ env.APP_SHA }}"
+          echo "APP_SHORT_SHA=${{ env.APP_SHORT_SHA }}"
+          echo "app_version=${{ steps.get-app-context.outputs.app_version }}"
+          echo "app_branch=${{ steps.get-app-context.outputs.app_branch }}"
+          echo "app_sha=${{ steps.get-app-context.outputs.app_sha }}"
+          echo "app_short_sha=${{ steps.get-app-context.outputs.app_short_sha }}"
 
   run-consumer-contract-tests:
     runs-on: ubuntu-latest
-    needs: [ init-github-context ]
+    needs: [ app-context ]
     outputs:
       pact-paths: ${{ steps.locate-pacts.outputs.pact-paths }}
 
     steps:
-      - name: Checkout current code
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.app-context.outputs.app_sha }}
+          token: ${{ secrets.BROADBOT_TOKEN }}
+
       - name: Set up JDK
         uses: actions/setup-java@v4
         with:
           java-version: '17'
           distribution: 'temurin'
+
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v3
+
       - name: Run consumer tests
         run: ./gradlew pactTests
 
@@ -135,11 +98,16 @@ jobs:
 
   publish-pacts-job:
     runs-on: ubuntu-latest
-    needs: [ regulated-tag-job, init-github-context, run-consumer-contract-tests ]
+    needs: [ app-context, run-consumer-contract-tests ]
     strategy:
       matrix:
         pact_path: ${{ fromJson(needs.run-consumer-contract-tests.outputs.pact-paths) }}
     steps:
+      - name: App Context Summary
+        run: |
+          echo "App Branch: ${{ needs.app-context.outputs.app_branch }}"
+          echo "App Version: ${{ needs.app-context.outputs.app_version }}"
+
       - name: Download pact files from artifact
         id: download-pacts
         uses: actions/download-artifact@v4
@@ -166,13 +134,13 @@ jobs:
             "pact-b64": "${{ steps.encode-pact.outputs.pact-b64 }}",
             "repo-owner": "${{ github.repository_owner }}",
             "repo-name": "${{ github.event.repository.name }}",
-            "repo-branch": "${{ needs.init-github-context.outputs.repo-branch }}",
-            "release-tag": "${{ needs.regulated-tag-job.outputs.new-tag }}"
+            "repo-branch": "${{ needs.app-context.outputs.app_branch }}",
+            "release-tag": "${{ needs.app-context.outputs.app_version }}"
           }'
 
   can-i-deploy: # The can-i-deploy job will run as a result of a PR. It reports the pact verification statuses on all deployed environments.
     runs-on: ubuntu-latest
-    needs: [ run-consumer-contract-tests, regulated-tag-job ]
+    needs: [ app-context, publish-pacts-job ]
     strategy:
       matrix:
         pacticipant-name: ["wds", "cwds"]
@@ -188,5 +156,5 @@ jobs:
           inputs: '{
             "run-name": "${{ env.CAN_I_DEPLOY_RUN_NAME }}-${{ matrix.pacticipant-name }}",
             "pacticipant": "${{ matrix.pacticipant-name }}",
-            "version": "${{ needs.regulated-tag-job.outputs.new-tag }}"
+            "version": "${{ needs.app-context.outputs.app_version }}"
           }'

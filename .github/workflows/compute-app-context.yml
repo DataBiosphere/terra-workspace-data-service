@@ -1,0 +1,148 @@
+# This workflow computes the App Context and uploads the results as a dotenv file
+#
+# App Context Definition:
+#
+# The App Context includes the following information derived from GitHub Context:
+#
+# - App Version:
+#     - The version tag is recorded in Git / version file when code is integrated into the mainline.
+#     - For PRs, the version will be a string in the format `<next semver tag>-<pr hash>`.
+#       - PRs do not dispatch tags.
+#       - The PR hash is recorded in Git history and can be used as a reference to check out a code snapshot.
+# - App Branch:
+#     - Name of the branch that runs this workflow.
+# - App SHA:
+#     - Git hash recorded in history.
+#     - For PRs: This is the commit hash of the PR changes when the PR is opened, updated with merge commit, or updated with rebase.
+#     - For Push: This is the commit hash that results from merging the PR changes into the base (mainline) branch.
+# - App Short SHA:
+#     - First 7 characters of App SHA.
+# - PART:
+#     - The part of the version which was bumped.
+# - Repository name:
+#     - The name of the GitHub repository where the action is running.
+# - Repository owner:
+#     - The owner of the GitHub repository.
+# - Repository URL:
+#     - The URL to the GitHub repository.
+# - Version file path:
+#     - The version file within the repository where the app version is specified.
+# - Version line pattern:
+#     - The regex pattern used to identify the version line in the version file.
+# - Version line match:
+#     - The matched version line captured from the version file based on the specified pattern.
+#
+name: Compute App Context
+on:
+  pull_request:
+    branches:
+      - main
+    paths-ignore: [ '**.md' ]
+    # By default, a workflow only runs when a pull_request event's activity type is opened, synchronize, or reopened.
+    # types: [opened, synchronize, reopened]
+  push:
+    branches:
+      - main
+    paths-ignore: [ '**.md' ]
+env:
+  DEFAULT_BUMP: patch
+  MAINLINE: main
+  VERSION_FILE_PATH: build.gradle
+  VERSION_LINE_MATCH: "^[ \\t]*version[ \\t]*=[ \\t]*'(.*)'"
+
+jobs:
+  bumper-job:
+    if: "github.event.head_commit.committer.name != 'bumptagbot'"
+    runs-on: ubuntu-latest
+    concurrency:
+      group: ${{ github.repository_owner }}-${{ github.event.repository.name }}-${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || 'main' }}-bumper
+      cancel-in-progress: false
+    outputs:
+      # new_tag - The value of the newly created tag.
+      # tag - The value of the latest tag after running this action.
+      # part - The part of version which was bumped.
+      new_tag: ${{ steps.bumper.outputs.new_tag }}
+      tag: ${{ steps.bumper.outputs.tag }}
+      part: ${{ steps.bumper.outputs.part }}
+      app_branch: ${{ steps.ghctx.outputs.app_branch }}
+      app_sha: ${{ steps.ghctx.outputs.app_sha }}
+      app_short_sha: ${{ steps.ghctx.outputs.app_short_sha }}
+      version_line: ${{ steps.match-version-line.outputs.version_line }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
+
+      - id: ghctx
+        name: Useful GitHub Context
+        run: |
+          echo "Action Type: ${{ github.event.action }}"
+          echo "app_branch=${{ github.event_name == 'pull_request' && github.head_ref || env.MAINLINE }}" >> $GITHUB_OUTPUT
+          app_sha=${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
+          echo "app_sha=${app_sha}" >> $GITHUB_OUTPUT
+          echo "app_short_sha=${app_sha:0:7}" >> $GITHUB_OUTPUT
+
+      - id: bumper
+        # https://github.com/DataBiosphere/github-actions/tree/master/actions/bumper
+        uses: databiosphere/github-actions/actions/bumper@bumper-0.4.0
+        env:
+          GITHUB_TOKEN: ${{ secrets.BROADBOT_TOKEN }}
+          HOTFIX_BRANCHES: hotfix.*
+          DEFAULT_BUMP: ${{ env.DEFAULT_BUMP }}
+          DRY_RUN: ${{ github.event_name == 'pull_request' }}
+          RELEASE_BRANCHES: ${{ env.MAINLINE }}
+          VERSION_FILE_PATH: ${{ env.VERSION_FILE_PATH }}
+          VERSION_LINE_MATCH: ${{ env.VERSION_LINE_MATCH }}
+          VERSION_SUFFIX: SNAPSHOT
+
+      - id: match-version-line
+        run: |
+          # =~ match won't work with ${{ env.VERSION_LINE_MATCH }}
+          # so assign to local variable here. Also do not use quotes around $pattern.
+          pattern="${{ env.VERSION_LINE_MATCH }}"
+          if [[ -n "${{ env.VERSION_FILE_PATH }}" && -n "${{ env.VERSION_LINE_MATCH }}" ]]; then
+            while IFS= read -r line; do
+              if [[ $line =~ $pattern ]]; then
+                # Extract the captured group (version line match)
+                version_line="${BASH_REMATCH[1]}"
+                echo "version_line=$version_line" >> $GITHUB_OUTPUT
+              fi
+            done < ${{ env.VERSION_FILE_PATH }}
+          fi
+
+  upload-app-context-dotenv:
+    runs-on: ubuntu-latest
+    needs: [ bumper-job ]
+    steps:
+      - name: Assemble App Context DOTENV
+        id: assemble-app-context-dotenv
+        run: |
+          # App Context related info is stored in .env file
+          short_sha=${{ needs.bumper-job.outputs.app_short_sha }}
+          dotenv="${short_sha}.env"
+
+          cat <<EOF > $dotenv
+          APP_VERSION=${{ needs.bumper-job.outputs.new_tag }}
+          APP_BRANCH=${{ needs.bumper-job.outputs.app_branch }}
+          APP_SHA=${{ needs.bumper-job.outputs.app_sha }}
+          APP_SHORT_SHA=${short_sha}
+          GITHUB_EVENT_NAME=${{ github.event_name }}
+          GITHUB_EVENT_ACTION=${{ github.event.action }}
+          PART=${{ env.DEFAULT_BUMP }}
+          REPOSITORY_NAME=${{ github.event.repository.name }}
+          REPOSITORY_OWNER=${{ github.repository_owner }}
+          REPOSITORY_URL=https://github.com/${{ github.repository }}
+          VERSION_FILE_PATH=${{ env.VERSION_FILE_PATH }}
+          VERSION_LINE_PATTERN=${{ env.VERSION_LINE_MATCH }}
+          VERSION_LINE_MATCH=${{ needs.bumper-job.outputs.version_line }}
+          EOF
+
+          cat $dotenv
+          echo "dotenv_path=$dotenv" >> $GITHUB_OUTPUT
+
+      - name: Upload App Context DOTENV
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ needs.bumper-job.outputs.app_sha }}
+          path: ${{ steps.assemble-app-context-dotenv.outputs.dotenv_path }}
+          retention-days: 1
