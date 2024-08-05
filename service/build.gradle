@@ -50,7 +50,7 @@ dependencies {
     // do not upgrade app insights past 3.5.1 until AJ-1897 is resolved
     implementation 'com.microsoft.azure:applicationinsights-runtime-attach:3.5.3'
     implementation 'com.azure:azure-storage-blob:12.27.0'
-    implementation 'com.azure:azure-identity-extensions:1.1.17' // postgres password plugin
+    implementation 'com.azure:azure-identity-extensions:1.1.18' // postgres password plugin
 
     implementation 'org.springframework.boot:spring-boot-starter'
     implementation 'org.springframework.boot:spring-boot-starter-jdbc'
@@ -69,8 +69,8 @@ dependencies {
     implementation 'org.postgresql:postgresql'
     implementation 'org.webjars:webjars-locator-core' // versioned by spring dependency management
     implementation 'com.fasterxml.jackson.dataformat:jackson-dataformat-csv'
-    implementation 'io.sentry:sentry-logback:7.12.0'
-    implementation 'net.logstash.logback:logstash-logback-encoder:7.4'
+    implementation 'io.sentry:sentry-logback:7.13.0'
+    implementation 'net.logstash.logback:logstash-logback-encoder:8.0'
     implementation 'org.codehaus.janino:janino'
     implementation 'org.liquibase:liquibase-core'
     implementation 'javax.cache:cache-api'
