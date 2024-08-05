@@ -5,7 +5,6 @@ import static org.databiosphere.workspacedataservice.common.TestBase.HARDCODED_W
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.when;
 
 import java.util.List;
@@ -15,14 +14,10 @@ import org.databiosphere.workspacedataservice.annotations.SingleTenant;
 import org.databiosphere.workspacedataservice.dao.CollectionDao;
 import org.databiosphere.workspacedataservice.dao.JobDao;
 import org.databiosphere.workspacedataservice.generated.GenericJobServerModel;
-import org.databiosphere.workspacedataservice.sam.MockSamAuthorizationDao;
-import org.databiosphere.workspacedataservice.sam.SamAuthorizationDao;
-import org.databiosphere.workspacedataservice.sam.SamAuthorizationDaoFactory;
 import org.databiosphere.workspacedataservice.service.model.exception.MissingObjectException;
 import org.databiosphere.workspacedataservice.shared.model.CollectionId;
 import org.databiosphere.workspacedataservice.shared.model.WorkspaceId;
 import org.junit.jupiter.api.Test;
-import org.mockito.stubbing.OngoingStubbing;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
@@ -35,15 +30,11 @@ import org.springframework.test.context.ActiveProfiles;
 @SpringBootTest(properties = {"twds.instance.workspace-id=" + HARDCODED_WORKSPACE_ID})
 class JobServiceDataPlaneTest extends JobServiceTestBase {
 
-  // TODO AJ-1660: remove samAuthorizationDaoFactory mock entirely
-
   @Autowired JobService jobService;
   @Autowired @SingleTenant WorkspaceId workspaceId;
 
   @MockBean JobDao jobDao;
-  @MockBean SamAuthorizationDaoFactory samAuthorizationDaoFactory;
   @MockBean CollectionDao collectionDao;
-  private final SamAuthorizationDao samAuthorizationDao = spy(MockSamAuthorizationDao.allowAll());
 
   // ==================================================
   // ========== tests for getJob ======================
@@ -65,9 +56,9 @@ class JobServiceDataPlaneTest extends JobServiceTestBase {
     assertThat(actual.getMessage()).startsWith("Job");
   }
 
-  /** requested job exists; its collection uses the default workspace and user has permission */
+  /** requested job exists; its collection uses the default workspace */
   @Test
-  void defaultCollectionWithPermission() {
+  void defaultCollection() {
     // Arrange
     UUID jobId = UUID.randomUUID();
     CollectionId collectionId = CollectionId.of(UUID.randomUUID());
@@ -76,8 +67,6 @@ class JobServiceDataPlaneTest extends JobServiceTestBase {
     when(jobDao.getJob(jobId)).thenReturn(expectedJob);
     // collection for this job exists and is associated with the $WORKSPACE_ID workspace
     when(collectionDao.getWorkspaceId(collectionId)).thenReturn(getEnvWorkspaceId());
-    // user has permission to that workspace
-    stubReadWorkspacePermission(getEnvWorkspaceId()).thenReturn(true);
 
     // Act
     GenericJobServerModel actual = jobService.getJob(jobId);
@@ -109,7 +98,7 @@ class JobServiceDataPlaneTest extends JobServiceTestBase {
     assertThat(actual.getMessage()).startsWith("Collection");
   }
 
-  /** Collection exists, associated with default workspace, user has permission */
+  /** Collection exists, associated with default workspace */
   @Test
   void listJobsDefaultCollection() {
     // Arrange
@@ -117,8 +106,6 @@ class JobServiceDataPlaneTest extends JobServiceTestBase {
     // collection exists and is associated with the $WORKSPACE_ID workspace
     when(collectionDao.collectionSchemaExists(collectionId)).thenReturn(true);
     when(collectionDao.getWorkspaceId(collectionId)).thenReturn(getEnvWorkspaceId());
-    // user has permission to that workspace
-    stubReadWorkspacePermission(getEnvWorkspaceId()).thenReturn(true);
     // return some jobs when listing this collection
     when(jobDao.getJobsForCollection(eq(collectionId), any()))
         .thenReturn(makeJobList(collectionId, 2));
@@ -132,40 +119,11 @@ class JobServiceDataPlaneTest extends JobServiceTestBase {
     assertThat(actual).hasSize(2);
   }
 
-  /** Collection exists, associated with default workspace, user does not have permission */
-  @Test
-  void listJobsDefaultCollectionNoPermission() {
-    // Arrange
-    CollectionId collectionId = CollectionId.of(UUID.randomUUID());
-    // collection exists and is associated with the $WORKSPACE_ID workspace
-    when(collectionDao.getWorkspaceId(collectionId)).thenReturn(getEnvWorkspaceId());
-    // user has permission to that workspace
-    stubReadWorkspacePermission(getEnvWorkspaceId()).thenReturn(false);
-    // return some jobs when listing this collection
-    when(jobDao.getJobsForCollection(eq(collectionId), any()))
-        .thenReturn(makeJobList(collectionId, 3));
-
-    // Act / assert
-    Exception actual =
-        assertThrows(
-            MissingObjectException.class,
-            () -> jobService.getJobsForCollection(collectionId, Optional.of(allStatuses)));
-
-    // Assert
-    assertThat(actual.getMessage()).startsWith("Collection");
-  }
-
   // ==================================================
   // ========== helpers ===============================
   // ==================================================
 
   private WorkspaceId getEnvWorkspaceId() {
     return workspaceId;
-  }
-
-  private OngoingStubbing<Boolean> stubReadWorkspacePermission(WorkspaceId workspaceId) {
-    when(samAuthorizationDaoFactory.getSamAuthorizationDao(workspaceId))
-        .thenReturn(samAuthorizationDao);
-    return when(samAuthorizationDao.hasReadWorkspacePermission());
   }
 }

@@ -7,7 +7,6 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -21,15 +20,10 @@ import org.databiosphere.workspacedataservice.dao.CollectionDao;
 import org.databiosphere.workspacedataservice.dao.JobDao;
 import org.databiosphere.workspacedataservice.generated.GenericJobServerModel;
 import org.databiosphere.workspacedataservice.pubsub.JobStatusUpdate;
-import org.databiosphere.workspacedataservice.sam.MockSamAuthorizationDao;
-import org.databiosphere.workspacedataservice.sam.SamAuthorizationDao;
-import org.databiosphere.workspacedataservice.sam.SamAuthorizationDaoFactory;
 import org.databiosphere.workspacedataservice.service.model.exception.MissingObjectException;
 import org.databiosphere.workspacedataservice.service.model.exception.ValidationException;
 import org.databiosphere.workspacedataservice.shared.model.CollectionId;
-import org.databiosphere.workspacedataservice.shared.model.WorkspaceId;
 import org.junit.jupiter.api.Test;
-import org.mockito.stubbing.OngoingStubbing;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
@@ -50,14 +44,9 @@ import org.springframework.test.context.TestPropertySource;
     })
 class JobServiceControlPlaneTest extends JobServiceTestBase {
 
-  // TODO AJ-1660: remove samAuthorizationDaoFactory mock entirely
-
   @Autowired JobService jobService;
   @MockBean JobDao jobDao;
-  @MockBean SamAuthorizationDaoFactory samAuthorizationDaoFactory;
   @MockBean CollectionDao collectionDao;
-
-  private final SamAuthorizationDao samAuthorizationDao = spy(MockSamAuthorizationDao.allowAll());
 
   /** requested job does not exist */
   @Test
@@ -75,7 +64,7 @@ class JobServiceControlPlaneTest extends JobServiceTestBase {
     assertThat(actual.getMessage()).startsWith("Job");
   }
 
-  /** requested job exists; its collection is virtual and the user has permission */
+  /** requested job exists; its collection is virtual */
   @Test
   void virtualCollectionWithPermission() {
     // Arrange
@@ -87,8 +76,6 @@ class JobServiceControlPlaneTest extends JobServiceTestBase {
     // collection for this job does not exist
     when(collectionDao.getWorkspaceId(collectionId))
         .thenThrow(new EmptyResultDataAccessException("unit test intentional error", 1));
-    // user has permission to the workspace with the same id as the collection
-    stubReadWorkspacePermission(WorkspaceId.of(collectionId.id())).thenReturn(true);
 
     // Act
     GenericJobServerModel actual = jobService.getJob(jobId);
@@ -101,7 +88,7 @@ class JobServiceControlPlaneTest extends JobServiceTestBase {
   // ========== tests for getJobsForCollection ========
   // ==================================================
 
-  /** Collection is virtual; user has permission */
+  /** Collection is virtual */
   @Test
   void listJobsVirtualCollection() {
     // Arrange
@@ -109,8 +96,6 @@ class JobServiceControlPlaneTest extends JobServiceTestBase {
     // collection for this job does not exist
     when(collectionDao.getWorkspaceId(collectionId))
         .thenThrow(new EmptyResultDataAccessException("unit test intentional error", 1));
-    // user has permission to the workspace with the same id as the collection
-    stubReadWorkspacePermission(WorkspaceId.of(collectionId.id())).thenReturn(true);
     // return some jobs when listing this collection
     when(jobDao.getJobsForCollection(eq(collectionId), any()))
         .thenReturn(makeJobList(collectionId, 2));
@@ -238,11 +223,5 @@ class JobServiceControlPlaneTest extends JobServiceTestBase {
 
   private UUID setupProcessJobStatusUpdateTest() {
     return setupProcessJobStatusUpdateTest(GenericJobServerModel.StatusEnum.RUNNING);
-  }
-
-  private OngoingStubbing<Boolean> stubReadWorkspacePermission(WorkspaceId workspaceId) {
-    when(samAuthorizationDaoFactory.getSamAuthorizationDao(workspaceId))
-        .thenReturn(samAuthorizationDao);
-    return when(samAuthorizationDao.hasReadWorkspacePermission());
   }
 }
