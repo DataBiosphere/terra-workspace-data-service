@@ -86,7 +86,7 @@ public class CollectionController implements CollectionApi {
    */
   @Override
   public ResponseEntity<List<CollectionServerModel>> listCollectionsV1(UUID workspaceId) {
-    permissionService.requireWritePermission(WorkspaceId.of(workspaceId));
+    permissionService.requireReadPermission(WorkspaceId.of(workspaceId));
     List<CollectionServerModel> collections = collectionService.list(WorkspaceId.of(workspaceId));
     return new ResponseEntity<>(collections, HttpStatus.OK);
   }
