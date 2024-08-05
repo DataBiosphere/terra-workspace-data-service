@@ -189,9 +189,15 @@ class PermissionServiceTest extends TestBase {
         actual.getMessage());
   }
 
+  // in the control plane, all collections should be virtual. What if they are not?
   @Disabled("write me")
   @Test
   void controlPlaneNonVirtualCollection() {}
+
+  // what if the call to Sam throws a connection error or other unexpected error?
+  @Disabled("write me")
+  @Test
+  void unexpectedSamError() {}
 
   private OngoingStubbing<Boolean> stubReadWorkspacePermission(WorkspaceId workspaceId) {
     when(samAuthorizationDaoFactory.getSamAuthorizationDao(workspaceId))
