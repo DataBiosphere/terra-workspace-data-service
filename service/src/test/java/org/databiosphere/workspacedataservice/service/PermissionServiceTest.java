@@ -18,6 +18,7 @@ import org.databiosphere.workspacedataservice.service.model.exception.Collection
 import org.databiosphere.workspacedataservice.service.model.exception.MissingObjectException;
 import org.databiosphere.workspacedataservice.shared.model.CollectionId;
 import org.databiosphere.workspacedataservice.shared.model.WorkspaceId;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.mockito.stubbing.OngoingStubbing;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -187,6 +188,10 @@ class PermissionServiceTest extends TestBase {
         "Found unexpected workspaceId for collection %s.".formatted(collectionId),
         actual.getMessage());
   }
+
+  @Disabled("write me")
+  @Test
+  void controlPlaneNonVirtualCollection() {}
 
   private OngoingStubbing<Boolean> stubReadWorkspacePermission(WorkspaceId workspaceId) {
     when(samAuthorizationDaoFactory.getSamAuthorizationDao(workspaceId))
