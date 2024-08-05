@@ -268,7 +268,7 @@ public class RecordController {
       @PathVariable("type") RecordType recordType,
       @RequestParam(name = "primaryKey", required = false) Optional<String> primaryKey,
       InputStream is) {
-    permissionService.requireReadPermission(CollectionId.of(instanceId));
+    permissionService.requireWritePermission(CollectionId.of(instanceId));
     int recordsModified =
         recordOrchestratorService.streamingWrite(instanceId, version, recordType, primaryKey, is);
     return new ResponseEntity<>(new BatchResponse(recordsModified, "Huzzah"), HttpStatus.OK);

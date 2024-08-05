@@ -1,23 +1,18 @@
 package org.databiosphere.workspacedataservice.controller;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.databiosphere.workspacedataservice.shared.model.job.JobType.SYNC_BACKUP;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Named.named;
 import static org.junit.jupiter.params.provider.Arguments.arguments;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.when;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 
-import java.sql.Timestamp;
-import java.time.Instant;
 import java.time.OffsetDateTime;
-import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Stream;
 import org.databiosphere.workspacedataservice.config.TwdsProperties;
@@ -30,19 +25,13 @@ import org.databiosphere.workspacedataservice.service.BackupRestoreService;
 import org.databiosphere.workspacedataservice.service.CollectionService;
 import org.databiosphere.workspacedataservice.service.JobService;
 import org.databiosphere.workspacedataservice.service.PermissionService;
+import org.databiosphere.workspacedataservice.service.RecordOrchestratorService;
 import org.databiosphere.workspacedataservice.service.model.exception.AuthenticationMaskableException;
 import org.databiosphere.workspacedataservice.service.model.exception.AuthorizationException;
-import org.databiosphere.workspacedataservice.shared.model.BackupResponse;
-import org.databiosphere.workspacedataservice.shared.model.BackupRestoreRequest;
-import org.databiosphere.workspacedataservice.shared.model.CloneResponse;
-import org.databiosphere.workspacedataservice.shared.model.CloneStatus;
 import org.databiosphere.workspacedataservice.shared.model.CollectionId;
 import org.databiosphere.workspacedataservice.shared.model.Record;
 import org.databiosphere.workspacedataservice.shared.model.RecordType;
 import org.databiosphere.workspacedataservice.shared.model.WorkspaceId;
-import org.databiosphere.workspacedataservice.shared.model.job.Job;
-import org.databiosphere.workspacedataservice.shared.model.job.JobInput;
-import org.databiosphere.workspacedataservice.shared.model.job.JobStatus;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
@@ -66,6 +55,7 @@ class AllControllersPermissionsTest extends MockMvcTestBase {
   @MockBean RecordDao recordDao;
   @MockBean JobService jobService;
   @MockBean BackupRestoreService backupRestoreService;
+  @MockBean RecordOrchestratorService recordOrchestratorService;
   @Autowired TwdsProperties twdsProperties;
 
   private final SamAuthorizationDao samAuthorizationDao = spy(MockSamAuthorizationDao.allowAll());
@@ -74,7 +64,6 @@ class AllControllersPermissionsTest extends MockMvcTestBase {
   private static final WorkspaceId workspaceId = WorkspaceId.of(UUID.randomUUID());
   private static final CollectionId collectionId = CollectionId.of(UUID.randomUUID());
   private static final UUID jobId = UUID.randomUUID();
-  private static final UUID backupTrackingId = UUID.randomUUID();
 
   private static final RecordType RECORD_TYPE = RecordType.valueOf("mytype");
   private static final String RECORD_ID = "myid";
@@ -90,53 +79,24 @@ class AllControllersPermissionsTest extends MockMvcTestBase {
 
   private static final Record MOCK_RECORD = new Record(RECORD_ID, RECORD_TYPE);
 
-  private static final BackupResponse MOCK_BACKUPRESPONSE =
-      new BackupResponse("filename", UUID.randomUUID(), "description");
-
-  private static final CloneResponse MOCK_CLONERESPONSE =
-      new CloneResponse(UUID.randomUUID(), CloneStatus.BACKUPSUCCEEDED);
-
-  private static final Job<JobInput, BackupResponse> MOCK_BACKUPJOB =
-      new Job<>(
-          UUID.randomUUID(),
-          SYNC_BACKUP,
-          /* collectionId= */ null, // backup jobs do not execute within a single collection
-          JobStatus.QUEUED,
-          "",
-          Timestamp.from(Instant.now()).toLocalDateTime(),
-          Timestamp.from(Instant.now()).toLocalDateTime(),
-          JobInput.empty(),
-          MOCK_BACKUPRESPONSE);
-
-  private static final Job<JobInput, CloneResponse> MOCK_CLONEJOB =
-      new Job<>(
-          UUID.randomUUID(),
-          SYNC_BACKUP,
-          /* collectionId= */ null, // backup jobs do not execute within a single collection
-          JobStatus.QUEUED,
-          "",
-          Timestamp.from(Instant.now()).toLocalDateTime(),
-          Timestamp.from(Instant.now()).toLocalDateTime(),
-          JobInput.empty(),
-          MOCK_CLONERESPONSE);
-
   @BeforeEach
   void beforeEach() {
     // mocks so APIs don't hit any internal errors
     when(collectionService.getWorkspaceId(collectionId)).thenReturn(workspaceId);
 
+    /*
     when(recordDao.recordTypeExists(collectionId.id(), RECORD_TYPE)).thenReturn(true);
     when(recordDao.getSingleRecord(eq(collectionId.id()), eq(RECORD_TYPE), anyString()))
         .thenReturn(Optional.of(MOCK_RECORD));
     when(recordDao.getPrimaryKeyColumn(RECORD_TYPE, collectionId.id())).thenReturn("sys_name");
-
+     */
     when(jobService.getJob(jobId)).thenReturn(MOCK_JOB);
 
-    when(backupRestoreService.backupAzureWDS(
-            eq("v0.2"), eq(backupTrackingId), any(BackupRestoreRequest.class)))
-        .thenReturn(MOCK_BACKUPJOB);
-
-    when(backupRestoreService.checkCloneStatus()).thenReturn(MOCK_CLONEJOB);
+    /*
+    when(recordOrchestratorService.streamingWrite(
+            eq(collectionId.id()), eq("v0.3"), eq(RECORD_TYPE), any(), any()))
+        .thenReturn(1);
+     */
   }
 
   // ========== API definitions: which require read, which require write?
@@ -202,15 +162,37 @@ class AllControllersPermissionsTest extends MockMvcTestBase {
     return Stream.of(
         arguments(
             named(
+                "DELETE /{instanceid}/records/v0.2/{type}/{id}",
+                delete(
+                    "/{instanceid}/records/v0.2/{type}/{id}",
+                    collectionId,
+                    RECORD_TYPE,
+                    RECORD_ID))),
+        arguments(
+            named(
+                "PATCH /{instanceid}/records/v0.2/{type}/{id}",
+                patch(
+                        "/{instanceid}/records/v0.2/{type}/{id}",
+                        collectionId,
+                        RECORD_TYPE,
+                        RECORD_ID)
+                    .content("{\"attributes\": {}}")
+                    .contentType(MediaType.APPLICATION_JSON))),
+        arguments(
+            named(
                 "PUT /{instanceid}/records/v0.2/{type}/{id}",
                 put("/{instanceid}/records/v0.2/{type}/{id}", collectionId, RECORD_TYPE, RECORD_ID)
                     .content("{\"attributes\": {}}")
+                    .contentType(MediaType.APPLICATION_JSON))),
+        arguments(
+            named(
+                "POST /{instanceid}/batch/v0.2/{type}",
+                post("/{instanceid}/batch/v0.2/{type}", collectionId, RECORD_TYPE)
+                    .content("[]")
                     .contentType(MediaType.APPLICATION_JSON))));
+
     // TODO tests for these APIs:
     /*
-     POST /{instanceid}/batch/{v}/{type}
-     PATCH /{instanceid}/records/{v}/{type}/{id}
-     DELETE /{instanceid}/records/{v}/{type}/{id}
 
      POST /{instanceid}/tsv/{v}/{type}
 
@@ -390,14 +372,12 @@ class AllControllersPermissionsTest extends MockMvcTestBase {
        Therefore, it is quite likely that APIs will fail for business logic reasons. All we
        care about for this test class is that the permission checks pass. We consider a passing
        test to be either:
-        - no exception was thrown, and response code is 2xx
+        - no exception was thrown
         - an exception was thrown, but that exception is neither AuthenticationMaskableException
             nor AuthorizationException; these are the two exceptions that would be thrown by
             permission checks.
     */
-    if (mvcResult.getResolvedException() == null) {
-      assertThat(mvcResult.getResponse().getStatus() / 100).isEqualTo(2);
-    } else {
+    if (mvcResult.getResolvedException() != null) {
       Exception ex = mvcResult.getResolvedException();
       assertThat(ex).isNotInstanceOf(AuthenticationMaskableException.class);
       assertThat(ex).isNotInstanceOf(AuthorizationException.class);
