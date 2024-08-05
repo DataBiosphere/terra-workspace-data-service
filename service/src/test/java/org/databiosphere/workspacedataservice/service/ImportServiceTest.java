@@ -10,7 +10,6 @@ import static org.databiosphere.workspacedataservice.shared.model.Schedulable.AR
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.doThrow;
@@ -25,7 +24,6 @@ import java.util.UUID;
 import java.util.stream.Stream;
 import org.broadinstitute.dsde.workbench.client.sam.ApiException;
 import org.broadinstitute.dsde.workbench.client.sam.api.GoogleApi;
-import org.broadinstitute.dsde.workbench.client.sam.api.ResourcesApi;
 import org.databiosphere.workspacedataservice.annotations.SingleTenant;
 import org.databiosphere.workspacedataservice.common.TestBase;
 import org.databiosphere.workspacedataservice.dao.CollectionDao;
@@ -79,7 +77,6 @@ class ImportServiceTest extends TestBase {
   /** ArgumentCaptor for the Schedulable passed to {@link SchedulerDao#schedule(Schedulable)}. */
   @Captor private ArgumentCaptor<Schedulable> schedulableCaptor;
 
-  ResourcesApi mockSamResourcesApi = Mockito.mock(ResourcesApi.class);
   GoogleApi mockSamGoogleApi = Mockito.mock(GoogleApi.class);
 
   private final URI importUri =
@@ -90,10 +87,6 @@ class ImportServiceTest extends TestBase {
   @BeforeEach
   void setUp() throws ApiException {
     // return the mock ResourcesApi from the mock SamClientFactory
-    given(mockSamClientFactory.getResourcesApi()).willReturn(mockSamResourcesApi);
-    // Sam permission check will always return true
-    given(mockSamResourcesApi.resourcePermissionV2(anyString(), anyString(), anyString()))
-        .willReturn(true);
     given(mockSamClientFactory.getGoogleApi(any(BearerToken.class))).willReturn(mockSamGoogleApi);
     // Pet token request returns "arbitraryToken"
     given(mockSamGoogleApi.getArbitraryPetServiceAccountToken(any())).willReturn("arbitraryToken");
@@ -102,9 +95,6 @@ class ImportServiceTest extends TestBase {
     if (collectionDao instanceof MockCollectionDao mockCollectionDao) {
       mockCollectionDao.clearAllCollections();
     }
-
-    // clear call history for the mock
-    Mockito.clearInvocations(mockSamResourcesApi);
   }
 
   // does createSchedulable properly store the jobId, job group, and job data map?
