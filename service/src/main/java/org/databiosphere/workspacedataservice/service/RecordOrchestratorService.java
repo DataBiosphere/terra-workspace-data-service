@@ -98,6 +98,7 @@ public class RecordOrchestratorService { // TODO give me a better name
     return response;
   }
 
+  // TODO AJ-1660: rename this method; it no longer checks permissions
   public void validateAndPermissions(UUID collectionId, String version) {
     validateVersion(version);
     collectionService.validateCollection(collectionId);
