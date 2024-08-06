@@ -80,11 +80,6 @@ class AllControllersPermissionsTest extends MockMvcTestBase {
     // associate our exemplar collection with our exemplar workspace
     when(collectionService.getWorkspaceId(collectionId)).thenReturn(workspaceId);
 
-    // when(recordDao.recordTypeExists(collectionId.id(), RECORD_TYPE)).thenReturn(false);
-    //
-    //    when(recordOrchestratorService.describeRecordType(collectionId.id(), "v0.2", RECORD_TYPE))
-    //        .thenReturn(new RecordTypeSchema(RECORD_TYPE, List.of(), 0, "sys_name"));
-
     // the jobStatusV1 retrieves the job prior to the permission check (so it can determine which
     // collection the job belongs to). Thus, it needs a mock for its test to pass:
     when(jobService.getJob(jobId)).thenReturn(MOCK_JOB);

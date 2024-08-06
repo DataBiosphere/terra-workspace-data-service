@@ -33,7 +33,6 @@ class PermissionServiceTest extends TestBase {
   @Autowired PermissionService permissionService;
   @MockBean SamAuthorizationDaoFactory samAuthorizationDaoFactory;
   @MockBean CollectionService collectionService;
-  // @MockBean TwdsProperties twdsProperties;
 
   private final SamAuthorizationDao samAuthorizationDao = spy(MockSamAuthorizationDao.allowAll());
 

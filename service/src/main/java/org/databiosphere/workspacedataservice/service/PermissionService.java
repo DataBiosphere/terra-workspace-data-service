@@ -98,7 +98,7 @@ public class PermissionService {
    * @deprecated Use {@link #requireReadPermission(WorkspaceId)} or {@link
    *     #requireReadPermission(CollectionId)} instead.
    */
-  @Deprecated
+  @Deprecated(since = "v0.14.0")
   public void requireReadPermissionSingleTenant() {
     requireReadPermission(twdsProperties.workspaceId());
   }
@@ -109,7 +109,7 @@ public class PermissionService {
    * @deprecated Use {@link #requireWritePermission(WorkspaceId)} or {@link
    *     #requireWritePermission(CollectionId)} instead.
    */
-  @Deprecated
+  @Deprecated(since = "v0.14.0")
   public void requireWritePermissionSingleTenant() {
     requireWritePermission(twdsProperties.workspaceId());
   }

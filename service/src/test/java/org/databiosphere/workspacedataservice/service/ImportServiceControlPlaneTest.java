@@ -17,7 +17,6 @@ import org.databiosphere.workspacedataservice.service.model.exception.Collection
 import org.databiosphere.workspacedataservice.shared.model.CollectionId;
 import org.databiosphere.workspacedataservice.shared.model.WorkspaceId;
 import org.junit.jupiter.api.Test;
-import org.mockito.stubbing.OngoingStubbing;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
@@ -62,8 +61,6 @@ class ImportServiceControlPlaneTest {
     // collection dao says the collection does not exist
     when(collectionDao.getWorkspaceId(collectionId))
         .thenThrow(new EmptyResultDataAccessException("unit test intentional error", 1));
-    // sam dao says the user has write permission
-    stubWriteWorkspacePermission(WorkspaceId.of(collectionId.id())).thenReturn(true);
 
     // ACT/ASSERT
     // extract the UUID here so the lambda below has only one invocation possibly throwing a runtime
@@ -81,8 +78,6 @@ class ImportServiceControlPlaneTest {
     // collection dao says the collection DOES exist, which is an error in the control plane
     WorkspaceId randomWorkspaceId = WorkspaceId.of(UUID.randomUUID());
     when(collectionDao.getWorkspaceId(collectionId)).thenReturn(randomWorkspaceId);
-    // sam dao says the user does have write permission
-    stubWriteWorkspacePermission(randomWorkspaceId).thenReturn(true);
 
     // ACT/ASSERT
     // extract the UUID here so the lambda below has only one invocation possibly throwing a runtime
@@ -91,17 +86,5 @@ class ImportServiceControlPlaneTest {
     // perform the import request
     assertThrows(
         CollectionException.class, () -> importService.createImport(collectionUuid, importRequest));
-  }
-
-  private OngoingStubbing<Boolean> stubWriteWorkspacePermission(WorkspaceId workspaceId) {
-    when(samAuthorizationDaoFactory.getSamAuthorizationDao(workspaceId))
-        .thenReturn(samAuthorizationDao);
-    return when(samAuthorizationDao.hasWriteWorkspacePermission());
-  }
-
-  private OngoingStubbing<Boolean> stubReadWorkspacePermission(WorkspaceId workspaceId) {
-    when(samAuthorizationDaoFactory.getSamAuthorizationDao(workspaceId))
-        .thenReturn(samAuthorizationDao);
-    return when(samAuthorizationDao.hasReadWorkspacePermission());
   }
 }
