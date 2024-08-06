@@ -37,7 +37,9 @@ import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 import javax.sql.DataSource;
 import org.apache.commons.lang3.StringUtils;
-import org.databiosphere.workspacedata.model.FilterColumn;
+import org.databiosphere.workspacedataservice.search.QueryParser;
+import org.databiosphere.workspacedataservice.search.WhereClause;
+import org.databiosphere.workspacedataservice.search.WhereClausePart;
 import org.databiosphere.workspacedataservice.service.DataTypeInferer;
 import org.databiosphere.workspacedataservice.service.RelationUtils;
 import org.databiosphere.workspacedataservice.service.model.DataTypeMapping;
@@ -49,6 +51,7 @@ import org.databiosphere.workspacedataservice.service.model.exception.ConflictEx
 import org.databiosphere.workspacedataservice.service.model.exception.InvalidRelationException;
 import org.databiosphere.workspacedataservice.service.model.exception.MissingObjectException;
 import org.databiosphere.workspacedataservice.service.model.exception.SerializationException;
+import org.databiosphere.workspacedataservice.service.model.exception.ValidationException;
 import org.databiosphere.workspacedataservice.shared.model.AttributeComparator;
 import org.databiosphere.workspacedataservice.shared.model.Record;
 import org.databiosphere.workspacedataservice.shared.model.RecordAttributes;
@@ -272,8 +275,10 @@ public class RecordDao {
 
     // find primary key column name
     String pkColumn = primaryKeyDao.getPrimaryKeyColumn(recordType, collectionId);
+    // and the whole schema
+    Map<String, DataTypeMapping> schema = getExistingTableSchema(collectionId, recordType);
 
-    WhereClause where = generateQueryWhereClause(pkColumn, searchFilter);
+    WhereClause where = generateQueryWhereClause(pkColumn, schema, searchFilter);
 
     return namedTemplate.query(
         "select * from "
@@ -296,7 +301,7 @@ public class RecordDao {
   // helper method to generate the SQL where clause for queryForRecords()
   @VisibleForTesting
   static WhereClause generateQueryWhereClause(
-      String pkColumn, Optional<SearchFilter> searchFilter) {
+      String pkColumn, Map<String, DataTypeMapping> schema, Optional<SearchFilter> searchFilter) {
     // init an empty list of clauses and empty map of bind params
     List<String> clauses = new ArrayList<>();
     MapSqlParameterSource sqlParams = new MapSqlParameterSource();
@@ -311,19 +316,23 @@ public class RecordDao {
       sqlParams.addValue("filterIds", filterIds.get());
     }
 
-    // if this query has specified filter.filters, populate the where clause and bind params
-    Optional<List<FilterColumn>> filterColumns = searchFilter.flatMap(SearchFilter::filters);
-    if (filterColumns.isPresent() && !filterColumns.get().isEmpty()) {
-
-      var idx = 0;
-      for (FilterColumn filter : filterColumns.get()) {
-        // bind parameter names have syntax limitations, so we use an artificial one based on
-        // the filter index
-        var paramName = "filter" + idx;
-        clauses.add(quote(filter.getColumn()) + " = :" + paramName);
-        sqlParams.addValue(paramName, filter.getFind());
-        idx++;
+    // if this query has specified filter.query, populate the where clause and bind params
+    Optional<String> filterQuery = searchFilter.flatMap(SearchFilter::query);
+    if (filterQuery.isPresent()) {
+      WhereClausePart queryPart = new QueryParser().parse(filterQuery.get());
+      for (String column : queryPart.columns()) {
+        if (!schema.containsKey(column)) {
+          throw new ValidationException(
+              "Column specified in query does not exist in this record type");
+        }
+        var datatype = schema.get(column);
+        if (!DataTypeMapping.STRING.equals(datatype)) {
+          throw new ValidationException("Column specified in query must be a string type");
+        }
       }
+
+      clauses.addAll(queryPart.clauses());
+      sqlParams.addValues(queryPart.values());
     }
 
     // translate the list of individual clauses into a single SQL fragment
@@ -1322,8 +1331,4 @@ public class RecordDao {
                 + " drop column "
                 + quote(SqlUtils.validateSqlString(attribute, ATTRIBUTE)));
   }
-
-  // helper tuple class for use by generateQueryWhereClause()
-  @VisibleForTesting
-  record WhereClause(String sql, MapSqlParameterSource params) {}
 }

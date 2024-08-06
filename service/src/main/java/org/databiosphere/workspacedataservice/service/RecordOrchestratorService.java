@@ -13,7 +13,6 @@ import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-import org.databiosphere.workspacedata.model.FilterColumn;
 import org.databiosphere.workspacedataservice.activitylog.ActivityLogger;
 import org.databiosphere.workspacedataservice.dao.RecordDao;
 import org.databiosphere.workspacedataservice.recordsink.RecordSink;
@@ -39,7 +38,6 @@ import org.databiosphere.workspacedataservice.shared.model.RecordQueryResponse;
 import org.databiosphere.workspacedataservice.shared.model.RecordRequest;
 import org.databiosphere.workspacedataservice.shared.model.RecordResponse;
 import org.databiosphere.workspacedataservice.shared.model.RecordType;
-import org.databiosphere.workspacedataservice.shared.model.SearchFilter;
 import org.databiosphere.workspacedataservice.shared.model.SearchRequest;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -216,25 +214,6 @@ public class RecordOrchestratorService { // TODO give me a better name
     if (searchRequest.getOffset() > totalRecords) {
       return new RecordQueryResponse(searchRequest, Collections.emptyList(), totalRecords);
     }
-
-    // validate filter columns
-    List<String> filterColumns =
-        searchRequest
-            .getFilter()
-            .flatMap(SearchFilter::filters)
-            .map(cols -> cols.stream().map(FilterColumn::getColumn).toList())
-            .orElse(List.of());
-    filterColumns.forEach(
-        col -> {
-          if (!schema.containsKey(col)) {
-            throw new ValidationException(
-                "Specified filter column does not exist in this record type");
-          }
-          // TODO: we want to support more data types asap!
-          if (!schema.get(col).equals(DataTypeMapping.STRING)) {
-            throw new ValidationException("Column filters are only valid for STRING columns");
-          }
-        });
 
     LOGGER.info("queryForEntities: {}", recordType.getName());
     List<Record> records =

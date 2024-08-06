@@ -1,13 +1,14 @@
 package org.databiosphere.workspacedataservice.dao;
 
-import static org.databiosphere.workspacedataservice.dao.RecordDao.WhereClause;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import org.databiosphere.workspacedata.model.FilterColumn;
+import org.databiosphere.workspacedataservice.search.WhereClause;
+import org.databiosphere.workspacedataservice.service.model.DataTypeMapping;
 import org.databiosphere.workspacedataservice.shared.model.SearchFilter;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 /**
@@ -18,7 +19,8 @@ class RecordDaoWhereClauseTest {
 
   @Test
   void emptyClause() {
-    WhereClause actual = RecordDao.generateQueryWhereClause("my-pk-col", Optional.empty());
+    WhereClause actual =
+        RecordDao.generateQueryWhereClause("my-pk-col", Map.of(), Optional.empty());
     assertEquals("", actual.sql());
     assertEquals(Map.of(), actual.params().getValues());
   }
@@ -28,7 +30,8 @@ class RecordDaoWhereClauseTest {
     List<String> ids = List.of("one");
     SearchFilter searchFilter = new SearchFilter(Optional.of(ids), Optional.empty());
 
-    WhereClause actual = RecordDao.generateQueryWhereClause("my-pk-col", Optional.of(searchFilter));
+    WhereClause actual =
+        RecordDao.generateQueryWhereClause("my-pk-col", Map.of(), Optional.of(searchFilter));
     assertEquals(" where \"my-pk-col\" in (:filterIds)", actual.sql());
     assertEquals(Map.of("filterIds", ids), actual.params().getValues());
   }
@@ -38,41 +41,42 @@ class RecordDaoWhereClauseTest {
     List<String> ids = List.of("one", "two", "three");
     SearchFilter searchFilter = new SearchFilter(Optional.of(ids), Optional.empty());
 
-    WhereClause actual = RecordDao.generateQueryWhereClause("my-pk-col", Optional.of(searchFilter));
+    WhereClause actual =
+        RecordDao.generateQueryWhereClause("my-pk-col", Map.of(), Optional.of(searchFilter));
     assertEquals(" where \"my-pk-col\" in (:filterIds)", actual.sql());
     assertEquals(Map.of("filterIds", ids), actual.params().getValues());
   }
 
   @Test
   void emptyColumnFilters() {
-    List<FilterColumn> filterColumns = List.of();
-    SearchFilter searchFilter = new SearchFilter(Optional.empty(), Optional.of(filterColumns));
+    SearchFilter searchFilter = new SearchFilter(Optional.empty(), Optional.of(""));
 
-    WhereClause actual = RecordDao.generateQueryWhereClause("my-pk-col", Optional.of(searchFilter));
+    WhereClause actual =
+        RecordDao.generateQueryWhereClause("my-pk-col", Map.of(), Optional.of(searchFilter));
     assertEquals("", actual.sql());
     assertEquals(Map.of(), actual.params().getValues());
   }
 
   @Test
   void oneColumnFilter() {
-    List<FilterColumn> filterColumns = List.of(new FilterColumn().column("col1").find("col1value"));
-    SearchFilter searchFilter = new SearchFilter(Optional.empty(), Optional.of(filterColumns));
+    SearchFilter searchFilter = new SearchFilter(Optional.empty(), Optional.of("col1:col1value"));
 
-    WhereClause actual = RecordDao.generateQueryWhereClause("my-pk-col", Optional.of(searchFilter));
-    assertEquals(" where \"col1\" = :filter0", actual.sql());
-    assertEquals(Map.of("filter0", "col1value"), actual.params().getValues());
+    WhereClause actual =
+        RecordDao.generateQueryWhereClause(
+            "my-pk-col", Map.of("col1", DataTypeMapping.STRING), Optional.of(searchFilter));
+    assertEquals(" where \"col1\" = :filterquery0", actual.sql());
+    assertEquals(Map.of("filterquery0", "col1value"), actual.params().getValues());
   }
 
+  @Disabled("we don't support multiple columns yet")
   @Test
   void multipleColumnFilters() {
-    List<FilterColumn> filterColumns =
-        List.of(
-            new FilterColumn().column("col1").find("col1value"),
-            new FilterColumn().column("col2").find("col2value"),
-            new FilterColumn().column("col3").find("col3value"));
-    SearchFilter searchFilter = new SearchFilter(Optional.empty(), Optional.of(filterColumns));
+    SearchFilter searchFilter =
+        new SearchFilter(
+            Optional.empty(), Optional.of("col1:col1value AND col2:col2value AND col3:col3value"));
 
-    WhereClause actual = RecordDao.generateQueryWhereClause("my-pk-col", Optional.of(searchFilter));
+    WhereClause actual =
+        RecordDao.generateQueryWhereClause("my-pk-col", Map.of(), Optional.of(searchFilter));
     assertEquals(
         " where \"col1\" = :filter0 and \"col2\" = :filter1 and \"col3\" = :filter2", actual.sql());
     assertEquals(
@@ -80,17 +84,16 @@ class RecordDaoWhereClauseTest {
         actual.params().getValues());
   }
 
+  @Disabled("we don't support multiple columns yet")
   @Test
   void idsAndColumnFilters() {
     List<String> ids = List.of("one", "two", "three");
-    List<FilterColumn> filterColumns =
-        List.of(
-            new FilterColumn().column("col1").find("col1value"),
-            new FilterColumn().column("col2").find("col2value"),
-            new FilterColumn().column("col3").find("col3value"));
-    SearchFilter searchFilter = new SearchFilter(Optional.of(ids), Optional.of(filterColumns));
+    SearchFilter searchFilter =
+        new SearchFilter(
+            Optional.of(ids), Optional.of("col1:col1value AND col2:col2value AND col3:col3value"));
 
-    WhereClause actual = RecordDao.generateQueryWhereClause("my-pk-col", Optional.of(searchFilter));
+    WhereClause actual =
+        RecordDao.generateQueryWhereClause("my-pk-col", Map.of(), Optional.of(searchFilter));
     assertEquals(
         " where \"my-pk-col\" in (:filterIds) and \"col1\" = :filter0 and \"col2\" = :filter1 and \"col3\" = :filter2",
         actual.sql());

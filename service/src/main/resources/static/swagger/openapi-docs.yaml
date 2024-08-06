@@ -870,17 +870,6 @@ components:
           type: string
           description: time of error
       description: ""
-    FilterColumn:
-      type: object
-      required:
-        - column
-        - find
-      properties:
-        column:
-          type: string
-        find:
-          type: string
-      additionalProperties: false
     git:
       type: object
       properties:
@@ -1001,10 +990,10 @@ components:
           type: array
           items:
             type: string
-        filters:
-          type: array
-          items:
-            $ref: '#/components/schemas/FilterColumn'
+        query:
+          type: string
+          description: in the form column:text
+          example: sample_id:12345
     SearchLimit:
       type: integer
       default: 10

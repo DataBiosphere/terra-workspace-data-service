@@ -14,7 +14,6 @@ import java.util.UUID;
 import java.util.function.Supplier;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
-import org.databiosphere.workspacedata.model.FilterColumn;
 import org.databiosphere.workspacedataservice.common.TestBase;
 import org.databiosphere.workspacedataservice.config.TwdsProperties;
 import org.databiosphere.workspacedataservice.dao.RecordDao;
@@ -96,10 +95,8 @@ class RecordOrchestratorServiceColumnFilterTest extends TestBase {
         COLLECTION_UUID, schema, TEST_TYPE, RelationCollection.empty(), PRIMARY_KEY);
 
     // build the by-column filter
-    FilterColumn filterColumn = new FilterColumn().column(TEST_COLUMN).find(criteria);
-    List<FilterColumn> filterColumns = List.of(filterColumn);
-
-    SearchFilter searchFilter = new SearchFilter(Optional.empty(), Optional.of(filterColumns));
+    SearchFilter searchFilter =
+        new SearchFilter(Optional.empty(), Optional.of(TEST_COLUMN + ":\"" + criteria + "\""));
 
     SearchRequest searchRequest = new SearchRequest();
     searchRequest.setFilter(Optional.of(searchFilter));
@@ -134,10 +131,7 @@ class RecordOrchestratorServiceColumnFilterTest extends TestBase {
         COLLECTION_UUID, schema, TEST_TYPE, RelationCollection.empty(), PRIMARY_KEY);
 
     // build the by-column filter, using a column name that doesn't exist in the record type
-    FilterColumn filterColumn = new FilterColumn().column("unknown").find("criteria");
-    List<FilterColumn> filterColumns = List.of(filterColumn);
-
-    SearchFilter searchFilter = new SearchFilter(Optional.empty(), Optional.of(filterColumns));
+    SearchFilter searchFilter = new SearchFilter(Optional.empty(), Optional.of("unknown:criteria"));
 
     SearchRequest searchRequest = new SearchRequest();
     searchRequest.setFilter(Optional.of(searchFilter));
@@ -149,7 +143,7 @@ class RecordOrchestratorServiceColumnFilterTest extends TestBase {
                 recordOrchestratorService.queryForRecords(
                     COLLECTION_UUID, TEST_TYPE, VERSION, searchRequest));
     assertEquals(
-        "Specified filter column does not exist in this record type",
+        "Column specified in query does not exist in this record type",
         validationException.getMessage());
   }
 
@@ -158,9 +152,8 @@ class RecordOrchestratorServiceColumnFilterTest extends TestBase {
   void emptyArrayOfFilters() {
     String criteria = "foo";
 
-    // build the search request, specifying [] for filter columns
-    List<FilterColumn> filterColumns = List.of();
-    SearchFilter searchFilter = new SearchFilter(Optional.empty(), Optional.of(filterColumns));
+    // build the search request, specifying "" for filter columns
+    SearchFilter searchFilter = new SearchFilter(Optional.empty(), Optional.of(""));
     SearchRequest searchRequest = new SearchRequest();
     searchRequest.setFilter(Optional.of(searchFilter));
 
@@ -188,6 +181,7 @@ class RecordOrchestratorServiceColumnFilterTest extends TestBase {
   void filterForNull() {}
 
   // can users search multiple columns at once?
+  @Disabled("we don't support multiple columns yet")
   @Test
   void filterMultipleColumns() {
     // init the record type. This allows us to query the table prior to inserting any records.
@@ -200,12 +194,11 @@ class RecordOrchestratorServiceColumnFilterTest extends TestBase {
     String criteria2 = "bentley";
 
     // build the by-column filters: separate criteria for test and control columns
-    List<FilterColumn> filterColumns =
-        List.of(
-            new FilterColumn().column(TEST_COLUMN).find(criteria1),
-            new FilterColumn().column(CONTROL_COLUMN).find(criteria2));
-
-    SearchFilter searchFilter = new SearchFilter(Optional.empty(), Optional.of(filterColumns));
+    SearchFilter searchFilter =
+        new SearchFilter(
+            Optional.empty(),
+            Optional.of(
+                TEST_COLUMN + ":" + criteria1 + " AND " + CONTROL_COLUMN + ":" + criteria2));
 
     SearchRequest searchRequest = new SearchRequest();
     searchRequest.setFilter(Optional.of(searchFilter));
