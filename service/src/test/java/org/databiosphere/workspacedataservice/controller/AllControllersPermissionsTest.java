@@ -224,8 +224,6 @@ class AllControllersPermissionsTest extends MockMvcTestBase {
             named(
                 "DELETE /{instanceid}/types/v0.2/{type}",
                 delete("/{instanceid}/types/v0.2/{type}", collectionId, RECORD_TYPE))),
-        // TODO AJ-1660: following API fails its success check with a NullPointerException.
-        //   mock the implementation? Or fix the implementation?
         arguments(
             named(
                 "PATCH /{instanceid}/types/v0.2/{type}/{attribute}",

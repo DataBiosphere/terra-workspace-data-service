@@ -16,14 +16,15 @@ import org.databiosphere.workspacedataservice.service.model.exception.Authentica
 import org.databiosphere.workspacedataservice.service.model.exception.AuthorizationException;
 import org.databiosphere.workspacedataservice.service.model.exception.CollectionException;
 import org.databiosphere.workspacedataservice.service.model.exception.MissingObjectException;
+import org.databiosphere.workspacedataservice.service.model.exception.RestException;
 import org.databiosphere.workspacedataservice.shared.model.CollectionId;
 import org.databiosphere.workspacedataservice.shared.model.WorkspaceId;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.mockito.stubbing.OngoingStubbing;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.http.HttpStatus;
 import org.springframework.test.annotation.DirtiesContext;
 
 @DirtiesContext
@@ -189,15 +190,42 @@ class PermissionServiceTest extends TestBase {
         actual.getMessage());
   }
 
-  // in the control plane, all collections should be virtual. What if they are not?
-  @Disabled("write me")
-  @Test
-  void controlPlaneNonVirtualCollection() {}
-
   // what if the call to Sam throws a connection error or other unexpected error?
-  @Disabled("write me")
   @Test
-  void unexpectedSamError() {}
+  void unexpectedSamErrorRead() {
+    WorkspaceId workspaceId = WorkspaceId.of(UUID.randomUUID());
+    CollectionId collectionId = CollectionId.of(UUID.randomUUID());
+    when(collectionService.getWorkspaceId(collectionId)).thenReturn(workspaceId);
+
+    // unexpected ApiExceptions are wrapped in RestException by RestClientRetry
+    stubReadWorkspacePermission(workspaceId)
+        .thenThrow(new RestException(HttpStatus.I_AM_A_TEAPOT, "unit test intentional error"));
+
+    // the RestException is bubbled up
+    RestException actual =
+        assertThrows(
+            RestException.class, () -> permissionService.requireReadPermission(collectionId));
+    assertEquals(HttpStatus.I_AM_A_TEAPOT, actual.getStatusCode());
+    assertThat(actual.getMessage()).contains("unit test intentional error");
+  }
+
+  @Test
+  void unexpectedSamErrorWrite() {
+    WorkspaceId workspaceId = WorkspaceId.of(UUID.randomUUID());
+    CollectionId collectionId = CollectionId.of(UUID.randomUUID());
+    when(collectionService.getWorkspaceId(collectionId)).thenReturn(workspaceId);
+
+    // unexpected ApiExceptions are wrapped in RestException by RestClientRetry
+    stubWriteWorkspacePermission(workspaceId)
+        .thenThrow(new RestException(HttpStatus.I_AM_A_TEAPOT, "unit test intentional error"));
+
+    // the RestException is bubbled up
+    RestException actual =
+        assertThrows(
+            RestException.class, () -> permissionService.requireWritePermission(collectionId));
+    assertEquals(HttpStatus.I_AM_A_TEAPOT, actual.getStatusCode());
+    assertThat(actual.getMessage()).contains("unit test intentional error");
+  }
 
   private OngoingStubbing<Boolean> stubReadWorkspacePermission(WorkspaceId workspaceId) {
     when(samAuthorizationDaoFactory.getSamAuthorizationDao(workspaceId))
