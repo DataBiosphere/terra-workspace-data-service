@@ -38,6 +38,8 @@ public class QueryParser {
       String column = fieldQueryNode.getFieldAsString();
       String value = fieldQueryNode.getTextAsString();
 
+      validateColumnName(column);
+
       List<String> clauses = new ArrayList<>();
       Map<String, String> values = new HashMap<>();
       List<String> columns = new ArrayList<>();
@@ -51,6 +53,16 @@ public class QueryParser {
       return new WhereClausePart(clauses, values, columns);
     } else {
       throw new InvalidQueryException();
+    }
+  }
+
+  private void validateColumnName(String columnName) {
+    // The Lucene query parser requires a default column name to parse a query. If the end user
+    // has not specified a column, the query parser will use the default column name. In our case,
+    // if we see the default column name we consider it an error - as of this writing, we require
+    // the end user to specify a column name.
+    if (DEFAULT_ALL_COLUMNS_NAME.equals(columnName)) {
+      throw new InvalidQueryException("Query must specify a column name");
     }
   }
 }
