@@ -17,7 +17,6 @@ import org.databiosphere.workspacedataservice.config.TenancyProperties;
 import org.databiosphere.workspacedataservice.dao.CollectionDao;
 import org.databiosphere.workspacedataservice.dao.CollectionRepository;
 import org.databiosphere.workspacedataservice.generated.CollectionServerModel;
-import org.databiosphere.workspacedataservice.sam.SamAuthorizationDaoFactory;
 import org.databiosphere.workspacedataservice.service.model.exception.CollectionException;
 import org.databiosphere.workspacedataservice.service.model.exception.ConflictException;
 import org.databiosphere.workspacedataservice.service.model.exception.MissingObjectException;
@@ -55,7 +54,6 @@ public class CollectionService {
 
   public CollectionService(
       CollectionDao collectionDao,
-      SamAuthorizationDaoFactory samAuthorizationDaoFactory,
       ActivityLogger activityLogger,
       TenancyProperties tenancyProperties,
       CollectionRepository collectionRepository,

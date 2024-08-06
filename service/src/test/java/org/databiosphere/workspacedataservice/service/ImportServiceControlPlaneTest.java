@@ -3,16 +3,12 @@ package org.databiosphere.workspacedataservice.service;
 import static org.databiosphere.workspacedataservice.generated.ImportRequestServerModel.TypeEnum.*;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.when;
 
 import java.net.URI;
 import java.util.UUID;
 import org.databiosphere.workspacedataservice.dao.CollectionDao;
 import org.databiosphere.workspacedataservice.generated.ImportRequestServerModel;
-import org.databiosphere.workspacedataservice.sam.MockSamAuthorizationDao;
-import org.databiosphere.workspacedataservice.sam.SamAuthorizationDao;
-import org.databiosphere.workspacedataservice.sam.SamAuthorizationDaoFactory;
 import org.databiosphere.workspacedataservice.service.model.exception.CollectionException;
 import org.databiosphere.workspacedataservice.shared.model.CollectionId;
 import org.databiosphere.workspacedataservice.shared.model.WorkspaceId;
@@ -45,9 +41,7 @@ class ImportServiceControlPlaneTest {
 
   @Autowired ImportService importService;
   @MockBean CollectionDao collectionDao;
-  @MockBean SamAuthorizationDaoFactory samAuthorizationDaoFactory;
 
-  private final SamAuthorizationDao samAuthorizationDao = spy(MockSamAuthorizationDao.allowAll());
   private final URI importUri =
       URI.create("https://teststorageaccount.blob.core.windows.net/testcontainer/file");
   private final ImportRequestServerModel importRequest =
