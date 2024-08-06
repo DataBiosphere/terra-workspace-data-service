@@ -4,7 +4,6 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import org.databiosphere.workspacedataservice.annotations.DeploymentMode.ControlPlane;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.springframework.beans.factory.NoSuchBeanDefinitionException;
@@ -22,7 +21,6 @@ class ControlPlaneDeploymentModeTest extends DeploymentModeTestBase {
     assertThrows(NoSuchBeanDefinitionException.class, () -> context.getBean(beanName));
   }
 
-  @Disabled("Test disabled until we have parameters in controlPlaneConditionalBeans")
   @ParameterizedTest(name = "{0} is enabled for DeploymentMode control-plane only")
   @MethodSource("controlPlaneConditionalBeans")
   void beansEnabledForControlPlaneOnly(String beanName) {
