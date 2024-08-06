@@ -17,9 +17,6 @@ import org.springframework.test.context.TestPropertySource;
 @ActiveProfiles("control-plane")
 @TestPropertySource(
     properties = {
-      // TODO(AJ-1656): control-plane should not require instance config in any form, this is a hold
-      //   over from direct injection of @Value('twds.instance.workspace-id')
-      "twds.instance.workspace-id=",
       // turn off pubsub autoconfiguration for tests
       "spring.cloud.gcp.pubsub.enabled=false",
       // Rawls url must be valid, else context initialization (Spring startup) will fail

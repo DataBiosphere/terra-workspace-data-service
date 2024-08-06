@@ -2,6 +2,7 @@ package org.databiosphere.workspacedataservice.service;
 
 import static java.util.Objects.requireNonNullElse;
 
+import com.google.common.collect.Sets;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
@@ -21,6 +22,9 @@ import org.springframework.stereotype.Service;
 public class JobService {
   private static final Set<StatusEnum> TERMINAL_JOB_STATUSES =
       Set.of(StatusEnum.SUCCEEDED, StatusEnum.ERROR, StatusEnum.CANCELLED);
+
+  public static final Set<StatusEnum> NONTERMINAL_JOB_STATUSES =
+      Sets.difference(Set.of(StatusEnum.values()), TERMINAL_JOB_STATUSES);
 
   JobDao jobDao;
   CollectionService collectionService;

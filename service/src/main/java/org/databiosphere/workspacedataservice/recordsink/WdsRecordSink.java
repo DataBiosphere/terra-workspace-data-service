@@ -6,6 +6,7 @@ import org.databiosphere.workspacedataservice.dao.RecordDao;
 import org.databiosphere.workspacedataservice.service.DataTypeInferer;
 import org.databiosphere.workspacedataservice.service.RecordService;
 import org.databiosphere.workspacedataservice.service.model.DataTypeMapping;
+import org.databiosphere.workspacedataservice.service.model.exception.DataImportException;
 import org.databiosphere.workspacedataservice.shared.model.CollectionId;
 import org.databiosphere.workspacedataservice.shared.model.Record;
 import org.databiosphere.workspacedataservice.shared.model.RecordType;
@@ -50,7 +51,7 @@ public class WdsRecordSink implements RecordSink {
           collectionId.id(),
           recordType,
           schema,
-          recordDao.getExistingTableSchemaLessPrimaryKey(collectionId.id(), recordType),
+          recordDao.getExistingTableSchema(collectionId.id(), recordType),
           records);
     }
     return schema;
@@ -68,5 +69,10 @@ public class WdsRecordSink implements RecordSink {
   @Override
   public void deleteBatch(RecordType recordType, List<Record> records) {
     recordDao.batchDelete(collectionId.id(), recordType, records);
+  }
+
+  @Override
+  public void success() throws DataImportException {
+    // noop
   }
 }

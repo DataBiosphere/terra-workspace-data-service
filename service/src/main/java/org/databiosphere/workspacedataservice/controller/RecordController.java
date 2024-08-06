@@ -6,6 +6,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 import org.databiosphere.workspacedataservice.annotations.DeploymentMode.DataPlane;
+import org.databiosphere.workspacedataservice.generated.CollectionServerModel;
 import org.databiosphere.workspacedataservice.service.CollectionService;
 import org.databiosphere.workspacedataservice.service.RecordOrchestratorService;
 import org.databiosphere.workspacedataservice.service.model.AttributeSchema;
@@ -122,12 +123,21 @@ public class RecordController {
         instanceId, version, recordType, recordId, primaryKey, recordRequest);
   }
 
+  /**
+   * @deprecated Use {@link CollectionController#listCollectionsV1(UUID)} instead.
+   */
+  @Deprecated(forRemoval = true, since = "v0.14.0")
   @GetMapping("/instances/{version}")
   public ResponseEntity<List<UUID>> listInstances(@PathVariable("version") String version) {
     List<UUID> schemaList = collectionService.listCollections(version);
     return new ResponseEntity<>(schemaList, HttpStatus.OK);
   }
 
+  /**
+   * @deprecated Use {@link CollectionController#createCollectionV1(UUID, CollectionServerModel)}
+   *     instead.
+   */
+  @Deprecated(forRemoval = true, since = "v0.14.0")
   @PostMapping("/instances/{version}/{instanceId}")
   public ResponseEntity<String> createInstance(
       @PathVariable("instanceId") UUID instanceId, @PathVariable("version") String version) {
@@ -135,6 +145,10 @@ public class RecordController {
     return new ResponseEntity<>(HttpStatus.CREATED);
   }
 
+  /**
+   * @deprecated Use {@link CollectionController#deleteCollectionV1(UUID, UUID)} instead.
+   */
+  @Deprecated(forRemoval = true, since = "v0.14.0")
   @DeleteMapping("/instances/{version}/{instanceId}")
   public ResponseEntity<String> deleteInstance(
       @PathVariable("instanceId") UUID instanceId, @PathVariable("version") String version) {

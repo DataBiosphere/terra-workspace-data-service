@@ -487,14 +487,14 @@ public class RecordDao {
   }
 
   private List<RecordColumn> getSchemaWithRowId(
-      Map<String, DataTypeMapping> schema, String recordIdColumn) {
-    // we collect to a set first to handle the case where the user has included their primary key
-    // data in attributes
-    return Stream.concat(
-            Stream.of(new RecordColumn(recordIdColumn, DataTypeMapping.STRING)),
-            schema.entrySet().stream().map(e -> new RecordColumn(e.getKey(), e.getValue())))
-        .collect(Collectors.toSet())
-        .stream()
+      Map<String, DataTypeMapping> schema, String recordIdColumnName) {
+    // Make sure the id column is included, and that it is a string.
+    // This will overwrite any other datatype the id column may have been set to.
+    // WDS requires the id column to be a string (see getPrimaryKeyDef), so we need to enforce that.
+    HashMap<String, DataTypeMapping> workingSchema = new HashMap<>(schema);
+    workingSchema.put(recordIdColumnName, DataTypeMapping.STRING);
+    return workingSchema.entrySet().stream()
+        .map(e -> new RecordColumn(e.getKey(), e.getValue()))
         .toList();
   }
 

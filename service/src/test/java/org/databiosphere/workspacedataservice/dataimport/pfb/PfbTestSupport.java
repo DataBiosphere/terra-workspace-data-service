@@ -13,6 +13,7 @@ import org.databiosphere.workspacedataservice.dataimport.snapshotsupport.Snapsho
 import org.databiosphere.workspacedataservice.generated.GenericJobServerModel;
 import org.databiosphere.workspacedataservice.generated.ImportRequestServerModel;
 import org.databiosphere.workspacedataservice.generated.ImportRequestServerModel.TypeEnum;
+import org.databiosphere.workspacedataservice.metrics.ImportMetrics;
 import org.databiosphere.workspacedataservice.recordsink.RecordSinkFactory;
 import org.databiosphere.workspacedataservice.recordsource.RecordSourceFactory;
 import org.databiosphere.workspacedataservice.service.BatchWriteService;
@@ -33,6 +34,7 @@ class PfbTestSupport {
   @Autowired private BatchWriteService batchWriteService;
   @Autowired private ActivityLogger activityLogger;
   @Autowired private ObservationRegistry observationRegistry;
+  @Autowired private ImportMetrics importMetrics;
   @Autowired private ImportService importService;
   @Autowired private SnapshotSupportFactory snapshotSupportFactory;
   @Autowired private DataImportProperties dataImportProperties;
@@ -63,6 +65,7 @@ class PfbTestSupport {
         batchWriteService,
         activityLogger,
         observationRegistry,
+        importMetrics,
         snapshotSupportFactory,
         dataImportProperties,
         importDetailsRetriever);

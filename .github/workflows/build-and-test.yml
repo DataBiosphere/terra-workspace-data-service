@@ -1,10 +1,14 @@
 name: Build and Test
 
 on:
-  push:
-    paths-ignore: [ '*.md' ]
   pull_request:
     branches: [ '**' ]
+  push:
+    paths-ignore: [ '*.md' ]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.head_ref || github.ref }}
+  cancel-in-progress: true
 
 jobs:
   build:
@@ -19,7 +23,7 @@ jobs:
           java-version: '17'
           distribution: 'temurin'
       - name: Setup Gradle
-        uses: gradle/actions/setup-gradle@v3
+        uses: gradle/actions/setup-gradle@v4
 
       - name: Build all projects without running tests
         run: ./gradlew --build-cache build -x test
@@ -58,7 +62,7 @@ jobs:
           distribution: 'temurin'
 
       - name: Setup Gradle
-        uses: gradle/actions/setup-gradle@v3
+        uses: gradle/actions/setup-gradle@v4
 
       - name: Cache SonarCloud packages
         uses: actions/cache@v4

@@ -1,14 +1,15 @@
 package org.databiosphere.workspacedataservice.controller;
 
+import static java.util.UUID.randomUUID;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import java.net.URI;
-import java.util.UUID;
 import org.databiosphere.workspacedataservice.dao.CollectionDao;
 import org.databiosphere.workspacedataservice.generated.GenericJobServerModel;
 import org.databiosphere.workspacedataservice.generated.ImportRequestServerModel;
+import org.databiosphere.workspacedataservice.shared.model.CollectionId;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
@@ -24,8 +25,8 @@ class ImportControllerMockMvcTest extends MockMvcTestBase {
 
   @Test
   void smokeTestCreateImport() throws Exception {
-    UUID instanceId = UUID.randomUUID();
-    collectionDao.createSchema(instanceId);
+    CollectionId collectionId = CollectionId.of(randomUUID());
+    collectionDao.createSchema(collectionId);
     ImportRequestServerModel importRequest =
         new ImportRequestServerModel(
             ImportRequestServerModel.TypeEnum.PFB,
@@ -35,7 +36,7 @@ class ImportControllerMockMvcTest extends MockMvcTestBase {
     MvcResult mvcResult =
         mockMvc
             .perform(
-                post("/{instanceUuid}/import/v1", instanceId)
+                post("/{instanceUuid}/import/v1", collectionId)
                     .content(toJson(importRequest))
                     .contentType(MediaType.APPLICATION_JSON))
             .andExpect(status().isAccepted())

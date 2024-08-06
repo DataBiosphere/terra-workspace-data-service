@@ -24,7 +24,7 @@ import jakarta.annotation.Generated;
  */
 
 @JsonTypeName("JobV1")
-@Generated(value = "org.openapitools.codegen.languages.SpringCodegen", comments = "Generator version: 7.5.0")
+@Generated(value = "org.openapitools.codegen.languages.SpringCodegen", comments = "Generator version: 7.7.0")
 public class JobV1ServerModel {
 
   private UUID jobId;
@@ -147,7 +147,7 @@ public class JobV1ServerModel {
   /**
    * Get jobId
    * @return jobId
-  */
+   */
   @NotNull @Valid 
   @Schema(name = "jobId", requiredMode = Schema.RequiredMode.REQUIRED)
   @JsonProperty("jobId")
@@ -167,7 +167,7 @@ public class JobV1ServerModel {
   /**
    * Get jobType
    * @return jobType
-  */
+   */
   @NotNull 
   @Schema(name = "jobType", requiredMode = Schema.RequiredMode.REQUIRED)
   @JsonProperty("jobType")
@@ -187,7 +187,7 @@ public class JobV1ServerModel {
   /**
    * Get instanceId
    * @return instanceId
-  */
+   */
   @NotNull @Valid 
   @Schema(name = "instanceId", requiredMode = Schema.RequiredMode.REQUIRED)
   @JsonProperty("instanceId")
@@ -207,7 +207,7 @@ public class JobV1ServerModel {
   /**
    * Get status
    * @return status
-  */
+   */
   @NotNull 
   @Schema(name = "status", requiredMode = Schema.RequiredMode.REQUIRED)
   @JsonProperty("status")
@@ -227,7 +227,7 @@ public class JobV1ServerModel {
   /**
    * Get created
    * @return created
-  */
+   */
   @NotNull @Valid 
   @Schema(name = "created", requiredMode = Schema.RequiredMode.REQUIRED)
   @JsonProperty("created")
@@ -247,7 +247,7 @@ public class JobV1ServerModel {
   /**
    * Get updated
    * @return updated
-  */
+   */
   @NotNull @Valid 
   @Schema(name = "updated", requiredMode = Schema.RequiredMode.REQUIRED)
   @JsonProperty("updated")
@@ -267,7 +267,7 @@ public class JobV1ServerModel {
   /**
    * Get errorMessage
    * @return errorMessage
-  */
+   */
   
   @Schema(name = "errorMessage", requiredMode = Schema.RequiredMode.NOT_REQUIRED)
   @JsonProperty("errorMessage")

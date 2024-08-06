@@ -26,10 +26,12 @@ import org.databiosphere.workspacedataservice.config.DataImportProperties;
 import org.databiosphere.workspacedataservice.dao.JobDao;
 import org.databiosphere.workspacedataservice.dataimport.ImportDetails;
 import org.databiosphere.workspacedataservice.dataimport.ImportDetailsRetriever;
+import org.databiosphere.workspacedataservice.dataimport.snapshotsupport.SnapshotLinkResult;
 import org.databiosphere.workspacedataservice.dataimport.snapshotsupport.SnapshotSupport;
 import org.databiosphere.workspacedataservice.dataimport.snapshotsupport.SnapshotSupportFactory;
 import org.databiosphere.workspacedataservice.jobexec.JobDataMapReader;
 import org.databiosphere.workspacedataservice.jobexec.QuartzJob;
+import org.databiosphere.workspacedataservice.metrics.ImportMetrics;
 import org.databiosphere.workspacedataservice.recordsink.RawlsAttributePrefixer.PrefixStrategy;
 import org.databiosphere.workspacedataservice.recordsink.RecordSink;
 import org.databiosphere.workspacedataservice.recordsink.RecordSinkFactory;
@@ -62,6 +64,7 @@ public class PfbQuartzJob extends QuartzJob {
   private final RecordSinkFactory recordSinkFactory;
   private final SnapshotSupportFactory snapshotSupportFactory;
   private final ImportDetailsRetriever importDetailsRetriever;
+  private final ImportMetrics importMetrics;
 
   public PfbQuartzJob(
       JobDao jobDao,
@@ -70,6 +73,7 @@ public class PfbQuartzJob extends QuartzJob {
       BatchWriteService batchWriteService,
       ActivityLogger activityLogger,
       ObservationRegistry observationRegistry,
+      ImportMetrics importMetrics,
       SnapshotSupportFactory snapshotSupportFactory,
       DataImportProperties dataImportProperties,
       ImportDetailsRetriever importDetailsRetriever) {
@@ -80,6 +84,7 @@ public class PfbQuartzJob extends QuartzJob {
     this.activityLogger = activityLogger;
     this.snapshotSupportFactory = snapshotSupportFactory;
     this.importDetailsRetriever = importDetailsRetriever;
+    this.importMetrics = importMetrics;
   }
 
   @Override
@@ -121,6 +126,14 @@ public class PfbQuartzJob extends QuartzJob {
       //   group its merged results under import mode; most notably, relations will be double
       //   counted
       result.merge(withPfbStream(uri, stream -> importTables(stream, recordSink, RELATIONS)));
+      // complete the RecordSink
+
+      importMetrics
+          .recordUpsertDistributionSummary()
+          .distributionSummary()
+          .record(result.getTotalUpdatedCount());
+
+      recordSink.success();
     } catch (DataImportException e) {
       throw new PfbImportException(e.getMessage(), e);
     }
@@ -216,7 +229,18 @@ public class PfbQuartzJob extends QuartzJob {
   protected void linkSnapshots(Set<UUID> snapshotIds, WorkspaceId workspaceId) {
     // list existing snapshots linked to this workspace
     SnapshotSupport snapshotSupport = snapshotSupportFactory.buildSnapshotSupport(workspaceId);
-    snapshotSupport.linkSnapshots(snapshotIds);
+    SnapshotLinkResult snapshotLinkResult = snapshotSupport.linkSnapshots(snapshotIds);
+
+    // record metrics
+    importMetrics
+        .snapshotsConsideredDistributionSummary()
+        .distributionSummary()
+        .record(snapshotLinkResult.numSnapshotsConsidered());
+
+    importMetrics
+        .snapshotsLinkedDistributionSummary()
+        .distributionSummary()
+        .record(snapshotLinkResult.numSnapshotsLinked());
   }
 
   @Nullable

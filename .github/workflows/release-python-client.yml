@@ -46,8 +46,8 @@ jobs:
       - name: Install openapi-generator-cli
         run: npm install @openapitools/openapi-generator-cli -g
 
-      - name: set version to 4.3.1
-        run: openapi-generator-cli version-manager set 4.3.1
+      - name: set version to 7.7.0
+        run: openapi-generator-cli version-manager set 7.7.0
 
       - name: Generate Python client
         run: |
@@ -55,8 +55,7 @@ jobs:
           -i service/src/main/resources/static/swagger/openapi-docs.yaml \
           -g python \
           -o wds-client \
-          --additional-properties=projectName=wds-client,packageName=wds_client,packageVersion=${{ inputs.new-tag }},httpUserAgent=wds-client/${{ inputs.new-tag }}/python \
-          --skip-validate-spec
+          --additional-properties=projectName=wds-client,packageName=wds_client,packageVersion=${{ inputs.new-tag || '0.0.0' }},httpUserAgent=wds-client/${{ inputs.new-tag || '0.0.0'}}/python
 
       - name: Install python package locally
         working-directory: ./wds-client
@@ -80,7 +79,7 @@ jobs:
           distribution: 'temurin'
 
       - name: Setup Gradle
-        uses: gradle/actions/setup-gradle@v3
+        uses: gradle/actions/setup-gradle@v4
 
       - name: Run WDS service and tests
         run: |
@@ -91,7 +90,7 @@ jobs:
           export SPRING_PROFILES_ACTIVE=data-plane,local
           ./gradlew --build-cache build -x test
           # Allow http imports from localhost to test with files from resources served by the mock API server
-          ./gradlew bootRun --args='--twds.data-import.allowed-hosts=localhost --twds.data-import.require-validation=false' &
+          ./gradlew bootRun --args='--twds.data-import.require-validation=false' &
           count=20
           until $(curl --output /dev/null --silent --head --fail http://localhost:8080/status); do
             printf '.'

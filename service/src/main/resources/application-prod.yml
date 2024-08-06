@@ -11,3 +11,5 @@ twds:
       - .*\.singlecell\.gi\.ucsc\.edu,
       - .*gen3\.biodatacatalyst\.nhlbi\.nih\.gov
       - .*service\.azul\.data\.humancellatlas\.org
+      - .*redcaptest\.vumc\.org
+      - .*redcap\.vumc\.org

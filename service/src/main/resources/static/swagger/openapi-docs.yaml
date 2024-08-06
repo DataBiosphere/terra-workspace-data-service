@@ -5,7 +5,10 @@ info:
   version: v0.2
   description: |
     This page lists current APIs.
-    As of v0.2, all APIs are subject to change without notice.
+
+    All v0.2 APIs are subject to change without notice.
+
+    Changelog at [https://github.com/DataBiosphere/terra-workspace-data-service/releases](https://github.com/DataBiosphere/terra-workspace-data-service/releases)
   termsOfService: https://github.com/DataBiosphere/terra-workspace-data-service
   license:
     name: BSD
@@ -13,6 +16,9 @@ info:
 
 servers:
   - url: /
+
+security:
+  - bearerAuth: [ ]
 
 tags:
   # Tags should be listed in the order they should appear in the UI
@@ -24,6 +30,8 @@ tags:
     description: Import APIs
   - name: Job
     description: Job APIs
+  - name: Collection
+    description: Collection APIs
   - name: Instances
     description: Instance APIs
   - name: Schema
@@ -50,8 +58,6 @@ paths:
         $ref: '#/components/requestBodies/BackupRestoreRequestBody'
       summary: Create a backup of all WDS data
       operationId: createBackup
-      security:
-        - bearerAuth: [ ]
       responses:
         200:
           description: Successfully initiated the backup process
@@ -68,8 +74,6 @@ paths:
         - $ref: '#/components/parameters/trackingIdPathParam'
       summary: Check status of a WDS data backup
       operationId: getBackupStatus
-      security:
-        - bearerAuth: [ ]
       responses:
         200:
           description: Returns backup status
@@ -85,8 +89,6 @@ paths:
         - $ref: '#/components/parameters/versionPathParam'
       summary: Check status of a WDS data clone
       operationId: getCloneStatus
-      security:
-        - bearerAuth: [ ]
       responses:
         200:
           description: Returns clone status
@@ -103,8 +105,6 @@ paths:
       summary: Batch write records
       description: Perform a batch of upsert / delete operations on multiple records
       operationId: batchWriteRecords
-      security:
-        - bearerAuth: [ ]
       tags:
         - Records
       parameters:
@@ -150,8 +150,6 @@ paths:
         the attributes in the request body.
         TODO: add a query parameter to allow/disallow overwriting existing records?
       operationId: createOrReplaceRecord
-      security:
-        - bearerAuth: [ ]
       tags:
         - Records
       parameters:
@@ -176,8 +174,6 @@ paths:
     patch:
       summary: Update record
       operationId: updateRecord
-      security:
-        - bearerAuth: [ ]
       description: |
         Updates the record of the specified type and id.
         Any attributes included in the request body will be created or overwritten.
@@ -211,8 +207,6 @@ paths:
       summary: Delete record
       description: Deletes the record at the specified type and id.
       operationId: deleteRecord
-      security:
-        - bearerAuth: [ ]
       tags:
         - Records
       parameters:
@@ -292,8 +286,6 @@ paths:
       tags:
         - Records
       operationId: uploadTSV
-      security:
-        - bearerAuth: [ ]
       parameters:
         - $ref: '#/components/parameters/instanceIdPathParam'
         - $ref: '#/components/parameters/versionPathParam'
@@ -348,13 +340,22 @@ paths:
     $ref: 'apis-v1.yaml#/paths/~1job~1v1~1instance~1{instanceUuid}'
 
   ##############################
+  # Collection APIs
+  ##############################
+  /collections/v1/{workspaceId}:
+    $ref: 'apis-v1.yaml#/paths/~1collections~1v1~1{workspaceId}'
+  /collections/v1/{workspaceId}/{collectionId}:
+    $ref: 'apis-v1.yaml#/paths/~1collections~1v1~1{workspaceId}~1{collectionId}'
+
+  ##############################
   # Instances APIs
   ##############################
   /instances/{v}:
     get:
-      summary: List instances
-      description: List all instances in this server.
+      summary: This API will be deleted on or after August 25, 2024.
+      description: Use GET /collections/v1/{workspaceId} instead.
       operationId: listWDSInstances
+      deprecated: true
       tags:
         - Instances
       parameters:
@@ -371,11 +372,10 @@ paths:
                   format: uuid
   /instances/{v}/{instanceid}:
     post:
-      summary: Create an instance
-      description: Create an instance with the given UUID.
+      summary: This API will be deleted on or after August 25, 2024.
+      description: Use POST /collections/v1/{workspaceId} instead.
       operationId: createWDSInstance
-      security:
-        - bearerAuth: [ ]
+      deprecated: true
       tags:
         - Instances
       parameters:
@@ -391,14 +391,10 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
     delete:
-      summary: Delete an instance
-      description: |
-        Delete the instance with the given UUID. This API is liable to change.
-
-        THIS WILL DELETE ALL DATA WITHIN THE INSTANCE. Be certain this is what you want to do.
+      summary: This API will be deleted on or after August 25, 2024.
+      description: Use DELETE /collections/v1/{workspaceId}/{collectionId} instead.
       operationId: deleteWDSInstance
-      security:
-        - bearerAuth: [ ]
+      deprecated: true
       tags:
         - Instances
       parameters:
@@ -472,8 +468,6 @@ paths:
       summary: Delete record type
       description: Delete record type. All records of this type will be deleted.
       operationId: deleteRecordType
-      security:
-        - bearerAuth: [ ]
       tags:
         - Schema
       parameters:
@@ -490,8 +484,6 @@ paths:
       summary: Update an attribute
       description: Update an attribute. All records of this type will be updated.
       operationId: updateAttribute
-      security:
-        - bearerAuth: [ ]
       tags:
         - Schema
       parameters:
@@ -526,8 +518,6 @@ paths:
       summary: Delete attribute from record type
       description: Delete attribute from record type. This attribute will be removed from all records of this type.
       operationId: deleteAttribute
-      security:
-        - bearerAuth: [ ]
       tags:
         - Schema
       parameters:
@@ -560,6 +550,7 @@ paths:
       operationId: statusGet
       tags:
         - General WDS Information
+      security: [ ]
       responses:
         200:
           $ref: '#/components/responses/StatusResponseBody'
@@ -569,6 +560,7 @@ paths:
       operationId: versionGet
       tags:
         - General WDS Information
+      security: [ ]
       responses:
         200:
           $ref: '#/components/responses/VersionResponseBody'

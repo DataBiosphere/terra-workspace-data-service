@@ -25,7 +25,7 @@ import jakarta.annotation.Generated;
 
 @Schema(name = "GenericJob", description = "Generic representation of a job, no opinion on inputs and result for the job. See individual APIs for more guidance on expected input and result payloads. ")
 @JsonTypeName("GenericJob")
-@Generated(value = "org.openapitools.codegen.languages.SpringCodegen", comments = "Generator version: 7.5.0")
+@Generated(value = "org.openapitools.codegen.languages.SpringCodegen", comments = "Generator version: 7.7.0")
 public class GenericJobServerModel {
 
   private UUID jobId;
@@ -152,7 +152,7 @@ public class GenericJobServerModel {
   /**
    * Get jobId
    * @return jobId
-  */
+   */
   @NotNull @Valid 
   @Schema(name = "jobId", requiredMode = Schema.RequiredMode.REQUIRED)
   @JsonProperty("jobId")
@@ -172,7 +172,7 @@ public class GenericJobServerModel {
   /**
    * Get jobType
    * @return jobType
-  */
+   */
   @NotNull 
   @Schema(name = "jobType", requiredMode = Schema.RequiredMode.REQUIRED)
   @JsonProperty("jobType")
@@ -192,7 +192,7 @@ public class GenericJobServerModel {
   /**
    * Get instanceId
    * @return instanceId
-  */
+   */
   @NotNull @Valid 
   @Schema(name = "instanceId", requiredMode = Schema.RequiredMode.REQUIRED)
   @JsonProperty("instanceId")
@@ -212,7 +212,7 @@ public class GenericJobServerModel {
   /**
    * Get status
    * @return status
-  */
+   */
   @NotNull 
   @Schema(name = "status", requiredMode = Schema.RequiredMode.REQUIRED)
   @JsonProperty("status")
@@ -232,7 +232,7 @@ public class GenericJobServerModel {
   /**
    * Get created
    * @return created
-  */
+   */
   @NotNull @Valid 
   @Schema(name = "created", requiredMode = Schema.RequiredMode.REQUIRED)
   @JsonProperty("created")
@@ -252,7 +252,7 @@ public class GenericJobServerModel {
   /**
    * Get updated
    * @return updated
-  */
+   */
   @NotNull @Valid 
   @Schema(name = "updated", requiredMode = Schema.RequiredMode.REQUIRED)
   @JsonProperty("updated")
@@ -272,7 +272,7 @@ public class GenericJobServerModel {
   /**
    * Get errorMessage
    * @return errorMessage
-  */
+   */
   
   @Schema(name = "errorMessage", requiredMode = Schema.RequiredMode.NOT_REQUIRED)
   @JsonProperty("errorMessage")
@@ -292,7 +292,7 @@ public class GenericJobServerModel {
   /**
    * Input arguments for this job
    * @return input
-  */
+   */
   
   @Schema(name = "input", description = "Input arguments for this job", requiredMode = Schema.RequiredMode.NOT_REQUIRED)
   @JsonProperty("input")
@@ -312,7 +312,7 @@ public class GenericJobServerModel {
   /**
    * Result of this job
    * @return result
-  */
+   */
   
   @Schema(name = "result", description = "Result of this job", requiredMode = Schema.RequiredMode.NOT_REQUIRED)
   @JsonProperty("result")

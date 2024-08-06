@@ -24,7 +24,7 @@ import com.fasterxml.jackson.annotation.JsonAnySetter;
  */
 
 @JsonTypeName("Capabilities")
-@Generated(value = "org.openapitools.codegen.languages.SpringCodegen", comments = "Generator version: 7.5.0")
+@Generated(value = "org.openapitools.codegen.languages.SpringCodegen", comments = "Generator version: 7.7.0")
 public class CapabilitiesServerModel {
 
   private Boolean capabilities;
@@ -37,7 +37,7 @@ public class CapabilitiesServerModel {
   /**
    * Get capabilities
    * @return capabilities
-  */
+   */
   
   @Schema(name = "capabilities", requiredMode = Schema.RequiredMode.NOT_REQUIRED)
   @JsonProperty("capabilities")

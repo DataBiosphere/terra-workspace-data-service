@@ -9,6 +9,10 @@ on:
       - main
     paths-ignore: [ '**.md' ]
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.head_ref || github.ref }}
+  cancel-in-progress: true
+
 env:
   WDS_RUN_ID: ${{ github.event.repository.name }}-${{ github.run_id }}
   PUBLISH_CONTRACT_RUN_NAME: 'publish-contracts-${{ github.event.repository.name }}-${{ github.run_id }}-${{ github.run_attempt }}'
@@ -111,7 +115,7 @@ jobs:
           java-version: '17'
           distribution: 'temurin'
       - name: Setup Gradle
-        uses: gradle/actions/setup-gradle@v3
+        uses: gradle/actions/setup-gradle@v4
       - name: Run consumer tests
         run: ./gradlew pactTests
 

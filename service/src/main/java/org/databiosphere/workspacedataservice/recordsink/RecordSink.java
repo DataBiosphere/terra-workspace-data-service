@@ -44,12 +44,20 @@ public interface RecordSink extends AutoCloseable {
   void deleteBatch(RecordType recordType, List<Record> records) throws DataImportException;
 
   /**
-   * Callback invoked at the end of a series of batches operations with the result. Implementers can
-   * commit changes, clean up resources, publish results, etc.
+   * Callback always invoked at the end of a series of batch operations. This should execute any
+   * code to run on both success and failure, such as closing open files.
    *
    * @throws DataImportException if an error occurs while closing the sink
    */
   default void close() throws DataImportException {
     // no-op
   }
+
+  /**
+   * Method manually invoked by callers to indicate success of all batch operations. This should
+   * execute any code to run only on success, such as sending events to other systems.
+   *
+   * @throws DataImportException subclasses should throw this on any error in their implementations
+   */
+  void success() throws DataImportException;
 }

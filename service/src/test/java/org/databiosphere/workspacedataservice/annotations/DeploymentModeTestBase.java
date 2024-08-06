@@ -29,10 +29,28 @@ class DeploymentModeTestBase extends TestBase {
   @Autowired protected ApplicationContext context;
 
   protected static Stream<String> dataPlaneConditionalBeans() {
-    return Stream.of("collectionInitializer");
+    return Stream.of(
+        "backupRestoreService",
+        "collectionInitializer",
+        "collectionInitializerBean",
+        "wsmProtectedDataSupport",
+        "wsmSnapshotSupportFactory",
+        "wdsRecordSinkFactory",
+        "capabilitiesController",
+        "cloningController",
+        "collectionController",
+        "recordController");
   }
 
   protected static Stream<String> controlPlaneConditionalBeans() {
-    return Stream.of();
+    return Stream.of(
+        "rawlsProtectedDataSupport",
+        "rawlsJsonQuartzJob",
+        "rawlsSnapshotSupportFactory",
+        "rawlsClientConfig",
+        "rawlsClient",
+        "rawlsApi",
+        "rawlsRestClient",
+        "rawlsRecordSinkFactory");
   }
 }

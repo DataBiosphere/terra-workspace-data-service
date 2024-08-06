@@ -1,24 +1,26 @@
 package org.databiosphere.workspacedataservice.service;
 
+import static java.util.UUID.randomUUID;
 import static org.databiosphere.workspacedataservice.service.RecordUtils.VERSION;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.*;
 
-import java.util.UUID;
 import org.broadinstitute.dsde.workbench.client.sam.ApiException;
 import org.broadinstitute.dsde.workbench.client.sam.api.ResourcesApi;
 import org.broadinstitute.dsde.workbench.client.sam.model.CreateResourceRequestV2;
+import org.databiosphere.workspacedataservice.annotations.SingleTenant;
 import org.databiosphere.workspacedataservice.common.TestBase;
 import org.databiosphere.workspacedataservice.dao.CollectionDao;
 import org.databiosphere.workspacedataservice.sam.SamAuthorizationDao;
 import org.databiosphere.workspacedataservice.sam.SamClientFactory;
+import org.databiosphere.workspacedataservice.shared.model.CollectionId;
+import org.databiosphere.workspacedataservice.shared.model.WorkspaceId;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
 import org.mockito.InOrder;
 import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.test.annotation.DirtiesContext;
@@ -40,8 +42,7 @@ class CollectionServiceSamTest extends TestBase {
   // to mock it manually
   final ResourcesApi mockResourcesApi = Mockito.mock(ResourcesApi.class);
 
-  @Value("${twds.instance.workspace-id}")
-  String parentWorkspaceId;
+  @Autowired @SingleTenant WorkspaceId parentWorkspaceId;
 
   @BeforeEach
   void setUp() throws ApiException {
@@ -56,28 +57,25 @@ class CollectionServiceSamTest extends TestBase {
 
   @Test
   void createCollectionSamCalls() throws ApiException {
-    UUID collectionId = UUID.randomUUID();
-    doCreateCollectionTest(collectionId);
+    doCreateCollectionTest(randomCollectionId());
   }
 
   @Test
   void createCollectionWithWorkspaceIdSamCalls() throws ApiException {
-    UUID collectionId = UUID.randomUUID();
-    doCreateCollectionTest(collectionId);
+    doCreateCollectionTest(randomCollectionId());
   }
 
   @Test
   void deleteCollectionSamCalls() throws ApiException {
-    UUID collectionId = UUID.randomUUID();
-    doDeleteCollectionTest(collectionId);
+    doDeleteCollectionTest(randomCollectionId());
   }
 
-  void doCreateCollectionTest(UUID collectionId) throws ApiException {
+  void doCreateCollectionTest(CollectionId collectionId) throws ApiException {
     // setup: capture order of calls to Sam
     InOrder callOrder = inOrder(mockResourcesApi);
 
     // call createCollection
-    collectionService.createCollection(collectionId, VERSION);
+    collectionService.createCollection(collectionId.id(), VERSION);
 
     // createCollection should check permission with Sam exactly once:
     verify(mockResourcesApi, times(1)).resourcePermissionV2(anyString(), anyString(), anyString());
@@ -93,14 +91,14 @@ class CollectionServiceSamTest extends TestBase {
         .verify(mockResourcesApi)
         .resourcePermissionV2(
             SamAuthorizationDao.RESOURCE_NAME_WORKSPACE,
-            parentWorkspaceId,
+            parentWorkspaceId.toString(),
             SamAuthorizationDao.ACTION_WRITE);
 
     // and that should be the only call we made to Sam
     verifyNoMoreInteractions(mockResourcesApi);
   }
 
-  void doDeleteCollectionTest(UUID collectionId) throws ApiException {
+  void doDeleteCollectionTest(CollectionId collectionId) throws ApiException {
     // setup: capture order of calls to Sam
     InOrder callOrder = inOrder(mockResourcesApi);
 
@@ -108,7 +106,7 @@ class CollectionServiceSamTest extends TestBase {
     collectionDao.createSchema(collectionId);
 
     // call deleteCollection
-    collectionService.deleteCollection(collectionId, VERSION);
+    collectionService.deleteCollection(collectionId.id(), VERSION);
 
     // deleteCollection should check permission with Sam exactly once:
     verify(mockResourcesApi, times(1)).resourcePermissionV2(anyString(), anyString(), anyString());
@@ -123,10 +121,14 @@ class CollectionServiceSamTest extends TestBase {
         .verify(mockResourcesApi)
         .resourcePermissionV2(
             SamAuthorizationDao.RESOURCE_NAME_WORKSPACE,
-            parentWorkspaceId,
+            parentWorkspaceId.toString(),
             SamAuthorizationDao.ACTION_WRITE);
 
     // and that should be the only call we made to Sam
     verifyNoMoreInteractions(mockResourcesApi);
+  }
+
+  private CollectionId randomCollectionId() {
+    return CollectionId.of(randomUUID());
   }
 }

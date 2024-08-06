@@ -3,7 +3,6 @@ package org.databiosphere.workspacedataservice.dataimport.tdr;
 import static org.apache.parquet.avro.AvroReadSupport.READ_INT96_AS_FIXED;
 import static org.databiosphere.workspacedataservice.generated.ImportRequestServerModel.TypeEnum.TDRMANIFEST;
 import static org.databiosphere.workspacedataservice.sam.SamAuthorizationDao.WORKSPACE_ROLES;
-import static org.databiosphere.workspacedataservice.service.ImportService.ARG_TDR_SYNC_PERMISSION;
 import static org.databiosphere.workspacedataservice.shared.model.Schedulable.ARG_URL;
 import static org.databiosphere.workspacedataservice.shared.model.job.JobType.DATA_IMPORT;
 
@@ -21,12 +20,19 @@ import java.io.IOException;
 import java.net.MalformedURLException;
 import java.net.URI;
 import java.net.URL;
+import java.time.Instant;
+import java.time.InstantSource;
+import java.time.ZoneId;
+import java.time.ZonedDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.UnaryOperator;
 import org.apache.avro.generic.GenericRecord;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.parquet.avro.AvroParquetReader;
@@ -39,14 +45,19 @@ import org.databiosphere.workspacedataservice.dao.JobDao;
 import org.databiosphere.workspacedataservice.dataimport.FileDownloadHelper;
 import org.databiosphere.workspacedataservice.dataimport.ImportDetails;
 import org.databiosphere.workspacedataservice.dataimport.ImportDetailsRetriever;
+import org.databiosphere.workspacedataservice.dataimport.ImportJobInput;
+import org.databiosphere.workspacedataservice.dataimport.snapshotsupport.SnapshotLinkResult;
 import org.databiosphere.workspacedataservice.dataimport.snapshotsupport.SnapshotSupport;
 import org.databiosphere.workspacedataservice.dataimport.snapshotsupport.SnapshotSupportFactory;
 import org.databiosphere.workspacedataservice.jobexec.JobDataMapReader;
 import org.databiosphere.workspacedataservice.jobexec.JobExecutionException;
 import org.databiosphere.workspacedataservice.jobexec.QuartzJob;
+import org.databiosphere.workspacedataservice.metrics.ImportMetrics;
 import org.databiosphere.workspacedataservice.recordsink.RawlsAttributePrefixer.PrefixStrategy;
 import org.databiosphere.workspacedataservice.recordsink.RecordSink;
 import org.databiosphere.workspacedataservice.recordsink.RecordSinkFactory;
+import org.databiosphere.workspacedataservice.recordsource.MappedRecordSource;
+import org.databiosphere.workspacedataservice.recordsource.RecordSource;
 import org.databiosphere.workspacedataservice.recordsource.RecordSource.ImportMode;
 import org.databiosphere.workspacedataservice.recordsource.RecordSourceFactory;
 import org.databiosphere.workspacedataservice.sam.SamDao;
@@ -55,6 +66,8 @@ import org.databiosphere.workspacedataservice.service.model.BatchWriteResult;
 import org.databiosphere.workspacedataservice.service.model.TdrManifestImportTable;
 import org.databiosphere.workspacedataservice.service.model.exception.RestException;
 import org.databiosphere.workspacedataservice.service.model.exception.TdrManifestImportException;
+import org.databiosphere.workspacedataservice.shared.model.Record;
+import org.databiosphere.workspacedataservice.shared.model.RecordAttributes;
 import org.databiosphere.workspacedataservice.shared.model.RecordType;
 import org.databiosphere.workspacedataservice.shared.model.WorkspaceId;
 import org.quartz.JobExecutionContext;
@@ -64,6 +77,7 @@ import org.springframework.stereotype.Component;
 
 @Component
 public class TdrManifestQuartzJob extends QuartzJob {
+  public static final String IMPORT_METADATA_PREFIX = "import:";
   private final Logger logger = LoggerFactory.getLogger(this.getClass());
 
   private final RecordSinkFactory recordSinkFactory;
@@ -75,6 +89,9 @@ public class TdrManifestQuartzJob extends QuartzJob {
   private final SamDao samDao;
   private final boolean isTdrPermissionSyncingEnabled;
   private final ImportDetailsRetriever importDetailsRetriever;
+  private final InstantSource instantSource;
+  private final boolean shouldAddImportMetadata;
+  private final ImportMetrics importMetrics;
 
   public TdrManifestQuartzJob(
       JobDao jobDao,
@@ -84,10 +101,12 @@ public class TdrManifestQuartzJob extends QuartzJob {
       ActivityLogger activityLogger,
       ObjectMapper mapper,
       ObservationRegistry observationRegistry,
+      ImportMetrics importMetrics,
       DataImportProperties dataImportProperties,
       SnapshotSupportFactory snapshotSupportFactory,
       SamDao samDao,
-      ImportDetailsRetriever importDetailsRetriever) {
+      ImportDetailsRetriever importDetailsRetriever,
+      InstantSource instantSource) {
     super(jobDao, observationRegistry, dataImportProperties);
     this.recordSinkFactory = recordSinkFactory;
     this.recordSourceFactory = recordSourceFactory;
@@ -98,6 +117,9 @@ public class TdrManifestQuartzJob extends QuartzJob {
     this.samDao = samDao;
     this.isTdrPermissionSyncingEnabled = dataImportProperties.isTdrPermissionSyncingEnabled();
     this.importDetailsRetriever = importDetailsRetriever;
+    this.instantSource = instantSource;
+    this.shouldAddImportMetadata = dataImportProperties.shouldAddImportMetadata();
+    this.importMetrics = importMetrics;
   }
 
   @Override
@@ -115,6 +137,8 @@ public class TdrManifestQuartzJob extends QuartzJob {
 
     // Collect details needed for import
     ImportDetails details = importDetailsRetriever.fetch(jobId, jobData, PrefixStrategy.TDR);
+    ImportJobInput jobInput = details.importJobInput();
+    TdrManifestImportOptions options = (TdrManifestImportOptions) jobInput.getOptions();
 
     // read manifest
     SnapshotExportResponseModel snapshotExportResponseModel = parseManifest(uri);
@@ -126,6 +150,11 @@ public class TdrManifestQuartzJob extends QuartzJob {
         jobId,
         snapshotId,
         details.collectionId());
+
+    Optional<UnaryOperator<Record>> maybeMapRecord =
+        shouldAddImportMetadata
+            ? Optional.of(getAddImportMetadataToRecordFunction(snapshotId, instantSource.instant()))
+            : Optional.empty();
 
     // Create snapshot reference
     linkSnapshots(Set.of(snapshotId), details.workspaceId());
@@ -145,7 +174,8 @@ public class TdrManifestQuartzJob extends QuartzJob {
               tdrManifestImportTables,
               fileDownloadHelper.getFileMap(),
               ImportMode.BASE_ATTRIBUTES,
-              recordSink);
+              recordSink,
+              maybeMapRecord);
 
       // add relations to the existing base attributes
       logger.info("Job {} starting write of relations ...", jobId);
@@ -154,7 +184,8 @@ public class TdrManifestQuartzJob extends QuartzJob {
               tdrManifestImportTables,
               fileDownloadHelper.getFileMap(),
               ImportMode.RELATIONS,
-              recordSink));
+              recordSink,
+              Optional.empty()));
 
       // activity logging for import status
       // no specific activity logging for relations since main import is a superset
@@ -168,11 +199,19 @@ public class TdrManifestQuartzJob extends QuartzJob {
                               .record()
                               .withRecordType(entry.getKey())
                               .ofQuantity(entry.getValue())));
+
       // sync permissions if option is enabled and we're running in the control-plane
-      // TODO(AJ-1809): do defaulting here when we have a more generic way to handle passed options
-      if (isTdrPermissionSyncingEnabled && jobData.getBoolean(ARG_TDR_SYNC_PERMISSION)) {
+      if (options.syncPermissions() && isTdrPermissionSyncingEnabled) {
         syncPermissions(details.workspaceId(), snapshotId);
       }
+
+      importMetrics
+          .recordUpsertDistributionSummary()
+          .distributionSummary()
+          .record(result.getTotalUpdatedCount());
+
+      // complete the RecordSink
+      recordSink.success();
     } catch (Exception e) {
       throw new TdrManifestImportException(e.getMessage(), e);
     } finally {
@@ -196,18 +235,23 @@ public class TdrManifestQuartzJob extends QuartzJob {
       InputFile inputFile,
       TdrManifestImportTable table,
       RecordSink recordSink,
-      ImportMode importMode) {
+      ImportMode importMode,
+      Optional<UnaryOperator<Record>> maybeMapRecord) {
     // upsert this parquet file's contents
     try (ParquetReader<GenericRecord> avroParquetReader = readerForFile(inputFile)) {
       logger.debug(
           "batch-writing records for file in table {} with mode {} ...",
           table.recordType().getName(),
           importMode.name());
+
+      RecordSource recordSource =
+          recordSourceFactory.forTdrImport(avroParquetReader, table, importMode);
+      if (maybeMapRecord.isPresent()) {
+        recordSource = new MappedRecordSource(recordSource, maybeMapRecord.get());
+      }
+
       return batchWriteService.batchWrite(
-          recordSourceFactory.forTdrImport(avroParquetReader, table, importMode),
-          recordSink,
-          table.recordType(),
-          table.primaryKey());
+          recordSource, recordSink, table.recordType(), table.primaryKey());
     } catch (Throwable t) {
       throw new TdrManifestImportException(t.getMessage(), t);
     }
@@ -240,7 +284,8 @@ public class TdrManifestQuartzJob extends QuartzJob {
       List<TdrManifestImportTable> importTables,
       Multimap<String, File> fileMap,
       ImportMode importMode,
-      RecordSink recordSink) {
+      RecordSink recordSink,
+      Optional<UnaryOperator<Record>> maybeMapRecord) {
     var combinedResult = BatchWriteResult.empty();
     var numTables = importTables.size();
     AtomicInteger tableIdx = new AtomicInteger();
@@ -280,7 +325,8 @@ public class TdrManifestQuartzJob extends QuartzJob {
 
                   // generate the HadoopInputFile
                   InputFile inputFile = HadoopInputFile.fromPath(hadoopFilePath, configuration);
-                  var result = importTable(inputFile, importTable, recordSink, importMode);
+                  var result =
+                      importTable(inputFile, importTable, recordSink, importMode, maybeMapRecord);
                   combinedResult.merge(result);
                 } catch (IOException e) {
                   throw new TdrManifestImportException(e.getMessage(), e);
@@ -437,7 +483,18 @@ public class TdrManifestQuartzJob extends QuartzJob {
     // list existing snapshots linked to this workspace
     SnapshotSupport snapshotSupport = snapshotSupportFactory.buildSnapshotSupport(workspaceId);
     // TODO AJ-1673: don't use the env-var workspaceId here
-    snapshotSupport.linkSnapshots(snapshotIds);
+    SnapshotLinkResult snapshotLinkResult = snapshotSupport.linkSnapshots(snapshotIds);
+
+    // record metrics
+    importMetrics
+        .snapshotsConsideredDistributionSummary()
+        .distributionSummary()
+        .record(snapshotLinkResult.numSnapshotsConsidered());
+
+    importMetrics
+        .snapshotsLinkedDistributionSummary()
+        .distributionSummary()
+        .record(snapshotLinkResult.numSnapshotsLinked());
   }
 
   /**
@@ -458,5 +515,21 @@ public class TdrManifestQuartzJob extends QuartzJob {
             e);
       }
     }
+  }
+
+  @VisibleForTesting
+  protected static UnaryOperator<Record> getAddImportMetadataToRecordFunction(
+      UUID snapshotId, Instant importTime) {
+    DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss");
+    String timestamp = ZonedDateTime.ofInstant(importTime, ZoneId.of("UTC")).format(formatter);
+
+    Map<String, Object> attributes =
+        Map.of(
+            "%stimestamp".formatted(IMPORT_METADATA_PREFIX),
+            timestamp,
+            "%ssnapshot_id".formatted(IMPORT_METADATA_PREFIX),
+            snapshotId.toString());
+
+    return record -> record.putAllAttributes(new RecordAttributes(attributes));
   }
 }
