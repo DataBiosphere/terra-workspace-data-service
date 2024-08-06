@@ -12,6 +12,7 @@ import org.databiosphere.workspacedataservice.service.PermissionService;
 import org.databiosphere.workspacedataservice.service.RecordOrchestratorService;
 import org.databiosphere.workspacedataservice.service.model.AttributeSchema;
 import org.databiosphere.workspacedataservice.service.model.RecordTypeSchema;
+import org.databiosphere.workspacedataservice.service.model.exception.MissingObjectException;
 import org.databiosphere.workspacedataservice.shared.model.BatchResponse;
 import org.databiosphere.workspacedataservice.shared.model.CollectionId;
 import org.databiosphere.workspacedataservice.shared.model.RecordQueryResponse;
@@ -225,6 +226,14 @@ public class RecordController {
 
     RecordTypeSchema recordTypeSchema =
         recordOrchestratorService.describeRecordType(instanceId, version, recordType);
+
+    // this should not happen, given validation above. However, unit tests that use mocks can
+    // hit problems here. This is a minimally-invasive validation in a less-frequently used API, so
+    // it feels ok to implement for the sake of tests.
+    if (recordTypeSchema == null) {
+      throw new MissingObjectException("Record type");
+    }
+
     AttributeSchema attributeSchema = recordTypeSchema.getAttributeSchema(finalAttributeName);
     return new ResponseEntity<>(attributeSchema, HttpStatus.OK);
   }

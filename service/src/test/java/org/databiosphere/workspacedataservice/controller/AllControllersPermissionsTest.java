@@ -8,6 +8,7 @@ import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.multipart;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
@@ -29,7 +30,6 @@ import org.databiosphere.workspacedataservice.service.RecordOrchestratorService;
 import org.databiosphere.workspacedataservice.service.model.exception.AuthenticationMaskableException;
 import org.databiosphere.workspacedataservice.service.model.exception.AuthorizationException;
 import org.databiosphere.workspacedataservice.shared.model.CollectionId;
-import org.databiosphere.workspacedataservice.shared.model.Record;
 import org.databiosphere.workspacedataservice.shared.model.RecordType;
 import org.databiosphere.workspacedataservice.shared.model.WorkspaceId;
 import org.junit.jupiter.api.BeforeEach;
@@ -40,9 +40,9 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.MediaType;
+import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.ActiveProfiles;
-import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder;
 
 @DirtiesContext
@@ -64,10 +64,8 @@ class AllControllersPermissionsTest extends MockMvcTestBase {
   private static final WorkspaceId workspaceId = WorkspaceId.of(UUID.randomUUID());
   private static final CollectionId collectionId = CollectionId.of(UUID.randomUUID());
   private static final UUID jobId = UUID.randomUUID();
-
   private static final RecordType RECORD_TYPE = RecordType.valueOf("mytype");
   private static final String RECORD_ID = "myid";
-
   private static final GenericJobServerModel MOCK_JOB =
       new GenericJobServerModel(
           jobId,
@@ -77,26 +75,19 @@ class AllControllersPermissionsTest extends MockMvcTestBase {
           OffsetDateTime.now(),
           OffsetDateTime.now());
 
-  private static final Record MOCK_RECORD = new Record(RECORD_ID, RECORD_TYPE);
-
   @BeforeEach
   void beforeEach() {
-    // mocks so APIs don't hit any internal errors
+    // associate our exemplar collection with our exemplar workspace
     when(collectionService.getWorkspaceId(collectionId)).thenReturn(workspaceId);
 
-    /*
-    when(recordDao.recordTypeExists(collectionId.id(), RECORD_TYPE)).thenReturn(true);
-    when(recordDao.getSingleRecord(eq(collectionId.id()), eq(RECORD_TYPE), anyString()))
-        .thenReturn(Optional.of(MOCK_RECORD));
-    when(recordDao.getPrimaryKeyColumn(RECORD_TYPE, collectionId.id())).thenReturn("sys_name");
-     */
-    when(jobService.getJob(jobId)).thenReturn(MOCK_JOB);
+    // when(recordDao.recordTypeExists(collectionId.id(), RECORD_TYPE)).thenReturn(false);
+    //
+    //    when(recordOrchestratorService.describeRecordType(collectionId.id(), "v0.2", RECORD_TYPE))
+    //        .thenReturn(new RecordTypeSchema(RECORD_TYPE, List.of(), 0, "sys_name"));
 
-    /*
-    when(recordOrchestratorService.streamingWrite(
-            eq(collectionId.id()), eq("v0.3"), eq(RECORD_TYPE), any(), any()))
-        .thenReturn(1);
-     */
+    // the jobStatusV1 retrieves the job prior to the permission check (so it can determine which
+    // collection the job belongs to). Thus, it needs a mock for its test to pass:
+    when(jobService.getJob(jobId)).thenReturn(MOCK_JOB);
   }
 
   // ========== API definitions: which require read, which require write?
@@ -105,17 +96,43 @@ class AllControllersPermissionsTest extends MockMvcTestBase {
   private static Stream<Arguments> publicApis() {
     // MockHttpServletRequestBuilder
     return Stream.of(
-        arguments(named("GET /version", get("/version"))),
         arguments(named("GET /status", get("/status"))),
-        arguments(named("GET /capabilities/v1", get("/capabilities/v1"))),
         arguments(named("GET /status/liveness", get("/status/liveness"))),
         arguments(named("GET /status/readiness", get("/status/readiness"))),
+        arguments(named("GET /version", get("/version"))),
+        arguments(named("GET /capabilities/v1", get("/capabilities/v1"))),
         arguments(named("GET /prometheus", get("/prometheus"))));
   }
 
   // these APIs require read permission
   private static Stream<Arguments> readOnlyApis() {
     return Stream.of(
+        // Records
+        arguments(
+            named(
+                "GET /{instanceid}/records/v0.2/{type}/{id}",
+                get(
+                    "/{instanceid}/records/v0.2/{type}/{id}",
+                    collectionId,
+                    RECORD_TYPE,
+                    RECORD_ID))),
+        arguments(
+            named(
+                "POST /{instanceid}/search/v0.2/{type}",
+                post("/{instanceid}/search/v0.2/{type}", collectionId, RECORD_TYPE)
+                    .content("{}")
+                    .contentType(MediaType.APPLICATION_JSON))),
+        arguments(
+            named(
+                "GET /{instanceid}/tsv/v0.2/{type}",
+                get("/{instanceid}/tsv/v0.2/{type}", collectionId, RECORD_TYPE))),
+        // Job
+        arguments(named("GET /job/v1/{jobId}", get("/job/v1/{jobId}", jobId))),
+        arguments(
+            named(
+                "GET /job/v1/instance/{instanceUuid}",
+                get("/job/v1/instance/{instanceUuid}", collectionId))),
+        // Collection
         arguments(
             named(
                 "GET /collections/v1/{workspaceId}",
@@ -124,50 +141,32 @@ class AllControllersPermissionsTest extends MockMvcTestBase {
             named(
                 "GET /collections/v1/{workspaceId}/{collectionId}",
                 get("/collections/v1/{workspaceId}/{collectionId}", workspaceId, collectionId))),
-        arguments(
-            named(
-                "GET /job/v1/instance/{collectionId}",
-                get("/job/v1/instance/{collectionId}", collectionId))),
-        arguments(named("GET /job/v1/{jobId}", get("/job/v1/{jobId}", jobId))),
-        // get("/instances/v0.2"),
-        arguments(
-            named(
-                "GET /{collectionId}/records/v0.2/{type}/{id}",
-                get(
-                    "/{collectionId}/records/v0.2/{type}/{id}",
-                    collectionId,
-                    RECORD_TYPE,
-                    RECORD_ID))),
-        arguments(
-            named(
-                "GET /{collectionId}/tsv/v0.2/{type}",
-                get("/{collectionId}/tsv/v0.2/{type}", collectionId, RECORD_TYPE))),
+        // Schema
         arguments(
             named(
                 "GET /{collectionId}/types/v0.2", get("/{collectionId}/types/v0.2", collectionId))),
         arguments(
             named(
                 "GET /{collectionId}/types/v0.2/{type}",
-                get("/{collectionId}/types/v0.2/{type}", collectionId, RECORD_TYPE))),
-        arguments(
-            named(
-                "POST /{collectionId}/search/v0.2/{type}",
-                post("/{collectionId}/search/v0.2/{type}", collectionId, RECORD_TYPE)
-                    .content("{}")
-                    .contentType(MediaType.APPLICATION_JSON))));
+                get("/{collectionId}/types/v0.2/{type}", collectionId, RECORD_TYPE))));
   }
 
   // these APIs require write permission
   private static Stream<Arguments> writeApis() {
     return Stream.of(
+        // Records
         arguments(
             named(
-                "DELETE /{instanceid}/records/v0.2/{type}/{id}",
-                delete(
-                    "/{instanceid}/records/v0.2/{type}/{id}",
-                    collectionId,
-                    RECORD_TYPE,
-                    RECORD_ID))),
+                "POST /{instanceid}/batch/v0.2/{type}",
+                post("/{instanceid}/batch/v0.2/{type}", collectionId, RECORD_TYPE)
+                    .content("[]")
+                    .contentType(MediaType.APPLICATION_JSON))),
+        arguments(
+            named(
+                "PUT /{instanceid}/records/v0.2/{type}/{id}",
+                put("/{instanceid}/records/v0.2/{type}/{id}", collectionId, RECORD_TYPE, RECORD_ID)
+                    .content("{\"attributes\": {}}")
+                    .contentType(MediaType.APPLICATION_JSON))),
         arguments(
             named(
                 "PATCH /{instanceid}/records/v0.2/{type}/{id}",
@@ -180,42 +179,78 @@ class AllControllersPermissionsTest extends MockMvcTestBase {
                     .contentType(MediaType.APPLICATION_JSON))),
         arguments(
             named(
-                "PUT /{instanceid}/records/v0.2/{type}/{id}",
-                put("/{instanceid}/records/v0.2/{type}/{id}", collectionId, RECORD_TYPE, RECORD_ID)
-                    .content("{\"attributes\": {}}")
+                "DELETE /{instanceid}/records/v0.2/{type}/{id}",
+                delete(
+                    "/{instanceid}/records/v0.2/{type}/{id}",
+                    collectionId,
+                    RECORD_TYPE,
+                    RECORD_ID))),
+        arguments(
+            named(
+                "POST /{instanceid}/tsv/v0.2/{type}",
+                multipart("/{instanceid}/tsv/v0.2/{type}", collectionId, RECORD_TYPE)
+                    .file(
+                        new MockMultipartFile(
+                            "records",
+                            "tsv_orig.tsv",
+                            MediaType.TEXT_PLAIN_VALUE,
+                            "col1\tcol2\nfoo\tbar\n".getBytes())))),
+        // Import
+        arguments(
+            named(
+                "POST /{instanceUuid}/import/v1",
+                post("/{instanceUuid}/import/v1", collectionId)
+                    .content("{\"type\":\"PFB\",\"url\":\"https://example.com/something\"}")
+                    .contentType(MediaType.APPLICATION_JSON))),
+        // Collection
+        arguments(
+            named(
+                "POST /collections/v1/{workspaceId}",
+                post("/collections/v1/{workspaceId}", workspaceId, collectionId)
+                    .content("{\"name\":\"foo\",\"description\":\"bar\"}")
                     .contentType(MediaType.APPLICATION_JSON))),
         arguments(
             named(
-                "POST /{instanceid}/batch/v0.2/{type}",
-                post("/{instanceid}/batch/v0.2/{type}", collectionId, RECORD_TYPE)
-                    .content("[]")
-                    .contentType(MediaType.APPLICATION_JSON))));
-
-    // TODO tests for these APIs:
-    /*
-
-     POST /{instanceid}/tsv/{v}/{type}
-
-     POST /{instanceUuid}/import/v1
-
-     POST /collections/v1/{workspaceId}
-
-     PUT /collections/v1/{workspaceId}/{collectionId}
-     DELETE /collections/v1/{workspaceId}/{collectionId}
-
-     DELETE /instances/{v}/{instanceid}
-
-     DELETE /{instanceid}/types/{v}/{type}
-     PATCH /{instanceid}/types/{v}/{type}/{attribute}
-     DELETE /{instanceid}/types/{v}/{type}/{attribute}
-    */
+                "DELETE /collections/v1/{workspaceId}/{collectionId}",
+                delete("/collections/v1/{workspaceId}/{collectionId}", workspaceId, collectionId))),
+        arguments(
+            named(
+                "PUT /collections/v1/{workspaceId}/{collectionId}",
+                put("/collections/v1/{workspaceId}/{collectionId}", workspaceId, collectionId)
+                    .content("{\"name\":\"foo\",\"description\":\"bar\"}")
+                    .contentType(MediaType.APPLICATION_JSON))),
+        // Schema
+        arguments(
+            named(
+                "DELETE /{instanceid}/types/v0.2/{type}",
+                delete("/{instanceid}/types/v0.2/{type}", collectionId, RECORD_TYPE))),
+        // TODO AJ-1660: following API fails its success check with a NullPointerException.
+        //   mock the implementation? Or fix the implementation?
+        arguments(
+            named(
+                "PATCH /{instanceid}/types/v0.2/{type}/{attribute}",
+                patch(
+                        "/{instanceid}/types/v0.2/{type}/{attribute}",
+                        collectionId,
+                        RECORD_TYPE,
+                        "myattribute")
+                    .content("{\"name\":\"foo\",\"datatype\":\"BOOLEAN\"}")
+                    .contentType(MediaType.APPLICATION_JSON))),
+        arguments(
+            named(
+                "DELETE /{instanceid}/types/v0.2/{type}/{attribute}",
+                delete(
+                    "/{instanceid}/types/v0.2/{type}/{attribute}",
+                    collectionId,
+                    RECORD_TYPE,
+                    "myattribute"))));
   }
 
   // these single-tenant APIs require read permission. When single-tenant APIs are fully retired,
   // this method and any tests that use it should be deleted.
   private static Stream<Arguments> singleTenantReadOnlyApis() {
     return Stream.of(
-        arguments(named("GET /instances/v0.2", get("/instances/v0.2"))),
+        // Cloning
         arguments(
             named(
                 "POST /backup/v0.2",
@@ -224,24 +259,31 @@ class AllControllersPermissionsTest extends MockMvcTestBase {
                         "{\"requestingWorkspaceId\": \"3fa85f64-5717-4562-b3fc-2c963f66afa6\","
                             + "  \"description\": \"string\"}")
                     .contentType(MediaType.APPLICATION_JSON))),
-        arguments(named("GET /clone/v0.2", get("/clone/v0.2"))),
         arguments(
             named(
                 "GET /backup/v0.2/{trackingId}",
-                get("/backup/v0.2/{trackingId}", UUID.randomUUID()))));
+                get("/backup/v0.2/{trackingId}", UUID.randomUUID()))),
+        arguments(named("GET /clone/v0.2", get("/clone/v0.2"))),
+        // Instances
+        arguments(named("GET /instances/v0.2", get("/instances/v0.2"))));
   }
 
   // these single-tenant APIs require write permission. When single-tenant APIs are fully retired,
   // this method and any tests that use it should be deleted.
   private static Stream<Arguments> singleTenantWriteApis() {
     return Stream.of(
+        // Instances
         arguments(
             named(
                 "POST /instances/v0.2/{instanceid}",
-                post("/instances/v0.2/{instanceid}", UUID.randomUUID()))));
+                post("/instances/v0.2/{instanceid}", UUID.randomUUID()))),
+        arguments(
+            named(
+                "DELETE /instances/v0.2/{instanceid}",
+                delete("/instances/v0.2/{instanceid}", collectionId))));
   }
 
-  // ========== write APIs
+  // ========== write API tests
 
   @ParameterizedTest(name = "write API {0} succeeds with write permission")
   @MethodSource("writeApis")
@@ -264,7 +306,7 @@ class AllControllersPermissionsTest extends MockMvcTestBase {
     requestShouldBeMaskedNotFound(request);
   }
 
-  // ========== read-only APIs
+  // ========== read-only API tests
 
   @ParameterizedTest(name = "read-only API {0} succeeds with write permission")
   @MethodSource("readOnlyApis")
@@ -287,7 +329,7 @@ class AllControllersPermissionsTest extends MockMvcTestBase {
     requestShouldBeMaskedNotFound(request);
   }
 
-  // ========== single-tenant write APIs
+  // ========== single-tenant write API tests
 
   @ParameterizedTest(name = "single-tenant write API {0} succeeds with write permission")
   @MethodSource("singleTenantWriteApis")
@@ -311,7 +353,7 @@ class AllControllersPermissionsTest extends MockMvcTestBase {
     requestShouldBeMaskedNotFound(request);
   }
 
-  // ========== single-tenant read-only APIs
+  // ========== single-tenant read-only API tests
 
   @ParameterizedTest(name = "single-tenant read-only API {0} succeeds with write permission")
   @MethodSource("singleTenantReadOnlyApis")
@@ -335,7 +377,7 @@ class AllControllersPermissionsTest extends MockMvcTestBase {
     requestShouldBeMaskedNotFound(request);
   }
 
-  // ========== public APIs
+  // ========== public API tests
 
   @ParameterizedTest(name = "public API {0} succeeds with no permission")
   @MethodSource("publicApis")
@@ -345,10 +387,9 @@ class AllControllersPermissionsTest extends MockMvcTestBase {
   }
 
   // ========== helpers
-  private void requestShouldSucceed(MockHttpServletRequestBuilder request) throws Exception {
-    mockMvc.perform(request).andDo(this::assertSuccessfulPermissionCheck);
-  }
 
+  // if an API requires write permission, but the user only has read, PermissionService will throw
+  // an AuthorizationException.
   private void requestShouldBeForbidden(MockHttpServletRequestBuilder request) throws Exception {
     mockMvc
         .perform(request)
@@ -357,6 +398,8 @@ class AllControllersPermissionsTest extends MockMvcTestBase {
                 assertInstanceOf(AuthorizationException.class, result.getResolvedException()));
   }
 
+  // if the user has neither read nor write, PermissionService will throw
+  // AuthenticationMaskableException
   private void requestShouldBeMaskedNotFound(MockHttpServletRequestBuilder request)
       throws Exception {
     mockMvc
@@ -367,21 +410,26 @@ class AllControllersPermissionsTest extends MockMvcTestBase {
                     AuthenticationMaskableException.class, result.getResolvedException()));
   }
 
-  private void assertSuccessfulPermissionCheck(MvcResult mvcResult) {
-    /* We don't bother mocking out all the internals of each API within this test class.
-       Therefore, it is quite likely that APIs will fail for business logic reasons. All we
-       care about for this test class is that the permission checks pass. We consider a passing
-       test to be either:
-        - no exception was thrown
-        - an exception was thrown, but that exception is neither AuthenticationMaskableException
-            nor AuthorizationException; these are the two exceptions that would be thrown by
-            permission checks.
-    */
-    if (mvcResult.getResolvedException() != null) {
-      Exception ex = mvcResult.getResolvedException();
-      assertThat(ex).isNotInstanceOf(AuthenticationMaskableException.class);
-      assertThat(ex).isNotInstanceOf(AuthorizationException.class);
-    }
+  /* We don't bother mocking out all the internals of each API within this test class.
+     Therefore, it is quite likely that APIs will fail for business logic reasons. All we
+     care about for this test class is that the permission checks pass. We consider a passing
+     test to be either:
+      - no exception was thrown by the API
+      - an exception was thrown, but that exception is neither AuthenticationMaskableException
+          nor AuthorizationException; these are the two exceptions that would be thrown by
+          permission checks.
+  */
+  private void requestShouldSucceed(MockHttpServletRequestBuilder request) throws Exception {
+    mockMvc
+        .perform(request)
+        .andDo(
+            mvcResult -> {
+              if (mvcResult.getResolvedException() != null) {
+                Exception ex = mvcResult.getResolvedException();
+                assertThat(ex).isNotInstanceOf(AuthenticationMaskableException.class);
+                assertThat(ex).isNotInstanceOf(AuthorizationException.class);
+              }
+            });
   }
 
   private void userCanWrite(WorkspaceId workspaceId) {
