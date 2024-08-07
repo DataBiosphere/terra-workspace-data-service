@@ -45,7 +45,7 @@ import org.springframework.test.context.ActiveProfiles;
 @ActiveProfiles(profiles = {"mock-sam"})
 @SpringBootTest
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
-class RecordOrchestratorServiceColumnFilterTest extends TestBase {
+class RecordOrchestratorServiceFilterQueryTest extends TestBase {
 
   @Autowired private CollectionService collectionService;
   @Autowired private RecordOrchestratorService recordOrchestratorService;
@@ -74,7 +74,7 @@ class RecordOrchestratorServiceColumnFilterTest extends TestBase {
     // create our collection
     CollectionServerModel coll =
         new CollectionServerModel(
-            "unit-test", "RecordOrchestratorServiceColumnFilterTest unit test collection");
+            "unit-test", "RecordOrchestratorServiceFilterQueryTest unit test collection");
     coll.id(COLLECTION_UUID);
     collectionService.save(twdsProperties.workspaceId(), coll);
   }
@@ -168,20 +168,27 @@ class RecordOrchestratorServiceColumnFilterTest extends TestBase {
   }
 
   // what if the user specifies the primary key column for the filter?
-  // see the "why doesn't this include the primary key column?" to-do comment in
-  // RecordOrchestratorService.
-  // Filtering on the PK column will not work until that to-do is resolved.
-  @Disabled("See RecordOrchestratorService")
   @Test
   void filterOnPrimaryKey() {
-    // TODO AJ-1238
+    // insert a few records
+    List<String> insertedIds = insertFindableRecords(5, "here's some text");
+
+    // for each inserted record, perform a search for its id and expect to find just that record
+    insertedIds.forEach(
+        id -> {
+          SearchFilter searchFilter =
+              new SearchFilter(Optional.empty(), Optional.of(PRIMARY_KEY + ":" + id));
+          SearchRequest searchRequest = new SearchRequest();
+          searchRequest.setFilter(Optional.of(searchFilter));
+          filterAndExpect(1, List.of(id), searchRequest);
+        });
   }
 
   // can users search for null as a column value?
   @Disabled("not implemented yet")
   @Test
   void filterForNull() {
-    // TODO AJ-1238
+    // AJ-1238
   }
 
   // can users search multiple columns at once?
