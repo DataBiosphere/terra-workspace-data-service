@@ -26,7 +26,6 @@ import org.databiosphere.workspacedataservice.service.model.BatchWriteResult;
 import org.databiosphere.workspacedataservice.service.model.DataTypeMapping;
 import org.databiosphere.workspacedataservice.service.model.RecordTypeSchema;
 import org.databiosphere.workspacedataservice.service.model.Relation;
-import org.databiosphere.workspacedataservice.service.model.exception.AuthorizationException;
 import org.databiosphere.workspacedataservice.service.model.exception.BadStreamingWriteRequestException;
 import org.databiosphere.workspacedataservice.service.model.exception.ConflictException;
 import org.databiosphere.workspacedataservice.service.model.exception.DataImportException;
@@ -99,18 +98,10 @@ public class RecordOrchestratorService { // TODO give me a better name
     return response;
   }
 
+  // TODO AJ-1660: rename this method; it no longer checks permissions
   public void validateAndPermissions(UUID collectionId, String version) {
     validateVersion(version);
     collectionService.validateCollection(collectionId);
-
-    // check that the caller has write permissions on the workspace associated with the collectionId
-    boolean hasWriteWorkspacePermission =
-        collectionService.canWriteCollection(CollectionId.of(collectionId));
-    LOGGER.debug("hasWriteWorkspacePermission? {}", hasWriteWorkspacePermission);
-
-    if (!hasWriteWorkspacePermission) {
-      throw new AuthorizationException("Caller does not have permission to write to collection.");
-    }
   }
 
   @ReadTransaction

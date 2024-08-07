@@ -17,10 +17,6 @@ import org.databiosphere.workspacedataservice.config.TenancyProperties;
 import org.databiosphere.workspacedataservice.dao.CollectionDao;
 import org.databiosphere.workspacedataservice.dao.CollectionRepository;
 import org.databiosphere.workspacedataservice.generated.CollectionServerModel;
-import org.databiosphere.workspacedataservice.sam.SamAuthorizationDao;
-import org.databiosphere.workspacedataservice.sam.SamAuthorizationDaoFactory;
-import org.databiosphere.workspacedataservice.service.model.exception.AuthenticationMaskableException;
-import org.databiosphere.workspacedataservice.service.model.exception.AuthorizationException;
 import org.databiosphere.workspacedataservice.service.model.exception.CollectionException;
 import org.databiosphere.workspacedataservice.service.model.exception.ConflictException;
 import org.databiosphere.workspacedataservice.service.model.exception.MissingObjectException;
@@ -45,7 +41,6 @@ import org.springframework.web.server.ResponseStatusException;
 public class CollectionService {
   private static final Logger LOGGER = LoggerFactory.getLogger(CollectionService.class);
   private final CollectionDao collectionDao;
-  private final SamAuthorizationDaoFactory samAuthorizationDaoFactory;
   private final ActivityLogger activityLogger;
   private final TenancyProperties tenancyProperties;
 
@@ -53,20 +48,17 @@ public class CollectionService {
   private final NamedParameterJdbcTemplate namedTemplate;
 
   // strings for use in error messages
-  private static final String WORKSPACE = "Workspace";
   private static final String COLLECTION = "Collection";
 
   @Nullable private WorkspaceId workspaceId;
 
   public CollectionService(
       CollectionDao collectionDao,
-      SamAuthorizationDaoFactory samAuthorizationDaoFactory,
       ActivityLogger activityLogger,
       TenancyProperties tenancyProperties,
       CollectionRepository collectionRepository,
       NamedParameterJdbcTemplate namedTemplate) {
     this.collectionDao = collectionDao;
-    this.samAuthorizationDaoFactory = samAuthorizationDaoFactory;
     this.activityLogger = activityLogger;
     this.tenancyProperties = tenancyProperties;
     this.collectionRepository = collectionRepository;
@@ -95,17 +87,6 @@ public class CollectionService {
     if (tenancyProperties.getEnforceCollectionsMatchWorkspaceId()
         && !workspaceId.equals(this.workspaceId)) {
       throw new ValidationException("Cannot create collection in this workspace.");
-    }
-
-    // check that the current user has permission on the parent workspace
-    if (!canCreateCollection(workspaceId)) {
-      // the user doesn't have permission to create a new collection.
-      // do they have permission to read the workspace at all?
-      if (canReadWorkspace(workspaceId)) {
-        throw new AuthorizationException("Caller does not have permission to create collection.");
-      } else {
-        throw new AuthenticationMaskableException(WORKSPACE);
-      }
     }
 
     // if user did not specify an id, generate one
@@ -143,21 +124,7 @@ public class CollectionService {
    */
   @WriteTransaction
   public void delete(WorkspaceId workspaceId, CollectionId collectionId) {
-
-    // check that the current user has permission to delete the collection
-    if (!canWriteWorkspace(workspaceId)) {
-      // the user doesn't have permission to delete the collection.
-      // do they have permission to list collections in the workspace?
-      if (canReadWorkspace(workspaceId)) {
-        throw new AuthorizationException(
-            "Caller does not have permission to delete collections from this workspace.");
-      } else {
-        throw new AuthenticationMaskableException(WORKSPACE);
-      }
-    }
-
-    // user is permitted to delete collections (can write the workspace); now, validate the
-    // collection
+    // validate the collection
     WorkspaceId collectionWorkspace = getWorkspaceId(collectionId);
     // ensure this collection belongs to this workspace
     if (!collectionWorkspace.equals(workspaceId)) {
@@ -182,10 +149,6 @@ public class CollectionService {
    * @return all collections in the given workspace
    */
   public List<CollectionServerModel> list(WorkspaceId workspaceId) {
-    if (!canListCollections(workspaceId)) {
-      throw new AuthenticationMaskableException(WORKSPACE);
-    }
-
     Iterable<WdsCollection> found = collectionRepository.findByWorkspace(workspaceId);
     // map the WdsCollection to CollectionServerModel
     Stream<WdsCollection> colls =
@@ -211,11 +174,6 @@ public class CollectionService {
    * @return the collection
    */
   public CollectionServerModel get(WorkspaceId workspaceId, CollectionId collectionId) {
-    // verify permission to read collections
-    if (!canListCollections(workspaceId)) {
-      throw new AuthenticationMaskableException(WORKSPACE);
-    }
-
     // retrieve the collection; throw if collection not found
     WdsCollection found =
         collectionRepository
@@ -251,17 +209,6 @@ public class CollectionService {
         && !collectionServerModel.getId().equals(collectionId.id())) {
       throw new ValidationException(
           "Collection id in request body does not match collection id in URL. You can omit the collection id from the request body.");
-    }
-
-    // verify permission to update collections
-    if (!canWriteWorkspace(workspaceId)) {
-      // the user doesn't have permission to update collections.
-      // do they have permission to list collections in the workspace?
-      if (canReadWorkspace(workspaceId)) {
-        throw new AuthorizationException("Caller does not have permission to update collection.");
-      } else {
-        throw new AuthenticationMaskableException(WORKSPACE);
-      }
     }
 
     // retrieve the collection; throw if collection not found
@@ -373,11 +320,6 @@ public class CollectionService {
   public void createCollection(WorkspaceId workspaceId, CollectionId collectionId, String version) {
     validateVersion(version);
 
-    // check that the current user has permission on the parent workspace
-    if (!canCreateCollection(workspaceId)) {
-      throw new AuthorizationException("Caller does not have permission to create collection.");
-    }
-
     if (collectionDao.collectionSchemaExists(collectionId)) {
       throw new ResponseStatusException(HttpStatus.CONFLICT, "This collection already exists");
     }
@@ -400,11 +342,6 @@ public class CollectionService {
     validateCollection(collectionUuid);
     CollectionId collectionId = CollectionId.of(collectionUuid);
 
-    // check that the current user has permission to delete the Sam resource
-    if (!canDeleteCollection(collectionId)) {
-      throw new AuthorizationException("Caller does not have permission to delete collection.");
-    }
-
     // delete collection schema in Postgres
     collectionDao.dropSchema(collectionId);
 
@@ -423,34 +360,6 @@ public class CollectionService {
     if (!collectionDao.collectionSchemaExists(CollectionId.of(collectionId))) {
       throw new MissingObjectException(COLLECTION);
     }
-  }
-
-  public boolean canListCollections(WorkspaceId workspaceId) {
-    return canReadWorkspace(workspaceId);
-  }
-
-  public boolean canReadCollection(CollectionId collectionId) {
-    return canReadWorkspace(getWorkspaceId(collectionId));
-  }
-
-  public boolean canWriteCollection(CollectionId collectionId) {
-    return canWriteWorkspace(getWorkspaceId(collectionId));
-  }
-
-  private boolean canCreateCollection(WorkspaceId workspaceId) {
-    return canWriteWorkspace(workspaceId);
-  }
-
-  private boolean canDeleteCollection(CollectionId collectionId) {
-    return canWriteWorkspace(getWorkspaceId(collectionId));
-  }
-
-  private boolean canReadWorkspace(WorkspaceId workspaceId) {
-    return getSamAuthorizationDao(workspaceId).hasReadWorkspacePermission();
-  }
-
-  private boolean canWriteWorkspace(WorkspaceId workspaceId) {
-    return getSamAuthorizationDao(workspaceId).hasWriteWorkspacePermission();
   }
 
   /**
@@ -503,9 +412,5 @@ public class CollectionService {
           "Found unexpected workspaceId for collection %s.".formatted(collectionId));
     }
     return Objects.requireNonNullElseGet(rowWorkspaceId, () -> WorkspaceId.of(collectionId.id()));
-  }
-
-  private SamAuthorizationDao getSamAuthorizationDao(WorkspaceId workspaceId) {
-    return samAuthorizationDaoFactory.getSamAuthorizationDao(workspaceId);
   }
 }
