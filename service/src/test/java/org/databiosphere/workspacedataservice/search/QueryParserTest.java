@@ -68,9 +68,11 @@ class QueryParserTest {
 
   @Test
   void parseSqlWildcard() {
-    // note this is allowed. The SQL where clause we generate will not respect the wildcard;
-    // it does not use LIKE. So even though we allow this, it won't have the effect the user
-    // desired.
+    /*
+    note this is allowed. The SQL where clause we generate will not respect the wildcard;
+    it does not use LIKE. So even though we allow this, it won't have the effect the user
+    desired.
+    */
     String query = "column1:%foo%";
     WhereClausePart actual = new QueryParser().parse(query);
 
@@ -116,18 +118,21 @@ class QueryParserTest {
   @Test
   void parseSingleNumberRange() {
     String query = "column1:[23 TO 45]";
-    assertThrows(InvalidQueryException.class, () -> new QueryParser().parse(query));
+    QueryParser queryParser = new QueryParser();
+    assertThrows(InvalidQueryException.class, () -> queryParser.parse(query));
   }
 
   @Test
   void parseMultipleFields() {
     String query = "column1:foo AND column2:bar";
-    assertThrows(InvalidQueryException.class, () -> new QueryParser().parse(query));
+    QueryParser queryParser = new QueryParser();
+    assertThrows(InvalidQueryException.class, () -> queryParser.parse(query));
   }
 
   @Test
   void parseNoFieldSpecified() {
     String query = "searchterm";
-    assertThrows(InvalidQueryException.class, () -> new QueryParser().parse(query));
+    QueryParser queryParser = new QueryParser();
+    assertThrows(InvalidQueryException.class, () -> queryParser.parse(query));
   }
 }

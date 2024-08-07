@@ -201,7 +201,6 @@ public class RecordOrchestratorService { // TODO give me a better name
               + ", and offset must be positive.");
     }
     // retrieve schema to use in validations
-    // TODO: why doesn't this include the primary key column?
     Map<String, DataTypeMapping> schema =
         recordDao.getExistingTableSchema(collectionId, recordType);
 

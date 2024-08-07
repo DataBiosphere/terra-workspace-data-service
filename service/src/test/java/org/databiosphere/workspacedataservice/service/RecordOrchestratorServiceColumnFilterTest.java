@@ -147,12 +147,12 @@ class RecordOrchestratorServiceColumnFilterTest extends TestBase {
         validationException.getMessage());
   }
 
-  // if the user specifies filter.filters but provides []
+  // if the user specifies filter.query but provides ""
   @Test
-  void emptyArrayOfFilters() {
+  void emptyQuery() {
     String criteria = "foo";
 
-    // build the search request, specifying "" for filter columns
+    // build the search request, specifying "" for query
     SearchFilter searchFilter = new SearchFilter(Optional.empty(), Optional.of(""));
     SearchRequest searchRequest = new SearchRequest();
     searchRequest.setFilter(Optional.of(searchFilter));
@@ -173,12 +173,16 @@ class RecordOrchestratorServiceColumnFilterTest extends TestBase {
   // Filtering on the PK column will not work until that to-do is resolved.
   @Disabled("See RecordOrchestratorService")
   @Test
-  void filterOnPrimaryKey() {}
+  void filterOnPrimaryKey() {
+    // TODO AJ-1238
+  }
 
   // can users search for null as a column value?
   @Disabled("not implemented yet")
   @Test
-  void filterForNull() {}
+  void filterForNull() {
+    // TODO AJ-1238
+  }
 
   // can users search multiple columns at once?
   @Disabled("we don't support multiple columns yet")
@@ -233,7 +237,9 @@ class RecordOrchestratorServiceColumnFilterTest extends TestBase {
   // should we wait for a v1 API to add that?
   @Disabled("need decisions on the response payload")
   @Test
-  void totalRecordsIsCorrect() {}
+  void totalRecordsIsCorrect() {
+    // TODO AJ-1238
+  }
 
   private void filterAndExpect(
       int expectedCount, List<String> expectedIds, SearchRequest searchRequest) {
