@@ -18,9 +18,9 @@ import org.databiosphere.workspacedataservice.common.TestBase;
 import org.databiosphere.workspacedataservice.config.TwdsProperties;
 import org.databiosphere.workspacedataservice.dao.RecordDao;
 import org.databiosphere.workspacedataservice.generated.CollectionServerModel;
+import org.databiosphere.workspacedataservice.search.InvalidQueryException;
 import org.databiosphere.workspacedataservice.service.model.DataTypeMapping;
 import org.databiosphere.workspacedataservice.service.model.RelationCollection;
-import org.databiosphere.workspacedataservice.service.model.exception.ValidationException;
 import org.databiosphere.workspacedataservice.shared.model.CollectionId;
 import org.databiosphere.workspacedataservice.shared.model.RecordAttributes;
 import org.databiosphere.workspacedataservice.shared.model.RecordQueryResponse;
@@ -137,9 +137,9 @@ class RecordOrchestratorServiceFilterQueryTest extends TestBase {
     SearchRequest searchRequest = new SearchRequest();
     searchRequest.setFilter(Optional.of(searchFilter));
 
-    ValidationException validationException =
+    InvalidQueryException validationException =
         assertThrows(
-            ValidationException.class,
+            InvalidQueryException.class,
             () ->
                 recordOrchestratorService.queryForRecords(
                     COLLECTION_UUID, TEST_TYPE, VERSION, searchRequest));

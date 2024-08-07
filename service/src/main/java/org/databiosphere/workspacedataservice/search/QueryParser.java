@@ -12,7 +12,6 @@ import org.apache.lucene.queryparser.flexible.core.nodes.FieldQueryNode;
 import org.apache.lucene.queryparser.flexible.core.nodes.QueryNode;
 import org.apache.lucene.queryparser.flexible.standard.parser.StandardSyntaxParser;
 import org.databiosphere.workspacedataservice.service.model.DataTypeMapping;
-import org.databiosphere.workspacedataservice.service.model.exception.ValidationException;
 
 public class QueryParser {
 
@@ -73,12 +72,13 @@ public class QueryParser {
     }
     // does this column exist in the record type?
     if (!schema.containsKey(columnName)) {
-      throw new ValidationException("Column specified in query does not exist in this record type");
+      throw new InvalidQueryException(
+          "Column specified in query does not exist in this record type");
     }
     // is this column of a datatype we currently support?
     var datatype = schema.get(columnName);
     if (!DataTypeMapping.STRING.equals(datatype)) {
-      throw new ValidationException("Column specified in query must be a string type");
+      throw new InvalidQueryException("Column specified in query must be a string type");
     }
   }
 }
