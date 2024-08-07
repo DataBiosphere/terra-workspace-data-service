@@ -64,8 +64,19 @@ class RecordDaoWhereClauseTest {
     WhereClause actual =
         RecordDao.generateQueryWhereClause(
             "my-pk-col", Map.of("col1", DataTypeMapping.STRING), Optional.of(searchFilter));
-    assertEquals(" where \"col1\" = :filterquery0", actual.sql());
+    assertEquals(" where LOWER(\"col1\") = :filterquery0", actual.sql());
     assertEquals(Map.of("filterquery0", "col1value"), actual.params().getValues());
+  }
+
+  @Test
+  void oneColumnCaseInsensitive() {
+    SearchFilter searchFilter = new SearchFilter(Optional.empty(), Optional.of("col1:UPPER"));
+
+    WhereClause actual =
+        RecordDao.generateQueryWhereClause(
+            "my-pk-col", Map.of("col1", DataTypeMapping.STRING), Optional.of(searchFilter));
+    assertEquals(" where LOWER(\"col1\") = :filterquery0", actual.sql());
+    assertEquals(Map.of("filterquery0", "upper"), actual.params().getValues());
   }
 
   @Disabled("we don't support multiple columns yet")

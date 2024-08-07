@@ -46,8 +46,8 @@ public class QueryParser {
 
       // bind parameter names have syntax limitations, so we use an artificial one
       var paramName = "filterquery0";
-      clauses.add(quote(column) + " = :" + paramName);
-      values.put(paramName, value);
+      clauses.add("LOWER(" + quote(column) + ") = :" + paramName);
+      values.put(paramName, value.toLowerCase());
       columns.add(column);
 
       return new WhereClausePart(clauses, values, columns);

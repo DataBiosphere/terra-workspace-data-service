@@ -117,8 +117,8 @@ class RecordOrchestratorServiceFilterQueryTest extends TestBase {
     insertFillerRecords(3, criteria, controlValueSupplier);
     filterAndExpect(1, findOne, searchRequest);
 
-    // insert two more findable records, then filter; should return 3
-    List<String> findTwo = insertFindableRecords(2, criteria);
+    // insert two more findable records, with the criteria uppercased, then filter; should return 3
+    List<String> findTwo = insertFindableRecords(2, criteria.toUpperCase());
     List<String> findOneAndTwo = Stream.concat(findOne.stream(), findTwo.stream()).toList();
     filterAndExpect(3, findOneAndTwo, searchRequest);
   }
