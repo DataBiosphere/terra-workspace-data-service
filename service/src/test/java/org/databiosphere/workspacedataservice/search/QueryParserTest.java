@@ -6,6 +6,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Stream;
+import org.databiosphere.workspacedataservice.service.model.DataTypeMapping;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -35,13 +36,13 @@ class QueryParserTest {
   void parseSingleColumnTerm(String queryTerm, String expectedResult) {
     String query = "column1:" + queryTerm;
 
-    WhereClausePart actual = new QueryParser().parse(query);
+    WhereClausePart actual =
+        new QueryParser(Map.of("column1", DataTypeMapping.STRING)).parse(query);
 
     WhereClausePart expected =
         new WhereClausePart(
-            List.of("\"column1\" = :filterquery0"),
-            Map.of("filterquery0", expectedResult),
-            List.of("column1"));
+            List.of("LOWER(\"column1\") = :filterquery0"),
+            Map.of("filterquery0", expectedResult.toLowerCase()));
 
     assertEquals(expected, actual);
   }
@@ -61,7 +62,7 @@ class QueryParserTest {
   @ParameterizedTest(name = "Invalid query `{0}`")
   @MethodSource("invalidQuerySyntax")
   void parseInvalidQueries(String query) {
-    QueryParser queryParser = new QueryParser();
+    QueryParser queryParser = new QueryParser(Map.of("column1", DataTypeMapping.STRING));
     assertThrows(InvalidQueryException.class, () -> queryParser.parse(query));
   }
 }

@@ -11,16 +11,24 @@ import org.apache.lucene.queryparser.flexible.core.QueryNodeParseException;
 import org.apache.lucene.queryparser.flexible.core.nodes.FieldQueryNode;
 import org.apache.lucene.queryparser.flexible.core.nodes.QueryNode;
 import org.apache.lucene.queryparser.flexible.standard.parser.StandardSyntaxParser;
+import org.databiosphere.workspacedataservice.service.model.DataTypeMapping;
+import org.databiosphere.workspacedataservice.service.model.exception.ValidationException;
 
 public class QueryParser {
 
   public static final String DEFAULT_ALL_COLUMNS_NAME = "sys_all_columns";
 
+  private final Map<String, DataTypeMapping> schema;
+
+  public QueryParser(Map<String, DataTypeMapping> schema) {
+    this.schema = schema;
+  }
+
   public WhereClausePart parse(String query) {
     // query should not be blank by the time we get here, but if it is, short-circuit and return
     // an empty clause.
     if (StringUtils.isBlank(query)) {
-      return new WhereClausePart(List.of(), Map.of(), List.of());
+      return new WhereClausePart(List.of(), Map.of());
     }
     // create a Lucene parser
     StandardSyntaxParser standardSyntaxParser = new StandardSyntaxParser();
@@ -48,9 +56,8 @@ public class QueryParser {
       var paramName = "filterquery0";
       clauses.add("LOWER(" + quote(column) + ") = :" + paramName);
       values.put(paramName, value.toLowerCase());
-      columns.add(column);
 
-      return new WhereClausePart(clauses, values, columns);
+      return new WhereClausePart(clauses, values);
     } else {
       throw new InvalidQueryException();
     }
@@ -63,6 +70,15 @@ public class QueryParser {
     // the end user to specify a column name.
     if (DEFAULT_ALL_COLUMNS_NAME.equals(columnName)) {
       throw new InvalidQueryException("Query must specify a column name");
+    }
+    // does this column exist in the record type?
+    if (!schema.containsKey(columnName)) {
+      throw new ValidationException("Column specified in query does not exist in this record type");
+    }
+    // is this column of a datatype we currently support?
+    var datatype = schema.get(columnName);
+    if (!DataTypeMapping.STRING.equals(datatype)) {
+      throw new ValidationException("Column specified in query must be a string type");
     }
   }
 }
