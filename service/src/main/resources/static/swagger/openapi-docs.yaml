@@ -990,6 +990,10 @@ components:
           type: array
           items:
             type: string
+        query:
+          type: string
+          description: in the form column:text
+          example: sample_id:12345
     SearchLimit:
       type: integer
       default: 10

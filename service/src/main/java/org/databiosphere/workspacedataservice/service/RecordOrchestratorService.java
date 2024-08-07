@@ -190,16 +190,20 @@ public class RecordOrchestratorService { // TODO give me a better name
               + MAX_RECORDS
               + ", and offset must be positive.");
     }
+    // retrieve schema to use in validations
+    Map<String, DataTypeMapping> schema =
+        recordDao.getExistingTableSchema(collectionId, recordType);
+
+    // validate sort attribute
     if (searchRequest.getSortAttribute() != null
-        && !recordDao
-            .getExistingTableSchema(collectionId, recordType)
-            .containsKey(searchRequest.getSortAttribute())) {
+        && !schema.containsKey(searchRequest.getSortAttribute())) {
       throw new MissingObjectException("Requested sort attribute");
     }
     int totalRecords = recordDao.countRecords(collectionId, recordType);
     if (searchRequest.getOffset() > totalRecords) {
       return new RecordQueryResponse(searchRequest, Collections.emptyList(), totalRecords);
     }
+
     LOGGER.info("queryForEntities: {}", recordType.getName());
     List<Record> records =
         recordDao.queryForRecords(

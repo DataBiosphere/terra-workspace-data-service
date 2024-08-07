@@ -37,6 +37,9 @@ import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 import javax.sql.DataSource;
 import org.apache.commons.lang3.StringUtils;
+import org.databiosphere.workspacedataservice.search.QueryParser;
+import org.databiosphere.workspacedataservice.search.WhereClause;
+import org.databiosphere.workspacedataservice.search.WhereClausePart;
 import org.databiosphere.workspacedataservice.service.DataTypeInferer;
 import org.databiosphere.workspacedataservice.service.RelationUtils;
 import org.databiosphere.workspacedataservice.service.model.DataTypeMapping;
@@ -48,6 +51,7 @@ import org.databiosphere.workspacedataservice.service.model.exception.ConflictEx
 import org.databiosphere.workspacedataservice.service.model.exception.InvalidRelationException;
 import org.databiosphere.workspacedataservice.service.model.exception.MissingObjectException;
 import org.databiosphere.workspacedataservice.service.model.exception.SerializationException;
+import org.databiosphere.workspacedataservice.service.model.exception.ValidationException;
 import org.databiosphere.workspacedataservice.shared.model.AttributeComparator;
 import org.databiosphere.workspacedataservice.shared.model.Record;
 import org.databiosphere.workspacedataservice.shared.model.RecordAttributes;
@@ -269,24 +273,17 @@ public class RecordDao {
       return List.of();
     }
 
-    // init a where clause (as the empty string) and bind params (as an empty map)
-    String whereClause = "";
-    MapSqlParameterSource sqlParams = new MapSqlParameterSource();
+    // find primary key column name
+    String pkColumn = primaryKeyDao.getPrimaryKeyColumn(recordType, collectionId);
+    // and the whole schema
+    Map<String, DataTypeMapping> schema = getExistingTableSchema(collectionId, recordType);
 
-    // if this query has specified filter.ids, populate the where clause and bind params
-    if (filterIds.isPresent()) {
-      // we know ids is non-empty due to the check above
-      whereClause =
-          " where "
-              + quote(primaryKeyDao.getPrimaryKeyColumn(recordType, collectionId))
-              + " in (:filterIds) ";
-      sqlParams.addValue("filterIds", filterIds.get());
-    }
+    WhereClause where = generateQueryWhereClause(pkColumn, schema, searchFilter);
 
     return namedTemplate.query(
         "select * from "
             + getQualifiedTableName(recordType, collectionId)
-            + whereClause
+            + where.sql()
             + " order by "
             + (sortAttribute == null
                 ? quote(primaryKeyDao.getPrimaryKeyColumn(recordType, collectionId))
@@ -297,8 +294,56 @@ public class RecordDao {
             + pageSize
             + " offset "
             + offset,
-        sqlParams,
+        where.params(),
         new RecordRowMapper(recordType, objectMapper, collectionId));
+  }
+
+  // helper method to generate the SQL where clause for queryForRecords()
+  @VisibleForTesting
+  static WhereClause generateQueryWhereClause(
+      String pkColumn, Map<String, DataTypeMapping> schema, Optional<SearchFilter> searchFilter) {
+    // init an empty list of clauses and empty map of bind params
+    List<String> clauses = new ArrayList<>();
+    MapSqlParameterSource sqlParams = new MapSqlParameterSource();
+
+    // extract potential record ids from the `filter` param
+    Optional<List<String>> filterIds = searchFilter.flatMap(SearchFilter::ids);
+
+    // if this query has specified filter.ids, populate the where clause and bind params
+    if (filterIds.isPresent()) {
+      // filterIds is an Optional. If the Optional is present, we know that the List
+      // inside the Optional is non-empty due to the check in queryForRecords above
+      clauses.add(quote(pkColumn) + " in (:filterIds)");
+      sqlParams.addValue("filterIds", filterIds.get());
+    }
+
+    // if this query has specified filter.query, populate the where clause and bind params
+    Optional<String> filterQuery = searchFilter.flatMap(SearchFilter::query);
+    if (filterQuery.isPresent()) {
+      WhereClausePart queryPart = new QueryParser().parse(filterQuery.get());
+      for (String column : queryPart.columns()) {
+        if (!schema.containsKey(column)) {
+          throw new ValidationException(
+              "Column specified in query does not exist in this record type");
+        }
+        var datatype = schema.get(column);
+        if (!DataTypeMapping.STRING.equals(datatype)) {
+          throw new ValidationException("Column specified in query must be a string type");
+        }
+      }
+
+      clauses.addAll(queryPart.clauses());
+      sqlParams.addValues(queryPart.values());
+    }
+
+    // translate the list of individual clauses into a single SQL fragment
+    String sqlFragment = "";
+    if (!clauses.isEmpty()) {
+      // prepend with "where" and join clauses
+      sqlFragment = " where " + StringUtils.join(clauses, " and ");
+    }
+
+    return new WhereClause(sqlFragment, sqlParams);
   }
 
   public List<String> getAllAttributeNames(UUID collectionId, RecordType recordType) {
