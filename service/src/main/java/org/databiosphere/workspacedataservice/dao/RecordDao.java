@@ -311,7 +311,8 @@ public class RecordDao {
 
     // if this query has specified filter.ids, populate the where clause and bind params
     if (filterIds.isPresent()) {
-      // we know ids is non-empty due to the check in queryForRecords above
+      // filterIds is an Optional. If the Optional is present, we know that the List
+      // inside the Optional is non-empty due to the check in queryForRecords above
       clauses.add(quote(pkColumn) + " in (:filterIds)");
       sqlParams.addValue("filterIds", filterIds.get());
     }
