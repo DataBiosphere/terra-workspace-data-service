@@ -36,9 +36,7 @@ import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.HttpStatus;
 import org.springframework.lang.Nullable;
 import org.springframework.test.annotation.DirtiesContext;
-import org.springframework.test.context.ActiveProfiles;
 
-@ActiveProfiles(profiles = "mock-sam")
 @SpringBootTest
 @DirtiesContext
 class WorkspaceManagerDaoTest extends TestBase {

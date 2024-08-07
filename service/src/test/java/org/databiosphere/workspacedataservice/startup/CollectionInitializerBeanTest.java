@@ -40,8 +40,7 @@ import org.springframework.test.context.ActiveProfiles;
   "mock-backup-dao",
   "mock-restore-dao",
   "mock-clone-dao",
-  "local-cors",
-  "mock-sam"
+  "local-cors"
 })
 @DirtiesContext
 @SpringBootTest
