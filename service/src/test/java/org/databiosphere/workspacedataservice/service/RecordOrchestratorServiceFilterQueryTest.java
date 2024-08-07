@@ -30,6 +30,7 @@ import org.databiosphere.workspacedataservice.shared.model.RecordType;
 import org.databiosphere.workspacedataservice.shared.model.SearchFilter;
 import org.databiosphere.workspacedataservice.shared.model.SearchRequest;
 import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
@@ -189,6 +190,7 @@ class RecordOrchestratorServiceFilterQueryTest extends TestBase {
   @Test
   void filterForNull() {
     // AJ-1238
+    Assertions.fail("not implemented yet");
   }
 
   // can users search multiple columns at once?
@@ -246,6 +248,7 @@ class RecordOrchestratorServiceFilterQueryTest extends TestBase {
   @Test
   void totalRecordsIsCorrect() {
     // TODO AJ-1238
+    Assertions.fail("need decisions on the response payload");
   }
 
   private void filterAndExpect(
