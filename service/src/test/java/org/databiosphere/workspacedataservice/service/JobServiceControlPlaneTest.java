@@ -7,7 +7,6 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -21,17 +20,10 @@ import org.databiosphere.workspacedataservice.dao.CollectionDao;
 import org.databiosphere.workspacedataservice.dao.JobDao;
 import org.databiosphere.workspacedataservice.generated.GenericJobServerModel;
 import org.databiosphere.workspacedataservice.pubsub.JobStatusUpdate;
-import org.databiosphere.workspacedataservice.sam.MockSamAuthorizationDao;
-import org.databiosphere.workspacedataservice.sam.SamAuthorizationDao;
-import org.databiosphere.workspacedataservice.sam.SamAuthorizationDaoFactory;
-import org.databiosphere.workspacedataservice.service.model.exception.AuthenticationMaskableException;
-import org.databiosphere.workspacedataservice.service.model.exception.CollectionException;
 import org.databiosphere.workspacedataservice.service.model.exception.MissingObjectException;
 import org.databiosphere.workspacedataservice.service.model.exception.ValidationException;
 import org.databiosphere.workspacedataservice.shared.model.CollectionId;
-import org.databiosphere.workspacedataservice.shared.model.WorkspaceId;
 import org.junit.jupiter.api.Test;
-import org.mockito.stubbing.OngoingStubbing;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
@@ -54,10 +46,7 @@ class JobServiceControlPlaneTest extends JobServiceTestBase {
 
   @Autowired JobService jobService;
   @MockBean JobDao jobDao;
-  @MockBean SamAuthorizationDaoFactory samAuthorizationDaoFactory;
   @MockBean CollectionDao collectionDao;
-
-  private final SamAuthorizationDao samAuthorizationDao = spy(MockSamAuthorizationDao.allowAll());
 
   /** requested job does not exist */
   @Test
@@ -75,29 +64,7 @@ class JobServiceControlPlaneTest extends JobServiceTestBase {
     assertThat(actual.getMessage()).startsWith("Job");
   }
 
-  /** requested job exists; its collection also exists. In the control plane, this is an error */
-  @Test
-  void collectionExists() {
-    // Arrange
-    UUID jobId = randomUUID();
-    CollectionId collectionId = CollectionId.of(randomUUID());
-    WorkspaceId workspaceId = WorkspaceId.of(randomUUID());
-    GenericJobServerModel expectedJob = makeJob(jobId, collectionId);
-    // job exists
-    when(jobDao.getJob(jobId)).thenReturn(expectedJob);
-    // collection for this job exists
-    when(collectionDao.getWorkspaceId(collectionId)).thenReturn(workspaceId);
-    // user has permission to that workspace
-    stubReadWorkspacePermission(workspaceId).thenReturn(true);
-
-    // Act / assert
-    Exception actual = assertThrows(CollectionException.class, () -> jobService.getJob(jobId));
-
-    // Assert
-    assertEquals("Expected a virtual collection", actual.getMessage());
-  }
-
-  /** requested job exists; its collection is virtual and the user has permission */
+  /** requested job exists; its collection is virtual */
   @Test
   void virtualCollectionWithPermission() {
     // Arrange
@@ -109,8 +76,6 @@ class JobServiceControlPlaneTest extends JobServiceTestBase {
     // collection for this job does not exist
     when(collectionDao.getWorkspaceId(collectionId))
         .thenThrow(new EmptyResultDataAccessException("unit test intentional error", 1));
-    // user has permission to the workspace with the same id as the collection
-    stubReadWorkspacePermission(WorkspaceId.of(collectionId.id())).thenReturn(true);
 
     // Act
     GenericJobServerModel actual = jobService.getJob(jobId);
@@ -119,55 +84,11 @@ class JobServiceControlPlaneTest extends JobServiceTestBase {
     assertEquals(expectedJob, actual);
   }
 
-  /** requested job exists; its collection is virtual and the user does not have permission */
-  @Test
-  void virtualCollectionWithoutPermission() {
-    // Arrange
-    UUID jobId = randomUUID();
-    CollectionId collectionId = CollectionId.of(randomUUID());
-    GenericJobServerModel expectedJob = makeJob(jobId, collectionId);
-    // job exists
-    when(jobDao.getJob(jobId)).thenReturn(expectedJob);
-    // collection for this job does not exist
-    when(collectionDao.getWorkspaceId(collectionId))
-        .thenThrow(new EmptyResultDataAccessException("unit test intentional error", 1));
-    // user has permission to the workspace with the same id as the collection
-    stubReadWorkspacePermission(WorkspaceId.of(collectionId.id())).thenReturn(false);
-
-    // Act / assert
-    AuthenticationMaskableException actual =
-        assertThrows(AuthenticationMaskableException.class, () -> jobService.getJob(jobId));
-
-    // Assert
-    assertEquals("Job", actual.getObjectType());
-  }
-
   // ==================================================
   // ========== tests for getJobsForCollection ========
   // ==================================================
 
-  /** Collection exists. In the control plane, this is an error */
-  @Test
-  void listJobsCollectionExists() {
-    // Arrange
-    CollectionId collectionId = CollectionId.of(randomUUID());
-    WorkspaceId workspaceId = WorkspaceId.of(randomUUID());
-    // collection for this job exists
-    when(collectionDao.getWorkspaceId(collectionId)).thenReturn(workspaceId);
-    // user has permission to that workspace
-    stubReadWorkspacePermission(workspaceId).thenReturn(true);
-
-    // Act / assert
-    Exception actual =
-        assertThrows(
-            CollectionException.class,
-            () -> jobService.getJobsForCollection(collectionId, Optional.of(allStatuses)));
-
-    // Assert
-    assertEquals("Expected a virtual collection", actual.getMessage());
-  }
-
-  /** Collection is virtual; user has permission */
+  /** Collection is virtual */
   @Test
   void listJobsVirtualCollection() {
     // Arrange
@@ -175,8 +96,6 @@ class JobServiceControlPlaneTest extends JobServiceTestBase {
     // collection for this job does not exist
     when(collectionDao.getWorkspaceId(collectionId))
         .thenThrow(new EmptyResultDataAccessException("unit test intentional error", 1));
-    // user has permission to the workspace with the same id as the collection
-    stubReadWorkspacePermission(WorkspaceId.of(collectionId.id())).thenReturn(true);
     // return some jobs when listing this collection
     when(jobDao.getJobsForCollection(eq(collectionId), any()))
         .thenReturn(makeJobList(collectionId, 2));
@@ -188,30 +107,6 @@ class JobServiceControlPlaneTest extends JobServiceTestBase {
     // Assert
     // this is verifying permissions only; only smoke-testing correctness of the result
     assertThat(actual).hasSize(2);
-  }
-
-  /** Collection is virtual; user does not have permission */
-  @Test
-  void listJobsVirtualCollectionNoPermission() {
-    // Arrange
-    CollectionId collectionId = CollectionId.of(randomUUID());
-    // collection for this job does not exist
-    when(collectionDao.getWorkspaceId(collectionId))
-        .thenThrow(new EmptyResultDataAccessException("unit test intentional error", 1));
-    // user does not have permission to the workspace with the same id as the collection
-    stubReadWorkspacePermission(WorkspaceId.of(collectionId.id())).thenReturn(false);
-    // return some jobs when listing this collection
-    when(jobDao.getJobsForCollection(eq(collectionId), any()))
-        .thenReturn(makeJobList(collectionId, 3));
-
-    // Act / assert
-    AuthenticationMaskableException actual =
-        assertThrows(
-            AuthenticationMaskableException.class,
-            () -> jobService.getJobsForCollection(collectionId, Optional.of(allStatuses)));
-
-    // Assert
-    assertEquals("Collection", actual.getObjectType());
   }
 
   @Test
@@ -328,11 +223,5 @@ class JobServiceControlPlaneTest extends JobServiceTestBase {
 
   private UUID setupProcessJobStatusUpdateTest() {
     return setupProcessJobStatusUpdateTest(GenericJobServerModel.StatusEnum.RUNNING);
-  }
-
-  private OngoingStubbing<Boolean> stubReadWorkspacePermission(WorkspaceId workspaceId) {
-    when(samAuthorizationDaoFactory.getSamAuthorizationDao(workspaceId))
-        .thenReturn(samAuthorizationDao);
-    return when(samAuthorizationDao.hasReadWorkspacePermission());
   }
 }

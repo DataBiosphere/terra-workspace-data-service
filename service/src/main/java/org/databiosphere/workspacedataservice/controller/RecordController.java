@@ -8,10 +8,13 @@ import java.util.UUID;
 import org.databiosphere.workspacedataservice.annotations.DeploymentMode.DataPlane;
 import org.databiosphere.workspacedataservice.generated.CollectionServerModel;
 import org.databiosphere.workspacedataservice.service.CollectionService;
+import org.databiosphere.workspacedataservice.service.PermissionService;
 import org.databiosphere.workspacedataservice.service.RecordOrchestratorService;
 import org.databiosphere.workspacedataservice.service.model.AttributeSchema;
 import org.databiosphere.workspacedataservice.service.model.RecordTypeSchema;
+import org.databiosphere.workspacedataservice.service.model.exception.MissingObjectException;
 import org.databiosphere.workspacedataservice.shared.model.BatchResponse;
+import org.databiosphere.workspacedataservice.shared.model.CollectionId;
 import org.databiosphere.workspacedataservice.shared.model.RecordQueryResponse;
 import org.databiosphere.workspacedataservice.shared.model.RecordRequest;
 import org.databiosphere.workspacedataservice.shared.model.RecordResponse;
@@ -42,11 +45,15 @@ public class RecordController {
 
   private final CollectionService collectionService;
   private final RecordOrchestratorService recordOrchestratorService;
+  private final PermissionService permissionService;
 
   public RecordController(
-      CollectionService collectionService, RecordOrchestratorService recordOrchestratorService) {
+      CollectionService collectionService,
+      RecordOrchestratorService recordOrchestratorService,
+      PermissionService permissionService) {
     this.collectionService = collectionService;
     this.recordOrchestratorService = recordOrchestratorService;
+    this.permissionService = permissionService;
   }
 
   @PatchMapping("/{instanceId}/records/{version}/{recordType}/{recordId}")
@@ -56,6 +63,7 @@ public class RecordController {
       @PathVariable("recordType") RecordType recordType,
       @PathVariable("recordId") String recordId,
       @RequestBody RecordRequest recordRequest) {
+    permissionService.requireWritePermission(CollectionId.of(instanceId));
     RecordResponse response =
         recordOrchestratorService.updateSingleRecord(
             instanceId, version, recordType, recordId, recordRequest);
@@ -68,6 +76,7 @@ public class RecordController {
       @PathVariable("version") String version,
       @PathVariable("recordType") RecordType recordType,
       @PathVariable("recordId") String recordId) {
+    permissionService.requireReadPermission(CollectionId.of(instanceId));
     RecordResponse response =
         recordOrchestratorService.getSingleRecord(instanceId, version, recordType, recordId);
     return new ResponseEntity<>(response, HttpStatus.OK);
@@ -81,6 +90,7 @@ public class RecordController {
       @RequestParam(name = "primaryKey", required = false) Optional<String> primaryKey,
       @RequestParam("records") MultipartFile records)
       throws IOException {
+    permissionService.requireWritePermission(CollectionId.of(instanceId));
     int recordsModified =
         recordOrchestratorService.tsvUpload(instanceId, version, recordType, primaryKey, records);
     return new ResponseEntity<>(
@@ -92,6 +102,7 @@ public class RecordController {
       @PathVariable("instanceId") UUID instanceId,
       @PathVariable("version") String version,
       @PathVariable("recordType") RecordType recordType) {
+    permissionService.requireReadPermission(CollectionId.of(instanceId));
     StreamingResponseBody responseBody =
         recordOrchestratorService.streamAllEntities(instanceId, version, recordType);
     return ResponseEntity.status(HttpStatus.OK)
@@ -107,6 +118,7 @@ public class RecordController {
       @PathVariable("recordType") RecordType recordType,
       @PathVariable("version") String version,
       @Nullable @RequestBody(required = false) SearchRequest searchRequest) {
+    permissionService.requireReadPermission(CollectionId.of(instanceId));
     return recordOrchestratorService.queryForRecords(
         instanceId, recordType, version, searchRequest);
   }
@@ -119,6 +131,7 @@ public class RecordController {
       @PathVariable("recordId") String recordId,
       @RequestParam(name = "primaryKey", required = false) Optional<String> primaryKey,
       @RequestBody RecordRequest recordRequest) {
+    permissionService.requireWritePermission(CollectionId.of(instanceId));
     return recordOrchestratorService.upsertSingleRecord(
         instanceId, version, recordType, recordId, primaryKey, recordRequest);
   }
@@ -129,6 +142,7 @@ public class RecordController {
   @Deprecated(forRemoval = true, since = "v0.14.0")
   @GetMapping("/instances/{version}")
   public ResponseEntity<List<UUID>> listInstances(@PathVariable("version") String version) {
+    permissionService.requireReadPermissionSingleTenant();
     List<UUID> schemaList = collectionService.listCollections(version);
     return new ResponseEntity<>(schemaList, HttpStatus.OK);
   }
@@ -141,6 +155,7 @@ public class RecordController {
   @PostMapping("/instances/{version}/{instanceId}")
   public ResponseEntity<String> createInstance(
       @PathVariable("instanceId") UUID instanceId, @PathVariable("version") String version) {
+    permissionService.requireWritePermissionSingleTenant();
     collectionService.createCollection(instanceId, version);
     return new ResponseEntity<>(HttpStatus.CREATED);
   }
@@ -152,6 +167,7 @@ public class RecordController {
   @DeleteMapping("/instances/{version}/{instanceId}")
   public ResponseEntity<String> deleteInstance(
       @PathVariable("instanceId") UUID instanceId, @PathVariable("version") String version) {
+    permissionService.requireWritePermissionSingleTenant();
     collectionService.deleteCollection(instanceId, version);
     return new ResponseEntity<>(HttpStatus.OK);
   }
@@ -162,6 +178,7 @@ public class RecordController {
       @PathVariable("version") String version,
       @PathVariable("recordType") RecordType recordType,
       @PathVariable("recordId") String recordId) {
+    permissionService.requireWritePermission(CollectionId.of(instanceId));
     boolean recordFound =
         recordOrchestratorService.deleteSingleRecord(instanceId, version, recordType, recordId);
     return recordFound
@@ -174,6 +191,7 @@ public class RecordController {
       @PathVariable("instanceId") UUID instanceId,
       @PathVariable("v") String version,
       @PathVariable("type") RecordType recordType) {
+    permissionService.requireWritePermission(CollectionId.of(instanceId));
     recordOrchestratorService.deleteRecordType(instanceId, version, recordType);
     return new ResponseEntity<>(HttpStatus.NO_CONTENT);
   }
@@ -185,6 +203,7 @@ public class RecordController {
       @PathVariable("type") RecordType recordType,
       @PathVariable("attribute") String attribute,
       @RequestBody AttributeSchema newAttributeSchema) {
+    permissionService.requireWritePermission(CollectionId.of(instanceId));
     Optional<String> optionalNewAttributeName = Optional.ofNullable(newAttributeSchema.name());
     Optional<String> optionalNewDataType = Optional.ofNullable(newAttributeSchema.datatype());
 
@@ -207,6 +226,14 @@ public class RecordController {
 
     RecordTypeSchema recordTypeSchema =
         recordOrchestratorService.describeRecordType(instanceId, version, recordType);
+
+    // this should not happen, given validation above. However, unit tests that use mocks can
+    // hit problems here. This is a minimally-invasive validation in a less-frequently used API, so
+    // it feels ok to implement for the sake of tests.
+    if (recordTypeSchema == null) {
+      throw new MissingObjectException("Record type");
+    }
+
     AttributeSchema attributeSchema = recordTypeSchema.getAttributeSchema(finalAttributeName);
     return new ResponseEntity<>(attributeSchema, HttpStatus.OK);
   }
@@ -217,6 +244,7 @@ public class RecordController {
       @PathVariable("v") String version,
       @PathVariable("type") RecordType recordType,
       @PathVariable("attribute") String attribute) {
+    permissionService.requireWritePermission(CollectionId.of(instanceId));
     recordOrchestratorService.deleteAttribute(instanceId, version, recordType, attribute);
     return new ResponseEntity<>(HttpStatus.NO_CONTENT);
   }
@@ -226,6 +254,7 @@ public class RecordController {
       @PathVariable("instanceId") UUID instanceId,
       @PathVariable("v") String version,
       @PathVariable("type") RecordType recordType) {
+    permissionService.requireReadPermission(CollectionId.of(instanceId));
     RecordTypeSchema result =
         recordOrchestratorService.describeRecordType(instanceId, version, recordType);
     return new ResponseEntity<>(result, HttpStatus.OK);
@@ -234,6 +263,7 @@ public class RecordController {
   @GetMapping("/{instanceId}/types/{v}")
   public ResponseEntity<List<RecordTypeSchema>> describeAllRecordTypes(
       @PathVariable("instanceId") UUID instanceId, @PathVariable("v") String version) {
+    permissionService.requireReadPermission(CollectionId.of(instanceId));
     List<RecordTypeSchema> result =
         recordOrchestratorService.describeAllRecordTypes(instanceId, version);
     return new ResponseEntity<>(result, HttpStatus.OK);
@@ -247,6 +277,7 @@ public class RecordController {
       @PathVariable("type") RecordType recordType,
       @RequestParam(name = "primaryKey", required = false) Optional<String> primaryKey,
       InputStream is) {
+    permissionService.requireWritePermission(CollectionId.of(instanceId));
     int recordsModified =
         recordOrchestratorService.streamingWrite(instanceId, version, recordType, primaryKey, is);
     return new ResponseEntity<>(new BatchResponse(recordsModified, "Huzzah"), HttpStatus.OK);
