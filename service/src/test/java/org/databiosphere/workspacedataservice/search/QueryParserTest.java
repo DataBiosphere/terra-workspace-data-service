@@ -6,7 +6,6 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Stream;
-import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -31,7 +30,7 @@ class QueryParserTest {
   }
 
   // test expected parsing for a single column and its filter term
-  @ParameterizedTest(name = "Single-column query term [{0}]")
+  @ParameterizedTest(name = "Valid query `column1:{0}`")
   @MethodSource("singleColumnTerms")
   void parseSingleColumnTerm(String queryTerm, String expectedResult) {
     String query = "column1:" + queryTerm;
@@ -47,26 +46,21 @@ class QueryParserTest {
     assertEquals(expected, actual);
   }
 
-  // we don't support ranges as of this writing
-  @Test
-  void parseSingleNumberRange() {
-    String query = "column1:[23 TO 45]";
-    QueryParser queryParser = new QueryParser();
-    assertThrows(InvalidQueryException.class, () -> queryParser.parse(query));
+  private static Stream<String> invalidQuerySyntax() {
+    return Stream.of(
+        // ranges
+        "column1:[23 TO 45]",
+        // multi-column search
+        "column1:foo AND column2:bar",
+        // table-wide search, i.e. no column specified
+        "searchterm");
   }
 
-  // we don't support multiple columns as of this writing
-  @Test
-  void parseMultipleFields() {
-    String query = "column1:foo AND column2:bar";
-    QueryParser queryParser = new QueryParser();
-    assertThrows(InvalidQueryException.class, () -> queryParser.parse(query));
-  }
-
-  // we don't support table-wide terms as of this writing
-  @Test
-  void parseNoFieldSpecified() {
-    String query = "searchterm";
+  // we only support a subset of Lucene query parser syntax. These test cases are valid for
+  // Lucene, but will throw a InvalidQueryException because WDS doesn't support them
+  @ParameterizedTest(name = "Invalid query `{0}`")
+  @MethodSource("invalidQuerySyntax")
+  void parseInvalidQueries(String query) {
     QueryParser queryParser = new QueryParser();
     assertThrows(InvalidQueryException.class, () -> queryParser.parse(query));
   }
