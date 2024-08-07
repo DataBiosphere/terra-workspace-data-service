@@ -47,9 +47,9 @@ class ImportServiceControlPlaneTest {
   private final ImportRequestServerModel importRequest =
       new ImportRequestServerModel(PFB, importUri);
 
-  /* Collection does not exist, user has access */
+  /* Collection does not exist, which is expected in the control plane */
   @Test
-  void hasWritePermission() {
+  void virtualCollection() {
     // ARRANGE
     CollectionId collectionId = CollectionId.of(UUID.randomUUID());
     // collection dao says the collection does not exist

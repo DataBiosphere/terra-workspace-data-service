@@ -22,10 +22,8 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.test.annotation.DirtiesContext;
-import org.springframework.test.context.ActiveProfiles;
 
 /** Tests for CollectionService.getWorkspaceId() */
-@ActiveProfiles(profiles = {"mock-sam"})
 @DirtiesContext
 @SpringBootTest
 class CollectionServiceGetWorkspaceIdTest extends TestBase {
