@@ -2,6 +2,7 @@ package org.databiosphere.workspacedataservice.search;
 
 import static org.databiosphere.workspacedataservice.dao.SqlUtils.quote;
 
+import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -47,19 +48,48 @@ public class QueryParser {
 
       validateColumnName(column);
 
-      List<String> clauses = new ArrayList<>();
-      Map<String, String> values = new HashMap<>();
-      List<String> columns = new ArrayList<>();
+      var datatype = schema.get(column);
 
-      // bind parameter names have syntax limitations, so we use an artificial one
+      List<String> clauses = new ArrayList<>();
+      Map<String, Object> values = new HashMap<>();
+
+      // bind parameter names have syntax limitations, so we use artificial ones below
       var paramName = "filterquery0";
-      clauses.add("LOWER(" + quote(column) + ") = :" + paramName);
-      values.put(paramName, value.toLowerCase());
+      switch (datatype) {
+        case STRING:
+          clauses.add("LOWER(" + quote(column) + ") = :" + paramName);
+          values.put(paramName, value.toLowerCase());
+          break;
+        case ARRAY_OF_STRING:
+          clauses.add(":" + paramName + " ILIKE ANY(" + quote(column) + ")");
+          values.put(paramName, value.toLowerCase());
+          break;
+        case NUMBER:
+          clauses.add(quote(column) + " = :" + paramName);
+          values.put(paramName, parseNumericValue(value));
+          break;
+        case ARRAY_OF_NUMBER:
+          clauses.add(":" + paramName + " = ANY(" + quote(column) + ")");
+          values.put(paramName, parseNumericValue(value));
+          break;
+        default:
+          throw new InvalidQueryException("Column specified in query must be a string type");
+      }
 
       return new WhereClausePart(clauses, values);
     } else {
       throw new InvalidQueryException();
     }
+  }
+
+  private Double parseNumericValue(String value) {
+    BigDecimal parsedNumber;
+    try {
+      parsedNumber = new BigDecimal(value);
+    } catch (NumberFormatException nfe) {
+      throw new InvalidQueryException("Query value for numeric column must be a number");
+    }
+    return parsedNumber.doubleValue();
   }
 
   private void validateColumnName(String columnName) {
@@ -74,11 +104,6 @@ public class QueryParser {
     if (!schema.containsKey(columnName)) {
       throw new InvalidQueryException(
           "Column specified in query does not exist in this record type");
-    }
-    // is this column of a datatype we currently support?
-    var datatype = schema.get(columnName);
-    if (!DataTypeMapping.STRING.equals(datatype)) {
-      throw new InvalidQueryException("Column specified in query must be a string type");
     }
   }
 }
