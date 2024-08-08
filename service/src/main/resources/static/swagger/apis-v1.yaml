@@ -150,8 +150,8 @@ paths:
     post:
       summary: Create a collection in this workspace.
       description: |
-        If collection id is specified in the request body, it must be a valid UUID.
-        If omitted, the system will generate an id.
+        If collection id is specified in the request body, it will be ignored; ids are
+        auto-generated.
       operationId: createCollectionV1
       tags:
         - Collection

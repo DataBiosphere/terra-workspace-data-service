@@ -44,7 +44,7 @@ public interface CollectionApi {
 
     /**
      * POST /collections/v1/{workspaceId} : Create a collection in this workspace.
-     * If collection id is specified in the request body, it must be a valid UUID. If omitted, the system will generate an id. 
+     * If collection id is specified in the request body, it will be ignored; ids are auto-generated. 
      *
      * @param workspaceId Workspace id (required)
      * @param collectionServerModel The collection to create (required)
@@ -53,7 +53,7 @@ public interface CollectionApi {
     @Operation(
         operationId = "createCollectionV1",
         summary = "Create a collection in this workspace.",
-        description = "If collection id is specified in the request body, it must be a valid UUID. If omitted, the system will generate an id. ",
+        description = "If collection id is specified in the request body, it will be ignored; ids are auto-generated. ",
         tags = { "Collection" },
         responses = {
             @ApiResponse(responseCode = "201", description = "The collection just created.", content = {

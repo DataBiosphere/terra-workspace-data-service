@@ -3,6 +3,7 @@ package org.databiosphere.workspacedataservice.controller;
 import static org.databiosphere.workspacedataservice.dao.SqlUtils.quote;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.spy;
@@ -116,12 +117,15 @@ class CollectionControllerMockMvcSingleTenantTest extends MockMvcTestBase {
             mvcResult.getResponse().getContentAsString(), CollectionServerModel.class);
 
     assertNotNull(actualResponse);
-    assertEquals(collectionId.id(), actualResponse.getId(), "incorrect collection id");
+    assertNotEquals(
+        collectionId.id(),
+        actualResponse.getId(),
+        "Collection id in create request should be ignored");
     assertEquals(name, actualResponse.getName(), "incorrect collection name");
     assertEquals(description, actualResponse.getDescription(), "incorrect collection description");
 
     // the collection should exist in the db
-    assertCollectionExists(workspaceId, collectionId, name, description);
+    assertCollectionExists(workspaceId, CollectionId.of(actualResponse.getId()), name, description);
   }
 
   @Test

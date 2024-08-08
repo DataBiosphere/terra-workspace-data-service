@@ -89,13 +89,9 @@ public class CollectionService {
       throw new ValidationException("Cannot create collection in this workspace.");
     }
 
-    // if user did not specify an id, generate one
-    CollectionId collectionId;
-    if (collectionServerModel.getId() != null) {
-      collectionId = CollectionId.of(collectionServerModel.getId());
-    } else {
-      collectionId = CollectionId.of(UUID.randomUUID());
-    }
+    // always generate the collection id; ignore anything specified by the caller
+    CollectionId collectionId = CollectionId.of(UUID.randomUUID());
+
     // translate CollectionServerModel to WdsCollection
     WdsCollection wdsCollectionRequest =
         new WdsCollectionCreateRequest(
