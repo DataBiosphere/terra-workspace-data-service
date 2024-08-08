@@ -41,34 +41,44 @@ public class QueryParser {
       throw new InvalidQueryException();
     }
 
-    // even if we parsed correctly, ensure the query does not use any syntax we don't support
+    // even if the query parsed correctly via the Lucene library, ensure the query does not use any
+    // syntax that WDS doesn't support. For now, we only support a single FieldQueryNode.
     if (parsed instanceof FieldQueryNode fieldQueryNode) {
       String column = fieldQueryNode.getFieldAsString();
       String value = fieldQueryNode.getTextAsString();
 
       validateColumnName(column);
 
+      // determine the datatype of the column on which we are filtering.
       var datatype = schema.get(column);
 
+      // init our return values. In the future we want to support filtering on multiple columns,
+      // so we need to support a list of clause fragments.
       List<String> clauses = new ArrayList<>();
       Map<String, Object> values = new HashMap<>();
 
       // bind parameter names have syntax limitations, so we use artificial ones below
       var paramName = "filterquery0";
+
+      // based on the datatype of the column, build relevant SQL
       switch (datatype) {
         case STRING:
+          // LOWER("mycolumn") = 'mysearchterm'
           clauses.add("LOWER(" + quote(column) + ") = :" + paramName);
           values.put(paramName, value.toLowerCase());
           break;
         case ARRAY_OF_STRING:
+          // 'mysearchterm' ILIKE ANY("mycolumn")
           clauses.add(":" + paramName + " ILIKE ANY(" + quote(column) + ")");
           values.put(paramName, value.toLowerCase());
           break;
         case NUMBER:
+          // "mycolumn" = 42
           clauses.add(quote(column) + " = :" + paramName);
           values.put(paramName, parseNumericValue(value));
           break;
         case ARRAY_OF_NUMBER:
+          // 42 = ANY("mycolumn")
           clauses.add(":" + paramName + " = ANY(" + quote(column) + ")");
           values.put(paramName, parseNumericValue(value));
           break;
