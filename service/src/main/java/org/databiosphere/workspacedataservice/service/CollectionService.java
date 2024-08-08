@@ -16,6 +16,7 @@ import org.databiosphere.workspacedataservice.annotations.SingleTenant;
 import org.databiosphere.workspacedataservice.config.TenancyProperties;
 import org.databiosphere.workspacedataservice.dao.CollectionDao;
 import org.databiosphere.workspacedataservice.dao.CollectionRepository;
+import org.databiosphere.workspacedataservice.generated.CollectionRequestServerModel;
 import org.databiosphere.workspacedataservice.generated.CollectionServerModel;
 import org.databiosphere.workspacedataservice.service.model.exception.CollectionException;
 import org.databiosphere.workspacedataservice.service.model.exception.ConflictException;
@@ -76,12 +77,12 @@ public class CollectionService {
    * Insert a new collection
    *
    * @param workspaceId the workspace to contain this collection
-   * @param collectionServerModel the collection definition
+   * @param collectionRequestServerModel the collection definition
    * @return the created collection
    */
   @WriteTransaction
   public CollectionServerModel save(
-      WorkspaceId workspaceId, CollectionServerModel collectionServerModel) {
+      WorkspaceId workspaceId, CollectionRequestServerModel collectionRequestServerModel) {
 
     // if WDS is running in single-tenant mode, ensure the specified workspace matches
     if (tenancyProperties.getEnforceCollectionsMatchWorkspaceId()
@@ -97,8 +98,8 @@ public class CollectionService {
         new WdsCollectionCreateRequest(
             workspaceId,
             collectionId,
-            collectionServerModel.getName(),
-            collectionServerModel.getDescription());
+            collectionRequestServerModel.getName(),
+            collectionRequestServerModel.getDescription());
 
     // save, handle exceptions, and translate to the response model
     CollectionServerModel response = saveAndHandleExceptions(wdsCollectionRequest);
@@ -294,7 +295,7 @@ public class CollectionService {
   }
 
   /**
-   * @deprecated Use {@link #save(WorkspaceId, CollectionServerModel)} instead.
+   * @deprecated Use {@link #save(WorkspaceId, CollectionRequestServerModel)} instead.
    */
   @Deprecated(forRemoval = true, since = "v0.14.0")
   public void createCollection(UUID collectionId, String version) {
@@ -310,7 +311,7 @@ public class CollectionService {
   }
 
   /**
-   * @deprecated Use {@link #save(WorkspaceId, CollectionServerModel)} instead.
+   * @deprecated Use {@link #save(WorkspaceId, CollectionRequestServerModel)} instead.
    */
   @Deprecated(forRemoval = true, since = "v0.14.0")
   public void createCollection(WorkspaceId workspaceId, CollectionId collectionId, String version) {

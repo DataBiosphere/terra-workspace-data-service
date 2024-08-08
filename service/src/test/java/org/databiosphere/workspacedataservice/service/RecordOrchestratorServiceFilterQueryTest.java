@@ -16,6 +16,7 @@ import java.util.stream.Stream;
 import org.databiosphere.workspacedataservice.common.TestBase;
 import org.databiosphere.workspacedataservice.config.TwdsProperties;
 import org.databiosphere.workspacedataservice.dao.RecordDao;
+import org.databiosphere.workspacedataservice.generated.CollectionRequestServerModel;
 import org.databiosphere.workspacedataservice.generated.CollectionServerModel;
 import org.databiosphere.workspacedataservice.service.model.DataTypeMapping;
 import org.databiosphere.workspacedataservice.service.model.RelationCollection;
@@ -72,8 +73,8 @@ class RecordOrchestratorServiceFilterQueryTest extends TestBase {
     // delete all existing collections
     cleanupAll();
     // create our collection
-    CollectionServerModel coll =
-        new CollectionServerModel(
+    CollectionRequestServerModel coll =
+        new CollectionRequestServerModel(
             "unit-test", "RecordOrchestratorServiceFilterQueryTest unit test collection");
 
     CollectionServerModel actual = collectionService.save(twdsProperties.workspaceId(), coll);

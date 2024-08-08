@@ -5,6 +5,7 @@
  */
 package org.databiosphere.workspacedataservice.generated;
 
+import org.databiosphere.workspacedataservice.generated.CollectionRequestServerModel;
 import org.databiosphere.workspacedataservice.generated.CollectionServerModel;
 import java.util.UUID;
 import io.swagger.v3.oas.annotations.ExternalDocumentation;
@@ -47,7 +48,7 @@ public interface CollectionApi {
      * If collection id is specified in the request body, it will be ignored; ids are auto-generated. 
      *
      * @param workspaceId Workspace id (required)
-     * @param collectionServerModel The collection to create (required)
+     * @param collectionRequestServerModel The collection to create (required)
      * @return The collection just created. (status code 201)
      */
     @Operation(
@@ -73,7 +74,7 @@ public interface CollectionApi {
     
     default ResponseEntity<CollectionServerModel> createCollectionV1(
         @Parameter(name = "workspaceId", description = "Workspace id", required = true, in = ParameterIn.PATH) @PathVariable("workspaceId") UUID workspaceId,
-        @Parameter(name = "CollectionServerModel", description = "The collection to create", required = true) @Valid @RequestBody CollectionServerModel collectionServerModel
+        @Parameter(name = "CollectionRequestServerModel", description = "The collection to create", required = true) @Valid @RequestBody CollectionRequestServerModel collectionRequestServerModel
     ) {
         return new ResponseEntity<>(HttpStatus.NOT_IMPLEMENTED);
 

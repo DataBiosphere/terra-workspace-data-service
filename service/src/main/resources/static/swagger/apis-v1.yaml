@@ -163,7 +163,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/Collection'
+              $ref: '#/components/schemas/CollectionRequest'
       responses:
         201:
           description: The collection just created.
@@ -303,6 +303,21 @@ components:
         - description
       example:
         id: 00112233-4455-6677-8899-aabbccddeeff
+        name: my-collection-name
+        description: This is a human-readable description for the collection.
+    CollectionRequest:
+      type: object
+      properties:
+        name:
+          type: string
+          pattern: '[a-zA-Z0-9-_]{1,128}'
+          description: Letters, numbers, dash and underscore only. Max 128 characters.
+        description:
+          type: string
+      required:
+        - name
+        - description
+      example:
         name: my-collection-name
         description: This is a human-readable description for the collection.
     GenericJob:
