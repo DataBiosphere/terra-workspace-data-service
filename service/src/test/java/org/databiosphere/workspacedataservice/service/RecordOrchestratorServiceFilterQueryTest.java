@@ -1,6 +1,5 @@
 package org.databiosphere.workspacedataservice.service;
 
-import static java.util.UUID.randomUUID;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.databiosphere.workspacedataservice.service.RecordUtils.VERSION;
 import static org.junit.Assert.assertThrows;
@@ -53,7 +52,7 @@ class RecordOrchestratorServiceFilterQueryTest extends TestBase {
   @Autowired private RecordDao recordDao;
   @Autowired private TwdsProperties twdsProperties;
 
-  private static final UUID COLLECTION_UUID = randomUUID();
+  private UUID testCollectionId;
   private static final RecordType TEST_TYPE = RecordType.valueOf("test");
 
   private static final String PRIMARY_KEY = "id";
@@ -76,8 +75,11 @@ class RecordOrchestratorServiceFilterQueryTest extends TestBase {
     CollectionServerModel coll =
         new CollectionServerModel(
             "unit-test", "RecordOrchestratorServiceFilterQueryTest unit test collection");
-    coll.id(COLLECTION_UUID);
-    collectionService.save(twdsProperties.workspaceId(), coll);
+
+    CollectionServerModel actual = collectionService.save(twdsProperties.workspaceId(), coll);
+
+    // save the created collection's id for use in tests
+    testCollectionId = actual.getId();
   }
 
   @AfterAll
@@ -93,7 +95,7 @@ class RecordOrchestratorServiceFilterQueryTest extends TestBase {
     Map<String, DataTypeMapping> schema =
         Map.of(TEST_COLUMN, DataTypeMapping.STRING, CONTROL_COLUMN, DataTypeMapping.STRING);
     recordDao.createRecordType(
-        COLLECTION_UUID, schema, TEST_TYPE, RelationCollection.empty(), PRIMARY_KEY);
+        testCollectionId, schema, TEST_TYPE, RelationCollection.empty(), PRIMARY_KEY);
 
     // build the by-column filter
     SearchFilter searchFilter =
@@ -129,7 +131,7 @@ class RecordOrchestratorServiceFilterQueryTest extends TestBase {
     Map<String, DataTypeMapping> schema =
         Map.of(TEST_COLUMN, DataTypeMapping.STRING, CONTROL_COLUMN, DataTypeMapping.STRING);
     recordDao.createRecordType(
-        COLLECTION_UUID, schema, TEST_TYPE, RelationCollection.empty(), PRIMARY_KEY);
+        testCollectionId, schema, TEST_TYPE, RelationCollection.empty(), PRIMARY_KEY);
 
     // build the by-column filter, using a column name that doesn't exist in the record type
     SearchFilter searchFilter = new SearchFilter(Optional.empty(), Optional.of("unknown:criteria"));
@@ -142,7 +144,7 @@ class RecordOrchestratorServiceFilterQueryTest extends TestBase {
             ValidationException.class,
             () ->
                 recordOrchestratorService.queryForRecords(
-                    COLLECTION_UUID, TEST_TYPE, VERSION, searchRequest));
+                    testCollectionId, TEST_TYPE, VERSION, searchRequest));
     assertEquals(
         "Column specified in query does not exist in this record type",
         validationException.getMessage());
@@ -201,7 +203,7 @@ class RecordOrchestratorServiceFilterQueryTest extends TestBase {
     Map<String, DataTypeMapping> schema =
         Map.of(TEST_COLUMN, DataTypeMapping.STRING, CONTROL_COLUMN, DataTypeMapping.STRING);
     recordDao.createRecordType(
-        COLLECTION_UUID, schema, TEST_TYPE, RelationCollection.empty(), PRIMARY_KEY);
+        testCollectionId, schema, TEST_TYPE, RelationCollection.empty(), PRIMARY_KEY);
 
     String criteria1 = "mack";
     String criteria2 = "bentley";
@@ -255,7 +257,7 @@ class RecordOrchestratorServiceFilterQueryTest extends TestBase {
       int expectedCount, List<String> expectedIds, SearchRequest searchRequest) {
     RecordQueryResponse resp =
         recordOrchestratorService.queryForRecords(
-            COLLECTION_UUID, TEST_TYPE, VERSION, searchRequest);
+            testCollectionId, TEST_TYPE, VERSION, searchRequest);
     assertEquals(expectedCount, resp.records().size(), "incorrect result count");
     // extract record ids from the response
     List<String> actualIds = resp.records().stream().map(RecordResponse::recordId).toList();
@@ -290,7 +292,7 @@ class RecordOrchestratorServiceFilterQueryTest extends TestBase {
 
     ResponseEntity<RecordResponse> response =
         recordOrchestratorService.upsertSingleRecord(
-            COLLECTION_UUID,
+            testCollectionId,
             VERSION,
             TEST_TYPE,
             newRecordId,
