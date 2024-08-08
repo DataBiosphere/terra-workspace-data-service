@@ -45,7 +45,6 @@ public interface CollectionApi {
 
     /**
      * POST /collections/v1/{workspaceId} : Create a collection in this workspace.
-     * If collection id is specified in the request body, it will be ignored; ids are auto-generated. 
      *
      * @param workspaceId Workspace id (required)
      * @param collectionRequestServerModel The collection to create (required)
@@ -54,7 +53,6 @@ public interface CollectionApi {
     @Operation(
         operationId = "createCollectionV1",
         summary = "Create a collection in this workspace.",
-        description = "If collection id is specified in the request body, it will be ignored; ids are auto-generated. ",
         tags = { "Collection" },
         responses = {
             @ApiResponse(responseCode = "201", description = "The collection just created.", content = {
@@ -183,17 +181,15 @@ public interface CollectionApi {
 
     /**
      * PUT /collections/v1/{workspaceId}/{collectionId} : Update the specified collection.
-     * Collection id is optional in the request body. If specified, it must match the collection id specified in the url. 
      *
      * @param workspaceId Workspace id (required)
      * @param collectionId Collection id (required)
-     * @param collectionServerModel The collection to update (required)
+     * @param collectionRequestServerModel The collection to update (required)
      * @return The collection just updated. (status code 200)
      */
     @Operation(
         operationId = "updateCollectionV1",
         summary = "Update the specified collection.",
-        description = "Collection id is optional in the request body. If specified, it must match the collection id specified in the url. ",
         tags = { "Collection" },
         responses = {
             @ApiResponse(responseCode = "200", description = "The collection just updated.", content = {
@@ -214,7 +210,7 @@ public interface CollectionApi {
     default ResponseEntity<CollectionServerModel> updateCollectionV1(
         @Parameter(name = "workspaceId", description = "Workspace id", required = true, in = ParameterIn.PATH) @PathVariable("workspaceId") UUID workspaceId,
         @Parameter(name = "collectionId", description = "Collection id", required = true, in = ParameterIn.PATH) @PathVariable("collectionId") UUID collectionId,
-        @Parameter(name = "CollectionServerModel", description = "The collection to update", required = true) @Valid @RequestBody CollectionServerModel collectionServerModel
+        @Parameter(name = "CollectionRequestServerModel", description = "The collection to update", required = true) @Valid @RequestBody CollectionRequestServerModel collectionRequestServerModel
     ) {
         return new ResponseEntity<>(HttpStatus.NOT_IMPLEMENTED);
 

@@ -99,16 +99,20 @@ public class CollectionController implements CollectionApi {
    *
    * @param workspaceId Workspace id (required)
    * @param collectionId WdsCollection id (required)
-   * @param collectionServerModel The collection to update (required)
+   * @param collectionRequestServerModel The collection to update (required)
    * @return The collection just updated. (status code 200)
    */
   @Override
   public ResponseEntity<CollectionServerModel> updateCollectionV1(
-      UUID workspaceId, UUID collectionId, CollectionServerModel collectionServerModel) {
+      UUID workspaceId,
+      UUID collectionId,
+      CollectionRequestServerModel collectionRequestServerModel) {
     permissionService.requireWritePermission(WorkspaceId.of(workspaceId));
     CollectionServerModel coll =
         collectionService.update(
-            WorkspaceId.of(workspaceId), CollectionId.of(collectionId), collectionServerModel);
+            WorkspaceId.of(workspaceId),
+            CollectionId.of(collectionId),
+            collectionRequestServerModel);
     return new ResponseEntity<>(coll, HttpStatus.OK);
   }
 }

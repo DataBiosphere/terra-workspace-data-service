@@ -149,9 +149,6 @@ paths:
                   $ref: '#/components/schemas/Collection'
     post:
       summary: Create a collection in this workspace.
-      description: |
-        If collection id is specified in the request body, it will be ignored; ids are
-        auto-generated.
       operationId: createCollectionV1
       tags:
         - Collection
@@ -189,9 +186,6 @@ paths:
                 $ref: '#/components/schemas/Collection'
     put:
       summary: Update the specified collection.
-      description: |
-        Collection id is optional in the request body. If specified, it must match the collection id
-        specified in the url.
       operationId: updateCollectionV1
       tags:
         - Collection
@@ -204,7 +198,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/Collection'
+              $ref: '#/components/schemas/CollectionRequest'
       responses:
         200:
           description: The collection just updated.

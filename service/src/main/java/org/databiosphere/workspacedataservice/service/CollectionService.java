@@ -192,21 +192,15 @@ public class CollectionService {
    *
    * @param workspaceId the workspace containing the collection to be updated
    * @param collectionId id of the collection to be updated
-   * @param collectionServerModel object containing the updated name and description. Collection id
-   *     is optional in this object. If specified, it must match the collectionId argument.
+   * @param collectionRequestServerModel object containing the updated name and description.
+   *     Collection id is optional in this object. If specified, it must match the collectionId
+   *     argument.
    * @return the updated collection
    */
   public CollectionServerModel update(
       WorkspaceId workspaceId,
       CollectionId collectionId,
-      CollectionServerModel collectionServerModel) {
-
-    // if collection id is specified in the CollectionServerModel, ensure it matches
-    if (collectionServerModel.getId() != null
-        && !collectionServerModel.getId().equals(collectionId.id())) {
-      throw new ValidationException(
-          "Collection id in request body does not match collection id in URL. You can omit the collection id from the request body.");
-    }
+      CollectionRequestServerModel collectionRequestServerModel) {
 
     // retrieve the collection; throw if collection not found
     WdsCollection found =
@@ -215,8 +209,8 @@ public class CollectionService {
             .orElseThrow(() -> new MissingObjectException(COLLECTION));
 
     // optimization: if the request doesn't change anything, don't bother writing to the db
-    if (found.name().equals(collectionServerModel.getName())
-        && found.description().equals(collectionServerModel.getDescription())) {
+    if (found.name().equals(collectionRequestServerModel.getName())
+        && found.description().equals(collectionRequestServerModel.getDescription())) {
       // make sure this response has an id
       CollectionServerModel response = new CollectionServerModel(found.name(), found.description());
       response.id(found.collectionId().id());
@@ -228,8 +222,8 @@ public class CollectionService {
         new WdsCollection(
             found.workspaceId(),
             found.collectionId(),
-            collectionServerModel.getName(),
-            collectionServerModel.getDescription());
+            collectionRequestServerModel.getName(),
+            collectionRequestServerModel.getDescription());
 
     // save, handle exceptions, and translate to the response model
     CollectionServerModel response = saveAndHandleExceptions(updateRequest);
