@@ -5,14 +5,12 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.databiosphere.workspacedataservice.service.RecordUtils.VERSION;
 import static org.junit.Assert.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.fail;
 
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
-import java.util.function.Supplier;
-import java.util.stream.IntStream;
 import java.util.stream.Stream;
 import org.databiosphere.workspacedataservice.common.TestBase;
 import org.databiosphere.workspacedataservice.config.TwdsProperties;
@@ -22,27 +20,31 @@ import org.databiosphere.workspacedataservice.search.InvalidQueryException;
 import org.databiosphere.workspacedataservice.service.model.DataTypeMapping;
 import org.databiosphere.workspacedataservice.service.model.RelationCollection;
 import org.databiosphere.workspacedataservice.shared.model.CollectionId;
-import org.databiosphere.workspacedataservice.shared.model.RecordAttributes;
 import org.databiosphere.workspacedataservice.shared.model.RecordQueryResponse;
-import org.databiosphere.workspacedataservice.shared.model.RecordRequest;
 import org.databiosphere.workspacedataservice.shared.model.RecordResponse;
 import org.databiosphere.workspacedataservice.shared.model.RecordType;
 import org.databiosphere.workspacedataservice.shared.model.SearchFilter;
 import org.databiosphere.workspacedataservice.shared.model.SearchRequest;
 import org.junit.jupiter.api.AfterAll;
-import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
 import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.ValueSource;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.http.ResponseEntity;
+import org.springframework.core.io.Resource;
+import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.test.context.ActiveProfiles;
 
-/** Tests for the filter-by-column feature of RecordOrchestratorService.queryForRecords() */
+/**
+ * Tests for the filter-by-column feature of RecordOrchestratorService.queryForRecords()
+ *
+ * <p>See also the test data at src/test/resources/searchfilter/testdata.tsv
+ */
 @ActiveProfiles(profiles = {"mock-sam"})
 @SpringBootTest
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
@@ -53,12 +55,13 @@ class RecordOrchestratorServiceFilterQueryTest extends TestBase {
   @Autowired private RecordDao recordDao;
   @Autowired private TwdsProperties twdsProperties;
 
+  @Value("classpath:searchfilter/testdata.tsv")
+  Resource testDataTsv;
+
   private static final UUID COLLECTION_UUID = randomUUID();
   private static final RecordType TEST_TYPE = RecordType.valueOf("test");
 
-  private static final String PRIMARY_KEY = "id";
-  private static final String TEST_COLUMN = "test-column";
-  private static final String CONTROL_COLUMN = "control-column";
+  private static final String PRIMARY_KEY = "test_id";
 
   // delete all collections, across all workspaces
   private void cleanupAll() {
@@ -86,48 +89,97 @@ class RecordOrchestratorServiceFilterQueryTest extends TestBase {
     cleanupAll();
   }
 
+  // ===== STRING column
+  private static Stream<Arguments> stringArguments() {
+    return Stream.of(
+        Arguments.of("\"hello world\"", List.of("1", "2")),
+        Arguments.of("\"HELLO WORLD\"", List.of("1", "2")),
+        Arguments.of("goodbye", List.of("3")),
+        Arguments.of("GOODBYE", List.of("3")),
+        Arguments.of("thisValueNotInDataset", List.of()));
+  }
+
   @ParameterizedTest(name = "string filter for value <{0}>")
-  @ValueSource(strings = {"lowercase", "Sentencecase", "UPPERCASE", "Phrase, with punctuation!"})
-  void stringFilter(String criteria) {
+  @MethodSource("stringArguments")
+  void stringColumn(String criteria, List<String> expectedIds) {
+    performTest("str", DataTypeMapping.STRING, criteria, expectedIds);
+  }
+
+  // ===== ARRAY_OF_STRING column
+  private static Stream<Arguments> arrayOfStringArguments() {
+    return Stream.of(
+        Arguments.of("world", List.of("1", "2")),
+        Arguments.of("WORLD", List.of("1", "2")),
+        Arguments.of("You", List.of("1")),
+        Arguments.of("Three", List.of("3")),
+        Arguments.of("thisValueNotInDataset", List.of()));
+  }
+
+  @ParameterizedTest(name = "array_of_string filter for value <{0}>")
+  @MethodSource("arrayOfStringArguments")
+  void arrayOfStringColumn(String criteria, List<String> expectedIds) {
+    performTest("arrstr", DataTypeMapping.ARRAY_OF_STRING, criteria, expectedIds);
+  }
+
+  // ===== NUMBER column
+  private static Stream<Arguments> numberArguments() {
+    return Stream.of(
+        Arguments.of("42", List.of("1", "2")),
+        Arguments.of("\\-1.23", List.of("3")),
+        Arguments.of("1.23", List.of()),
+        Arguments.of("999999", List.of()));
+  }
+
+  @ParameterizedTest(name = "number filter for value <{0}>")
+  @MethodSource("numberArguments")
+  void numberColumn(String criteria, List<String> expectedIds) {
+    performTest("num", DataTypeMapping.NUMBER, criteria, expectedIds);
+  }
+
+  // ===== ARRAY_OF_NUMBER column
+  private static Stream<Arguments> arrayOfNumberArguments() {
+    return Stream.of(
+        Arguments.of("31", List.of("1", "2")),
+        Arguments.of("59", List.of("1")),
+        Arguments.of("3", List.of("3")),
+        Arguments.of("9999999", List.of()));
+  }
+
+  @ParameterizedTest(name = "array_of_number filter for value <{0}>")
+  @MethodSource("arrayOfNumberArguments")
+  void arrayOfNumberColumn(String criteria, List<String> expectedIds) {
+    performTest("arrnum", DataTypeMapping.ARRAY_OF_NUMBER, criteria, expectedIds);
+  }
+
+  // the test implementation for all tests above
+  private void performTest(
+      String columnName, DataTypeMapping datatype, String criteria, List<String> expectedIds) {
     // init the record type. This allows us to query the table prior to inserting any records.
-    Map<String, DataTypeMapping> schema =
-        Map.of(TEST_COLUMN, DataTypeMapping.STRING, CONTROL_COLUMN, DataTypeMapping.STRING);
+    Map<String, DataTypeMapping> schema = Map.of(columnName, datatype);
     recordDao.createRecordType(
         COLLECTION_UUID, schema, TEST_TYPE, RelationCollection.empty(), PRIMARY_KEY);
 
     // build the by-column filter
     SearchFilter searchFilter =
-        new SearchFilter(Optional.empty(), Optional.of(TEST_COLUMN + ":\"" + criteria + "\""));
+        new SearchFilter(Optional.empty(), Optional.of(columnName + ":" + criteria));
 
     SearchRequest searchRequest = new SearchRequest();
     searchRequest.setFilter(Optional.of(searchFilter));
 
-    // what value should we use for the control column?
-    Supplier<Object> controlValueSupplier = () -> "don't match on" + criteria + ", please";
-
     // perform the filter, should return zero
-    filterAndExpect(0, List.of(), searchRequest);
+    filterAndExpect(List.of(), searchRequest);
 
-    // insert a few filler records, then filter again; should still return zero
-    insertFillerRecords(3, criteria, controlValueSupplier);
-    filterAndExpect(0, List.of(), searchRequest);
+    // load the test data
+    loadTestData();
 
-    // insert a findable record and a few more filler records, then filter; should return 1
-    List<String> findOne = insertFindableRecords(1, criteria);
-    insertFillerRecords(3, criteria, controlValueSupplier);
-    filterAndExpect(1, findOne, searchRequest);
-
-    // insert two more findable records, with the criteria uppercased, then filter; should return 3
-    List<String> findTwo = insertFindableRecords(2, criteria.toUpperCase());
-    List<String> findOneAndTwo = Stream.concat(findOne.stream(), findTwo.stream()).toList();
-    filterAndExpect(3, findOneAndTwo, searchRequest);
+    // perform the filter again, should return expected results
+    filterAndExpect(expectedIds, searchRequest);
   }
 
   @Test
   void unknownColumn() {
     // init the record type. This allows us to query the table prior to inserting any records.
-    Map<String, DataTypeMapping> schema =
-        Map.of(TEST_COLUMN, DataTypeMapping.STRING, CONTROL_COLUMN, DataTypeMapping.STRING);
+    Map<String, DataTypeMapping> schema = Map.of("test-column", DataTypeMapping.STRING);
     recordDao.createRecordType(
         COLLECTION_UUID, schema, TEST_TYPE, RelationCollection.empty(), PRIMARY_KEY);
 
@@ -151,38 +203,34 @@ class RecordOrchestratorServiceFilterQueryTest extends TestBase {
   // if the user specifies filter.query but provides ""
   @Test
   void emptyQuery() {
-    String criteria = "foo";
-
     // build the search request, specifying "" for query
     SearchFilter searchFilter = new SearchFilter(Optional.empty(), Optional.of(""));
     SearchRequest searchRequest = new SearchRequest();
     searchRequest.setFilter(Optional.of(searchFilter));
 
-    // what value should we use for the control column?
-    Supplier<Object> controlValueSupplier = () -> "don't match on" + criteria + ", please";
-
-    // create some records
-    List<String> recordIds = insertFillerRecords(3, criteria, controlValueSupplier);
+    // load the test data
+    loadTestData();
 
     // perform the filter, should return three
-    filterAndExpect(3, recordIds, searchRequest);
+    filterAndExpect(List.of("1", "2", "3"), searchRequest);
   }
 
   // what if the user specifies the primary key column for the filter?
   @Test
   void filterOnPrimaryKey() {
-    // insert a few records
-    List<String> insertedIds = insertFindableRecords(5, "here's some text");
+    // load the test data
+    loadTestData();
 
     // for each inserted record, perform a search for its id and expect to find just that record
-    insertedIds.forEach(
-        id -> {
-          SearchFilter searchFilter =
-              new SearchFilter(Optional.empty(), Optional.of(PRIMARY_KEY + ":" + id));
-          SearchRequest searchRequest = new SearchRequest();
-          searchRequest.setFilter(Optional.of(searchFilter));
-          filterAndExpect(1, List.of(id), searchRequest);
-        });
+    List.of("1", "2", "3")
+        .forEach(
+            id -> {
+              SearchFilter searchFilter =
+                  new SearchFilter(Optional.empty(), Optional.of(PRIMARY_KEY + ":" + id));
+              SearchRequest searchRequest = new SearchRequest();
+              searchRequest.setFilter(Optional.of(searchFilter));
+              filterAndExpect(List.of(id), searchRequest);
+            });
   }
 
   // can users search for null as a column value?
@@ -190,55 +238,15 @@ class RecordOrchestratorServiceFilterQueryTest extends TestBase {
   @Test
   void filterForNull() {
     // AJ-1238
-    Assertions.fail("not implemented yet");
+    fail("not implemented yet");
   }
 
   // can users search multiple columns at once?
   @Disabled("we don't support multiple columns yet")
   @Test
   void filterMultipleColumns() {
-    // init the record type. This allows us to query the table prior to inserting any records.
-    Map<String, DataTypeMapping> schema =
-        Map.of(TEST_COLUMN, DataTypeMapping.STRING, CONTROL_COLUMN, DataTypeMapping.STRING);
-    recordDao.createRecordType(
-        COLLECTION_UUID, schema, TEST_TYPE, RelationCollection.empty(), PRIMARY_KEY);
-
-    String criteria1 = "mack";
-    String criteria2 = "bentley";
-
-    // build the by-column filters: separate criteria for test and control columns
-    SearchFilter searchFilter =
-        new SearchFilter(
-            Optional.empty(),
-            Optional.of(
-                TEST_COLUMN + ":" + criteria1 + " AND " + CONTROL_COLUMN + ":" + criteria2));
-
-    SearchRequest searchRequest = new SearchRequest();
-    searchRequest.setFilter(Optional.of(searchFilter));
-
-    // what value should we use for the control column?
-    Supplier<Object> controlValueSupplier = () -> UUID.randomUUID().toString();
-
-    // perform the filter, should return zero
-    filterAndExpect(0, List.of(), searchRequest);
-
-    // insert a few filler records, then filter again; should still return zero
-    insertFillerRecords(3, criteria1, controlValueSupplier);
-    filterAndExpect(0, List.of(), searchRequest);
-
-    // insert a findable record and a few more filler records, then filter; should return 1
-    // these findable records use insertFillerRecords() to create records with findable
-    // criteria in the control column.
-    List<String> findOne = insertFillerRecords(1, criteria2, () -> criteria1);
-    insertFillerRecords(3, criteria1, controlValueSupplier);
-    filterAndExpect(1, findOne, searchRequest);
-
-    // insert two more findable records, then filter; should return 3
-    // these findable records use insertFillerRecords() to create records with findable
-    // criteria in the control column.
-    List<String> findTwo = insertFillerRecords(2, criteria2, () -> criteria1);
-    List<String> findOneAndTwo = Stream.concat(findOne.stream(), findTwo.stream()).toList();
-    filterAndExpect(3, findOneAndTwo, searchRequest);
+    // AJ-1238
+    fail("not implemented yet");
   }
 
   // the "totalRecords" value in the response is the *unfiltered* count. Should it be the filtered
@@ -248,57 +256,27 @@ class RecordOrchestratorServiceFilterQueryTest extends TestBase {
   @Test
   void totalRecordsIsCorrect() {
     // TODO AJ-1238
-    Assertions.fail("need decisions on the response payload");
+    fail("need decisions on the response payload");
   }
 
-  private void filterAndExpect(
-      int expectedCount, List<String> expectedIds, SearchRequest searchRequest) {
+  private void filterAndExpect(List<String> expectedIds, SearchRequest searchRequest) {
     RecordQueryResponse resp =
         recordOrchestratorService.queryForRecords(
             COLLECTION_UUID, TEST_TYPE, VERSION, searchRequest);
-    assertEquals(expectedCount, resp.records().size(), "incorrect result count");
+    assertEquals(expectedIds.size(), resp.records().size(), "incorrect result count");
     // extract record ids from the response
     List<String> actualIds = resp.records().stream().map(RecordResponse::recordId).toList();
     assertThat(expectedIds).hasSameElementsAs(actualIds);
   }
 
-  // create a record with a value which should be found by our filter. This record has the
-  // expected value in both the TEST and CONTROL columns; the filter should find it in the
-  // TEST column.
-  private List<String> insertFindableRecords(int count, Object testVal) {
-    RecordAttributes attrs = RecordAttributes.empty(PRIMARY_KEY);
-    attrs.putAttribute(TEST_COLUMN, testVal);
-    attrs.putAttribute(CONTROL_COLUMN, testVal);
-    return IntStream.range(0, count).mapToObj(i -> insertRecord(attrs)).toList();
-  }
-
-  // create a record with a value which should NOT be found by our filter. This record has the
-  // expected value in the CONTROL column and a dummy value in the TEST column; the filter should
-  // hit on neither of these.
-  private List<String> insertFillerRecords(
-      int count, Object testVal, Supplier<Object> dummySupplier) {
-    RecordAttributes attrs = RecordAttributes.empty(PRIMARY_KEY);
-    attrs.putAttribute(TEST_COLUMN, dummySupplier.get());
-    attrs.putAttribute(CONTROL_COLUMN, testVal);
-    return IntStream.range(0, count).mapToObj(i -> insertRecord(attrs)).toList();
-  }
-
-  private String insertRecord(RecordAttributes attrs) {
-    String newRecordId = UUID.randomUUID().toString();
-
-    RecordRequest recordRequest = new RecordRequest(attrs);
-
-    ResponseEntity<RecordResponse> response =
-        recordOrchestratorService.upsertSingleRecord(
-            COLLECTION_UUID,
-            VERSION,
-            TEST_TYPE,
-            newRecordId,
-            Optional.of(PRIMARY_KEY),
-            recordRequest);
-
-    assertEquals(newRecordId, Objects.requireNonNull(response.getBody()).recordId());
-
-    return newRecordId;
+  private void loadTestData() {
+    try {
+      MockMultipartFile testTsv =
+          new MockMultipartFile("testdata.tsv", testDataTsv.getInputStream());
+      recordOrchestratorService.tsvUpload(
+          COLLECTION_UUID, "v0.2", TEST_TYPE, Optional.empty(), testTsv);
+    } catch (Exception e) {
+      fail(e);
+    }
   }
 }
