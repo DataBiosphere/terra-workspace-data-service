@@ -4,6 +4,7 @@ import java.util.List;
 import java.util.UUID;
 import org.databiosphere.workspacedataservice.annotations.DeploymentMode.DataPlane;
 import org.databiosphere.workspacedataservice.generated.CollectionApi;
+import org.databiosphere.workspacedataservice.generated.CollectionRequestServerModel;
 import org.databiosphere.workspacedataservice.generated.CollectionServerModel;
 import org.databiosphere.workspacedataservice.service.CollectionService;
 import org.databiosphere.workspacedataservice.service.PermissionService;
@@ -36,15 +37,15 @@ public class CollectionController implements CollectionApi {
    * id.
    *
    * @param workspaceId Workspace id (required)
-   * @param collectionServerModel The collection to create (required)
+   * @param collectionRequestServerModel The collection to create (required)
    * @return The collection just created. (status code 201)
    */
   @Override
   public ResponseEntity<CollectionServerModel> createCollectionV1(
-      UUID workspaceId, CollectionServerModel collectionServerModel) {
+      UUID workspaceId, CollectionRequestServerModel collectionRequestServerModel) {
     permissionService.requireWritePermission(WorkspaceId.of(workspaceId));
     CollectionServerModel coll =
-        collectionService.save(WorkspaceId.of(workspaceId), collectionServerModel);
+        collectionService.save(WorkspaceId.of(workspaceId), collectionRequestServerModel);
     return new ResponseEntity<>(coll, HttpStatus.CREATED);
   }
 
@@ -93,21 +94,23 @@ public class CollectionController implements CollectionApi {
 
   /**
    * PUT /collections/v1/{workspaceId}/{collectionId} : Update the specified collection.
-   * WdsCollection id is optional in the request body. If specified, it must match the collection id
-   * specified in the url.
    *
    * @param workspaceId Workspace id (required)
    * @param collectionId WdsCollection id (required)
-   * @param collectionServerModel The collection to update (required)
+   * @param collectionRequestServerModel The collection to update (required)
    * @return The collection just updated. (status code 200)
    */
   @Override
   public ResponseEntity<CollectionServerModel> updateCollectionV1(
-      UUID workspaceId, UUID collectionId, CollectionServerModel collectionServerModel) {
+      UUID workspaceId,
+      UUID collectionId,
+      CollectionRequestServerModel collectionRequestServerModel) {
     permissionService.requireWritePermission(WorkspaceId.of(workspaceId));
     CollectionServerModel coll =
         collectionService.update(
-            WorkspaceId.of(workspaceId), CollectionId.of(collectionId), collectionServerModel);
+            WorkspaceId.of(workspaceId),
+            CollectionId.of(collectionId),
+            collectionRequestServerModel);
     return new ResponseEntity<>(coll, HttpStatus.OK);
   }
 }

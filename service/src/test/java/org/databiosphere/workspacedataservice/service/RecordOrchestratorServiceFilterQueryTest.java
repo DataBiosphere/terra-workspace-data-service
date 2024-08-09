@@ -1,6 +1,5 @@
 package org.databiosphere.workspacedataservice.service;
 
-import static java.util.UUID.randomUUID;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.databiosphere.workspacedataservice.service.RecordUtils.VERSION;
 import static org.junit.Assert.assertThrows;
@@ -15,6 +14,7 @@ import java.util.stream.Stream;
 import org.databiosphere.workspacedataservice.common.TestBase;
 import org.databiosphere.workspacedataservice.config.TwdsProperties;
 import org.databiosphere.workspacedataservice.dao.RecordDao;
+import org.databiosphere.workspacedataservice.generated.CollectionRequestServerModel;
 import org.databiosphere.workspacedataservice.generated.CollectionServerModel;
 import org.databiosphere.workspacedataservice.search.InvalidQueryException;
 import org.databiosphere.workspacedataservice.service.model.DataTypeMapping;
@@ -58,7 +58,7 @@ class RecordOrchestratorServiceFilterQueryTest extends TestBase {
   @Value("classpath:searchfilter/testdata.tsv")
   Resource testDataTsv;
 
-  private static final UUID COLLECTION_UUID = randomUUID();
+  private UUID testCollectionId;
   private static final RecordType TEST_TYPE = RecordType.valueOf("test");
 
   private static final String PRIMARY_KEY = "test_id";
@@ -76,11 +76,14 @@ class RecordOrchestratorServiceFilterQueryTest extends TestBase {
     // delete all existing collections
     cleanupAll();
     // create our collection
-    CollectionServerModel coll =
-        new CollectionServerModel(
+    CollectionRequestServerModel coll =
+        new CollectionRequestServerModel(
             "unit-test", "RecordOrchestratorServiceFilterQueryTest unit test collection");
-    coll.id(COLLECTION_UUID);
-    collectionService.save(twdsProperties.workspaceId(), coll);
+
+    CollectionServerModel actual = collectionService.save(twdsProperties.workspaceId(), coll);
+
+    // save the created collection's id for use in tests
+    testCollectionId = actual.getId();
   }
 
   @AfterAll
@@ -157,7 +160,7 @@ class RecordOrchestratorServiceFilterQueryTest extends TestBase {
     // init the record type. This allows us to query the table prior to inserting any records.
     Map<String, DataTypeMapping> schema = Map.of(columnName, datatype);
     recordDao.createRecordType(
-        COLLECTION_UUID, schema, TEST_TYPE, RelationCollection.empty(), PRIMARY_KEY);
+        testCollectionId, schema, TEST_TYPE, RelationCollection.empty(), PRIMARY_KEY);
 
     // build the by-column filter
     SearchFilter searchFilter =
@@ -181,7 +184,7 @@ class RecordOrchestratorServiceFilterQueryTest extends TestBase {
     // init the record type. This allows us to query the table prior to inserting any records.
     Map<String, DataTypeMapping> schema = Map.of("test-column", DataTypeMapping.STRING);
     recordDao.createRecordType(
-        COLLECTION_UUID, schema, TEST_TYPE, RelationCollection.empty(), PRIMARY_KEY);
+        testCollectionId, schema, TEST_TYPE, RelationCollection.empty(), PRIMARY_KEY);
 
     // build the by-column filter, using a column name that doesn't exist in the record type
     SearchFilter searchFilter = new SearchFilter(Optional.empty(), Optional.of("unknown:criteria"));
@@ -194,7 +197,7 @@ class RecordOrchestratorServiceFilterQueryTest extends TestBase {
             InvalidQueryException.class,
             () ->
                 recordOrchestratorService.queryForRecords(
-                    COLLECTION_UUID, TEST_TYPE, VERSION, searchRequest));
+                    testCollectionId, TEST_TYPE, VERSION, searchRequest));
     assertEquals(
         "Column specified in query does not exist in this record type",
         validationException.getMessage());
@@ -262,7 +265,7 @@ class RecordOrchestratorServiceFilterQueryTest extends TestBase {
   private void filterAndExpect(List<String> expectedIds, SearchRequest searchRequest) {
     RecordQueryResponse resp =
         recordOrchestratorService.queryForRecords(
-            COLLECTION_UUID, TEST_TYPE, VERSION, searchRequest);
+            testCollectionId, TEST_TYPE, VERSION, searchRequest);
     assertEquals(expectedIds.size(), resp.records().size(), "incorrect result count");
     // extract record ids from the response
     List<String> actualIds = resp.records().stream().map(RecordResponse::recordId).toList();
@@ -274,7 +277,7 @@ class RecordOrchestratorServiceFilterQueryTest extends TestBase {
       MockMultipartFile testTsv =
           new MockMultipartFile("testdata.tsv", testDataTsv.getInputStream());
       recordOrchestratorService.tsvUpload(
-          COLLECTION_UUID, "v0.2", TEST_TYPE, Optional.empty(), testTsv);
+          testCollectionId, "v0.2", TEST_TYPE, Optional.empty(), testTsv);
     } catch (Exception e) {
       fail(e);
     }
