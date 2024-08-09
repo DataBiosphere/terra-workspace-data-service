@@ -90,7 +90,7 @@ public class CollectionService {
       throw new ValidationException("Cannot create collection in this workspace.");
     }
 
-    // always generate the collection id; ignore anything specified by the caller
+    // generate a collection id
     CollectionId collectionId = CollectionId.of(UUID.randomUUID());
 
     // translate CollectionServerModel to WdsCollection
