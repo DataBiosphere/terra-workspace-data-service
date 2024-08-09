@@ -51,7 +51,6 @@ import org.databiosphere.workspacedataservice.service.model.exception.ConflictEx
 import org.databiosphere.workspacedataservice.service.model.exception.InvalidRelationException;
 import org.databiosphere.workspacedataservice.service.model.exception.MissingObjectException;
 import org.databiosphere.workspacedataservice.service.model.exception.SerializationException;
-import org.databiosphere.workspacedataservice.service.model.exception.ValidationException;
 import org.databiosphere.workspacedataservice.shared.model.AttributeComparator;
 import org.databiosphere.workspacedataservice.shared.model.Record;
 import org.databiosphere.workspacedataservice.shared.model.RecordAttributes;
@@ -320,18 +319,7 @@ public class RecordDao {
     // if this query has specified filter.query, populate the where clause and bind params
     Optional<String> filterQuery = searchFilter.flatMap(SearchFilter::query);
     if (filterQuery.isPresent()) {
-      WhereClausePart queryPart = new QueryParser().parse(filterQuery.get());
-      for (String column : queryPart.columns()) {
-        if (!schema.containsKey(column)) {
-          throw new ValidationException(
-              "Column specified in query does not exist in this record type");
-        }
-        var datatype = schema.get(column);
-        if (!DataTypeMapping.STRING.equals(datatype)) {
-          throw new ValidationException("Column specified in query must be a string type");
-        }
-      }
-
+      WhereClausePart queryPart = new QueryParser(schema).parse(filterQuery.get());
       clauses.addAll(queryPart.clauses());
       sqlParams.addValues(queryPart.values());
     }
