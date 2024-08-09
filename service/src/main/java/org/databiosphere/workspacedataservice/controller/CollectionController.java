@@ -94,8 +94,6 @@ public class CollectionController implements CollectionApi {
 
   /**
    * PUT /collections/v1/{workspaceId}/{collectionId} : Update the specified collection.
-   * WdsCollection id is optional in the request body. If specified, it must match the collection id
-   * specified in the url.
    *
    * @param workspaceId Workspace id (required)
    * @param collectionId WdsCollection id (required)

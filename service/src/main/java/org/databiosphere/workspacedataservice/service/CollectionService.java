@@ -193,8 +193,6 @@ public class CollectionService {
    * @param workspaceId the workspace containing the collection to be updated
    * @param collectionId id of the collection to be updated
    * @param collectionRequestServerModel object containing the updated name and description.
-   *     Collection id is optional in this object. If specified, it must match the collectionId
-   *     argument.
    * @return the updated collection
    */
   public CollectionServerModel update(
