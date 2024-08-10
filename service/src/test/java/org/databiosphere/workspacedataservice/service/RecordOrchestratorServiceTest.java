@@ -45,10 +45,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.test.context.ActiveProfiles;
 import org.springframework.web.server.ResponseStatusException;
 
-@ActiveProfiles(profiles = {"mock-sam"})
 @SpringBootTest
 class RecordOrchestratorServiceTest extends TestBase {
 

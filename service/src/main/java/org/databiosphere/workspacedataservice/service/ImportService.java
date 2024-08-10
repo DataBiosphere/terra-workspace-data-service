@@ -21,8 +21,6 @@ import org.databiosphere.workspacedataservice.generated.GenericJobServerModel;
 import org.databiosphere.workspacedataservice.generated.ImportRequestServerModel;
 import org.databiosphere.workspacedataservice.generated.ImportRequestServerModel.TypeEnum;
 import org.databiosphere.workspacedataservice.sam.SamDao;
-import org.databiosphere.workspacedataservice.service.model.exception.AuthenticationException;
-import org.databiosphere.workspacedataservice.service.model.exception.AuthenticationMaskableException;
 import org.databiosphere.workspacedataservice.shared.model.CollectionId;
 import org.databiosphere.workspacedataservice.shared.model.Schedulable;
 import org.databiosphere.workspacedataservice.shared.model.WorkspaceId;
@@ -62,29 +60,6 @@ public class ImportService {
       UUID collectionId, ImportRequestServerModel importRequest) {
     // validate collection exists
     collectionService.validateCollection(collectionId);
-
-    // validate write permission
-    boolean hasWriteCollectionPermission =
-        collectionService.canWriteCollection(CollectionId.of(collectionId));
-    logger.debug("hasWriteCollectionPermission? {}", hasWriteCollectionPermission);
-    if (!hasWriteCollectionPermission) {
-      boolean hasReadCollectionPermission = false;
-      try {
-        hasReadCollectionPermission =
-            collectionService.canReadCollection(CollectionId.of(collectionId));
-      } catch (Exception e) {
-        logger.warn("Problem determining read permission for data import: " + e.getMessage(), e);
-      }
-      if (hasReadCollectionPermission) {
-        // If the user has read permission but not write permission, it is safe to throw
-        // a non-maskable auth exception.
-        throw new AuthenticationException("This action requires write permission.");
-      } else {
-        // User does not even have read permission, or we couldn't determine if the user has read
-        // permission, so we throw a maskable exception. This will result in a 404 to the end user.
-        throw new AuthenticationMaskableException("Collection");
-      }
-    }
 
     WorkspaceId workspaceId = collectionService.getWorkspaceId(CollectionId.of(collectionId));
     importValidator.validateImport(importRequest, workspaceId);

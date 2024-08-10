@@ -45,7 +45,7 @@ import org.springframework.test.context.TestPropertySource;
 
 // "local" profile prevents CollectionInitializerBean from running at Spring startup;
 // that way, we can run it when we want to inside our tests.
-@ActiveProfiles({"mock-storage", "local-cors", "mock-sam", "local", "data-plane"})
+@ActiveProfiles({"mock-storage", "local-cors", "local", "data-plane"})
 @TestPropertySource(
     properties = {
       // source id must match value in WDS-integrationTest-LocalFileStorage-input.sql

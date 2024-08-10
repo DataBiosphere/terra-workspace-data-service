@@ -26,7 +26,6 @@ import org.databiosphere.workspacedataservice.service.model.BatchWriteResult;
 import org.databiosphere.workspacedataservice.service.model.DataTypeMapping;
 import org.databiosphere.workspacedataservice.service.model.RecordTypeSchema;
 import org.databiosphere.workspacedataservice.service.model.Relation;
-import org.databiosphere.workspacedataservice.service.model.exception.AuthorizationException;
 import org.databiosphere.workspacedataservice.service.model.exception.BadStreamingWriteRequestException;
 import org.databiosphere.workspacedataservice.service.model.exception.ConflictException;
 import org.databiosphere.workspacedataservice.service.model.exception.DataImportException;
@@ -90,7 +89,7 @@ public class RecordOrchestratorService { // TODO give me a better name
       RecordType recordType,
       String recordId,
       RecordRequest recordRequest) {
-    validateAndPermissions(collectionId, version);
+    validateCollectionAndVersion(collectionId, version);
     checkRecordTypeExists(collectionId, recordType);
     RecordResponse response =
         recordService.updateSingleRecord(collectionId, recordType, recordId, recordRequest);
@@ -99,18 +98,9 @@ public class RecordOrchestratorService { // TODO give me a better name
     return response;
   }
 
-  public void validateAndPermissions(UUID collectionId, String version) {
+  public void validateCollectionAndVersion(UUID collectionId, String version) {
     validateVersion(version);
     collectionService.validateCollection(collectionId);
-
-    // check that the caller has write permissions on the workspace associated with the collectionId
-    boolean hasWriteWorkspacePermission =
-        collectionService.canWriteCollection(CollectionId.of(collectionId));
-    LOGGER.debug("hasWriteWorkspacePermission? {}", hasWriteWorkspacePermission);
-
-    if (!hasWriteWorkspacePermission) {
-      throw new AuthorizationException("Caller does not have permission to write to collection.");
-    }
   }
 
   @ReadTransaction
@@ -134,7 +124,7 @@ public class RecordOrchestratorService { // TODO give me a better name
       Optional<String> primaryKey,
       MultipartFile records)
       throws IOException, DataImportException {
-    validateAndPermissions(collectionId, version);
+    validateCollectionAndVersion(collectionId, version);
     if (recordDao.recordTypeExists(collectionId, recordType)) {
       primaryKey =
           Optional.of(recordService.validatePrimaryKey(collectionId, recordType, primaryKey));
@@ -200,16 +190,20 @@ public class RecordOrchestratorService { // TODO give me a better name
               + MAX_RECORDS
               + ", and offset must be positive.");
     }
+    // retrieve schema to use in validations
+    Map<String, DataTypeMapping> schema =
+        recordDao.getExistingTableSchema(collectionId, recordType);
+
+    // validate sort attribute
     if (searchRequest.getSortAttribute() != null
-        && !recordDao
-            .getExistingTableSchema(collectionId, recordType)
-            .containsKey(searchRequest.getSortAttribute())) {
+        && !schema.containsKey(searchRequest.getSortAttribute())) {
       throw new MissingObjectException("Requested sort attribute");
     }
     int totalRecords = recordDao.countRecords(collectionId, recordType);
     if (searchRequest.getOffset() > totalRecords) {
       return new RecordQueryResponse(searchRequest, Collections.emptyList(), totalRecords);
     }
+
     LOGGER.info("queryForEntities: {}", recordType.getName());
     List<Record> records =
         recordDao.queryForRecords(
@@ -234,7 +228,7 @@ public class RecordOrchestratorService { // TODO give me a better name
       String recordId,
       Optional<String> primaryKey,
       RecordRequest recordRequest) {
-    validateAndPermissions(collectionId, version);
+    validateCollectionAndVersion(collectionId, version);
     ResponseEntity<RecordResponse> response =
         recordService.upsertSingleRecord(
             collectionId, recordType, recordId, primaryKey, recordRequest);
@@ -251,7 +245,7 @@ public class RecordOrchestratorService { // TODO give me a better name
 
   public boolean deleteSingleRecord(
       UUID collectionId, String version, RecordType recordType, String recordId) {
-    validateAndPermissions(collectionId, version);
+    validateCollectionAndVersion(collectionId, version);
     checkRecordTypeExists(collectionId, recordType);
     boolean response = recordService.deleteSingleRecord(collectionId, recordType, recordId);
     activityLogger.saveEventForCurrentUser(
@@ -260,7 +254,7 @@ public class RecordOrchestratorService { // TODO give me a better name
   }
 
   public void deleteRecordType(UUID collectionId, String version, RecordType recordType) {
-    validateAndPermissions(collectionId, version);
+    validateCollectionAndVersion(collectionId, version);
     checkRecordTypeExists(collectionId, recordType);
     recordService.deleteRecordType(collectionId, recordType);
     activityLogger.saveEventForCurrentUser(
@@ -273,7 +267,7 @@ public class RecordOrchestratorService { // TODO give me a better name
       RecordType recordType,
       String attribute,
       String newAttributeName) {
-    validateAndPermissions(collectionId, version);
+    validateCollectionAndVersion(collectionId, version);
     checkRecordTypeExists(collectionId, recordType);
     validateRenameAttribute(collectionId, recordType, attribute, newAttributeName);
     recordService.renameAttribute(collectionId, recordType, attribute, newAttributeName);
@@ -306,7 +300,7 @@ public class RecordOrchestratorService { // TODO give me a better name
       RecordType recordType,
       String attribute,
       String newDataType) {
-    validateAndPermissions(collectionId, version);
+    validateCollectionAndVersion(collectionId, version);
     checkRecordTypeExists(collectionId, recordType);
     RecordTypeSchema schema = getSchemaDescription(collectionId, recordType);
     if (schema.isPrimaryKey(attribute)) {
@@ -334,7 +328,7 @@ public class RecordOrchestratorService { // TODO give me a better name
 
   public void deleteAttribute(
       UUID collectionId, String version, RecordType recordType, String attribute) {
-    validateAndPermissions(collectionId, version);
+    validateCollectionAndVersion(collectionId, version);
     checkRecordTypeExists(collectionId, recordType);
     validateDeleteAttribute(collectionId, recordType, attribute);
     recordService.deleteAttribute(collectionId, recordType, attribute);
@@ -379,7 +373,7 @@ public class RecordOrchestratorService { // TODO give me a better name
       Optional<String> primaryKey,
       InputStream is)
       throws DataImportException {
-    validateAndPermissions(collectionId, version);
+    validateCollectionAndVersion(collectionId, version);
     if (recordDao.recordTypeExists(collectionId, recordType)) {
       recordService.validatePrimaryKey(collectionId, recordType, primaryKey);
     }

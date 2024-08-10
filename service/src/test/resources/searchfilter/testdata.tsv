@@ -1,0 +1,4 @@
+test_id	str	arrstr	num	arrnum
+1	hello world	["hello", "world", "how", "are", "you"]	42	[31,41,59]
+2	Hello World	["Hello", "World"]	42	[31,41]
+3	goodbye	["ONE", "TWO", "THREE"]	-1.23	[1,2,3]

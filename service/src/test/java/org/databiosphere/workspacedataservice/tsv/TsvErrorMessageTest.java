@@ -22,16 +22,16 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
 import org.springframework.mock.web.MockMultipartFile;
-import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.TestPropertySource;
 
-@ActiveProfiles(profiles = "mock-sam")
 @SpringBootTest
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 @TestPropertySource(
     properties = {
       "twds.tenancy.enforce-collections-match-workspace-id=false", // TODO(AJ-1682): get rid of this
     })
+@DirtiesContext
 class TsvErrorMessageTest extends TestBase {
 
   @Autowired CollectionService collectionService;

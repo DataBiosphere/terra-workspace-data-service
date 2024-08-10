@@ -24,6 +24,7 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.stream.IntStream;
 import org.databiosphere.workspacedata.model.ErrorResponse;
+import org.databiosphere.workspacedataservice.generated.CollectionRequestServerModel;
 import org.databiosphere.workspacedataservice.generated.CollectionServerModel;
 import org.databiosphere.workspacedataservice.sam.MockSamAuthorizationDao;
 import org.databiosphere.workspacedataservice.sam.SamAuthorizationDao;
@@ -94,15 +95,13 @@ class CollectionControllerMockMvcTest extends MockMvcTestBase {
   }
 
   @Test
-  // create a collection, specifying the collection id in the request
-  void createCollectionWithId() throws Exception {
+  void createCollection() throws Exception {
     WorkspaceId workspaceId = WorkspaceId.of(UUID.randomUUID());
-    CollectionId collectionId = CollectionId.of(UUID.randomUUID());
     String name = "test-name";
     String description = "unit test description";
 
-    CollectionServerModel collectionServerModel = new CollectionServerModel(name, description);
-    collectionServerModel.id(collectionId.id());
+    CollectionRequestServerModel collectionRequestServerModel =
+        new CollectionRequestServerModel(name, description);
 
     stubWriteWorkspacePermission(workspaceId).thenReturn(true);
 
@@ -111,41 +110,7 @@ class CollectionControllerMockMvcTest extends MockMvcTestBase {
         mockMvc
             .perform(
                 post("/collections/v1/{workspaceId}", workspaceId)
-                    .content(toJson(collectionServerModel))
-                    .contentType(MediaType.APPLICATION_JSON))
-            .andExpect(status().isCreated())
-            .andReturn();
-
-    CollectionServerModel actualResponse =
-        objectMapper.readValue(
-            mvcResult.getResponse().getContentAsString(), CollectionServerModel.class);
-
-    assertNotNull(actualResponse);
-    assertEquals(collectionId.id(), actualResponse.getId(), "incorrect collection id");
-    assertEquals(name, actualResponse.getName(), "incorrect collection name");
-    assertEquals(description, actualResponse.getDescription(), "incorrect collection description");
-
-    // the collection should exist in the db
-    assertCollectionExists(workspaceId, collectionId, name, description);
-  }
-
-  @Test
-  // create a collection without specifying the collection id in the request
-  void createCollectionWithoutId() throws Exception {
-    WorkspaceId workspaceId = WorkspaceId.of(UUID.randomUUID());
-    String name = "test-name";
-    String description = "unit test description";
-
-    CollectionServerModel collectionServerModel = new CollectionServerModel(name, description);
-
-    stubWriteWorkspacePermission(workspaceId).thenReturn(true);
-
-    // calling the API should result in 201 Created
-    MvcResult mvcResult =
-        mockMvc
-            .perform(
-                post("/collections/v1/{workspaceId}", workspaceId)
-                    .content(toJson(collectionServerModel))
+                    .content(toJson(collectionRequestServerModel))
                     .contentType(MediaType.APPLICATION_JSON))
             .andExpect(status().isCreated())
             .andReturn();
@@ -164,68 +129,26 @@ class CollectionControllerMockMvcTest extends MockMvcTestBase {
   }
 
   @Test
-  void createCollectionIdConflict() throws Exception {
-    WorkspaceId workspaceId = WorkspaceId.of(UUID.randomUUID());
-    CollectionId collectionId = CollectionId.of(UUID.randomUUID());
-    String name = "test-name";
-    String description = "unit test description";
-
-    CollectionServerModel collectionServerModel = new CollectionServerModel(name, description);
-    collectionServerModel.id(collectionId.id());
-
-    stubWriteWorkspacePermission(workspaceId).thenReturn(true);
-
-    // create the collection
-    collectionService.save(workspaceId, collectionServerModel);
-    // assert it created
-    assertCollectionExists(workspaceId, collectionId, name, description);
-
-    // generate a new collection request with a different name/description but the same id
-    CollectionServerModel conflictRequest =
-        new CollectionServerModel("different-name", "different description");
-    conflictRequest.id(collectionId.id());
-
-    // attempt to create the same id again via the API; should result in 409 Conflict
-    MvcResult mvcResult =
-        mockMvc
-            .perform(
-                post("/collections/v1/{workspaceId}", workspaceId)
-                    .content(toJson(conflictRequest))
-                    .contentType(MediaType.APPLICATION_JSON))
-            .andExpect(status().isConflict())
-            .andReturn();
-
-    // verify error message
-    assertInstanceOf(ConflictException.class, mvcResult.getResolvedException());
-    assertEquals(
-        "Collection with this id already exists", mvcResult.getResolvedException().getMessage());
-
-    // original collection should remain untouched
-    assertCollectionExists(workspaceId, collectionId, name, description);
-  }
-
-  @Test
   void createCollectionNameConflict() throws Exception {
     WorkspaceId workspaceId = WorkspaceId.of(UUID.randomUUID());
-    CollectionId collectionId = CollectionId.of(UUID.randomUUID());
     String name = "test-name";
     String description = "unit test description";
 
-    CollectionServerModel collectionServerModel = new CollectionServerModel(name, description);
-    collectionServerModel.id(collectionId.id());
+    CollectionRequestServerModel collectionRequestServerModel =
+        new CollectionRequestServerModel(name, description);
 
     stubWriteWorkspacePermission(workspaceId).thenReturn(true);
 
     // create the collection
-    collectionService.save(workspaceId, collectionServerModel);
+    CollectionServerModel actual =
+        collectionService.save(workspaceId, collectionRequestServerModel);
     // assert it created
-    assertCollectionExists(workspaceId, collectionId, name, description);
+    assertCollectionExists(workspaceId, actual.getId(), name, description);
 
     // generate a new collection request with a different id and description but the same name
     CollectionId conflictId = CollectionId.of(UUID.randomUUID());
-    CollectionServerModel conflictRequest =
-        new CollectionServerModel(name, "different description");
-    conflictRequest.id(conflictId.id());
+    CollectionRequestServerModel conflictRequest =
+        new CollectionRequestServerModel(name, "different description");
 
     // attempt to create the same id again via the API; should result in 409 Conflict
     MvcResult mvcResult =
@@ -246,18 +169,17 @@ class CollectionControllerMockMvcTest extends MockMvcTestBase {
     // new collection should not have been created
     assertCollectionDoesNotExist(conflictId);
     // original collection should remain untouched
-    assertCollectionExists(workspaceId, collectionId, name, description);
+    assertCollectionExists(workspaceId, actual.getId(), name, description);
   }
 
   @Test
   void createCollectionInvalidName() throws Exception {
     WorkspaceId workspaceId = WorkspaceId.of(UUID.randomUUID());
-    CollectionId collectionId = CollectionId.of(UUID.randomUUID());
     String name = "whoa! this is an illegal name with spaces and an exclamation mark";
     String description = "unit test description";
 
-    CollectionServerModel collectionServerModel = new CollectionServerModel(name, description);
-    collectionServerModel.id(collectionId.id());
+    CollectionRequestServerModel collectionRequestServerModel =
+        new CollectionRequestServerModel(name, description);
 
     stubWriteWorkspacePermission(workspaceId).thenReturn(true);
 
@@ -267,7 +189,7 @@ class CollectionControllerMockMvcTest extends MockMvcTestBase {
         mockMvc
             .perform(
                 post("/collections/v1/{workspaceId}", workspaceId)
-                    .content(toJson(collectionServerModel))
+                    .content(toJson(collectionRequestServerModel))
                     .contentType(MediaType.APPLICATION_JSON))
             .andExpect(status().isBadRequest())
             .andReturn();
@@ -280,18 +202,17 @@ class CollectionControllerMockMvcTest extends MockMvcTestBase {
     assertEquals("name: must match \"[a-zA-Z0-9-_]{1,128}\"", errorResponse.getMessage());
 
     // new collection should not have been created
-    assertCollectionDoesNotExist(collectionId);
+    assertCollectionDoesNotExist(name);
   }
 
   @Test
   void createCollectionReadonlyWorkspacePermission() throws Exception {
     WorkspaceId workspaceId = WorkspaceId.of(UUID.randomUUID());
-    CollectionId collectionId = CollectionId.of(UUID.randomUUID());
     String name = "test-name";
     String description = "unit test description";
 
-    CollectionServerModel collectionServerModel = new CollectionServerModel(name, description);
-    collectionServerModel.id(collectionId.id());
+    CollectionRequestServerModel collectionRequestServerModel =
+        new CollectionRequestServerModel(name, description);
 
     stubWriteWorkspacePermission(workspaceId).thenReturn(false);
     stubReadWorkspacePermission(workspaceId).thenReturn(true);
@@ -300,7 +221,7 @@ class CollectionControllerMockMvcTest extends MockMvcTestBase {
         mockMvc
             .perform(
                 post("/collections/v1/{workspaceId}", workspaceId)
-                    .content(toJson(collectionServerModel))
+                    .content(toJson(collectionRequestServerModel))
                     .contentType(MediaType.APPLICATION_JSON))
             .andExpect(status().isForbidden())
             .andReturn();
@@ -308,22 +229,21 @@ class CollectionControllerMockMvcTest extends MockMvcTestBase {
     // verify error message
     assertInstanceOf(AuthorizationException.class, mvcResult.getResolvedException());
     assertEquals(
-        "403 FORBIDDEN \"Caller does not have permission to create collection.\"",
+        "403 FORBIDDEN \"You are not allowed to write this workspace\"",
         mvcResult.getResolvedException().getMessage());
 
     // new collection should not have been created
-    assertCollectionDoesNotExist(collectionId);
+    assertCollectionDoesNotExist(name);
   }
 
   @Test
   void createCollectionNoWorkspacePermission() throws Exception {
     WorkspaceId workspaceId = WorkspaceId.of(UUID.randomUUID());
-    CollectionId collectionId = CollectionId.of(UUID.randomUUID());
     String name = "test-name";
     String description = "unit test description";
 
-    CollectionServerModel collectionServerModel = new CollectionServerModel(name, description);
-    collectionServerModel.id(collectionId.id());
+    CollectionRequestServerModel collectionRequestServerModel =
+        new CollectionRequestServerModel(name, description);
 
     stubWriteWorkspacePermission(workspaceId).thenReturn(false);
     stubReadWorkspacePermission(workspaceId).thenReturn(false);
@@ -332,7 +252,7 @@ class CollectionControllerMockMvcTest extends MockMvcTestBase {
         mockMvc
             .perform(
                 post("/collections/v1/{workspaceId}", workspaceId)
-                    .content(toJson(collectionServerModel))
+                    .content(toJson(collectionRequestServerModel))
                     .contentType(MediaType.APPLICATION_JSON))
             .andExpect(status().isNotFound())
             .andReturn();
@@ -349,7 +269,7 @@ class CollectionControllerMockMvcTest extends MockMvcTestBase {
         errorResponse.getMessage());
 
     // new collection should not have been created
-    assertCollectionDoesNotExist(collectionId);
+    assertCollectionDoesNotExist(name);
   }
 
   @Test
@@ -395,7 +315,7 @@ class CollectionControllerMockMvcTest extends MockMvcTestBase {
 
     assertInstanceOf(AuthorizationException.class, mvcResult.getResolvedException());
     assertEquals(
-        "403 FORBIDDEN \"Caller does not have permission to delete collections from this workspace.\"",
+        "403 FORBIDDEN \"You are not allowed to write this workspace\"",
         mvcResult.getResolvedException().getMessage());
   }
 
@@ -448,7 +368,7 @@ class CollectionControllerMockMvcTest extends MockMvcTestBase {
 
     assertInstanceOf(AuthorizationException.class, mvcResult.getResolvedException());
     assertEquals(
-        "403 FORBIDDEN \"Caller does not have permission to delete collections from this workspace.\"",
+        "403 FORBIDDEN \"You are not allowed to write this workspace\"",
         mvcResult.getResolvedException().getMessage());
 
     // assert collection was not deleted
@@ -542,17 +462,17 @@ class CollectionControllerMockMvcTest extends MockMvcTestBase {
 
     for (int i = 1; i < testSize; i++) {
       // create another collection
-      CollectionId collectionId = CollectionId.of(UUID.randomUUID());
       String name = "test-name-" + i;
       String description = "unit test description " + i;
 
-      CollectionServerModel collectionServerModel = new CollectionServerModel(name, description);
-      collectionServerModel.id(collectionId.id());
+      CollectionRequestServerModel collectionRequestServerModel =
+          new CollectionRequestServerModel(name, description);
 
-      collectionService.save(workspaceId, collectionServerModel);
+      CollectionServerModel actual =
+          collectionService.save(workspaceId, collectionRequestServerModel);
 
       // assert it was created correctly
-      assertCollectionExists(workspaceId, collectionId, name, description);
+      assertCollectionExists(workspaceId, actual.getId(), name, description);
 
       // list collections
       MvcResult mvcResult =
@@ -568,7 +488,7 @@ class CollectionControllerMockMvcTest extends MockMvcTestBase {
       assertEquals(i, collectionServerModelList.size());
       List<UUID> ids =
           collectionServerModelList.stream().map(CollectionServerModel::getId).toList();
-      assertThat(ids).contains(collectionId.id());
+      assertThat(ids).contains(actual.getId());
     }
   }
 
@@ -844,7 +764,8 @@ class CollectionControllerMockMvcTest extends MockMvcTestBase {
     // generate an update request
     String updateName = "updated-name";
     String updateDescription = "updated description";
-    CollectionServerModel updateRequest = new CollectionServerModel(updateName, updateDescription);
+    CollectionRequestServerModel updateRequest =
+        new CollectionRequestServerModel(updateName, updateDescription);
 
     // attempt to update the collection
     MvcResult mvcResult =
@@ -881,7 +802,8 @@ class CollectionControllerMockMvcTest extends MockMvcTestBase {
     // generate an update request
     String updateName = "updated-name";
     String updateDescription = "updated description";
-    CollectionServerModel updateRequest = new CollectionServerModel(updateName, updateDescription);
+    CollectionRequestServerModel updateRequest =
+        new CollectionRequestServerModel(updateName, updateDescription);
 
     // attempt to update the collection
     MvcResult mvcResult =
@@ -895,7 +817,7 @@ class CollectionControllerMockMvcTest extends MockMvcTestBase {
 
     assertInstanceOf(AuthorizationException.class, mvcResult.getResolvedException());
     assertEquals(
-        "403 FORBIDDEN \"Caller does not have permission to update collection.\"",
+        "403 FORBIDDEN \"You are not allowed to write this workspace\"",
         mvcResult.getResolvedException().getMessage());
 
     // collection should not be updated (collection should exist with original name/description)
@@ -920,7 +842,8 @@ class CollectionControllerMockMvcTest extends MockMvcTestBase {
     // generate an update request
     String updateName = "updated-name";
     String updateDescription = "updated description";
-    CollectionServerModel updateRequest = new CollectionServerModel(updateName, updateDescription);
+    CollectionRequestServerModel updateRequest =
+        new CollectionRequestServerModel(updateName, updateDescription);
 
     // attempt to update the collection
     MvcResult mvcResult =
@@ -942,251 +865,6 @@ class CollectionControllerMockMvcTest extends MockMvcTestBase {
     assertEquals(
         "Workspace does not exist or you do not have permission to see it",
         errorResponse.getMessage());
-
-    // collection should not be updated (collection should exist with original name/description)
-    assertCollectionExists(
-        workspaceId,
-        collectionId,
-        collectionServerModel.getName(),
-        collectionServerModel.getDescription());
-  }
-
-  @Test
-  void updateCollectionSpecifyingId() throws Exception {
-    // create a collection as setup
-    WorkspaceId workspaceId = WorkspaceId.of(UUID.randomUUID());
-    CollectionServerModel collectionServerModel = insertCollection(workspaceId);
-    CollectionId collectionId = CollectionId.of(collectionServerModel.getId());
-
-    // ensure write permission
-    stubWriteWorkspacePermission(workspaceId).thenReturn(true);
-
-    // generate an update request
-    String updateName = "updated-name";
-    String updateDescription = "updated description";
-    CollectionServerModel updateRequest = new CollectionServerModel(updateName, updateDescription);
-    updateRequest.id(collectionId.id());
-
-    // attempt to update the collection
-    MvcResult mvcResult =
-        mockMvc
-            .perform(
-                put("/collections/v1/{workspaceId}/{collectionId}", workspaceId, collectionId)
-                    .content(toJson(updateRequest))
-                    .contentType(MediaType.APPLICATION_JSON))
-            .andExpect(status().isOk())
-            .andReturn();
-
-    CollectionServerModel actual =
-        objectMapper.readValue(
-            mvcResult.getResponse().getContentAsString(), CollectionServerModel.class);
-
-    assertEquals(collectionId.id(), actual.getId());
-    assertEquals(updateName, actual.getName());
-    assertEquals(updateDescription, actual.getDescription());
-
-    assertCollectionExists(workspaceId, collectionId, updateName, updateDescription);
-  }
-
-  @Test
-  void updateCollectionSpecifyingIdReadonlyPermission() throws Exception {
-    // create a collection as setup
-    WorkspaceId workspaceId = WorkspaceId.of(UUID.randomUUID());
-    CollectionServerModel collectionServerModel = insertCollection(workspaceId);
-    CollectionId collectionId = CollectionId.of(collectionServerModel.getId());
-
-    // read-only permission
-    stubReadWorkspacePermission(workspaceId).thenReturn(true);
-    stubWriteWorkspacePermission(workspaceId).thenReturn(false);
-
-    // generate an update request
-    String updateName = "updated-name";
-    String updateDescription = "updated description";
-    CollectionServerModel updateRequest = new CollectionServerModel(updateName, updateDescription);
-    updateRequest.id(collectionId.id());
-
-    // attempt to update the collection
-    MvcResult mvcResult =
-        mockMvc
-            .perform(
-                put("/collections/v1/{workspaceId}/{collectionId}", workspaceId, collectionId)
-                    .content(toJson(updateRequest))
-                    .contentType(MediaType.APPLICATION_JSON))
-            .andExpect(status().isForbidden())
-            .andReturn();
-
-    assertInstanceOf(AuthorizationException.class, mvcResult.getResolvedException());
-    assertEquals(
-        "403 FORBIDDEN \"Caller does not have permission to update collection.\"",
-        mvcResult.getResolvedException().getMessage());
-
-    // collection should not be updated (collection should exist with original name/description)
-    assertCollectionExists(
-        workspaceId,
-        collectionId,
-        collectionServerModel.getName(),
-        collectionServerModel.getDescription());
-  }
-
-  @Test
-  void updateCollectionSpecifyingIdNoPermission() throws Exception {
-    // create a collection as setup
-    WorkspaceId workspaceId = WorkspaceId.of(UUID.randomUUID());
-    CollectionServerModel collectionServerModel = insertCollection(workspaceId);
-    CollectionId collectionId = CollectionId.of(collectionServerModel.getId());
-
-    // no permission
-    stubReadWorkspacePermission(workspaceId).thenReturn(false);
-    stubWriteWorkspacePermission(workspaceId).thenReturn(false);
-
-    // generate an update request
-    String updateName = "updated-name";
-    String updateDescription = "updated description";
-    CollectionServerModel updateRequest = new CollectionServerModel(updateName, updateDescription);
-    updateRequest.id(collectionId.id());
-
-    // attempt to update the collection
-    MvcResult mvcResult =
-        mockMvc
-            .perform(
-                put("/collections/v1/{workspaceId}/{collectionId}", workspaceId, collectionId)
-                    .content(toJson(updateRequest))
-                    .contentType(MediaType.APPLICATION_JSON))
-            .andExpect(status().isNotFound())
-            .andReturn();
-
-    // verify error message
-    AuthenticationMaskableException actual =
-        assertInstanceOf(AuthenticationMaskableException.class, mvcResult.getResolvedException());
-    assertEquals("Workspace", actual.getObjectType());
-
-    ErrorResponse errorResponse =
-        objectMapper.readValue(mvcResult.getResponse().getContentAsString(), ErrorResponse.class);
-    assertEquals(
-        "Workspace does not exist or you do not have permission to see it",
-        errorResponse.getMessage());
-
-    // collection should not be updated (collection should exist with original name/description)
-    assertCollectionExists(
-        workspaceId,
-        collectionId,
-        collectionServerModel.getName(),
-        collectionServerModel.getDescription());
-  }
-
-  @Test
-  void updateCollectionMismatchedId() throws Exception {
-    // create a collection as setup
-    WorkspaceId workspaceId = WorkspaceId.of(UUID.randomUUID());
-    CollectionServerModel collectionServerModel = insertCollection(workspaceId);
-    CollectionId collectionId = CollectionId.of(collectionServerModel.getId());
-
-    // ensure write permission
-    stubWriteWorkspacePermission(workspaceId).thenReturn(true);
-
-    // generate an update request
-    String updateName = "updated-name";
-    String updateDescription = "updated description";
-    CollectionServerModel updateRequest = new CollectionServerModel(updateName, updateDescription);
-    // set a mismatched id on the update request
-    updateRequest.id(UUID.randomUUID());
-
-    // attempt to update the collection
-    MvcResult mvcResult =
-        mockMvc
-            .perform(
-                put("/collections/v1/{workspaceId}/{collectionId}", workspaceId, collectionId)
-                    .content(toJson(updateRequest))
-                    .contentType(MediaType.APPLICATION_JSON))
-            .andExpect(status().isBadRequest())
-            .andReturn();
-
-    assertInstanceOf(ValidationException.class, mvcResult.getResolvedException());
-    assertEquals(
-        "Collection id in request body does not match collection id in URL. You can omit the collection id from the request body.",
-        mvcResult.getResolvedException().getMessage());
-
-    // collection should not be updated (collection should exist with original name/description)
-    assertCollectionExists(
-        workspaceId,
-        collectionId,
-        collectionServerModel.getName(),
-        collectionServerModel.getDescription());
-  }
-
-  @Test
-  void updateCollectionMismatchedIdReadonlyPermission() throws Exception {
-    // create a collection as setup
-    WorkspaceId workspaceId = WorkspaceId.of(UUID.randomUUID());
-    CollectionServerModel collectionServerModel = insertCollection(workspaceId);
-    CollectionId collectionId = CollectionId.of(collectionServerModel.getId());
-
-    // read-only permission
-    stubReadWorkspacePermission(workspaceId).thenReturn(true);
-    stubWriteWorkspacePermission(workspaceId).thenReturn(false);
-
-    // generate an update request
-    String updateName = "updated-name";
-    String updateDescription = "updated description";
-    CollectionServerModel updateRequest = new CollectionServerModel(updateName, updateDescription);
-    // set a mismatched id on the update request
-    updateRequest.id(UUID.randomUUID());
-
-    // attempt to update the collection
-    MvcResult mvcResult =
-        mockMvc
-            .perform(
-                put("/collections/v1/{workspaceId}/{collectionId}", workspaceId, collectionId)
-                    .content(toJson(updateRequest))
-                    .contentType(MediaType.APPLICATION_JSON))
-            .andExpect(status().isBadRequest())
-            .andReturn();
-
-    assertInstanceOf(ValidationException.class, mvcResult.getResolvedException());
-    assertEquals(
-        "Collection id in request body does not match collection id in URL. You can omit the collection id from the request body.",
-        mvcResult.getResolvedException().getMessage());
-
-    // collection should not be updated (collection should exist with original name/description)
-    assertCollectionExists(
-        workspaceId,
-        collectionId,
-        collectionServerModel.getName(),
-        collectionServerModel.getDescription());
-  }
-
-  @Test
-  void updateCollectionMismatchedIdNoPermission() throws Exception {
-    // create a collection as setup
-    WorkspaceId workspaceId = WorkspaceId.of(UUID.randomUUID());
-    CollectionServerModel collectionServerModel = insertCollection(workspaceId);
-    CollectionId collectionId = CollectionId.of(collectionServerModel.getId());
-
-    // no permission
-    stubReadWorkspacePermission(workspaceId).thenReturn(false);
-    stubWriteWorkspacePermission(workspaceId).thenReturn(false);
-
-    // generate an update request
-    String updateName = "updated-name";
-    String updateDescription = "updated description";
-    CollectionServerModel updateRequest = new CollectionServerModel(updateName, updateDescription);
-    // set a mismatched id on the update request
-    updateRequest.id(UUID.randomUUID());
-
-    // attempt to update the collection
-    MvcResult mvcResult =
-        mockMvc
-            .perform(
-                put("/collections/v1/{workspaceId}/{collectionId}", workspaceId, collectionId)
-                    .content(toJson(updateRequest))
-                    .contentType(MediaType.APPLICATION_JSON))
-            .andExpect(status().isBadRequest())
-            .andReturn();
-
-    assertInstanceOf(ValidationException.class, mvcResult.getResolvedException());
-    assertEquals(
-        "Collection id in request body does not match collection id in URL. You can omit the collection id from the request body.",
-        mvcResult.getResolvedException().getMessage());
 
     // collection should not be updated (collection should exist with original name/description)
     assertCollectionExists(
@@ -1207,7 +885,8 @@ class CollectionControllerMockMvcTest extends MockMvcTestBase {
     // generate an update request
     String updateName = "updated-name";
     String updateDescription = "updated description";
-    CollectionServerModel updateRequest = new CollectionServerModel(updateName, updateDescription);
+    CollectionRequestServerModel updateRequest =
+        new CollectionRequestServerModel(updateName, updateDescription);
 
     // attempt to update the collection
     MvcResult mvcResult =
@@ -1240,7 +919,8 @@ class CollectionControllerMockMvcTest extends MockMvcTestBase {
     // generate an update request
     String updateName = "updated-name";
     String updateDescription = "updated description";
-    CollectionServerModel updateRequest = new CollectionServerModel(updateName, updateDescription);
+    CollectionRequestServerModel updateRequest =
+        new CollectionRequestServerModel(updateName, updateDescription);
     // attempt to update the collection
     MvcResult mvcResult =
         mockMvc
@@ -1253,7 +933,7 @@ class CollectionControllerMockMvcTest extends MockMvcTestBase {
 
     assertInstanceOf(AuthorizationException.class, mvcResult.getResolvedException());
     assertEquals(
-        "403 FORBIDDEN \"Caller does not have permission to update collection.\"",
+        "403 FORBIDDEN \"You are not allowed to write this workspace\"",
         mvcResult.getResolvedException().getMessage());
 
     // collection should not exist
@@ -1272,7 +952,8 @@ class CollectionControllerMockMvcTest extends MockMvcTestBase {
     // generate an update request
     String updateName = "updated-name";
     String updateDescription = "updated description";
-    CollectionServerModel updateRequest = new CollectionServerModel(updateName, updateDescription);
+    CollectionRequestServerModel updateRequest =
+        new CollectionRequestServerModel(updateName, updateDescription);
     // attempt to update the collection
     MvcResult mvcResult =
         mockMvc
@@ -1312,7 +993,8 @@ class CollectionControllerMockMvcTest extends MockMvcTestBase {
     // generate an update request
     String updateName = "updated-name";
     String updateDescription = "updated description";
-    CollectionServerModel updateRequest = new CollectionServerModel(updateName, updateDescription);
+    CollectionRequestServerModel updateRequest =
+        new CollectionRequestServerModel(updateName, updateDescription);
 
     // attempt to update the collection in workspace two (it really lives in workspace one)
     MvcResult mvcResult =
@@ -1352,7 +1034,8 @@ class CollectionControllerMockMvcTest extends MockMvcTestBase {
     // generate an update request
     String updateName = "updated-name";
     String updateDescription = "updated description";
-    CollectionServerModel updateRequest = new CollectionServerModel(updateName, updateDescription);
+    CollectionRequestServerModel updateRequest =
+        new CollectionRequestServerModel(updateName, updateDescription);
     // attempt to update the collection in workspace two (it really lives in workspace one)
     MvcResult mvcResult =
         mockMvc
@@ -1365,7 +1048,7 @@ class CollectionControllerMockMvcTest extends MockMvcTestBase {
 
     assertInstanceOf(AuthorizationException.class, mvcResult.getResolvedException());
     assertEquals(
-        "403 FORBIDDEN \"Caller does not have permission to update collection.\"",
+        "403 FORBIDDEN \"You are not allowed to write this workspace\"",
         mvcResult.getResolvedException().getMessage());
 
     // collection should not be updated (collection should exist with original name/description)
@@ -1391,7 +1074,8 @@ class CollectionControllerMockMvcTest extends MockMvcTestBase {
     // generate an update request
     String updateName = "updated-name";
     String updateDescription = "updated description";
-    CollectionServerModel updateRequest = new CollectionServerModel(updateName, updateDescription);
+    CollectionRequestServerModel updateRequest =
+        new CollectionRequestServerModel(updateName, updateDescription);
     // attempt to update the collection in workspace two (it really lives in workspace one)
     MvcResult mvcResult =
         mockMvc
@@ -1436,7 +1120,8 @@ class CollectionControllerMockMvcTest extends MockMvcTestBase {
     // generate an update request, trying to rename collection "two" to "one"
     String updateName = "one";
     String updateDescription = "this should fail";
-    CollectionServerModel updateRequest = new CollectionServerModel(updateName, updateDescription);
+    CollectionRequestServerModel updateRequest =
+        new CollectionRequestServerModel(updateName, updateDescription);
 
     // attempt to update collection "two"
     MvcResult mvcResult =
@@ -1485,7 +1170,8 @@ class CollectionControllerMockMvcTest extends MockMvcTestBase {
     // generate an update request, trying to rename collection "two" to "one"
     String updateName = "one";
     String updateDescription = "this should fail";
-    CollectionServerModel updateRequest = new CollectionServerModel(updateName, updateDescription);
+    CollectionRequestServerModel updateRequest =
+        new CollectionRequestServerModel(updateName, updateDescription);
 
     // attempt to update collection "two"
     MvcResult mvcResult =
@@ -1502,7 +1188,7 @@ class CollectionControllerMockMvcTest extends MockMvcTestBase {
 
     assertInstanceOf(AuthorizationException.class, mvcResult.getResolvedException());
     assertEquals(
-        "403 FORBIDDEN \"Caller does not have permission to update collection.\"",
+        "403 FORBIDDEN \"You are not allowed to write this workspace\"",
         mvcResult.getResolvedException().getMessage());
 
     // both collections should exist untouched
@@ -1534,7 +1220,8 @@ class CollectionControllerMockMvcTest extends MockMvcTestBase {
     // generate an update request, trying to rename collection "two" to "one"
     String updateName = "one";
     String updateDescription = "this should fail";
-    CollectionServerModel updateRequest = new CollectionServerModel(updateName, updateDescription);
+    CollectionRequestServerModel updateRequest =
+        new CollectionRequestServerModel(updateName, updateDescription);
 
     // attempt to update collection "two"
     MvcResult mvcResult =
@@ -1586,7 +1273,8 @@ class CollectionControllerMockMvcTest extends MockMvcTestBase {
     // generate an update request
     String updateName = "hey! this is an invalid name!";
     String updateDescription = "updated description";
-    CollectionServerModel updateRequest = new CollectionServerModel(updateName, updateDescription);
+    CollectionRequestServerModel updateRequest =
+        new CollectionRequestServerModel(updateName, updateDescription);
 
     // attempt to update the collection
     MvcResult mvcResult =
@@ -1648,14 +1336,8 @@ class CollectionControllerMockMvcTest extends MockMvcTestBase {
 
   private CollectionServerModel insertCollection(
       WorkspaceId workspaceId, String name, String description) {
-    CollectionId collectionId = CollectionId.of(UUID.randomUUID());
-    return insertCollection(workspaceId, collectionId, name, description);
-  }
-
-  private CollectionServerModel insertCollection(
-      WorkspaceId workspaceId, CollectionId collectionId, String name, String description) {
-    CollectionServerModel collectionServerModel = new CollectionServerModel(name, description);
-    collectionServerModel.id(collectionId.id());
+    CollectionRequestServerModel collectionRequestServerModel =
+        new CollectionRequestServerModel(name, description);
 
     // determine current write permission, if any
     boolean originalWritePermission = false;
@@ -1668,13 +1350,19 @@ class CollectionControllerMockMvcTest extends MockMvcTestBase {
 
     // mock write permission, save the collection, and assert it created
     stubWriteWorkspacePermission(workspaceId).thenReturn(true);
-    collectionService.save(workspaceId, collectionServerModel);
-    assertCollectionExists(workspaceId, collectionId, name, description);
+    CollectionServerModel actual =
+        collectionService.save(workspaceId, collectionRequestServerModel);
+    assertCollectionExists(workspaceId, actual.getId(), name, description);
 
     // reset write permission to original state
     stubWriteWorkspacePermission(workspaceId).thenReturn(originalWritePermission);
 
-    return collectionServerModel;
+    return actual;
+  }
+
+  private void assertCollectionExists(
+      WorkspaceId workspaceId, UUID collectionUuid, String name, String description) {
+    assertCollectionExists(workspaceId, CollectionId.of(collectionUuid), name, description);
   }
 
   private void assertCollectionExists(
@@ -1707,6 +1395,16 @@ class CollectionControllerMockMvcTest extends MockMvcTestBase {
             namedTemplate.queryForObject(
                 "select id, workspace_id, name, description from sys_wds.collection where id = :collectionId",
                 new MapSqlParameterSource(Map.of("collectionId", collectionId.id())),
+                new CollectionRowMapper()));
+  }
+
+  private void assertCollectionDoesNotExist(String name) {
+    assertThrows(
+        Exception.class,
+        () ->
+            namedTemplate.queryForObject(
+                "select id, workspace_id, name, description from sys_wds.collection where name = :name",
+                new MapSqlParameterSource(Map.of("name", name)),
                 new CollectionRowMapper()));
   }
 

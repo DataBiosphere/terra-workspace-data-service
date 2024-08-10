@@ -10,6 +10,7 @@ import org.databiosphere.workspacedataservice.annotations.DeploymentMode.DataPla
 import org.databiosphere.workspacedataservice.generated.GenericJobServerModel;
 import org.databiosphere.workspacedataservice.generated.JobApi;
 import org.databiosphere.workspacedataservice.service.JobService;
+import org.databiosphere.workspacedataservice.service.PermissionService;
 import org.databiosphere.workspacedataservice.shared.model.CollectionId;
 import org.databiosphere.workspacedataservice.shared.model.job.JobStatus;
 import org.springframework.http.HttpStatus;
@@ -25,14 +26,17 @@ import org.springframework.web.server.ResponseStatusException;
 public class JobController implements JobApi {
 
   JobService jobService;
+  private final PermissionService permissionService;
 
-  public JobController(JobService jobService) {
+  public JobController(JobService jobService, PermissionService permissionService) {
     this.jobService = jobService;
+    this.permissionService = permissionService;
   }
 
   @Override
   public ResponseEntity<GenericJobServerModel> jobStatusV1(UUID jobId) {
     GenericJobServerModel job = jobService.getJob(jobId);
+    permissionService.requireReadPermission(CollectionId.of(job.getInstanceId()));
 
     // return job status, 200 if job is completed, 202 if job is still running, and 500 if
     // we can't determine
@@ -56,6 +60,7 @@ public class JobController implements JobApi {
             HttpStatus.BAD_REQUEST, "Invalid status type provided.", e);
       }
     }
+    permissionService.requireReadPermission(CollectionId.of(instanceUuid));
     List<GenericJobServerModel> jobList =
         jobService.getJobsForCollection(
             CollectionId.of(instanceUuid),
