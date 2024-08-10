@@ -224,7 +224,7 @@ sonar {
         property "sonar.organization", "broad-databiosphere"
         property "sonar.host.url", "https://sonarcloud.io"
         // exclude generated files from Sonar scans
-        property "sonar.exclusions", "service/src/main/java/org/databiosphere/workspacedataservice/generated/**/*"
+        property "sonar.exclusions", "service/src/main/java/org/databiosphere/workspacedataservice/generated/*"
     }
 }
 
