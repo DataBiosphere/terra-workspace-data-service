@@ -26,6 +26,7 @@ import org.databiosphere.workspacedataservice.shared.model.CollectionId;
 import org.databiosphere.workspacedataservice.shared.model.job.Job;
 import org.databiosphere.workspacedataservice.shared.model.job.JobInput;
 import org.databiosphere.workspacedataservice.shared.model.job.JobResult;
+import org.databiosphere.workspacedataservice.workspace.WorkspaceInitJobInput;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.jdbc.core.RowMapper;
@@ -300,7 +301,11 @@ public class PostgresJobDao implements JobDao {
 
     private JobInput getJobInput(JobTypeEnum jobType, ResultSet rs) throws SQLException {
       Class<? extends JobInput> targetClass =
-          DATA_IMPORT.equals(jobType) ? ImportJobInput.class : JobInput.class;
+          switch (jobType) {
+            case DATA_IMPORT -> ImportJobInput.class;
+            case WORKSPACE_INIT -> WorkspaceInitJobInput.class;
+            default -> JobInput.class;
+          };
       try {
         return mapper.readValue(rs.getString("input"), targetClass);
       } catch (JsonProcessingException e) {
