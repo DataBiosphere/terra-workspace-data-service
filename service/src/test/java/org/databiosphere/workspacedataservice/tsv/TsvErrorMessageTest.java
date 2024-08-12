@@ -23,14 +23,9 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
 import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.test.annotation.DirtiesContext;
-import org.springframework.test.context.TestPropertySource;
 
 @SpringBootTest
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
-@TestPropertySource(
-    properties = {
-      "twds.tenancy.enforce-collections-match-workspace-id=false", // TODO(AJ-1682): get rid of this
-    })
 @DirtiesContext
 class TsvErrorMessageTest extends TestBase {
 

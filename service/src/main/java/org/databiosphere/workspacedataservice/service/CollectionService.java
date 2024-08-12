@@ -384,9 +384,8 @@ public class CollectionService {
       }
     }
 
-    // safety check: if we found a workspace id in the db, it indicates we are in a data-plane
-    // single-tenant WDS. Verify the workspace matches the $WORKSPACE_ID env var.
-    // we must remove this check in a future multi-tenant WDS.
+    // safety check: if we are running as a single-tenant WDS, verify the workspace matches the
+    // $WORKSPACE_ID env var.
     if (tenancyProperties.getEnforceCollectionsMatchWorkspaceId()
         && rowWorkspaceId != null
         && !rowWorkspaceId.equals(workspaceId)) {
