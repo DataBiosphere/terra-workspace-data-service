@@ -8,7 +8,7 @@ plugins {
     id 'org.openapi.generator'
     id 'com.diffplug.spotless'
     id 'jacoco'
-    id "au.com.dius.pact" version "4.6.11"
+    id "au.com.dius.pact" version "4.6.13"
     id 'jvm-test-suite'
 }
 
