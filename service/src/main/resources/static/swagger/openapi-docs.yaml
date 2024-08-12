@@ -36,6 +36,8 @@ tags:
     description: Instance APIs
   - name: Schema
     description: Schema Manipulation APIs (coming soon)
+  - name: Workspace
+    description: Workspace APIs
   - name: General WDS Information
     description: Information regarding versioning, health, info, etc. for WDS
   - name: Capabilities
@@ -540,6 +542,12 @@ paths:
             'application/json':
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+
+  ##############################
+  # Workspace APIs
+  ##############################
+  /workspaces/v1/{workspaceId}:
+    $ref: 'apis-v1.yaml#/paths/~1workspaces~1v1~1{workspaceId}'
 
   ##############################
   # General WDS Information APIs
