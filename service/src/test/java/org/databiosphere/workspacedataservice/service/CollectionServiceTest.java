@@ -2,13 +2,19 @@ package org.databiosphere.workspacedataservice.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.databiosphere.workspacedataservice.service.RecordUtils.VERSION;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.List;
 import java.util.UUID;
 import org.databiosphere.workspacedataservice.common.TestBase;
+import org.databiosphere.workspacedataservice.config.TwdsProperties;
 import org.databiosphere.workspacedataservice.dao.CollectionDao;
+import org.databiosphere.workspacedataservice.generated.CollectionRequestServerModel;
 import org.databiosphere.workspacedataservice.service.model.exception.MissingObjectException;
+import org.databiosphere.workspacedataservice.shared.model.CollectionId;
+import org.databiosphere.workspacedataservice.shared.model.WorkspaceId;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -24,6 +30,7 @@ class CollectionServiceTest extends TestBase {
 
   @Autowired private CollectionService collectionService;
   @Autowired private CollectionDao collectionDao;
+  @Autowired private TwdsProperties twdsProperties;
 
   private static final UUID COLLECTION = UUID.fromString("111e9999-e89b-12d3-a456-426614174000");
 
@@ -34,6 +41,28 @@ class CollectionServiceTest extends TestBase {
     collectionDao
         .listCollectionSchemas()
         .forEach(collection -> collectionDao.dropSchema(collection));
+  }
+
+  @Test
+  void testExists() {
+    WorkspaceId workspaceId = twdsProperties.workspaceId();
+    CollectionId collectionId = CollectionId.of(UUID.randomUUID());
+
+    // exists should be false before we create the collection
+    assertFalse(collectionService.exists(workspaceId, collectionId));
+
+    // create collection
+    collectionService.save(
+        workspaceId, collectionId, new CollectionRequestServerModel("unit-test", "description"));
+
+    // exists should be true after we create the collection
+    assertTrue(collectionService.exists(workspaceId, collectionId));
+
+    // delete collection
+    collectionService.delete(workspaceId, collectionId);
+
+    // exists should be false again
+    assertFalse(collectionService.exists(workspaceId, collectionId));
   }
 
   @Test

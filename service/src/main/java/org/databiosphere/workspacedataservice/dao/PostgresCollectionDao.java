@@ -1,6 +1,7 @@
 package org.databiosphere.workspacedataservice.dao;
 
 import static org.databiosphere.workspacedataservice.dao.SqlUtils.quote;
+import static org.databiosphere.workspacedataservice.service.CollectionService.NAME_DEFAULT;
 
 import bio.terra.common.db.WriteTransaction;
 import java.util.List;
@@ -126,7 +127,7 @@ public class PostgresCollectionDao implements CollectionDao {
     // auto-generate the name for this collection
     String name = collectionId.toString();
     if (collectionId.id().equals(nonNullWorkspaceUuid)) {
-      name = "default";
+      name = NAME_DEFAULT;
     }
 
     MapSqlParameterSource params = new MapSqlParameterSource("id", collectionId.id());

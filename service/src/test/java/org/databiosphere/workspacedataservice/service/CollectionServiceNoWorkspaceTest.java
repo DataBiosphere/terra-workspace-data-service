@@ -3,6 +3,7 @@ package org.databiosphere.workspacedataservice.service;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.when;
 
 import java.util.UUID;
@@ -39,6 +40,15 @@ class CollectionServiceNoWorkspaceTest extends TestBase {
   void assumptions() {
     // ensure the test is set up correctly, with an empty twds.instance.workspace-id property
     assertThat(workspaceIdProperty).isEmpty();
+  }
+
+  @Test
+  void testExists() {
+    WorkspaceId workspaceId = WorkspaceId.of(UUID.randomUUID());
+    CollectionId collectionId = CollectionId.of(UUID.randomUUID());
+
+    // exists should be true, even though we are using random ids
+    assertTrue(collectionService.exists(workspaceId, collectionId));
   }
 
   // when twds.instance.workspace-id is empty, collectionService.getWorkspaceId will echo the

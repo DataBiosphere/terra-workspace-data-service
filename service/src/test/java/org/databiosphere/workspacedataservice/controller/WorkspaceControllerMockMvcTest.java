@@ -3,8 +3,12 @@ package org.databiosphere.workspacedataservice.controller;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.awaitility.Awaitility.await;
 import static org.databiosphere.workspacedataservice.dao.SqlUtils.quote;
+import static org.databiosphere.workspacedataservice.generated.GenericJobServerModel.JobTypeEnum.*;
 import static org.databiosphere.workspacedataservice.generated.GenericJobServerModel.StatusEnum.*;
+import static org.databiosphere.workspacedataservice.generated.GenericJobServerModel.StatusEnum.UNKNOWN;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -28,7 +32,6 @@ import org.databiosphere.workspacedataservice.service.model.exception.Authorizat
 import org.databiosphere.workspacedataservice.shared.model.CollectionId;
 import org.databiosphere.workspacedataservice.shared.model.WorkspaceId;
 import org.junit.jupiter.api.AfterAll;
-import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
@@ -86,25 +89,33 @@ class WorkspaceControllerMockMvcTest extends MockMvcTestBase {
   void initNewWorkspace() throws Exception {
     WorkspaceId workspaceId = WorkspaceId.of(UUID.randomUUID());
 
-    // ensure write permission
-    stubWriteWorkspacePermission(workspaceId).thenReturn(true);
+    // execute the expected-case test flow
+    expectedCase(workspaceId);
+  }
 
-    // before initialization, should have an empty list of collections
-    List<CollectionServerModel> collectionsBefore = collectionService.list(workspaceId);
-    assertThat(collectionsBefore).isEmpty();
+  @Test
+  void initIsIdempotent() throws Exception {
+    WorkspaceId workspaceId = WorkspaceId.of(UUID.randomUUID());
 
-    // call initWorkspace with a non-clone request
+    // execute the expected-case test flow, save the job result
+    GenericJobServerModel actualJob = expectedCase(workspaceId);
+
+    // call init-workspace again
     String requestBody = "{}";
-    initAndWaitForSuccess(workspaceId, requestBody);
+    GenericJobServerModel secondJob = initAndWaitForSuccess(workspaceId, requestBody);
 
-    // after initialization, should have created a collection of the given id
+    // if init-workspace is idempotent, we should still have only one collection: the default one
     List<CollectionServerModel> collectionsAfter = collectionService.list(workspaceId);
     CollectionServerModel expectedCollection = new CollectionServerModel("default", "default");
     expectedCollection.id(workspaceId.id());
     List<CollectionServerModel> expected = List.of(expectedCollection);
-    Assertions.assertEquals(expected, collectionsAfter);
+    assertEquals(expected, collectionsAfter);
+
+    // and the job result returned by subsequent calls is the same as the first
+    assertEquals(actualJob.getJobId(), secondJob.getJobId());
   }
 
+  // if the user has read but not write, they should hit an AuthorizationException
   @Test
   void readPermission() throws Exception {
     WorkspaceId workspaceId = WorkspaceId.of(UUID.randomUUID());
@@ -125,6 +136,7 @@ class WorkspaceControllerMockMvcTest extends MockMvcTestBase {
     assertInstanceOf(AuthorizationException.class, mvcResult.getResolvedException());
   }
 
+  // if the user has neither read nor write, they should hit an AuthenticationMaskableException
   @Test
   void noPermission() throws Exception {
     WorkspaceId workspaceId = WorkspaceId.of(UUID.randomUUID());
@@ -145,8 +157,37 @@ class WorkspaceControllerMockMvcTest extends MockMvcTestBase {
     assertInstanceOf(AuthenticationMaskableException.class, mvcResult.getResolvedException());
   }
 
+  // helper: implementation of the expected-case test
+  private GenericJobServerModel expectedCase(WorkspaceId workspaceId) throws Exception {
+    // ensure write permission
+    stubWriteWorkspacePermission(workspaceId).thenReturn(true);
+
+    // before initialization, should have an empty list of collections
+    List<CollectionServerModel> collectionsBefore = collectionService.list(workspaceId);
+    assertThat(collectionsBefore).isEmpty();
+
+    // call initWorkspace with a non-clone request
+    String requestBody = "{}";
+    GenericJobServerModel actualJob = initAndWaitForSuccess(workspaceId, requestBody);
+
+    // after initialization, should have created a collection of the given id
+    List<CollectionServerModel> collectionsAfter = collectionService.list(workspaceId);
+    CollectionServerModel expectedCollection = new CollectionServerModel("default", "default");
+    expectedCollection.id(workspaceId.id());
+    List<CollectionServerModel> expected = List.of(expectedCollection);
+    assertEquals(expected, collectionsAfter);
+
+    // verify job result
+    assertEquals(SUCCEEDED, actualJob.getStatus());
+    assertEquals(WORKSPACE_INIT, actualJob.getJobType());
+    assertNotNull(actualJob.getJobId());
+
+    return actualJob;
+  }
+
   // helper: call the init-workspace API, get a job id back, wait for that job to succeed.
-  private void initAndWaitForSuccess(WorkspaceId workspaceId, String requestBody) throws Exception {
+  private GenericJobServerModel initAndWaitForSuccess(WorkspaceId workspaceId, String requestBody)
+      throws Exception {
     // calling the API should result in 202 Accepted
     MvcResult mvcResult =
         mockMvc
@@ -175,6 +216,9 @@ class WorkspaceControllerMockMvcTest extends MockMvcTestBase {
               GenericJobServerModel currentJob = jobDao.getJob(job.getJobId());
               return SUCCEEDED.equals(currentJob.getStatus());
             });
+
+    // get the job once more so we can return it
+    return jobDao.getJob(job.getJobId());
   }
 
   private OngoingStubbing<Boolean> stubReadWorkspacePermission(WorkspaceId workspaceId) {

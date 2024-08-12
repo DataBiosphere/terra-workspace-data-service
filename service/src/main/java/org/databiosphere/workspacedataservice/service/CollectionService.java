@@ -50,6 +50,7 @@ public class CollectionService {
 
   // strings for use in error messages
   private static final String COLLECTION = "Collection";
+  public static final String NAME_DEFAULT = "default";
 
   @Nullable private WorkspaceId workspaceId;
 
@@ -74,7 +75,7 @@ public class CollectionService {
   // ============================== v1 methods ==============================
 
   /**
-   * Insert a new collection
+   * Insert a new collection, generating a random collection id.
    *
    * @param workspaceId the workspace to contain this collection
    * @param collectionRequestServerModel the collection definition
@@ -83,15 +84,31 @@ public class CollectionService {
   @WriteTransaction
   public CollectionServerModel save(
       WorkspaceId workspaceId, CollectionRequestServerModel collectionRequestServerModel) {
+    // generate a collection id
+    CollectionId collectionId = CollectionId.of(UUID.randomUUID());
+    return save(workspaceId, collectionId, collectionRequestServerModel);
+  }
+
+  /**
+   * Insert a new collection, specifying the collection id. This should only be called internally;
+   * users should not be granted the ability to specify the collection id.
+   *
+   * @param workspaceId the workspace to contain this collection
+   * @param collectionId the id of the collection to create
+   * @param collectionRequestServerModel the collection definition
+   * @return the created collection
+   */
+  @WriteTransaction
+  public CollectionServerModel save(
+      WorkspaceId workspaceId,
+      CollectionId collectionId,
+      CollectionRequestServerModel collectionRequestServerModel) {
 
     // if WDS is running in single-tenant mode, ensure the specified workspace matches
     if (tenancyProperties.getEnforceCollectionsMatchWorkspaceId()
         && !workspaceId.equals(this.workspaceId)) {
       throw new ValidationException("Cannot create collection in this workspace.");
     }
-
-    // generate a collection id
-    CollectionId collectionId = CollectionId.of(UUID.randomUUID());
 
     // translate CollectionServerModel to WdsCollection
     WdsCollection wdsCollectionRequest =
@@ -264,7 +281,6 @@ public class CollectionService {
       String msg = duplicateKeyException.getMessage();
       if (msg.contains("duplicate key value violates unique constraint")
           && msg.contains("instance_pkey")) {
-        // TODO: this allows phishing for collection ids.
         throw new ConflictException("Collection with this id already exists");
       } else if (msg.contains("duplicate key value violates unique constraint")
           && msg.contains("instance_workspace_id_name_key")) {
@@ -273,6 +289,15 @@ public class CollectionService {
       throw new ConflictException("Collection name or id conflict");
     }
     throw dbActionExecutionException;
+  }
+
+  public boolean exists(WorkspaceId workspaceId, CollectionId collectionId) {
+    // if this deployment allows virtual collections, there is nothing to check
+    if (tenancyProperties.getAllowVirtualCollections()) {
+      return true;
+    }
+    // else, check if this collection has a row in the collections table
+    return collectionRepository.find(workspaceId, collectionId).isPresent();
   }
 
   // ============================== v0.2 methods ==============================

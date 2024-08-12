@@ -375,7 +375,7 @@ components:
           format: uuid
         jobType:
           type: string
-          enum: [ DATA_IMPORT, UNKNOWN ]
+          enum: [ DATA_IMPORT, WORKSPACE_INIT, UNKNOWN ]
         instanceId:
           type: string
           format: uuid
