@@ -6,9 +6,3 @@ workspacemanagerurl: https://workspace.${beename}.bee.envs-terra.bio
 leoUrl: https://leonardo.${beename}.bee.envs-terra.bio
 rawlsUrl: https://rawls.${beename}.bee.envs-terra.bio
 
-# Note: this will probably get re-nested under `prometheus` if prometheus-rsocket-proxy is upgraded to support
-# spring-boot 3+
-management.metrics.export.prometheus.rsocket:
-  enabled: true
-  host: promproxy.bee.envs-terra.bio
-
