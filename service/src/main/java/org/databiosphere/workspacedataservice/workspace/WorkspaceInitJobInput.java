@@ -13,6 +13,4 @@ import org.springframework.lang.Nullable;
  */
 public record WorkspaceInitJobInput(
     @NotNull WorkspaceId workspaceId, @Nullable WorkspaceId sourceWorkspaceId)
-    implements JobInput, Serializable {
-  @Serial private static final long serialVersionUID = 0L;
-}
+    implements JobInput, Serializable {}
