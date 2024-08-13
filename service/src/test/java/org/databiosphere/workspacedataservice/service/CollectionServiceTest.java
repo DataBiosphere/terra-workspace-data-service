@@ -80,7 +80,7 @@ class CollectionServiceTest extends TestBase {
 
     // at the start of the test, we expect the default collection does not exist
     assertFalse(collectionService.exists(workspaceId, collectionId));
-    assertThat(collectionService.list(workspaceId)).hasSize(0);
+    assertThat(collectionService.list(workspaceId)).isEmpty();
 
     // issue the call to create the default collection a few times; this call should be idempotent
     for (int i = 0; i < 5; i++) {
