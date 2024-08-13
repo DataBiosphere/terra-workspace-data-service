@@ -44,19 +44,26 @@ class CollectionServiceTest extends TestBase {
 
   @Test
   void testExists() {
+
     WorkspaceId workspaceId = twdsProperties.workspaceId();
     CollectionId collectionId = CollectionId.of(workspaceId.id());
 
-    // exists should be false before we create the collection
+    // at the start of the test, we expect the default collection to exist
+    assertTrue(collectionService.exists(workspaceId, collectionId));
+
+    // delete the default collection
+    collectionService.delete(workspaceId, collectionId);
+
+    // exists should be false now
     assertFalse(collectionService.exists(workspaceId, collectionId));
 
-    // create collection
+    // (re-)create default collection
     collectionService.createDefaultCollection(workspaceId);
 
     // exists should be true after we create the collection
     assertTrue(collectionService.exists(workspaceId, collectionId));
 
-    // delete collection
+    // delete collection once more
     collectionService.delete(workspaceId, collectionId);
 
     // exists should be false again
