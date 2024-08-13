@@ -1,21 +1,17 @@
 package org.databiosphere.workspacedataservice.service;
 
-import static org.databiosphere.workspacedataservice.generated.GenericJobServerModel.StatusEnum.SUCCEEDED;
-import static org.databiosphere.workspacedataservice.service.CollectionService.NAME_DEFAULT;
-
-import java.util.List;
-import java.util.Optional;
 import org.databiosphere.workspacedataservice.dao.JobDao;
-import org.databiosphere.workspacedataservice.generated.CollectionRequestServerModel;
 import org.databiosphere.workspacedataservice.generated.GenericJobServerModel;
 import org.databiosphere.workspacedataservice.generated.WorkspaceInitServerModel;
 import org.databiosphere.workspacedataservice.shared.model.CollectionId;
+import org.databiosphere.workspacedataservice.shared.model.DefaultCollectionCreationResult;
 import org.databiosphere.workspacedataservice.shared.model.WorkspaceId;
 import org.databiosphere.workspacedataservice.shared.model.job.Job;
 import org.databiosphere.workspacedataservice.shared.model.job.JobInput;
 import org.databiosphere.workspacedataservice.shared.model.job.JobResult;
 import org.databiosphere.workspacedataservice.shared.model.job.JobType;
 import org.databiosphere.workspacedataservice.workspace.WorkspaceInitJobInput;
+import org.databiosphere.workspacedataservice.workspace.WorkspaceInitJobResult;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
@@ -72,36 +68,9 @@ public class WorkspaceService {
 
     WorkspaceId workspaceId = jobInput.workspaceId();
 
-    // the default collection for any workspace has the same id as the workspace
-    CollectionId collectionId = CollectionId.of(workspaceId.id());
-
-    // idempotency: if the default collection already exists in this workspace,
-    // do nothing. Return the job that previously initialized this workspace.
-    if (collectionService.exists(workspaceId, collectionId)) {
-      logger.debug(
-          "init-workspace called for workspaceId {}, but workspace has already been initialized.",
-          workspaceId);
-      List<GenericJobServerModel> jobList =
-          jobDao.getJobsForCollection(collectionId, Optional.of(List.of(SUCCEEDED.getValue())));
-      if (!jobList.isEmpty()) {
-        return jobList.get(0);
-      } else {
-        GenericJobServerModel fake = new GenericJobServerModel();
-        fake.setJobType(GenericJobServerModel.JobTypeEnum.WORKSPACE_INIT);
-        fake.setStatus(SUCCEEDED);
-        fake.setErrorMessage(
-            "Default collection already exists for this workspace, but could not retrieve the job that created it. This workspace is safe to use.");
-        return fake;
-      }
-    }
-
-    /* initialize the default collection:
-       - name and description of "default"
-       - collectionId equal to workspaceId
-    */
-    CollectionRequestServerModel collectionRequestServerModel =
-        new CollectionRequestServerModel(NAME_DEFAULT, NAME_DEFAULT);
-    collectionService.save(workspaceId, collectionId, collectionRequestServerModel);
+    // ask collectionService to create the default collection; this call is idempotent
+    DefaultCollectionCreationResult defaultCollectionCreationResult =
+        collectionService.createDefaultCollection(workspaceId);
 
     // create a job to represent this initialization.
     WorkspaceInitJobInput workspaceInitJobInput = new WorkspaceInitJobInput(workspaceId, null);
@@ -113,6 +82,14 @@ public class WorkspaceService {
     GenericJobServerModel createdJob = jobDao.createJob(job);
     // immediately mark the job as successful
     jobDao.succeeded(job.getJobId());
+
+    // add the job result to the response
+    WorkspaceInitJobResult jobResult =
+        new WorkspaceInitJobResult(
+            /* defaultCollectionCreated= */ defaultCollectionCreationResult.created(),
+            /* isClone= */ false);
+
+    createdJob.setResult(jobResult);
 
     // return the successful job
     return createdJob;

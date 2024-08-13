@@ -6,6 +6,7 @@ import static org.databiosphere.workspacedataservice.service.RecordUtils.validat
 import bio.terra.common.db.WriteTransaction;
 import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.Spliterator;
 import java.util.Spliterators;
 import java.util.UUID;
@@ -23,6 +24,7 @@ import org.databiosphere.workspacedataservice.service.model.exception.ConflictEx
 import org.databiosphere.workspacedataservice.service.model.exception.MissingObjectException;
 import org.databiosphere.workspacedataservice.service.model.exception.ValidationException;
 import org.databiosphere.workspacedataservice.shared.model.CollectionId;
+import org.databiosphere.workspacedataservice.shared.model.DefaultCollectionCreationResult;
 import org.databiosphere.workspacedataservice.shared.model.WdsCollection;
 import org.databiosphere.workspacedataservice.shared.model.WdsCollectionCreateRequest;
 import org.databiosphere.workspacedataservice.shared.model.WorkspaceId;
@@ -74,6 +76,31 @@ public class CollectionService {
 
   // ============================== v1 methods ==============================
 
+  // TODO AJ-1951 unit tests
+  @WriteTransaction
+  public DefaultCollectionCreationResult createDefaultCollection(WorkspaceId workspaceId) {
+    // the default collection for any workspace has the same id as the workspace
+    CollectionId collectionId = CollectionId.of(workspaceId.id());
+
+    // does the default collection already exist?
+    Optional<CollectionServerModel> found = find(workspaceId, collectionId);
+
+    // if collection exists, this is a noop; return what we found.
+    if (found.isPresent()) {
+      LOGGER.debug(
+          "createDefaultCollection called for workspaceId {}, but workspace already has a default collection.",
+          workspaceId);
+      return new DefaultCollectionCreationResult(false, found.get());
+    }
+
+    // initialize the name/description payload
+    CollectionRequestServerModel collectionRequestServerModel =
+        new CollectionRequestServerModel(NAME_DEFAULT, NAME_DEFAULT);
+    // and save
+    return new DefaultCollectionCreationResult(
+        true, save(workspaceId, collectionId, collectionRequestServerModel));
+  }
+
   /**
    * Insert a new collection, generating a random collection id.
    *
@@ -89,7 +116,7 @@ public class CollectionService {
     return save(workspaceId, collectionId, collectionRequestServerModel);
   }
 
-  /**
+  /*
    * Insert a new collection, specifying the collection id. This should only be called internally;
    * users should not be granted the ability to specify the collection id.
    *
@@ -98,8 +125,7 @@ public class CollectionService {
    * @param collectionRequestServerModel the collection definition
    * @return the created collection
    */
-  @WriteTransaction
-  public CollectionServerModel save(
+  private CollectionServerModel save(
       WorkspaceId workspaceId,
       CollectionId collectionId,
       CollectionRequestServerModel collectionRequestServerModel) {
@@ -181,26 +207,37 @@ public class CollectionService {
   }
 
   /**
-   * Retrieve a single collection by its workspaceId and collectionId.
+   * Retrieve a single collection by its workspaceId and collectionId, or empty Optional if not
+   * found.
+   *
+   * @param workspaceId the workspace containing the collection to be retrieved
+   * @param collectionId id of the collection to be retrieved
+   * @return the collection, or empty Optional if not found
+   */
+  // TODO AJ-1951 unit tests
+  public Optional<CollectionServerModel> find(WorkspaceId workspaceId, CollectionId collectionId) {
+    return collectionRepository
+        .find(workspaceId, collectionId)
+        .map(
+            coll -> {
+              CollectionServerModel serverModel =
+                  new CollectionServerModel(coll.name(), coll.description());
+              serverModel.id(coll.collectionId().id());
+              return serverModel;
+            });
+  }
+
+  /**
+   * Retrieve a single collection by its workspaceId and collectionId. Throws MissingObjectException
+   * if not found.
    *
    * @param workspaceId the workspace containing the collection to be retrieved
    * @param collectionId id of the collection to be retrieved
    * @return the collection
    */
   public CollectionServerModel get(WorkspaceId workspaceId, CollectionId collectionId) {
-    // retrieve the collection; throw if collection not found
-    WdsCollection found =
-        collectionRepository
-            .find(workspaceId, collectionId)
-            .orElseThrow(() -> new MissingObjectException(COLLECTION));
-
-    // translate to the response model
-    CollectionServerModel serverModel =
-        new CollectionServerModel(found.name(), found.description());
-    serverModel.id(found.collectionId().id());
-
-    // and return
-    return serverModel;
+    Optional<CollectionServerModel> found = find(workspaceId, collectionId);
+    return found.orElseThrow(() -> new MissingObjectException(COLLECTION));
   }
 
   /**
@@ -297,7 +334,7 @@ public class CollectionService {
       return true;
     }
     // else, check if this collection has a row in the collections table
-    return collectionRepository.find(workspaceId, collectionId).isPresent();
+    return find(workspaceId, collectionId).isPresent();
   }
 
   // ============================== v0.2 methods ==============================

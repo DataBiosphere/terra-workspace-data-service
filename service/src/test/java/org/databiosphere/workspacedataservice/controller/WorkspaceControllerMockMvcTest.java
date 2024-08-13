@@ -110,9 +110,6 @@ class WorkspaceControllerMockMvcTest extends MockMvcTestBase {
     expectedCollection.id(workspaceId.id());
     List<CollectionServerModel> expected = List.of(expectedCollection);
     assertEquals(expected, collectionsAfter);
-
-    // and the job result returned by subsequent calls is the same as the first
-    assertEquals(actualJob.getJobId(), secondJob.getJobId());
   }
 
   // if the user has read but not write, they should hit an AuthorizationException

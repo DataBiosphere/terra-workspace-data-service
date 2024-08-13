@@ -11,7 +11,6 @@ import java.util.UUID;
 import org.databiosphere.workspacedataservice.common.TestBase;
 import org.databiosphere.workspacedataservice.config.TwdsProperties;
 import org.databiosphere.workspacedataservice.dao.CollectionDao;
-import org.databiosphere.workspacedataservice.generated.CollectionRequestServerModel;
 import org.databiosphere.workspacedataservice.service.model.exception.MissingObjectException;
 import org.databiosphere.workspacedataservice.shared.model.CollectionId;
 import org.databiosphere.workspacedataservice.shared.model.WorkspaceId;
@@ -46,14 +45,13 @@ class CollectionServiceTest extends TestBase {
   @Test
   void testExists() {
     WorkspaceId workspaceId = twdsProperties.workspaceId();
-    CollectionId collectionId = CollectionId.of(UUID.randomUUID());
+    CollectionId collectionId = CollectionId.of(workspaceId.id());
 
     // exists should be false before we create the collection
     assertFalse(collectionService.exists(workspaceId, collectionId));
 
     // create collection
-    collectionService.save(
-        workspaceId, collectionId, new CollectionRequestServerModel("unit-test", "description"));
+    collectionService.createDefaultCollection(workspaceId);
 
     // exists should be true after we create the collection
     assertTrue(collectionService.exists(workspaceId, collectionId));
