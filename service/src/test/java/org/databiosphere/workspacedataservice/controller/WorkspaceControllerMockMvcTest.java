@@ -98,11 +98,11 @@ class WorkspaceControllerMockMvcTest extends MockMvcTestBase {
     WorkspaceId workspaceId = WorkspaceId.of(UUID.randomUUID());
 
     // execute the expected-case test flow, save the job result
-    GenericJobServerModel actualJob = expectedCase(workspaceId);
+    expectedCase(workspaceId);
 
     // call init-workspace again
     String requestBody = "{}";
-    GenericJobServerModel secondJob = initAndWaitForSuccess(workspaceId, requestBody);
+    initAndWaitForSuccess(workspaceId, requestBody);
 
     // if init-workspace is idempotent, we should still have only one collection: the default one
     List<CollectionServerModel> collectionsAfter = collectionService.list(workspaceId);

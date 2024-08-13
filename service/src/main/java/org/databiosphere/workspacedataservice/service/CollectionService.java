@@ -116,7 +116,7 @@ public class CollectionService {
     return save(workspaceId, collectionId, collectionRequestServerModel);
   }
 
-  /*
+  /**
    * Insert a new collection, specifying the collection id. This should only be called internally;
    * users should not be granted the ability to specify the collection id.
    *
