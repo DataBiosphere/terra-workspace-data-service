@@ -2,6 +2,7 @@ package org.databiosphere.workspacedataservice.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.databiosphere.workspacedataservice.service.RecordUtils.VERSION;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -36,28 +37,30 @@ class CollectionServiceTest extends TestBase {
   @BeforeEach
   @AfterEach
   void dropCollectionSchemas() {
-    // Delete all collections
+    // Delete all collections (v0.2)
     collectionDao
         .listCollectionSchemas()
         .forEach(collection -> collectionDao.dropSchema(collection));
+    // Delete all collections in this workspace (v1)
+    WorkspaceId workspaceId = twdsProperties.workspaceId();
+    collectionService
+        .list(workspaceId)
+        .forEach(
+            collection -> {
+              collectionService.delete(workspaceId, CollectionId.of(collection.getId()));
+            });
   }
 
   @Test
-  void testExists() {
+  void testExistsAndCreateDefault() {
 
     WorkspaceId workspaceId = twdsProperties.workspaceId();
     CollectionId collectionId = CollectionId.of(workspaceId.id());
 
-    // at the start of the test, we expect the default collection to exist
-    assertTrue(collectionService.exists(workspaceId, collectionId));
-
-    // delete the default collection
-    collectionService.delete(workspaceId, collectionId);
-
-    // exists should be false now
+    // exists should be false to start
     assertFalse(collectionService.exists(workspaceId, collectionId));
 
-    // (re-)create default collection
+    // create default collection
     collectionService.createDefaultCollection(workspaceId);
 
     // exists should be true after we create the collection
@@ -70,6 +73,48 @@ class CollectionServiceTest extends TestBase {
     assertFalse(collectionService.exists(workspaceId, collectionId));
   }
 
+  @Test
+  void testCreateDefaultIsIdempotent() {
+    WorkspaceId workspaceId = twdsProperties.workspaceId();
+    CollectionId collectionId = CollectionId.of(workspaceId.id());
+
+    // at the start of the test, we expect the default collection does not exist
+    assertFalse(collectionService.exists(workspaceId, collectionId));
+    assertThat(collectionService.list(workspaceId)).hasSize(0);
+
+    // issue the call to create the default collection a few times; this call should be idempotent
+    for (int i = 0; i < 5; i++) {
+      collectionService.createDefaultCollection(workspaceId);
+      assertTrue(collectionService.exists(workspaceId, collectionId));
+      assertThat(collectionService.list(workspaceId)).hasSize(1);
+    }
+  }
+
+  @Test
+  void testFindAndCreateDefault() {
+
+    WorkspaceId workspaceId = twdsProperties.workspaceId();
+    CollectionId collectionId = CollectionId.of(workspaceId.id());
+
+    // find should be empty to start
+    assertThat(collectionService.find(workspaceId, collectionId)).isEmpty();
+
+    // create default collection
+    collectionService.createDefaultCollection(workspaceId);
+
+    // find should be present after we create the collection
+    var found = collectionService.find(workspaceId, collectionId);
+    assertThat(found).isPresent();
+    assertEquals(collectionId.id(), found.get().getId());
+
+    // delete collection once more
+    collectionService.delete(workspaceId, collectionId);
+
+    // find should be empty again
+    assertThat(collectionService.find(workspaceId, collectionId)).isEmpty();
+  }
+
+  // ========== following tests test the deprecated v0.2 CollectionService APIs
   @Test
   void testCreateAndValidateCollection() {
     collectionService.createCollection(COLLECTION, VERSION);

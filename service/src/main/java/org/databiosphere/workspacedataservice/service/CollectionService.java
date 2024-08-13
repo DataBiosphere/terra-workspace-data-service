@@ -76,7 +76,6 @@ public class CollectionService {
 
   // ============================== v1 methods ==============================
 
-  // TODO AJ-1951 unit tests
   @WriteTransaction
   public DefaultCollectionCreationResult createDefaultCollection(WorkspaceId workspaceId) {
     // the default collection for any workspace has the same id as the workspace
@@ -214,7 +213,6 @@ public class CollectionService {
    * @param collectionId id of the collection to be retrieved
    * @return the collection, or empty Optional if not found
    */
-  // TODO AJ-1951 unit tests
   public Optional<CollectionServerModel> find(WorkspaceId workspaceId, CollectionId collectionId) {
     return collectionRepository
         .find(workspaceId, collectionId)
