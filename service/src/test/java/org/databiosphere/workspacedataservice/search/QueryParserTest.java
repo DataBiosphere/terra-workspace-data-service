@@ -13,6 +13,8 @@ import org.junit.jupiter.params.provider.MethodSource;
 
 class QueryParserTest {
 
+  // ========== STRING and array thereof
+
   private static Stream<Arguments> stringTerms() {
     return Stream.of(
         Arguments.of("foo", "foo"),
@@ -34,10 +36,22 @@ class QueryParserTest {
   @ParameterizedTest(name = "Valid query `column1:{0}`")
   @MethodSource("stringTerms")
   void parseSingleStringColumnTerm(String queryTerm, String expectedResult) {
+    scalarStringTestImpl(queryTerm, expectedResult, DataTypeMapping.STRING);
+  }
+
+  // test expected parsing for a single array-of-string column and its filter term
+  @ParameterizedTest(name = "Valid query `column1:{0}`")
+  @MethodSource("stringTerms")
+  void parseSingleArrayOfStringColumnTerm(String queryTerm, String expectedResult) {
+    arrayStringTestImpl(queryTerm, expectedResult, DataTypeMapping.ARRAY_OF_STRING);
+  }
+
+  // helper for testing scalar strings; reused for scalar files
+  private void scalarStringTestImpl(
+      String queryTerm, String expectedResult, DataTypeMapping dataType) {
     String query = "column1:" + queryTerm;
 
-    WhereClausePart actual =
-        new QueryParser(Map.of("column1", DataTypeMapping.STRING)).parse(query);
+    WhereClausePart actual = new QueryParser(Map.of("column1", dataType)).parse(query);
 
     WhereClausePart expected =
         new WhereClausePart(
@@ -47,14 +61,12 @@ class QueryParserTest {
     assertEquals(expected, actual);
   }
 
-  // test expected parsing for a single array-of-string column and its filter term
-  @ParameterizedTest(name = "Valid query `column1:{0}`")
-  @MethodSource("stringTerms")
-  void parseSingleArrayOfStringColumnTerm(String queryTerm, String expectedResult) {
+  // helper for testing array of strings; reused for array of files
+  private void arrayStringTestImpl(
+      String queryTerm, String expectedResult, DataTypeMapping dataType) {
     String query = "column1:" + queryTerm;
 
-    WhereClausePart actual =
-        new QueryParser(Map.of("column1", DataTypeMapping.ARRAY_OF_STRING)).parse(query);
+    WhereClausePart actual = new QueryParser(Map.of("column1", dataType)).parse(query);
 
     WhereClausePart expected =
         new WhereClausePart(
@@ -63,6 +75,36 @@ class QueryParserTest {
 
     assertEquals(expected, actual);
   }
+
+  // ========== FILE and array thereof
+  private static Stream<Arguments> fileTerms() {
+    return Stream.of(
+        Arguments.of(
+            "\"https\\://lz1a2b345c67def8a91234bc.blob.core.windows.net/sc-7ad51c5d-eb4c-4685-bffe-62b861f7753f/file.bam\"",
+            "https://lz1a2b345c67def8a91234bc.blob.core.windows.net/sc-7ad51c5d-eb4c-4685-bffe-62b861f7753f/file.bam"),
+        Arguments.of(
+            "\"drs\\://example.org/dg.4503/cc32d93d-a73c-4d2c-a061-26c0410e74fa\"",
+            "drs://example.org/dg.4503/cc32d93d-a73c-4d2c-a061-26c0410e74fa"),
+        Arguments.of(
+            "\"https\\://teststorageaccount.blob.core.windows.net/testcontainer/file\"",
+            "https://teststorageaccount.blob.core.windows.net/testcontainer/file"));
+  }
+
+  // test expected parsing for a single string column and its filter term
+  @ParameterizedTest(name = "Valid query `column1:{0}`")
+  @MethodSource("fileTerms")
+  void parseSingleFileColumnTerm(String queryTerm, String expectedResult) {
+    scalarStringTestImpl(queryTerm, expectedResult, DataTypeMapping.FILE);
+  }
+
+  // test expected parsing for a single array-of-string column and its filter term
+  @ParameterizedTest(name = "Valid query `column1:{0}`")
+  @MethodSource("fileTerms")
+  void parseSingleArrayOfFileColumnTerm(String queryTerm, String expectedResult) {
+    arrayStringTestImpl(queryTerm, expectedResult, DataTypeMapping.ARRAY_OF_FILE);
+  }
+
+  // ========== NUMBER and array thereof
 
   private static Stream<Arguments> numberTerms() {
     return Stream.of(

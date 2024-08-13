@@ -124,6 +124,40 @@ class RecordOrchestratorServiceFilterQueryTest extends TestBase {
     performTest("arrstr", DataTypeMapping.ARRAY_OF_STRING, criteria, expectedIds);
   }
 
+  // ===== FILE column
+  private static Stream<Arguments> fileArguments() {
+    return Stream.of(
+        Arguments.of(
+            "\"drs\\://example.org/dg.4503/cc32d93d-a73c-4d2c-a061-26c0410e74fa\"",
+            List.of("1", "2")),
+        Arguments.of(
+            "\"https\\://teststorageaccount.blob.core.windows.net/testcontainer/file\"",
+            List.of("3")));
+  }
+
+  @ParameterizedTest(name = "file filter for value <{0}>")
+  @MethodSource("fileArguments")
+  void fileColumn(String criteria, List<String> expectedIds) {
+    performTest("str", DataTypeMapping.STRING, criteria, expectedIds);
+  }
+
+  // ===== ARRAY_OF_FILE column
+  private static Stream<Arguments> arrayOfFileArguments() {
+    return Stream.of(
+        Arguments.of(
+            "\"drs\\://example.org/dg.4503/cc32d93d-a73c-4d2c-a061-26c0410e74fa\"",
+            List.of("1", "2")),
+        Arguments.of(
+            "\"https\\://teststorageaccount.blob.core.windows.net/testcontainer/file\"",
+            List.of("2", "3")));
+  }
+
+  @ParameterizedTest(name = "array_of_file filter for value <{0}>")
+  @MethodSource("arrayOfFileArguments")
+  void arrayOfFileColumn(String criteria, List<String> expectedIds) {
+    performTest("arrstr", DataTypeMapping.ARRAY_OF_STRING, criteria, expectedIds);
+  }
+
   // ===== NUMBER column
   private static Stream<Arguments> numberArguments() {
     return Stream.of(

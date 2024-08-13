@@ -82,8 +82,19 @@ public class QueryParser {
           clauses.add(":" + paramName + " = ANY(" + quote(column) + ")");
           values.put(paramName, parseNumericValue(value));
           break;
+
+          /* TODO AJ-1954: support
+              NULL, EMPTY_ARRAY,
+              BOOLEAN, ARRAY_OF_BOOLEAN,
+              FILE, ARRAY_OF_FILE,
+              DATE, ARRAY_OF_DATE,
+              DATE_TIME, ARRAY_OF_DATE_TIME,
+              RELATION, ARRAY_OF_RELATION,
+              JSON, ARRAY_OF_JSON
+          */
         default:
-          throw new InvalidQueryException("Column specified in query must be a string type");
+          throw new InvalidQueryException(
+              "Column specified in query is of an unsupported datatype");
       }
 
       return new WhereClausePart(clauses, values);

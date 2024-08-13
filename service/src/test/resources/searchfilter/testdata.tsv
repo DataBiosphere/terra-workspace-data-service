@@ -1,4 +1,4 @@
-test_id	str	arrstr	num	arrnum
-1	hello world	["hello", "world", "how", "are", "you"]	42	[31,41,59]
-2	Hello World	["Hello", "World"]	42	[31,41]
-3	goodbye	["ONE", "TWO", "THREE"]	-1.23	[1,2,3]
+test_id	str	arrstr	num	arrnum	file	arrfile
+1	hello world	["hello", "world", "how", "are", "you"]	42	[31,41,59]	drs://example.org/dg.4503/cc32d93d-a73c-4d2c-a061-26c0410e74fa	[drs://example.org/dg.4503/cc32d93d-a73c-4d2c-a061-26c0410e74fa]
+2	Hello World	["Hello", "World"]	42	[31,41]	drs://example.org/dg.4503/cc32d93d-a73c-4d2c-a061-26c0410e74fa	[https://teststorageaccount.blob.core.windows.net/testcontainer/file, drs://example.org/dg.4503/cc32d93d-a73c-4d2c-a061-26c0410e74fa]
+3	goodbye	["ONE", "TWO", "THREE"]	-1.23	[1,2,3]	https://teststorageaccount.blob.core.windows.net/testcontainer/file	[https://teststorageaccount.blob.core.windows.net/testcontainer/file]
