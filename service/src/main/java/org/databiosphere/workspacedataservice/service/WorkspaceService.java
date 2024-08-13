@@ -5,7 +5,6 @@ import static org.databiosphere.workspacedataservice.service.CollectionService.N
 
 import java.util.List;
 import java.util.Optional;
-import java.util.UUID;
 import org.databiosphere.workspacedataservice.dao.JobDao;
 import org.databiosphere.workspacedataservice.generated.CollectionRequestServerModel;
 import org.databiosphere.workspacedataservice.generated.GenericJobServerModel;
@@ -33,28 +32,45 @@ public class WorkspaceService {
     this.collectionService = collectionService;
   }
 
+  /**
+   * Initialize WDS for a given workspace. As of this writing, initialization will create an empty
+   * default collection for new workspaces, and clone collections for cloned workspaces.
+   *
+   * <p>This implementation is synchronous. However, it returns a reference to an async job. We may
+   * need to move to an async implementation, so we're using the async payload to allow future
+   * change.
+   *
+   * @param workspaceId the workspace to initialize
+   * @param workspaceInitServerModel initialization arguments, including information about clone
+   *     source
+   * @return reference to the initialization job
+   */
   public GenericJobServerModel initWorkspace(
       WorkspaceId workspaceId, WorkspaceInitServerModel workspaceInitServerModel) {
 
     logger.info("Starting init-workspace for workspaceId {}", workspaceId);
 
-    Optional<UUID> sourceWorkspace =
-        Optional.ofNullable(workspaceInitServerModel.getClone())
-            .flatMap(clone -> Optional.ofNullable(clone.getSourceWorkspaceId()));
+    // translate the input arguments to JobInput format
+    WorkspaceInitJobInput jobInput =
+        WorkspaceInitJobInput.from(workspaceId, workspaceInitServerModel);
 
-    GenericJobServerModel job;
-    if (sourceWorkspace.isPresent()) {
-      // this is a clone.
-      job = initClone(workspaceId, sourceWorkspace.get());
+    // branch for clones vs. non-clones
+    if (jobInput.sourceWorkspaceId() != null) {
+      return initClone(jobInput);
     } else {
-      // this is not a clone; create an empty default collection.
-      job = initEmptyWorkspace(workspaceId);
+      return initEmptyWorkspace(jobInput);
     }
-
-    return job;
   }
 
-  private GenericJobServerModel initEmptyWorkspace(WorkspaceId workspaceId) {
+  /**
+   * Initialization steps for non-clones. Creates an empty default collection.
+   *
+   * @param jobInput initialization arguments
+   * @return reference to the initialization job
+   */
+  private GenericJobServerModel initEmptyWorkspace(WorkspaceInitJobInput jobInput) {
+
+    WorkspaceId workspaceId = jobInput.workspaceId();
 
     // the default collection for any workspace has the same id as the workspace
     CollectionId collectionId = CollectionId.of(workspaceId.id());
@@ -102,7 +118,13 @@ public class WorkspaceService {
     return createdJob;
   }
 
-  private GenericJobServerModel initClone(WorkspaceId workspaceId, UUID sourceWorkspaceId) {
+  /**
+   * Initialization steps for clones. TODO AJ-1952 add doc explaining the implementation
+   *
+   * @param jobInput initialization arguments
+   * @return reference to the initialization job
+   */
+  private GenericJobServerModel initClone(WorkspaceInitJobInput jobInput) {
     // TODO AJ-1952: implement cloning
     throw new RuntimeException("not implemented");
   }
