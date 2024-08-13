@@ -82,10 +82,19 @@ public class QueryParser {
           clauses.add(":" + paramName + " = ANY(" + quote(column) + ")");
           values.put(paramName, parseNumericValue(value));
           break;
+        case BOOLEAN:
+          // "mycolumn" = false
+          clauses.add(quote(column) + " = :" + paramName);
+          values.put(paramName, strictParseBoolean(value));
+          break;
+        case ARRAY_OF_BOOLEAN:
+          // false = ANY("mycolumn")
+          clauses.add(":" + paramName + " = ANY(" + quote(column) + ")");
+          values.put(paramName, strictParseBoolean(value));
+          break;
 
           /* TODO AJ-1954: support
-              NULL, EMPTY_ARRAY,
-              BOOLEAN, ARRAY_OF_BOOLEAN,
+              NULL, EMPTY_ARRAY, (uncommon)
               DATE, ARRAY_OF_DATE,
               DATE_TIME, ARRAY_OF_DATE_TIME,
               RELATION, ARRAY_OF_RELATION,
@@ -100,6 +109,18 @@ public class QueryParser {
     } else {
       throw new InvalidQueryException();
     }
+  }
+
+  private boolean strictParseBoolean(String value) {
+    // could use DataTypeInferer.isValidBoolean here instead, but that requires spring beans
+    if ("true".equalsIgnoreCase(value)) {
+      return true;
+    }
+    if ("false".equalsIgnoreCase(value)) {
+      return false;
+    }
+    throw new InvalidQueryException(
+        "Query value for boolean column must be either 'true' or 'false'");
   }
 
   private Double parseNumericValue(String value) {

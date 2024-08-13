@@ -188,6 +188,36 @@ class RecordOrchestratorServiceFilterQueryTest extends TestBase {
     performTest("arrnum", DataTypeMapping.ARRAY_OF_NUMBER, criteria, expectedIds);
   }
 
+  // ===== BOOLEAN column
+  private static Stream<Arguments> booleanArguments() {
+    return Stream.of(
+        Arguments.of("true", List.of("1", "2")),
+        Arguments.of("TRUE", List.of("1", "2")),
+        Arguments.of("false", List.of("3")),
+        Arguments.of("FALSE", List.of("3")));
+  }
+
+  @ParameterizedTest(name = "boolean filter for value <{0}>")
+  @MethodSource("booleanArguments")
+  void booleanColumn(String criteria, List<String> expectedIds) {
+    performTest("bool", DataTypeMapping.BOOLEAN, criteria, expectedIds);
+  }
+
+  // ===== ARRAY_OF_BOOLEAN column
+  private static Stream<Arguments> arrayOfBooleanArguments() {
+    return Stream.of(
+        Arguments.of("true", List.of("1", "2")),
+        Arguments.of("TRUE", List.of("1", "2")),
+        Arguments.of("false", List.of("2", "3")),
+        Arguments.of("FALSE", List.of("2", "3")));
+  }
+
+  @ParameterizedTest(name = "array_of_boolean filter for value <{0}>")
+  @MethodSource("arrayOfBooleanArguments")
+  void arrayOfBooleanColumn(String criteria, List<String> expectedIds) {
+    performTest("arrbool", DataTypeMapping.ARRAY_OF_BOOLEAN, criteria, expectedIds);
+  }
+
   // the test implementation for all tests above
   private void performTest(
       String columnName, DataTypeMapping datatype, String criteria, List<String> expectedIds) {

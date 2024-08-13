@@ -149,6 +149,50 @@ class QueryParserTest {
     assertEquals(expected, actual);
   }
 
+  // ========== BOOLEAN and array thereof
+
+  private static Stream<Arguments> booleanTerms() {
+    return Stream.of(
+        Arguments.of("true", true),
+        Arguments.of("True", true),
+        Arguments.of("TRUE", true),
+        Arguments.of("false", false),
+        Arguments.of("False", false),
+        Arguments.of("FALSE", false));
+  }
+
+  // test expected parsing for a single number column and its filter term
+  @ParameterizedTest(name = "Valid query `column1:{0}`")
+  @MethodSource("booleanTerms")
+  void parseSingleBooleanColumnTerm(String queryTerm, boolean expectedResult) {
+    String query = "column1:" + queryTerm;
+
+    WhereClausePart actual =
+        new QueryParser(Map.of("column1", DataTypeMapping.BOOLEAN)).parse(query);
+
+    WhereClausePart expected =
+        new WhereClausePart(
+            List.of("\"column1\" = :filterquery0"), Map.of("filterquery0", expectedResult));
+
+    assertEquals(expected, actual);
+  }
+
+  // test expected parsing for a single array-of-number column and its filter term
+  @ParameterizedTest(name = "Valid query `column1:{0}`")
+  @MethodSource("booleanTerms")
+  void parseSingleArrayOfBooleanColumnTerm(String queryTerm, boolean expectedResult) {
+    String query = "column1:" + queryTerm;
+
+    WhereClausePart actual =
+        new QueryParser(Map.of("column1", DataTypeMapping.ARRAY_OF_BOOLEAN)).parse(query);
+
+    WhereClausePart expected =
+        new WhereClausePart(
+            List.of(":filterquery0 = ANY(\"column1\")"), Map.of("filterquery0", expectedResult));
+
+    assertEquals(expected, actual);
+  }
+
   private static Stream<String> invalidQuerySyntax() {
     return Stream.of(
         // ranges
