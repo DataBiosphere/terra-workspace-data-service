@@ -3,6 +3,9 @@ package org.databiosphere.workspacedataservice.search;
 import static org.databiosphere.workspacedataservice.dao.SqlUtils.quote;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -92,11 +95,29 @@ public class QueryParser {
           clauses.add(":" + paramName + " = ANY(" + quote(column) + ")");
           values.put(paramName, strictParseBoolean(value));
           break;
+        case DATE:
+          // "mycolumn" = '1981-02-12'
+          clauses.add(quote(column) + " = :" + paramName);
+          values.put(paramName, parseDate(value));
+          break;
+        case ARRAY_OF_DATE:
+          // '1981-02-12' = ANY("mycolumn")
+          clauses.add(":" + paramName + " = ANY(" + quote(column) + ")");
+          values.put(paramName, parseDate(value));
+          break;
+        case DATE_TIME:
+          // "mycolumn" = '1981-02-12'
+          clauses.add(quote(column) + " = :" + paramName);
+          values.put(paramName, parseDateTime(value));
+          break;
+        case ARRAY_OF_DATE_TIME:
+          // '1981-02-12' = ANY("mycolumn")
+          clauses.add(":" + paramName + " = ANY(" + quote(column) + ")");
+          values.put(paramName, parseDateTime(value));
+          break;
 
           /* TODO AJ-1954: support
               NULL, EMPTY_ARRAY, (uncommon)
-              DATE, ARRAY_OF_DATE,
-              DATE_TIME, ARRAY_OF_DATE_TIME,
               RELATION, ARRAY_OF_RELATION,
               JSON, ARRAY_OF_JSON
           */
@@ -108,6 +129,24 @@ public class QueryParser {
       return new WhereClausePart(clauses, values);
     } else {
       throw new InvalidQueryException();
+    }
+  }
+
+  private LocalDate parseDate(String value) {
+    try {
+      return LocalDate.parse(value, DateTimeFormatter.ISO_LOCAL_DATE);
+    } catch (Exception e) {
+      throw new InvalidQueryException(
+          "Query value for date column must be a valid ISO date string");
+    }
+  }
+
+  private LocalDateTime parseDateTime(String value) {
+    try {
+      return LocalDateTime.parse(value, DateTimeFormatter.ISO_LOCAL_DATE_TIME);
+    } catch (Exception e) {
+      throw new InvalidQueryException(
+          "Query value for datetime column must be a valid ISO datetime string");
     }
   }
 

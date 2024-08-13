@@ -128,10 +128,10 @@ class RecordOrchestratorServiceFilterQueryTest extends TestBase {
   private static Stream<Arguments> fileArguments() {
     return Stream.of(
         Arguments.of(
-            "\"drs\\://example.org/dg.4503/cc32d93d-a73c-4d2c-a061-26c0410e74fa\"",
+            "\"drs://example.org/dg.4503/cc32d93d-a73c-4d2c-a061-26c0410e74fa\"",
             List.of("1", "2")),
         Arguments.of(
-            "\"https\\://teststorageaccount.blob.core.windows.net/testcontainer/file\"",
+            "\"https://teststorageaccount.blob.core.windows.net/testcontainer/file\"",
             List.of("3")));
   }
 
@@ -145,10 +145,10 @@ class RecordOrchestratorServiceFilterQueryTest extends TestBase {
   private static Stream<Arguments> arrayOfFileArguments() {
     return Stream.of(
         Arguments.of(
-            "\"drs\\://example.org/dg.4503/cc32d93d-a73c-4d2c-a061-26c0410e74fa\"",
+            "\"drs://example.org/dg.4503/cc32d93d-a73c-4d2c-a061-26c0410e74fa\"",
             List.of("1", "2")),
         Arguments.of(
-            "\"https\\://teststorageaccount.blob.core.windows.net/testcontainer/file\"",
+            "\"https://teststorageaccount.blob.core.windows.net/testcontainer/file\"",
             List.of("2", "3")));
   }
 
@@ -216,6 +216,59 @@ class RecordOrchestratorServiceFilterQueryTest extends TestBase {
   @MethodSource("arrayOfBooleanArguments")
   void arrayOfBooleanColumn(String criteria, List<String> expectedIds) {
     performTest("arrbool", DataTypeMapping.ARRAY_OF_BOOLEAN, criteria, expectedIds);
+  }
+
+  // ===== DATE column
+  private static Stream<Arguments> dateArguments() {
+    return Stream.of(
+        Arguments.of("1979-06-25", List.of("1", "2")), Arguments.of("1981-02-12", List.of("3")));
+  }
+
+  @ParameterizedTest(name = "date filter for value <{0}>")
+  @MethodSource("dateArguments")
+  void dateColumn(String criteria, List<String> expectedIds) {
+    performTest("date", DataTypeMapping.DATE, criteria, expectedIds);
+  }
+
+  // ===== ARRAY_OF_DATE column
+  private static Stream<Arguments> arrayOfDateArguments() {
+    return Stream.of(
+        Arguments.of("1971-11-12", List.of("1", "2")),
+        Arguments.of("1977-01-21", List.of("2", "3")));
+  }
+
+  @ParameterizedTest(name = "array_of_date filter for value <{0}>")
+  @MethodSource("arrayOfDateArguments")
+  void arrayOfDateColumn(String criteria, List<String> expectedIds) {
+    performTest("arrdate", DataTypeMapping.ARRAY_OF_DATE, criteria, expectedIds);
+  }
+
+  // ===== DATETIME column
+  private static Stream<Arguments> datetimeArguments() {
+    return Stream.of(
+        Arguments.of("\"2024-08-13T19:00:00\"", List.of("1")),
+        Arguments.of("\"2024-08-12T18:00:00\"", List.of("2")),
+        Arguments.of("\"2024-08-11T17:00:00\"", List.of("3")));
+  }
+
+  @ParameterizedTest(name = "datetime filter for value <{0}>")
+  @MethodSource("datetimeArguments")
+  void datetimeColumn(String criteria, List<String> expectedIds) {
+    performTest("datetime", DataTypeMapping.DATE_TIME, criteria, expectedIds);
+  }
+
+  // ===== ARRAY_OF_DATETIME column
+  private static Stream<Arguments> arrayOfDatetimeArguments() {
+    return Stream.of(
+        Arguments.of("\"2024-08-10T16:00:00\"", List.of("1")),
+        Arguments.of("\"2024-08-09T15:00:00\"", List.of("2")),
+        Arguments.of("\"2024-08-08T14:00:00\"", List.of("3")));
+  }
+
+  @ParameterizedTest(name = "array_of_datetime filter for value <{0}>")
+  @MethodSource("arrayOfDatetimeArguments")
+  void arrayOfDatetimeColumn(String criteria, List<String> expectedIds) {
+    performTest("arrdatetime", DataTypeMapping.ARRAY_OF_DATE_TIME, criteria, expectedIds);
   }
 
   // the test implementation for all tests above
