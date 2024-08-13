@@ -1,7 +1,6 @@
 package org.databiosphere.workspacedataservice.workspace;
 
 import jakarta.validation.constraints.NotNull;
-import java.io.Serial;
 import java.io.Serializable;
 import org.databiosphere.workspacedataservice.shared.model.WorkspaceId;
 import org.databiosphere.workspacedataservice.shared.model.job.JobInput;
