@@ -4,6 +4,8 @@ import static org.databiosphere.workspacedataservice.service.RecordUtils.validat
 import static org.databiosphere.workspacedataservice.service.model.ReservedNames.RECORD_ID;
 
 import bio.terra.common.db.ReadTransaction;
+import io.micrometer.observation.Observation;
+import io.micrometer.observation.ObservationRegistry;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.Collections;
@@ -61,8 +63,8 @@ public class RecordOrchestratorService { // TODO give me a better name
   private final RecordService recordService;
   private final CollectionService collectionService;
   private final ActivityLogger activityLogger;
-
   private final TsvSupport tsvSupport;
+  private final ObservationRegistry observations;
 
   public RecordOrchestratorService(
       RecordDao recordDao,
@@ -72,7 +74,8 @@ public class RecordOrchestratorService { // TODO give me a better name
       RecordService recordService,
       CollectionService collectionService,
       ActivityLogger activityLogger,
-      TsvSupport tsvSupport) {
+      TsvSupport tsvSupport,
+      ObservationRegistry observations) {
     this.recordDao = recordDao;
     this.recordSourceFactory = recordSourceFactory;
     this.recordSinkFactory = recordSinkFactory;
@@ -81,6 +84,7 @@ public class RecordOrchestratorService { // TODO give me a better name
     this.collectionService = collectionService;
     this.activityLogger = activityLogger;
     this.tsvSupport = tsvSupport;
+    this.observations = observations;
   }
 
   public RecordResponse updateSingleRecord(
@@ -190,6 +194,7 @@ public class RecordOrchestratorService { // TODO give me a better name
               + MAX_RECORDS
               + ", and offset must be positive.");
     }
+
     // retrieve schema to use in validations
     Map<String, DataTypeMapping> schema =
         recordDao.getExistingTableSchema(collectionId, recordType);
@@ -204,6 +209,10 @@ public class RecordOrchestratorService { // TODO give me a better name
       return new RecordQueryResponse(searchRequest, Collections.emptyList(), totalRecords);
     }
 
+    Observation observation =
+        Observation.start("wds.RecordOrchestratorService.queryForRecords", observations)
+            .lowCardinalityKeyValue("wds.searchRequest.includesFilter", String.valueOf(searchRequest.getFilter().isPresent()));
+
     LOGGER.info("queryForEntities: {}", recordType.getName());
     List<Record> records =
         recordDao.queryForRecords(
@@ -214,10 +223,13 @@ public class RecordOrchestratorService { // TODO give me a better name
             searchRequest.getSortAttribute(),
             searchRequest.getFilter(),
             collectionId);
+
     List<RecordResponse> recordList =
         records.stream()
             .map(r -> new RecordResponse(r.getId(), r.getRecordType(), r.getAttributes()))
             .toList();
+
+    observation.stop();
     return new RecordQueryResponse(searchRequest, recordList, totalRecords);
   }
 
