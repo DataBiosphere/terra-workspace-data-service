@@ -211,7 +211,9 @@ public class RecordOrchestratorService { // TODO give me a better name
 
     Observation observation =
         Observation.start("wds.RecordOrchestratorService.queryForRecords", observations)
-            .lowCardinalityKeyValue("wds.searchRequest.includesFilter", String.valueOf(searchRequest.getFilter().isPresent()));
+            .lowCardinalityKeyValue(
+                "wds.searchRequest.includesFilter",
+                String.valueOf(searchRequest.getFilter().isPresent()));
 
     LOGGER.info("queryForEntities: {}", recordType.getName());
     List<Record> records =
