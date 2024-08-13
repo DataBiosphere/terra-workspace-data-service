@@ -138,7 +138,7 @@ class RecordOrchestratorServiceFilterQueryTest extends TestBase {
   @ParameterizedTest(name = "file filter for value <{0}>")
   @MethodSource("fileArguments")
   void fileColumn(String criteria, List<String> expectedIds) {
-    performTest("str", DataTypeMapping.STRING, criteria, expectedIds);
+    performTest("file", DataTypeMapping.FILE, criteria, expectedIds);
   }
 
   // ===== ARRAY_OF_FILE column
@@ -155,7 +155,7 @@ class RecordOrchestratorServiceFilterQueryTest extends TestBase {
   @ParameterizedTest(name = "array_of_file filter for value <{0}>")
   @MethodSource("arrayOfFileArguments")
   void arrayOfFileColumn(String criteria, List<String> expectedIds) {
-    performTest("arrstr", DataTypeMapping.ARRAY_OF_STRING, criteria, expectedIds);
+    performTest("arrfile", DataTypeMapping.ARRAY_OF_FILE, criteria, expectedIds);
   }
 
   // ===== NUMBER column

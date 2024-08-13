@@ -62,12 +62,12 @@ public class QueryParser {
 
       // based on the datatype of the column, build relevant SQL
       switch (datatype) {
-        case STRING:
+        case STRING, FILE:
           // LOWER("mycolumn") = 'mysearchterm'
           clauses.add("LOWER(" + quote(column) + ") = :" + paramName);
           values.put(paramName, value.toLowerCase());
           break;
-        case ARRAY_OF_STRING:
+        case ARRAY_OF_STRING, ARRAY_OF_FILE:
           // 'mysearchterm' ILIKE ANY("mycolumn")
           clauses.add(":" + paramName + " ILIKE ANY(" + quote(column) + ")");
           values.put(paramName, value.toLowerCase());
@@ -86,7 +86,6 @@ public class QueryParser {
           /* TODO AJ-1954: support
               NULL, EMPTY_ARRAY,
               BOOLEAN, ARRAY_OF_BOOLEAN,
-              FILE, ARRAY_OF_FILE,
               DATE, ARRAY_OF_DATE,
               DATE_TIME, ARRAY_OF_DATE_TIME,
               RELATION, ARRAY_OF_RELATION,
