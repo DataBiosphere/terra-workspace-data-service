@@ -84,6 +84,11 @@ public class WorkspaceService {
     jobDao.succeeded(job.getJobId());
 
     // add the job result to the response
+    /* TODO AJ-1401: this job result is not persisted to the database. If a user looks up this job later, we won't
+        return the result. We need to implement AJ-1401 before we can actually persist and job results. For now,
+        we return the result in the call to the init-workspace API only.
+    */
+
     WorkspaceInitJobResult jobResult =
         new WorkspaceInitJobResult(
             /* defaultCollectionCreated= */ defaultCollectionCreationResult.created(),
