@@ -106,12 +106,12 @@ public class QueryParser {
           values.put(paramName, parseDate(value));
           break;
         case DATE_TIME:
-          // "mycolumn" = '1981-02-12'
+          // "mycolumn" = '1981-02-12 19:00:00'
           clauses.add(quote(column) + " = :" + paramName);
           values.put(paramName, parseDateTime(value));
           break;
         case ARRAY_OF_DATE_TIME:
-          // '1981-02-12' = ANY("mycolumn")
+          // '1981-02-12 19:00:00' = ANY("mycolumn")
           clauses.add(":" + paramName + " = ANY(" + quote(column) + ")");
           values.put(paramName, parseDateTime(value));
           break;
@@ -132,6 +132,7 @@ public class QueryParser {
     }
   }
 
+  // parse string into LocalDate; throw InvalidQueryException if unparsable
   private LocalDate parseDate(String value) {
     try {
       return LocalDate.parse(value, DateTimeFormatter.ISO_LOCAL_DATE);
@@ -141,6 +142,7 @@ public class QueryParser {
     }
   }
 
+  // parse string into LocalDateTime; throw InvalidQueryException if unparsable
   private LocalDateTime parseDateTime(String value) {
     try {
       return LocalDateTime.parse(value, DateTimeFormatter.ISO_LOCAL_DATE_TIME);
@@ -150,6 +152,8 @@ public class QueryParser {
     }
   }
 
+  // parse string into boolean, supporting only "true" or "false" strings, case-insensitive.
+  // throw InvalidQueryException if unparsable
   private boolean strictParseBoolean(String value) {
     // could use DataTypeInferer.isValidBoolean here instead, but that requires spring beans
     if ("true".equalsIgnoreCase(value)) {
@@ -162,6 +166,7 @@ public class QueryParser {
         "Query value for boolean column must be either 'true' or 'false'");
   }
 
+  // parse string into Double; throw InvalidQueryException if unparsable
   private Double parseNumericValue(String value) {
     BigDecimal parsedNumber;
     try {
@@ -172,6 +177,7 @@ public class QueryParser {
     return parsedNumber.doubleValue();
   }
 
+  // validate the column on which we are filtering
   private void validateColumnName(String columnName) {
     // The Lucene query parser requires a default column name to parse a query. If the end user
     // has not specified a column, the query parser will use the default column name. In our case,
