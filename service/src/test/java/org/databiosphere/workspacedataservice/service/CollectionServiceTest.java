@@ -3,9 +3,7 @@ package org.databiosphere.workspacedataservice.service;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.databiosphere.workspacedataservice.service.RecordUtils.VERSION;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.List;
 import java.util.UUID;
@@ -52,40 +50,18 @@ class CollectionServiceTest extends TestBase {
   }
 
   @Test
-  void testExistsAndCreateDefault() {
-
-    WorkspaceId workspaceId = twdsProperties.workspaceId();
-    CollectionId collectionId = CollectionId.of(workspaceId.id());
-
-    // exists should be false to start
-    assertFalse(collectionService.exists(workspaceId, collectionId));
-
-    // create default collection
-    collectionService.createDefaultCollection(workspaceId);
-
-    // exists should be true after we create the collection
-    assertTrue(collectionService.exists(workspaceId, collectionId));
-
-    // delete collection once more
-    collectionService.delete(workspaceId, collectionId);
-
-    // exists should be false again
-    assertFalse(collectionService.exists(workspaceId, collectionId));
-  }
-
-  @Test
   void testCreateDefaultIsIdempotent() {
     WorkspaceId workspaceId = twdsProperties.workspaceId();
     CollectionId collectionId = CollectionId.of(workspaceId.id());
 
     // at the start of the test, we expect the default collection does not exist
-    assertFalse(collectionService.exists(workspaceId, collectionId));
+    assertThat(collectionService.find(workspaceId, collectionId)).isEmpty();
     assertThat(collectionService.list(workspaceId)).isEmpty();
 
     // issue the call to create the default collection a few times; this call should be idempotent
     for (int i = 0; i < 5; i++) {
       collectionService.createDefaultCollection(workspaceId);
-      assertTrue(collectionService.exists(workspaceId, collectionId));
+      assertThat(collectionService.find(workspaceId, collectionId)).isPresent();
       assertThat(collectionService.list(workspaceId)).hasSize(1);
     }
   }

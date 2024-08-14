@@ -326,15 +326,6 @@ public class CollectionService {
     throw dbActionExecutionException;
   }
 
-  public boolean exists(WorkspaceId workspaceId, CollectionId collectionId) {
-    // if this deployment allows virtual collections, there is nothing to check
-    if (tenancyProperties.getAllowVirtualCollections()) {
-      return true;
-    }
-    // else, check if this collection has a row in the collections table
-    return find(workspaceId, collectionId).isPresent();
-  }
-
   // ============================== v0.2 methods ==============================
 
   /**
