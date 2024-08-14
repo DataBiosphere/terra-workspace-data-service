@@ -4,10 +4,13 @@ import static org.databiosphere.workspacedataservice.service.RecordUtils.validat
 import static org.databiosphere.workspacedataservice.service.model.ReservedNames.RECORD_ID;
 
 import bio.terra.common.db.ReadTransaction;
+import io.micrometer.common.KeyValue;
+import io.micrometer.common.KeyValues;
 import io.micrometer.observation.Observation;
 import io.micrometer.observation.ObservationRegistry;
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -210,7 +213,9 @@ public class RecordOrchestratorService { // TODO give me a better name
       return new RecordQueryResponse(searchRequest, Collections.emptyList(), totalRecords);
     }
 
-    Observation observation = Observation.start("wds.queryForRecords", observations);
+    Observation observation =
+        Observation.start("wds.queryForRecords", observations)
+            .lowCardinalityKeyValues(generateSearchFilterObservationKeyValues(searchRequest));
 
     if (searchRequest.getFilter().isPresent()) {
       SearchFilter filter = searchRequest.getFilter().get();
@@ -240,6 +245,26 @@ public class RecordOrchestratorService { // TODO give me a better name
 
     observation.stop();
     return new RecordQueryResponse(searchRequest, recordList, totalRecords);
+  }
+
+  private KeyValues generateSearchFilterObservationKeyValues(SearchRequest searchRequest) {
+    List<KeyValue> kvs = new ArrayList<>();
+
+    searchRequest
+        .getFilter()
+        .ifPresent(
+            filter -> {
+              // check for non-empty ids
+              if (filter.ids().isPresent() && !filter.ids().get().isEmpty()) {
+                kvs.add(KeyValue.of("queryForRecords.includesFilterById", "true"));
+              }
+              // check for non-blank query
+              if (filter.query().isPresent() && !filter.query().get().isBlank()) {
+                kvs.add(KeyValue.of("queryForRecords.includesFilterByQuery", "true"));
+              }
+            });
+
+    return KeyValues.of(kvs);
   }
 
   public ResponseEntity<RecordResponse> upsertSingleRecord(
