@@ -39,6 +39,7 @@ import org.databiosphere.workspacedataservice.shared.model.RecordQueryResponse;
 import org.databiosphere.workspacedataservice.shared.model.RecordRequest;
 import org.databiosphere.workspacedataservice.shared.model.RecordResponse;
 import org.databiosphere.workspacedataservice.shared.model.RecordType;
+import org.databiosphere.workspacedataservice.shared.model.SearchFilter;
 import org.databiosphere.workspacedataservice.shared.model.SearchRequest;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -209,11 +210,17 @@ public class RecordOrchestratorService { // TODO give me a better name
       return new RecordQueryResponse(searchRequest, Collections.emptyList(), totalRecords);
     }
 
-    Observation observation =
-        Observation.start("wds.RecordOrchestratorService.queryForRecords", observations)
-            .lowCardinalityKeyValue(
-                "wds.searchRequest.includesFilter",
-                String.valueOf(searchRequest.getFilter().isPresent()));
+    Observation observation = Observation.start("wds.queryForRecords", observations);
+
+    if (searchRequest.getFilter().isPresent()) {
+      SearchFilter filter = searchRequest.getFilter().get();
+      if (filter.ids().isPresent() && !filter.ids().get().isEmpty()) {
+        observation.lowCardinalityKeyValue("queryForRecords.includesFilterById", "true");
+      }
+      if (filter.query().isPresent()) {
+        observation.lowCardinalityKeyValue("queryForRecords.includesFilterByQuery", "true");
+      }
+    }
 
     LOGGER.info("queryForEntities: {}", recordType.getName());
     List<Record> records =
