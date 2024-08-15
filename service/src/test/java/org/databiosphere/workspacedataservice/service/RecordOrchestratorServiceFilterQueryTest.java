@@ -58,6 +58,9 @@ class RecordOrchestratorServiceFilterQueryTest extends TestBase {
   @Value("classpath:searchfilter/testdata.tsv")
   Resource testDataTsv;
 
+  @Value("classpath:searchfilter/relations.tsv")
+  Resource testRelationsTsv;
+
   private UUID testCollectionId;
   private static final RecordType TEST_TYPE = RecordType.valueOf("test");
 
@@ -270,6 +273,85 @@ class RecordOrchestratorServiceFilterQueryTest extends TestBase {
   void arrayOfDatetimeColumn(String criteria, List<String> expectedIds) {
     performTest("arrdatetime", DataTypeMapping.ARRAY_OF_DATE_TIME, criteria, expectedIds);
   }
+
+  // ===== RELATION column
+  private static Stream<Arguments> relationArguments() {
+    return Stream.of(Arguments.of("1", List.of("A", "B")), Arguments.of("2", List.of("C")));
+  }
+
+  @ParameterizedTest(name = "relation filter for value <{0}>")
+  @MethodSource("relationArguments")
+  void relationColumn(String criteria, List<String> expectedIds) {
+    // load the test data - these are the relation targets
+    loadTestData();
+    // load the relations
+    RecordType relationType = RecordType.valueOf("relations");
+    try {
+      MockMultipartFile testTsv =
+          new MockMultipartFile("relations.tsv", testRelationsTsv.getInputStream());
+      recordOrchestratorService.tsvUpload(
+          testCollectionId, "v0.2", relationType, Optional.empty(), testTsv);
+    } catch (Exception e) {
+      fail(e);
+    }
+
+    // build the by-column filter
+    SearchFilter searchFilter = new SearchFilter(Optional.empty(), Optional.of("rel:" + criteria));
+
+    SearchRequest searchRequest = new SearchRequest();
+    searchRequest.setFilter(Optional.of(searchFilter));
+
+    // perform the filter, should return expected results
+    RecordQueryResponse resp =
+        recordOrchestratorService.queryForRecords(
+            testCollectionId, relationType, VERSION, searchRequest);
+    assertEquals(expectedIds.size(), resp.records().size(), "incorrect result count");
+    // extract record ids from the response
+    List<String> actualIds = resp.records().stream().map(RecordResponse::recordId).toList();
+    assertThat(expectedIds).hasSameElementsAs(actualIds);
+  }
+
+  // ===== ARRAY_OF_RELATION column
+  private static Stream<Arguments> arrayOfRelationArguments() {
+    return Stream.of(Arguments.of("1", List.of("A", "B")), Arguments.of("2", List.of("B", "C")));
+  }
+
+  @ParameterizedTest(name = "array_of_relation filter for value <{0}>")
+  @MethodSource("arrayOfRelationArguments")
+  void arrayOfRelationColumn(String criteria, List<String> expectedIds) {
+    // load the test data - these are the relation targets
+    loadTestData();
+    // load the relations
+    RecordType relationType = RecordType.valueOf("relations");
+    try {
+      MockMultipartFile testTsv =
+          new MockMultipartFile("relations.tsv", testRelationsTsv.getInputStream());
+      recordOrchestratorService.tsvUpload(
+          testCollectionId, "v0.2", relationType, Optional.empty(), testTsv);
+    } catch (Exception e) {
+      fail(e);
+    }
+
+    // build the by-column filter
+    SearchFilter searchFilter =
+        new SearchFilter(Optional.empty(), Optional.of("arrrel:" + criteria));
+
+    SearchRequest searchRequest = new SearchRequest();
+    searchRequest.setFilter(Optional.of(searchFilter));
+
+    // perform the filter, should return expected results
+    RecordQueryResponse resp =
+        recordOrchestratorService.queryForRecords(
+            testCollectionId, relationType, VERSION, searchRequest);
+    assertEquals(expectedIds.size(), resp.records().size(), "incorrect result count");
+    // extract record ids from the response
+    List<String> actualIds = resp.records().stream().map(RecordResponse::recordId).toList();
+    assertThat(expectedIds).hasSameElementsAs(actualIds);
+  }
+
+  /* TODO AJ-1954: support
+      JSON, ARRAY_OF_JSON
+  */
 
   // the test implementation for all tests above
   private void performTest(

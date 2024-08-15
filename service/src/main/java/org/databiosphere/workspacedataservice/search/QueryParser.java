@@ -65,7 +65,7 @@ public class QueryParser {
 
       // based on the datatype of the column, build relevant SQL
       switch (datatype) {
-        case STRING, FILE:
+        case STRING, FILE, RELATION:
           // LOWER("mycolumn") = 'mysearchterm'
           clauses.add("LOWER(" + quote(column) + ") = :" + paramName);
           values.put(paramName, value.toLowerCase());
@@ -115,10 +115,27 @@ public class QueryParser {
           clauses.add(":" + paramName + " = ANY(" + quote(column) + ")");
           values.put(paramName, parseDateTime(value));
           break;
-
+        case NULL, EMPTY_ARRAY:
+          /* results in a "where false" clause. These columns are nonsensical to filter on;
+             they cannot contain anything. Would it be better to throw InvalidQueryException for these?
+          */
+          clauses.add("false");
+          break;
+        case ARRAY_OF_RELATION:
+          // 'mysearchterm' IN (select split_part(unnest, '/', 3) from unnest("mycolumn")
+          /* values in the column will be of the form "terra-wds:/${targetType}/${targetId}".
+             This SQL splits the values on "/", finds the third index in the split,
+             and searches on that value.
+          */
+          clauses.add(
+              ":"
+                  + paramName
+                  + " IN (select split_part(unnest, '/', 3) from unnest("
+                  + quote(column)
+                  + "))");
+          values.put(paramName, value.toLowerCase());
+          break;
           /* TODO AJ-1954: support
-              NULL, EMPTY_ARRAY, (uncommon)
-              RELATION, ARRAY_OF_RELATION,
               JSON, ARRAY_OF_JSON
           */
         default:

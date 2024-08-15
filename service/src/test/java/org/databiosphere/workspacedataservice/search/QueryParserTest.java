@@ -11,6 +11,7 @@ import java.util.stream.Stream;
 import org.databiosphere.workspacedataservice.service.model.DataTypeMapping;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.EnumSource;
 import org.junit.jupiter.params.provider.MethodSource;
 
 class QueryParserTest {
@@ -106,6 +107,43 @@ class QueryParserTest {
     arrayStringTestImpl(queryTerm, expectedResult, DataTypeMapping.ARRAY_OF_FILE);
   }
 
+  // ========== RELATION and array thereof
+  private static Stream<Arguments> relationTerms() {
+    return Stream.of(
+        Arguments.of("one", "one"),
+        Arguments.of("\"terra-wds://target/one\"", "terra-wds://target/one"),
+        Arguments.of("two", "two"),
+        Arguments.of("\"terra-wds://target/two\"", "terra-wds://target/two"));
+  }
+
+  // test expected parsing for a single string column and its filter term
+  @ParameterizedTest(name = "Valid query `column1:{0}`")
+  @MethodSource("relationTerms")
+  void parseSingleRelationColumnTerm(String queryTerm, String expectedResult) {
+    scalarStringTestImpl(queryTerm, expectedResult, DataTypeMapping.RELATION);
+  }
+
+  // test expected parsing for a single string column and its filter term
+  @ParameterizedTest(name = "Valid query `column1:{0}`")
+  @MethodSource("relationTerms")
+  void parseSingleArrayOfRelationColumnTerm(String queryTerm, String expectedResult) {
+    String query = "column1:" + queryTerm;
+
+    WhereClausePart actual =
+        new QueryParser(Map.of("column1", DataTypeMapping.ARRAY_OF_RELATION)).parse(query);
+
+    WhereClausePart expected =
+        new WhereClausePart(
+            List.of(
+                ":filterquery0 IN (select split_part(unnest, '/', 3) from unnest(\"column1\"))"),
+            Map.of("filterquery0", "%/" + expectedResult.toLowerCase()));
+
+    assertEquals(expected, actual);
+  }
+
+  /* TODO AJ-1954: support
+      JSON, ARRAY_OF_JSON
+  */
   // ========== NUMBER and array thereof
 
   private static Stream<Arguments> numberTerms() {
@@ -270,6 +308,21 @@ class QueryParserTest {
     WhereClausePart expected =
         new WhereClausePart(
             List.of(":filterquery0 = ANY(\"column1\")"), Map.of("filterquery0", expectedResult));
+
+    assertEquals(expected, actual);
+  }
+
+  // ========== NULL, EMPTY_ARRAY
+  @ParameterizedTest(name = "Query on `{0}` column")
+  @EnumSource(
+      value = DataTypeMapping.class,
+      names = {"NULL", "EMPTY_ARRAY"})
+  void nullAndEmptyArrayColumns(DataTypeMapping dataType) {
+    String query = "column1:whatever";
+
+    WhereClausePart actual = new QueryParser(Map.of("column1", dataType)).parse(query);
+
+    WhereClausePart expected = new WhereClausePart(List.of("false"), Map.of());
 
     assertEquals(expected, actual);
   }
