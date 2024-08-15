@@ -36,6 +36,8 @@ public class GenericJobServerModel {
   public enum JobTypeEnum {
     DATA_IMPORT("DATA_IMPORT"),
     
+    WORKSPACE_INIT("WORKSPACE_INIT"),
+    
     UNKNOWN("UNKNOWN");
 
     private String value;

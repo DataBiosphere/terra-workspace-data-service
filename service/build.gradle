@@ -135,6 +135,7 @@ dependencies {
     testImplementation 'au.com.dius.pact.provider:spring:4.6.13'
     testImplementation 'au.com.dius.pact.consumer:junit5:4.6.13'
     testImplementation 'org.junit-pioneer:junit-pioneer:2.2.0'
+    testImplementation 'org.awaitility:awaitility'
 
     // google bucket mock
     testImplementation 'com.google.cloud:google-cloud-nio:0.127.21'

@@ -45,7 +45,7 @@ public interface WorkspaceApi {
 
     /**
      * POST /workspaces/v1/{workspaceId} : Initialize WDS for a given workspace.
-     * when the &#x60;clone&#x60; key is present, this API will clone all collections from sourceWorkspaceId into this workspace 
+     * when the &#x60;clone&#x60; key is present in the request body, this API will clone all collections from sourceWorkspaceId into this workspace 
      *
      * @param workspaceId Workspace id (required)
      * @param workspaceInitServerModel Initialization parameters (required)
@@ -54,7 +54,7 @@ public interface WorkspaceApi {
     @Operation(
         operationId = "initWorkspaceV1",
         summary = "Initialize WDS for a given workspace.",
-        description = "when the `clone` key is present, this API will clone all collections from sourceWorkspaceId into this workspace ",
+        description = "when the `clone` key is present in the request body, this API will clone all collections from sourceWorkspaceId into this workspace ",
         tags = { "Workspace" },
         responses = {
             @ApiResponse(responseCode = "202", description = "Initialization request accepted.", content = {

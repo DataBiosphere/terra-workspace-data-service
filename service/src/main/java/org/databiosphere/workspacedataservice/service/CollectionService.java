@@ -6,6 +6,7 @@ import static org.databiosphere.workspacedataservice.service.RecordUtils.validat
 import bio.terra.common.db.WriteTransaction;
 import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.Spliterator;
 import java.util.Spliterators;
 import java.util.UUID;
@@ -23,6 +24,7 @@ import org.databiosphere.workspacedataservice.service.model.exception.ConflictEx
 import org.databiosphere.workspacedataservice.service.model.exception.MissingObjectException;
 import org.databiosphere.workspacedataservice.service.model.exception.ValidationException;
 import org.databiosphere.workspacedataservice.shared.model.CollectionId;
+import org.databiosphere.workspacedataservice.shared.model.DefaultCollectionCreationResult;
 import org.databiosphere.workspacedataservice.shared.model.WdsCollection;
 import org.databiosphere.workspacedataservice.shared.model.WdsCollectionCreateRequest;
 import org.databiosphere.workspacedataservice.shared.model.WorkspaceId;
@@ -50,6 +52,7 @@ public class CollectionService {
 
   // strings for use in error messages
   private static final String COLLECTION = "Collection";
+  public static final String NAME_DEFAULT = "default";
 
   @Nullable private WorkspaceId workspaceId;
 
@@ -73,8 +76,32 @@ public class CollectionService {
 
   // ============================== v1 methods ==============================
 
+  @WriteTransaction
+  public DefaultCollectionCreationResult createDefaultCollection(WorkspaceId workspaceId) {
+    // the default collection for any workspace has the same id as the workspace
+    CollectionId collectionId = CollectionId.of(workspaceId.id());
+
+    // does the default collection already exist?
+    Optional<CollectionServerModel> found = find(workspaceId, collectionId);
+
+    // if collection exists, this is a noop; return what we found.
+    if (found.isPresent()) {
+      LOGGER.debug(
+          "createDefaultCollection called for workspaceId {}, but workspace already has a default collection.",
+          workspaceId);
+      return new DefaultCollectionCreationResult(false, found.get());
+    }
+
+    // initialize the name/description payload
+    CollectionRequestServerModel collectionRequestServerModel =
+        new CollectionRequestServerModel(NAME_DEFAULT, NAME_DEFAULT);
+    // and save
+    return new DefaultCollectionCreationResult(
+        true, save(workspaceId, collectionId, collectionRequestServerModel));
+  }
+
   /**
-   * Insert a new collection
+   * Insert a new collection, generating a random collection id.
    *
    * @param workspaceId the workspace to contain this collection
    * @param collectionRequestServerModel the collection definition
@@ -83,15 +110,30 @@ public class CollectionService {
   @WriteTransaction
   public CollectionServerModel save(
       WorkspaceId workspaceId, CollectionRequestServerModel collectionRequestServerModel) {
+    // generate a collection id
+    CollectionId collectionId = CollectionId.of(UUID.randomUUID());
+    return save(workspaceId, collectionId, collectionRequestServerModel);
+  }
+
+  /**
+   * Insert a new collection, specifying the collection id. This should only be called internally;
+   * users should not be granted the ability to specify the collection id.
+   *
+   * @param workspaceId the workspace to contain this collection
+   * @param collectionId the id of the collection to create
+   * @param collectionRequestServerModel the collection definition
+   * @return the created collection
+   */
+  private CollectionServerModel save(
+      WorkspaceId workspaceId,
+      CollectionId collectionId,
+      CollectionRequestServerModel collectionRequestServerModel) {
 
     // if WDS is running in single-tenant mode, ensure the specified workspace matches
     if (tenancyProperties.getEnforceCollectionsMatchWorkspaceId()
         && !workspaceId.equals(this.workspaceId)) {
       throw new ValidationException("Cannot create collection in this workspace.");
     }
-
-    // generate a collection id
-    CollectionId collectionId = CollectionId.of(UUID.randomUUID());
 
     // translate CollectionServerModel to WdsCollection
     WdsCollection wdsCollectionRequest =
@@ -164,26 +206,36 @@ public class CollectionService {
   }
 
   /**
-   * Retrieve a single collection by its workspaceId and collectionId.
+   * Retrieve a single collection by its workspaceId and collectionId, or empty Optional if not
+   * found.
+   *
+   * @param workspaceId the workspace containing the collection to be retrieved
+   * @param collectionId id of the collection to be retrieved
+   * @return the collection, or empty Optional if not found
+   */
+  public Optional<CollectionServerModel> find(WorkspaceId workspaceId, CollectionId collectionId) {
+    return collectionRepository
+        .find(workspaceId, collectionId)
+        .map(
+            coll -> {
+              CollectionServerModel serverModel =
+                  new CollectionServerModel(coll.name(), coll.description());
+              serverModel.id(coll.collectionId().id());
+              return serverModel;
+            });
+  }
+
+  /**
+   * Retrieve a single collection by its workspaceId and collectionId. Throws MissingObjectException
+   * if not found.
    *
    * @param workspaceId the workspace containing the collection to be retrieved
    * @param collectionId id of the collection to be retrieved
    * @return the collection
    */
   public CollectionServerModel get(WorkspaceId workspaceId, CollectionId collectionId) {
-    // retrieve the collection; throw if collection not found
-    WdsCollection found =
-        collectionRepository
-            .find(workspaceId, collectionId)
-            .orElseThrow(() -> new MissingObjectException(COLLECTION));
-
-    // translate to the response model
-    CollectionServerModel serverModel =
-        new CollectionServerModel(found.name(), found.description());
-    serverModel.id(found.collectionId().id());
-
-    // and return
-    return serverModel;
+    Optional<CollectionServerModel> found = find(workspaceId, collectionId);
+    return found.orElseThrow(() -> new MissingObjectException(COLLECTION));
   }
 
   /**
@@ -264,7 +316,6 @@ public class CollectionService {
       String msg = duplicateKeyException.getMessage();
       if (msg.contains("duplicate key value violates unique constraint")
           && msg.contains("instance_pkey")) {
-        // TODO: this allows phishing for collection ids.
         throw new ConflictException("Collection with this id already exists");
       } else if (msg.contains("duplicate key value violates unique constraint")
           && msg.contains("instance_workspace_id_name_key")) {
