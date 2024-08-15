@@ -1,5 +1,6 @@
 package org.databiosphere.workspacedataservice.service;
 
+import static io.micrometer.observation.tck.TestObservationRegistryAssert.assertThat;
 import static java.util.UUID.randomUUID;
 import static org.databiosphere.workspacedataservice.service.RecordUtils.VERSION;
 import static org.databiosphere.workspacedataservice.service.RecordUtils.validateVersion;
@@ -7,6 +8,7 @@ import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
+import io.micrometer.observation.tck.TestObservationRegistry;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -16,6 +18,7 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+import org.databiosphere.workspacedataservice.annotations.WithTestObservationRegistry;
 import org.databiosphere.workspacedataservice.common.TestBase;
 import org.databiosphere.workspacedataservice.dao.CollectionDao;
 import org.databiosphere.workspacedataservice.service.model.AttributeSchema;
@@ -32,6 +35,7 @@ import org.databiosphere.workspacedataservice.shared.model.RecordQueryResponse;
 import org.databiosphere.workspacedataservice.shared.model.RecordRequest;
 import org.databiosphere.workspacedataservice.shared.model.RecordResponse;
 import org.databiosphere.workspacedataservice.shared.model.RecordType;
+import org.databiosphere.workspacedataservice.shared.model.SearchFilter;
 import org.databiosphere.workspacedataservice.shared.model.SearchRequest;
 import org.databiosphere.workspacedataservice.shared.model.SortDirection;
 import org.junit.jupiter.api.AfterEach;
@@ -48,10 +52,12 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.server.ResponseStatusException;
 
 @SpringBootTest
+@WithTestObservationRegistry
 class RecordOrchestratorServiceTest extends TestBase {
 
   @Autowired private CollectionDao collectionDao;
   @Autowired private RecordOrchestratorService recordOrchestratorService;
+  @Autowired private TestObservationRegistry observations;
 
   private static final UUID COLLECTION_UUID = randomUUID();
   private static final CollectionId COLLECTION_ID = CollectionId.of(COLLECTION_UUID);
@@ -201,6 +207,58 @@ class RecordOrchestratorServiceTest extends TestBase {
     // extract actual ids, in order, from the response
     List<String> actualIds = resp.records().stream().map(RecordResponse::recordId).toList();
     assertEquals(List.of("two", "three", "one"), actualIds); // descending alpha sort on pk
+  }
+
+  @Test
+  void queryRecordsMeasurementNoFilter() {
+    // create a single record to query
+    testCreateRecord(RECORD_ID, TEST_KEY, TEST_VAL);
+
+    // run a query with no filter
+    recordOrchestratorService.queryForRecords(
+        COLLECTION_UUID, TEST_TYPE, VERSION, new SearchRequest());
+
+    assertThat(observations).hasNumberOfObservationsWithNameEqualTo("wds.queryForRecords", 1);
+  }
+
+  @Test
+  void queryRecordsMeasurementFilterById() {
+    // create a single record to query
+    testCreateRecord(RECORD_ID, TEST_KEY, TEST_VAL);
+
+    // run a query with a filter by ID
+    SearchRequest requestWithFilterById = new SearchRequest();
+    requestWithFilterById.setFilter(
+        Optional.of(new SearchFilter(Optional.of(List.of(RECORD_ID)), Optional.empty())));
+    recordOrchestratorService.queryForRecords(
+        COLLECTION_UUID, TEST_TYPE, VERSION, requestWithFilterById);
+
+    assertThat(observations)
+        .hasNumberOfObservationsWithNameEqualTo("wds.queryForRecords", 1)
+        .hasObservationWithNameEqualTo("wds.queryForRecords")
+        .that()
+        .hasLowCardinalityKeyValue("queryForRecords.includesFilterById", "true");
+  }
+
+  @Test
+  void queryRecordsMeasurementFilterByQuery() {
+    // create a single record to query
+    testCreateRecord(RECORD_ID, TEST_KEY, TEST_VAL);
+
+    // run a query with a filter by query
+    SearchRequest requestWithFilterByQuery = new SearchRequest();
+    requestWithFilterByQuery.setFilter(
+        Optional.of(
+            new SearchFilter(
+                Optional.empty(), Optional.of("%s:%s".formatted(TEST_KEY, TEST_VAL)))));
+    recordOrchestratorService.queryForRecords(
+        COLLECTION_UUID, TEST_TYPE, VERSION, requestWithFilterByQuery);
+
+    assertThat(observations)
+        .hasNumberOfObservationsWithNameEqualTo("wds.queryForRecords", 1)
+        .hasObservationWithNameEqualTo("wds.queryForRecords")
+        .that()
+        .hasLowCardinalityKeyValue("queryForRecords.includesFilterByQuery", "true");
   }
 
   @Test
