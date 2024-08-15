@@ -3,6 +3,9 @@ package org.databiosphere.workspacedataservice.search;
 import static org.databiosphere.workspacedataservice.dao.SqlUtils.quote;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -62,12 +65,12 @@ public class QueryParser {
 
       // based on the datatype of the column, build relevant SQL
       switch (datatype) {
-        case STRING:
+        case STRING, FILE:
           // LOWER("mycolumn") = 'mysearchterm'
           clauses.add("LOWER(" + quote(column) + ") = :" + paramName);
           values.put(paramName, value.toLowerCase());
           break;
-        case ARRAY_OF_STRING:
+        case ARRAY_OF_STRING, ARRAY_OF_FILE:
           // 'mysearchterm' ILIKE ANY("mycolumn")
           clauses.add(":" + paramName + " ILIKE ANY(" + quote(column) + ")");
           values.put(paramName, value.toLowerCase());
@@ -82,8 +85,45 @@ public class QueryParser {
           clauses.add(":" + paramName + " = ANY(" + quote(column) + ")");
           values.put(paramName, parseNumericValue(value));
           break;
+        case BOOLEAN:
+          // "mycolumn" = false
+          clauses.add(quote(column) + " = :" + paramName);
+          values.put(paramName, strictParseBoolean(value));
+          break;
+        case ARRAY_OF_BOOLEAN:
+          // false = ANY("mycolumn")
+          clauses.add(":" + paramName + " = ANY(" + quote(column) + ")");
+          values.put(paramName, strictParseBoolean(value));
+          break;
+        case DATE:
+          // "mycolumn" = '1981-02-12'
+          clauses.add(quote(column) + " = :" + paramName);
+          values.put(paramName, parseDate(value));
+          break;
+        case ARRAY_OF_DATE:
+          // '1981-02-12' = ANY("mycolumn")
+          clauses.add(":" + paramName + " = ANY(" + quote(column) + ")");
+          values.put(paramName, parseDate(value));
+          break;
+        case DATE_TIME:
+          // "mycolumn" = '1981-02-12 19:00:00'
+          clauses.add(quote(column) + " = :" + paramName);
+          values.put(paramName, parseDateTime(value));
+          break;
+        case ARRAY_OF_DATE_TIME:
+          // '1981-02-12 19:00:00' = ANY("mycolumn")
+          clauses.add(":" + paramName + " = ANY(" + quote(column) + ")");
+          values.put(paramName, parseDateTime(value));
+          break;
+
+          /* TODO AJ-1954: support
+              NULL, EMPTY_ARRAY, (uncommon)
+              RELATION, ARRAY_OF_RELATION,
+              JSON, ARRAY_OF_JSON
+          */
         default:
-          throw new InvalidQueryException("Column specified in query must be a string type");
+          throw new InvalidQueryException(
+              "Column specified in query is of an unsupported datatype");
       }
 
       return new WhereClausePart(clauses, values);
@@ -92,6 +132,41 @@ public class QueryParser {
     }
   }
 
+  // parse string into LocalDate; throw InvalidQueryException if unparsable
+  private LocalDate parseDate(String value) {
+    try {
+      return LocalDate.parse(value, DateTimeFormatter.ISO_LOCAL_DATE);
+    } catch (Exception e) {
+      throw new InvalidQueryException(
+          "Query value for date column must be a valid ISO date string");
+    }
+  }
+
+  // parse string into LocalDateTime; throw InvalidQueryException if unparsable
+  private LocalDateTime parseDateTime(String value) {
+    try {
+      return LocalDateTime.parse(value, DateTimeFormatter.ISO_LOCAL_DATE_TIME);
+    } catch (Exception e) {
+      throw new InvalidQueryException(
+          "Query value for datetime column must be a valid ISO datetime string");
+    }
+  }
+
+  // parse string into boolean, supporting only "true" or "false" strings, case-insensitive.
+  // throw InvalidQueryException if unparsable
+  private boolean strictParseBoolean(String value) {
+    // could use DataTypeInferer.isValidBoolean here instead, but that requires spring beans
+    if ("true".equalsIgnoreCase(value)) {
+      return true;
+    }
+    if ("false".equalsIgnoreCase(value)) {
+      return false;
+    }
+    throw new InvalidQueryException(
+        "Query value for boolean column must be either 'true' or 'false'");
+  }
+
+  // parse string into Double; throw InvalidQueryException if unparsable
   private Double parseNumericValue(String value) {
     BigDecimal parsedNumber;
     try {
@@ -102,6 +177,7 @@ public class QueryParser {
     return parsedNumber.doubleValue();
   }
 
+  // validate the column on which we are filtering
   private void validateColumnName(String columnName) {
     // The Lucene query parser requires a default column name to parse a query. If the end user
     // has not specified a column, the query parser will use the default column name. In our case,
