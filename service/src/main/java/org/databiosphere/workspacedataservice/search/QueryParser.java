@@ -118,11 +118,10 @@ public class QueryParser {
           clauses.add(":" + paramName + " = ANY(" + quote(column) + ")");
           values.put(paramName, parseDateTime(value));
         }
-        case NULL, EMPTY_ARRAY -> {
-          // results in a "where false" clause. These columns are nonsensical to filter on;
-          // they cannot contain anything. Would it be better to throw InvalidQueryException?
-          clauses.add("false");
-        }
+        case NULL, EMPTY_ARRAY ->
+            // results in a `where false` clause. These columns are nonsensical to filter on, as
+            // they cannot contain anything. Would it be better to throw InvalidQueryException?
+            clauses.add("false");
         case ARRAY_OF_RELATION -> {
           // 'mysearchterm' IN (select split_part(unnest, '/', 3) from unnest("mycolumn")
           /* values in the column will be of the form "terra-wds:/${targetType}/${targetId}".
@@ -154,9 +153,10 @@ public class QueryParser {
           values.put(paramName, value);
         }
         default ->
-        // this shouldn't happen, since all datatypes are covered above. Leaving this in place
-        // as a safety net in case we add datatypes
-        throw new InvalidQueryException("Column specified in query is of an unsupported datatype");
+            // this shouldn't happen, since all datatypes are covered above. Leaving this in place
+            // as a safety net in case we add datatypes
+            throw new InvalidQueryException(
+                "Column specified in query is of an unsupported datatype");
       }
 
       return new WhereClausePart(clauses, values);
