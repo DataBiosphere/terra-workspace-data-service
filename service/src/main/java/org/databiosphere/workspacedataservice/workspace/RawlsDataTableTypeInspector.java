@@ -23,10 +23,10 @@ public class RawlsDataTableTypeInspector implements DataTableTypeInspector {
   @Override
   public WorkspaceDataTableType getWorkspaceDataTableType(WorkspaceId workspaceId) {
     RawlsWorkspaceDetails details = rawlsClient.getWorkspaceDetails(workspaceId.id());
-    if (RawlsWorkspaceDetails.RawlsWorkspace.WorkspaceType.MC.equals(
-        details.workspace().workspaceType())) {
-      return WorkspaceDataTableType.WDS;
-    }
-    return WorkspaceDataTableType.RAWLS;
+
+    return switch (details.workspace().workspaceType()) {
+      case MC -> WorkspaceDataTableType.WDS;
+      case RAWLS -> WorkspaceDataTableType.RAWLS;
+    };
   }
 }
