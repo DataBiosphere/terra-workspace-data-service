@@ -68,63 +68,62 @@ public class QueryParser {
 
       // based on the datatype of the column, build relevant SQL
       switch (datatype) {
-        case STRING, FILE, RELATION:
+        case STRING, FILE, RELATION -> {
           // LOWER("mycolumn") = 'mysearchterm'
           clauses.add("LOWER(" + quote(column) + ") = :" + paramName);
           values.put(paramName, value.toLowerCase());
-          break;
-        case ARRAY_OF_STRING, ARRAY_OF_FILE:
+        }
+        case ARRAY_OF_STRING, ARRAY_OF_FILE -> {
           // 'mysearchterm' ILIKE ANY("mycolumn")
           clauses.add(":" + paramName + " ILIKE ANY(" + quote(column) + ")");
           values.put(paramName, value.toLowerCase());
-          break;
-        case NUMBER:
+        }
+        case NUMBER -> {
           // "mycolumn" = 42
           clauses.add(quote(column) + " = :" + paramName);
           values.put(paramName, parseNumericValue(value));
-          break;
-        case ARRAY_OF_NUMBER:
+        }
+        case ARRAY_OF_NUMBER -> {
           // 42 = ANY("mycolumn")
           clauses.add(":" + paramName + " = ANY(" + quote(column) + ")");
           values.put(paramName, parseNumericValue(value));
-          break;
-        case BOOLEAN:
+        }
+        case BOOLEAN -> {
           // "mycolumn" = false
           clauses.add(quote(column) + " = :" + paramName);
           values.put(paramName, strictParseBoolean(value));
-          break;
-        case ARRAY_OF_BOOLEAN:
+        }
+        case ARRAY_OF_BOOLEAN -> {
           // false = ANY("mycolumn")
           clauses.add(":" + paramName + " = ANY(" + quote(column) + ")");
           values.put(paramName, strictParseBoolean(value));
-          break;
-        case DATE:
+        }
+        case DATE -> {
           // "mycolumn" = '1981-02-12'
           clauses.add(quote(column) + " = :" + paramName);
           values.put(paramName, parseDate(value));
-          break;
-        case ARRAY_OF_DATE:
+        }
+        case ARRAY_OF_DATE -> {
           // '1981-02-12' = ANY("mycolumn")
           clauses.add(":" + paramName + " = ANY(" + quote(column) + ")");
           values.put(paramName, parseDate(value));
-          break;
-        case DATE_TIME:
+        }
+        case DATE_TIME -> {
           // "mycolumn" = '1981-02-12 19:00:00'
           clauses.add(quote(column) + " = :" + paramName);
           values.put(paramName, parseDateTime(value));
-          break;
-        case ARRAY_OF_DATE_TIME:
+        }
+        case ARRAY_OF_DATE_TIME -> {
           // '1981-02-12 19:00:00' = ANY("mycolumn")
           clauses.add(":" + paramName + " = ANY(" + quote(column) + ")");
           values.put(paramName, parseDateTime(value));
-          break;
-        case NULL, EMPTY_ARRAY:
-          /* results in a "where false" clause. These columns are nonsensical to filter on;
-             they cannot contain anything. Would it be better to throw InvalidQueryException for these?
-          */
-          clauses.add("false");
-          break;
-        case ARRAY_OF_RELATION:
+        }
+        case NULL, EMPTY_ARRAY ->
+            /* results in a "where false" clause. These columns are nonsensical to filter on;
+               they cannot contain anything. Would it be better to throw InvalidQueryException for these?
+            */
+            clauses.add("false");
+        case ARRAY_OF_RELATION -> {
           // 'mysearchterm' IN (select split_part(unnest, '/', 3) from unnest("mycolumn")
           /* values in the column will be of the form "terra-wds:/${targetType}/${targetId}".
              This SQL splits the values on "/", finds the third index in the split,
@@ -137,27 +136,28 @@ public class QueryParser {
                   + quote(column)
                   + "))");
           values.put(paramName, value.toLowerCase());
-          break;
-        case JSON:
+        }
+        case JSON -> {
           // "mycolumn" = '{"myjson":"stuff"}'::jsonb
           // validate json input
           parseJson(value);
 
           clauses.add(quote(column) + " = :" + paramName + "::jsonb");
           values.put(paramName, value);
-          break;
-        case ARRAY_OF_JSON:
+        }
+        case ARRAY_OF_JSON -> {
           // '{"myjson":"stuff"}'::jsonb = ANY("mycolumn")
           // validate json input
           parseJson(value);
 
           clauses.add(":" + paramName + "::jsonb = ANY(" + quote(column) + ")");
           values.put(paramName, value);
-          break;
-        default:
-          // this shouldn't happen, since all datatypes are covered above
-          throw new InvalidQueryException(
-              "Column specified in query is of an unsupported datatype");
+        }
+        default ->
+            // this shouldn't happen, since all datatypes are covered above. Leaving this in place
+            // as a safety net in case we add datatypes
+            throw new InvalidQueryException(
+                "Column specified in query is of an unsupported datatype");
       }
 
       return new WhereClausePart(clauses, values);
