@@ -26,7 +26,7 @@ class RawlsDataTableTypeInspectorTest {
 
   @ParameterizedTest(name = "workspace type `{0}` should use `{1}` data tables")
   @MethodSource("workspaceTypeArguments")
-  void mcWorkspace(
+  void dataTableType(
       RawlsWorkspace.WorkspaceType workspaceType, WorkspaceDataTableType dataTableType) {
 
     RawlsClient mockRawlsClient = Mockito.mock(RawlsClient.class);

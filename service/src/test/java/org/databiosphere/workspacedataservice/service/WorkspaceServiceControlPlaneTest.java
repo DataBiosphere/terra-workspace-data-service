@@ -17,10 +17,20 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.test.annotation.DirtiesContext;
+import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.context.TestPropertySource;
 
+@ActiveProfiles(profiles = {"control-plane"})
 @DirtiesContext
 @SpringBootTest
-class WorkspaceServiceTest {
+@TestPropertySource(
+    properties = {
+      // turn off pubsub autoconfiguration for tests
+      "spring.cloud.gcp.pubsub.enabled=false",
+      // Rawls url must be valid, else context initialization (Spring startup) will fail
+      "rawlsUrl=https://localhost/"
+    })
+class WorkspaceServiceControlPlaneTest {
 
   @MockBean RawlsClient rawlsClient;
   @Autowired WorkspaceService workspaceService;
@@ -36,7 +46,7 @@ class WorkspaceServiceTest {
 
   @ParameterizedTest(name = "workspace type `{0}` should use `{1}` data tables")
   @MethodSource("workspaceTypeArguments")
-  void mcWorkspace(
+  void dataTableType(
       RawlsWorkspaceDetails.RawlsWorkspace.WorkspaceType workspaceType,
       WorkspaceDataTableType dataTableType) {
 
