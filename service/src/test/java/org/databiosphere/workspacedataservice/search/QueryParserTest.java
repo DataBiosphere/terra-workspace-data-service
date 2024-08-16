@@ -135,8 +135,8 @@ class QueryParserTest {
     WhereClausePart expected =
         new WhereClausePart(
             List.of(
-                ":filterquery0 IN (select split_part(unnest, '/', 3) from unnest(\"column1\"))"),
-            Map.of("filterquery0", "%/" + expectedResult.toLowerCase()));
+                ":filterquery0 IN (select LOWER(split_part(unnest, '/', 3)) from unnest(\"column1\"))"),
+            Map.of("filterquery0", expectedResult.toLowerCase()));
 
     assertEquals(expected, actual);
   }

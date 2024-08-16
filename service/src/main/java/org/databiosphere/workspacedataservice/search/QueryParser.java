@@ -133,7 +133,7 @@ public class QueryParser {
           clauses.add(
               ":"
                   + paramName
-                  + " IN (select split_part(unnest, '/', 3) from unnest("
+                  + " IN (select LOWER(split_part(unnest, '/', 3)) from unnest("
                   + quote(column)
                   + "))");
           values.put(paramName, value.toLowerCase());
