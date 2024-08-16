@@ -2,6 +2,9 @@ package org.databiosphere.workspacedataservice.search;
 
 import static org.databiosphere.workspacedataservice.dao.SqlUtils.quote;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -135,10 +138,24 @@ public class QueryParser {
                   + "))");
           values.put(paramName, value.toLowerCase());
           break;
-          /* TODO AJ-1954: support
-              JSON, ARRAY_OF_JSON
-          */
+        case JSON:
+          // "mycolumn" = '{"myjson":"stuff"}'::jsonb
+          // validate json input
+          parseJson(value);
+
+          clauses.add(quote(column) + " = :" + paramName + "::jsonb");
+          values.put(paramName, value);
+          break;
+        case ARRAY_OF_JSON:
+          // '{"myjson":"stuff"}'::jsonb = ANY("mycolumn")
+          // validate json input
+          parseJson(value);
+
+          clauses.add(":" + paramName + "::jsonb = ANY(" + quote(column) + ")");
+          values.put(paramName, value);
+          break;
         default:
+          // this shouldn't happen, since all datatypes are covered above
           throw new InvalidQueryException(
               "Column specified in query is of an unsupported datatype");
       }
@@ -192,6 +209,21 @@ public class QueryParser {
       throw new InvalidQueryException("Query value for numeric column must be a number");
     }
     return parsedNumber.doubleValue();
+  }
+
+  private JsonNode parseJson(String value) {
+    /* N.B. this is a default ObjectMapper, which is NOT the same as the ObjectMapper used
+       throughout WDS and managed by Spring. Here, we don't care about consistency with JSON
+       parsing elsewhere in WDS; we only care that the input is parseable. After validating, the
+       value will be sent to Postgres for Postgres to parse internally, and it's _that_ parsing
+       that matters.
+    */
+    ObjectMapper objectMapper = new ObjectMapper();
+    try {
+      return objectMapper.readTree(value);
+    } catch (JsonProcessingException e) {
+      throw new InvalidQueryException("Query value for json column must be valid json");
+    }
   }
 
   // validate the column on which we are filtering

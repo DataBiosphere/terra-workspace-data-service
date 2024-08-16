@@ -349,9 +349,32 @@ class RecordOrchestratorServiceFilterQueryTest extends TestBase {
     assertThat(expectedIds).hasSameElementsAs(actualIds);
   }
 
-  /* TODO AJ-1954: support
-      JSON, ARRAY_OF_JSON
-  */
+  // ===== JSON column
+  private static Stream<Arguments> jsonArguments() {
+    return Stream.of(
+        Arguments.of("\"\\{\\\"foo\\\":12\\}\"", List.of("1")),
+        Arguments.of("\"\\{\\\"foo\\\":12, \\\"bar\\\":34\\}\"", List.of("2")),
+        Arguments.of("\"\\{\\\"bar\\\":34\\}\"", List.of("3")));
+  }
+
+  @ParameterizedTest(name = "json filter for value <{0}>")
+  @MethodSource("jsonArguments")
+  void jsonColumn(String criteria, List<String> expectedIds) {
+    performTest("json", DataTypeMapping.JSON, criteria, expectedIds);
+  }
+
+  // ===== ARRAY_OF_JSON column
+  private static Stream<Arguments> arrayOfJsonArguments() {
+    return Stream.of(
+        Arguments.of("\"\\{\\\"foo\\\":1\\}\"", List.of("1", "2")),
+        Arguments.of("\"\\{\\\"bar\\\":2\\}\"", List.of("2", "3")));
+  }
+
+  @ParameterizedTest(name = "array_of_json filter for value <{0}>")
+  @MethodSource("arrayOfJsonArguments")
+  void arrayOfJsonColumn(String criteria, List<String> expectedIds) {
+    performTest("arrjson", DataTypeMapping.ARRAY_OF_JSON, criteria, expectedIds);
+  }
 
   // the test implementation for all tests above
   private void performTest(

@@ -141,9 +141,46 @@ class QueryParserTest {
     assertEquals(expected, actual);
   }
 
-  /* TODO AJ-1954: support
-      JSON, ARRAY_OF_JSON
-  */
+  // ========== JSON and array thereof
+  private static Stream<Arguments> jsonTerms() {
+    return Stream.of(
+        Arguments.of("\"\\{\\\"foo\\\":1\\}\"", "{\"foo\":1}"),
+        Arguments.of("\"\\{\\\"foo\\\":12, \\\"bar\\\":34\\}\"", "{\"foo\":12, \"bar\":34}"));
+  }
+
+  // test expected parsing for a single json column and its filter term
+  @ParameterizedTest(name = "Valid query `column1:{0}`")
+  @MethodSource("jsonTerms")
+  void parseSingleJsonColumnTerm(String queryTerm, String expectedResult) {
+    String query = "column1:" + queryTerm;
+
+    WhereClausePart actual = new QueryParser(Map.of("column1", DataTypeMapping.JSON)).parse(query);
+
+    WhereClausePart expected =
+        new WhereClausePart(
+            List.of("\"column1\" = :filterquery0::jsonb"),
+            Map.of("filterquery0", expectedResult.toLowerCase()));
+
+    assertEquals(expected, actual);
+  }
+
+  // test expected parsing for a single array-of-json column and its filter term
+  @ParameterizedTest(name = "Valid query `column1:{0}`")
+  @MethodSource("jsonTerms")
+  void parseSingleArrayOfJsonColumnTerm(String queryTerm, String expectedResult) {
+    String query = "column1:" + queryTerm;
+
+    WhereClausePart actual =
+        new QueryParser(Map.of("column1", DataTypeMapping.ARRAY_OF_JSON)).parse(query);
+
+    WhereClausePart expected =
+        new WhereClausePart(
+            List.of(":filterquery0::jsonb = ANY(\"column1\")"),
+            Map.of("filterquery0", expectedResult));
+
+    assertEquals(expected, actual);
+  }
+
   // ========== NUMBER and array thereof
 
   private static Stream<Arguments> numberTerms() {
