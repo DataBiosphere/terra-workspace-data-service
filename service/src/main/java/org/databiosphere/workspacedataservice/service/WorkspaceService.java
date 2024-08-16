@@ -10,6 +10,8 @@ import org.databiosphere.workspacedataservice.shared.model.job.Job;
 import org.databiosphere.workspacedataservice.shared.model.job.JobInput;
 import org.databiosphere.workspacedataservice.shared.model.job.JobResult;
 import org.databiosphere.workspacedataservice.shared.model.job.JobType;
+import org.databiosphere.workspacedataservice.workspace.DataTableTypeInspector;
+import org.databiosphere.workspacedataservice.workspace.WorkspaceDataTableType;
 import org.databiosphere.workspacedataservice.workspace.WorkspaceInitJobInput;
 import org.databiosphere.workspacedataservice.workspace.WorkspaceInitJobResult;
 import org.slf4j.Logger;
@@ -22,10 +24,19 @@ public class WorkspaceService {
   private final Logger logger = LoggerFactory.getLogger(this.getClass());
   private final JobDao jobDao;
   private final CollectionService collectionService;
+  private final DataTableTypeInspector dataTableTypeInspector;
 
-  public WorkspaceService(JobDao jobDao, CollectionService collectionService) {
+  public WorkspaceService(
+      JobDao jobDao,
+      CollectionService collectionService,
+      DataTableTypeInspector dataTableTypeInspector) {
     this.jobDao = jobDao;
     this.collectionService = collectionService;
+    this.dataTableTypeInspector = dataTableTypeInspector;
+  }
+
+  public WorkspaceDataTableType getDataTableType(WorkspaceId workspaceId) {
+    return dataTableTypeInspector.getWorkspaceDataTableType(workspaceId);
   }
 
   /**
