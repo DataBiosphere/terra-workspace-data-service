@@ -5,6 +5,7 @@ import java.io.IOException;
 import org.databiosphere.workspacedataservice.annotations.DeploymentMode.ControlPlane;
 import org.databiosphere.workspacedataservice.annotations.DeploymentMode.DataPlane;
 import org.databiosphere.workspacedataservice.config.DataImportProperties;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
@@ -18,9 +19,10 @@ public class GcsStorageConfig {
     return GcsStorageImpl.create(projectIdProvider.getProjectId(), properties);
   }
 
+  @ConditionalOnMissingBean
   @DataPlane
   @Bean
-  public GcsStorage noopGcsStorage() throws IOException {
+  public GcsStorage noopGcsStorage() {
     return new GcsStorageNoopImpl();
   }
 }
