@@ -19,7 +19,6 @@ public class GcsStorageConfig {
     return GcsStorageImpl.create(projectIdProvider.getProjectId(), properties);
   }
 
-  @ConditionalOnMissingBean
   @DataPlane
   @Bean
   public GcsStorage noopGcsStorage() {
