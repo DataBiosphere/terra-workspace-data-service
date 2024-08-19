@@ -4,8 +4,10 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.when;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Stream;
+import org.databiosphere.workspacedataservice.dao.WorkspaceRepository;
 import org.databiosphere.workspacedataservice.rawls.RawlsClient;
 import org.databiosphere.workspacedataservice.rawls.RawlsWorkspaceDetails;
 import org.databiosphere.workspacedataservice.rawls.RawlsWorkspaceDetails.RawlsWorkspace;
@@ -29,6 +31,7 @@ class RawlsDataTableTypeInspectorTest {
   void dataTableType(
       RawlsWorkspace.WorkspaceType workspaceType, WorkspaceDataTableType dataTableType) {
 
+    // mock Rawls client
     RawlsClient mockRawlsClient = Mockito.mock(RawlsClient.class);
 
     WorkspaceId workspaceId = WorkspaceId.of(UUID.randomUUID());
@@ -38,7 +41,12 @@ class RawlsDataTableTypeInspectorTest {
 
     when(mockRawlsClient.getWorkspaceDetails(workspaceId.id())).thenReturn(rawlsWorkspaceDetails);
 
-    RawlsDataTableTypeInspector inspector = new RawlsDataTableTypeInspector(mockRawlsClient);
+    // mock WorkspaceRepository
+    WorkspaceRepository mockWorkspaceRepository = Mockito.mock(WorkspaceRepository.class);
+    when(mockWorkspaceRepository.findById(workspaceId)).thenReturn(Optional.empty());
+
+    RawlsDataTableTypeInspector inspector =
+        new RawlsDataTableTypeInspector(mockRawlsClient, mockWorkspaceRepository);
     WorkspaceDataTableType actual = inspector.getWorkspaceDataTableType(workspaceId);
     assertEquals(dataTableType, actual);
   }

@@ -1,5 +1,7 @@
 package org.databiosphere.workspacedataservice.workspace;
 
+import java.util.Optional;
+import org.databiosphere.workspacedataservice.dao.WorkspaceRepository;
 import org.databiosphere.workspacedataservice.rawls.RawlsClient;
 import org.databiosphere.workspacedataservice.rawls.RawlsWorkspaceDetails;
 import org.databiosphere.workspacedataservice.shared.model.WorkspaceId;
@@ -7,9 +9,12 @@ import org.databiosphere.workspacedataservice.shared.model.WorkspaceId;
 public class RawlsDataTableTypeInspector implements DataTableTypeInspector {
 
   private final RawlsClient rawlsClient;
+  private final WorkspaceRepository workspaceRepository;
 
-  public RawlsDataTableTypeInspector(RawlsClient rawlsClient) {
+  public RawlsDataTableTypeInspector(
+      RawlsClient rawlsClient, WorkspaceRepository workspaceRepository) {
     this.rawlsClient = rawlsClient;
+    this.workspaceRepository = workspaceRepository;
   }
 
   /**
@@ -22,11 +27,27 @@ public class RawlsDataTableTypeInspector implements DataTableTypeInspector {
    */
   @Override
   public WorkspaceDataTableType getWorkspaceDataTableType(WorkspaceId workspaceId) {
+
+    // try to get from local database first
+    Optional<WorkspaceRecord> maybeWorkspaceRecord = workspaceRepository.findById(workspaceId);
+    if (maybeWorkspaceRecord.isPresent()) {
+      return maybeWorkspaceRecord.get().getDataTableType();
+    }
+
+    // if not found in local database, query Rawls to determine the type of workspace
     RawlsWorkspaceDetails details = rawlsClient.getWorkspaceDetails(workspaceId.id());
 
-    return switch (details.workspace().workspaceType()) {
-      case MC -> WorkspaceDataTableType.WDS;
-      case RAWLS -> WorkspaceDataTableType.RAWLS;
-    };
+    WorkspaceDataTableType dataTableType =
+        switch (details.workspace().workspaceType()) {
+          case MC -> WorkspaceDataTableType.WDS;
+          case RAWLS -> WorkspaceDataTableType.RAWLS;
+        };
+
+    // persist the Rawls result to the local db for future use
+    WorkspaceRecord newWorkspaceRecord =
+        new WorkspaceRecord(workspaceId, dataTableType, /* newFlag= */ true);
+    workspaceRepository.save(newWorkspaceRecord);
+
+    return dataTableType;
   }
 }
