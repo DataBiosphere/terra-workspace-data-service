@@ -12,7 +12,7 @@ You may need to run tests locally to replicate and debug failures from the GitHu
 _You should only need to install prerequisites once._ Python tests require:
 
 * Python 3.8
-* openapi-generator 7.7.0
+* openapi-generator 7.8.0
 * pytest
 * optionally, a python virtual environment
 
@@ -32,7 +32,7 @@ Configure openapi-generator-cli to use the same version as the GitHub Action.
 Depending on your user permissions, sudo may be required to run these commands.
 
 ```bash
-openapi-generator-cli version-manager set 7.7.0
+openapi-generator-cli version-manager set 7.8.0
 ```
 
 At times, openapi-generator-cli won't set the right version even if the command above is run, so it
@@ -43,7 +43,7 @@ can be set. To see all available commands:
 openapi-generator-cli
 ```
 
-Run this command to see what versions are downloaded, if 7.7.0 is not, use arrow keys to navigate to
+Run this command to see what versions are downloaded, if 7.8.0 is not, use arrow keys to navigate to
 it and download it (or if already downloaded to use it).
 
 ```bash

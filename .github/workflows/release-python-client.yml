@@ -46,8 +46,8 @@ jobs:
       - name: Install openapi-generator-cli
         run: npm install @openapitools/openapi-generator-cli -g
 
-      - name: set version to 7.7.0
-        run: openapi-generator-cli version-manager set 7.7.0
+      - name: set version to 7.8.0
+        run: openapi-generator-cli version-manager set 7.8.0
 
       - name: Generate Python client
         run: |
