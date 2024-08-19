@@ -16,6 +16,8 @@ import org.databiosphere.workspacedataservice.recordsink.RecordSinkFactory;
 import org.databiosphere.workspacedataservice.recordsink.WdsRecordSinkFactory;
 import org.databiosphere.workspacedataservice.service.DataTypeInferer;
 import org.databiosphere.workspacedataservice.service.RecordService;
+import org.databiosphere.workspacedataservice.workspace.DataTableTypeInspector;
+import org.databiosphere.workspacedataservice.workspace.WdsDataTableTypeInspector;
 import org.databiosphere.workspacedataservice.workspacemanager.WorkspaceManagerDao;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -65,6 +67,12 @@ class AnnotatedApisTest extends TestBase {
     @Bean("overrideProtectedDataSupport")
     ProtectedDataSupport overrideProtectedDataSupport(WorkspaceManagerDao wsmDao) {
       return new WsmProtectedDataSupport(wsmDao);
+    }
+
+    @Primary
+    @Bean("overrideDataTableTypeInspector")
+    DataTableTypeInspector overrideDataTableTypeInspector() {
+      return new WdsDataTableTypeInspector();
     }
   }
 

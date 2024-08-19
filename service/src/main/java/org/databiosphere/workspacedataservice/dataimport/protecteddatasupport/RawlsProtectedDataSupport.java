@@ -17,6 +17,7 @@ public class RawlsProtectedDataSupport implements ProtectedDataSupport {
     this.rawlsClient = rawlsClient;
   }
 
+  // TODO AJ-1957: move into WorkspaceService?
   public boolean workspaceSupportsProtectedDataPolicy(WorkspaceId workspaceId) {
     RawlsWorkspaceDetails workspaceDetails = rawlsClient.getWorkspaceDetails(workspaceId.id());
     WorkspaceType workspaceType = workspaceDetails.workspace().workspaceType();
