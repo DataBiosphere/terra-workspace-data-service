@@ -1,0 +1,4 @@
+rel_id	rel	arrrel
+A	"terra-wds:/test/1"	["terra-wds:/test/1"]
+B	"terra-wds:/test/1"	["terra-wds:/test/1", "terra-wds:/test/2"]
+C	"terra-wds:/test/2"	["terra-wds:/test/2"]

@@ -2,6 +2,9 @@ package org.databiosphere.workspacedataservice.search;
 
 import static org.databiosphere.workspacedataservice.dao.SqlUtils.quote;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -65,65 +68,94 @@ public class QueryParser {
 
       // based on the datatype of the column, build relevant SQL
       switch (datatype) {
-        case STRING, FILE:
+        case STRING, FILE, RELATION -> {
           // LOWER("mycolumn") = 'mysearchterm'
           clauses.add("LOWER(" + quote(column) + ") = :" + paramName);
           values.put(paramName, value.toLowerCase());
-          break;
-        case ARRAY_OF_STRING, ARRAY_OF_FILE:
+        }
+        case ARRAY_OF_STRING, ARRAY_OF_FILE -> {
           // 'mysearchterm' ILIKE ANY("mycolumn")
           clauses.add(":" + paramName + " ILIKE ANY(" + quote(column) + ")");
           values.put(paramName, value.toLowerCase());
-          break;
-        case NUMBER:
+        }
+        case NUMBER -> {
           // "mycolumn" = 42
           clauses.add(quote(column) + " = :" + paramName);
           values.put(paramName, parseNumericValue(value));
-          break;
-        case ARRAY_OF_NUMBER:
+        }
+        case ARRAY_OF_NUMBER -> {
           // 42 = ANY("mycolumn")
           clauses.add(":" + paramName + " = ANY(" + quote(column) + ")");
           values.put(paramName, parseNumericValue(value));
-          break;
-        case BOOLEAN:
+        }
+        case BOOLEAN -> {
           // "mycolumn" = false
           clauses.add(quote(column) + " = :" + paramName);
           values.put(paramName, strictParseBoolean(value));
-          break;
-        case ARRAY_OF_BOOLEAN:
+        }
+        case ARRAY_OF_BOOLEAN -> {
           // false = ANY("mycolumn")
           clauses.add(":" + paramName + " = ANY(" + quote(column) + ")");
           values.put(paramName, strictParseBoolean(value));
-          break;
-        case DATE:
+        }
+        case DATE -> {
           // "mycolumn" = '1981-02-12'
           clauses.add(quote(column) + " = :" + paramName);
           values.put(paramName, parseDate(value));
-          break;
-        case ARRAY_OF_DATE:
+        }
+        case ARRAY_OF_DATE -> {
           // '1981-02-12' = ANY("mycolumn")
           clauses.add(":" + paramName + " = ANY(" + quote(column) + ")");
           values.put(paramName, parseDate(value));
-          break;
-        case DATE_TIME:
+        }
+        case DATE_TIME -> {
           // "mycolumn" = '1981-02-12 19:00:00'
           clauses.add(quote(column) + " = :" + paramName);
           values.put(paramName, parseDateTime(value));
-          break;
-        case ARRAY_OF_DATE_TIME:
+        }
+        case ARRAY_OF_DATE_TIME -> {
           // '1981-02-12 19:00:00' = ANY("mycolumn")
           clauses.add(":" + paramName + " = ANY(" + quote(column) + ")");
           values.put(paramName, parseDateTime(value));
-          break;
-
-          /* TODO AJ-1954: support
-              NULL, EMPTY_ARRAY, (uncommon)
-              RELATION, ARRAY_OF_RELATION,
-              JSON, ARRAY_OF_JSON
+        }
+        case NULL, EMPTY_ARRAY ->
+        // results in a `where false` clause. These columns are nonsensical to filter on, as
+        // they cannot contain anything. Would it be better to throw InvalidQueryException?
+        clauses.add("false");
+        case ARRAY_OF_RELATION -> {
+          // 'mysearchterm' IN (select split_part(unnest, '/', 3) from unnest("mycolumn")
+          /* values in the column will be of the form "terra-wds:/${targetType}/${targetId}".
+             This SQL splits the values on "/", finds the third index in the split,
+             and searches on that value.
           */
-        default:
-          throw new InvalidQueryException(
-              "Column specified in query is of an unsupported datatype");
+          clauses.add(
+              ":"
+                  + paramName
+                  + " IN (select LOWER(split_part(unnest, '/', 3)) from unnest("
+                  + quote(column)
+                  + "))");
+          values.put(paramName, value.toLowerCase());
+        }
+        case JSON -> {
+          // "mycolumn" = '{"myjson":"stuff"}'::jsonb
+          // validate json input
+          parseJson(value);
+
+          clauses.add(quote(column) + " = :" + paramName + "::jsonb");
+          values.put(paramName, value);
+        }
+        case ARRAY_OF_JSON -> {
+          // '{"myjson":"stuff"}'::jsonb = ANY("mycolumn")
+          // validate json input
+          parseJson(value);
+
+          clauses.add(":" + paramName + "::jsonb = ANY(" + quote(column) + ")");
+          values.put(paramName, value);
+        }
+        default ->
+        // this shouldn't happen, since all datatypes are covered above. Leaving this in place
+        // as a safety net in case we add datatypes
+        throw new InvalidQueryException("Column specified in query is of an unsupported datatype");
       }
 
       return new WhereClausePart(clauses, values);
@@ -175,6 +207,21 @@ public class QueryParser {
       throw new InvalidQueryException("Query value for numeric column must be a number");
     }
     return parsedNumber.doubleValue();
+  }
+
+  private JsonNode parseJson(String value) {
+    /* N.B. this is a default ObjectMapper, which is NOT the same as the ObjectMapper used
+       throughout WDS and managed by Spring. Here, we don't care about consistency with JSON
+       parsing elsewhere in WDS; we only care that the input is parseable. After validating, the
+       value will be sent to Postgres for Postgres to parse internally, and it's _that_ parsing
+       that matters.
+    */
+    ObjectMapper objectMapper = new ObjectMapper();
+    try {
+      return objectMapper.readTree(value);
+    } catch (JsonProcessingException e) {
+      throw new InvalidQueryException("Query value for json column must be valid json");
+    }
   }
 
   // validate the column on which we are filtering

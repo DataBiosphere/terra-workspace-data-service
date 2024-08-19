@@ -18,8 +18,16 @@ import org.springframework.integration.channel.DirectChannel;
 import org.springframework.messaging.MessageChannel;
 import org.springframework.messaging.MessageHandler;
 
+/**
+ * Creates beans when pubsub is enabled. See also NoopPubSubConfig for when pubsub is disabled.
+ *
+ * @see NoopPubSubConfig
+ */
 @Configuration
-@ConditionalOnProperty(name = "spring.cloud.gcp.pubsub.enabled", havingValue = "true")
+@ConditionalOnProperty(
+    name = "spring.cloud.gcp.pubsub.enabled",
+    havingValue = "true",
+    matchIfMissing = true)
 public class PubSubConfig {
   private final PubSubService pubSubService;
 
