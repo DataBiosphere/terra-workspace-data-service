@@ -18,6 +18,6 @@ public class GcsStorageConfig {
     // this is a hack to work around FakeStorageRpc, which fails when chunk size exceeded due
     // to not being able to handle Content-Range header with an unspecified size
     DataSize batchWriteChunkSize = DataSize.ofMegabytes(64);
-    return new GcsStorage(mockStorage, BUCKET_NAME, batchWriteChunkSize);
+    return new GcsStorageImpl(mockStorage, BUCKET_NAME, batchWriteChunkSize);
   }
 }
