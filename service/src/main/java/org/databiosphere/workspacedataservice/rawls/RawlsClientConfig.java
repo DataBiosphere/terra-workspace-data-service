@@ -1,7 +1,5 @@
 package org.databiosphere.workspacedataservice.rawls;
 
-import static org.databiosphere.workspacedataservice.annotations.DeploymentMode.*;
-
 import io.micrometer.observation.ObservationRegistry;
 import java.net.MalformedURLException;
 import java.net.URL;
