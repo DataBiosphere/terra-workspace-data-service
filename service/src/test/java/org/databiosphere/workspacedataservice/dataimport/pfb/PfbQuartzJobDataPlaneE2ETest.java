@@ -45,6 +45,7 @@ import org.springframework.boot.test.mock.mockito.SpyBean;
 import org.springframework.core.io.Resource;
 import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.context.TestPropertySource;
 
 /**
  * Tests for PFB import that execute "end-to-end" - that is, they go through the whole process of
@@ -54,6 +55,11 @@ import org.springframework.test.context.ActiveProfiles;
 @ActiveProfiles(profiles = {"mock-sam", "noop-scheduler-dao", "data-plane"})
 @DirtiesContext
 @SpringBootTest
+@TestPropertySource(
+    properties = {
+      // Rawls url must be valid, else context initialization (Spring startup) will fail
+      "rawlsUrl=https://localhost/"
+    })
 class PfbQuartzJobDataPlaneE2ETest {
   @Autowired @SingleTenant WorkspaceId workspaceId;
   @Autowired RecordOrchestratorService recordOrchestratorService;

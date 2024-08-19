@@ -3,19 +3,11 @@ package org.databiosphere.workspacedataservice.annotations;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.Optional;
-import org.databiosphere.workspacedataservice.activitylog.ActivityLogger;
 import org.databiosphere.workspacedataservice.annotations.DeploymentMode.ControlPlane;
 import org.databiosphere.workspacedataservice.annotations.DeploymentMode.DataPlane;
 import org.databiosphere.workspacedataservice.common.TestBase;
-import org.databiosphere.workspacedataservice.dao.RecordDao;
 import org.databiosphere.workspacedataservice.dataimport.protecteddatasupport.ProtectedDataSupport;
 import org.databiosphere.workspacedataservice.dataimport.protecteddatasupport.WsmProtectedDataSupport;
-import org.databiosphere.workspacedataservice.dataimport.snapshotsupport.SnapshotSupportFactory;
-import org.databiosphere.workspacedataservice.dataimport.snapshotsupport.WsmSnapshotSupportFactory;
-import org.databiosphere.workspacedataservice.recordsink.RecordSinkFactory;
-import org.databiosphere.workspacedataservice.recordsink.WdsRecordSinkFactory;
-import org.databiosphere.workspacedataservice.service.DataTypeInferer;
-import org.databiosphere.workspacedataservice.service.RecordService;
 import org.databiosphere.workspacedataservice.workspace.DataTableTypeInspector;
 import org.databiosphere.workspacedataservice.workspace.WdsDataTableTypeInspector;
 import org.databiosphere.workspacedataservice.workspacemanager.WorkspaceManagerDao;
@@ -49,19 +41,6 @@ class AnnotatedApisTest extends TestBase {
   // conflicts.
   @TestConfiguration
   static class SpecifyConflictingBeans {
-    @Primary
-    @Bean("overrideRecordSinkFactory")
-    RecordSinkFactory overrideRecordSinkFactory(
-        RecordService recordService, RecordDao recordDao, DataTypeInferer dataTypeInferer) {
-      return new WdsRecordSinkFactory(recordService, recordDao, dataTypeInferer);
-    }
-
-    @Primary
-    @Bean("overrideSnapshotSupportFactory")
-    SnapshotSupportFactory overrideSnapshotSupportFactory(
-        ActivityLogger activityLogger, WorkspaceManagerDao wsmDao) {
-      return new WsmSnapshotSupportFactory(activityLogger, wsmDao);
-    }
 
     @Primary
     @Bean("overrideProtectedDataSupport")
