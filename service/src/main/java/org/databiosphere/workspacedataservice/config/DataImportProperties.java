@@ -12,7 +12,6 @@ import org.springframework.lang.Nullable;
 
 /** Properties that dictate how data import processes should behave. */
 public class DataImportProperties {
-  private RecordSinkMode batchWriteRecordSink;
   private String rawlsBucketName;
   private boolean succeedOnCompletion;
   private boolean enableTdrPermissionSync = false;
@@ -23,15 +22,6 @@ public class DataImportProperties {
   private String statusUpdatesSubscription;
   private List<ImportSourceConfig> sources;
   private boolean shouldAddImportMetadata = false;
-
-  /** Where to write records after import, options are defined by {@link RecordSinkMode} */
-  public RecordSinkMode getBatchWriteRecordSink() {
-    return batchWriteRecordSink;
-  }
-
-  void setBatchWriteRecordSink(String batchWriteRecordSink) {
-    this.batchWriteRecordSink = RecordSinkMode.fromValue(batchWriteRecordSink);
-  }
 
   /** Where to write Rawls JSON files after import. */
   @Nullable
