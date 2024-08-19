@@ -10,8 +10,7 @@ import org.springframework.context.annotation.Configuration;
 public class DataTableTypeInspectorConfig {
 
   // in the control plane, use RawlsDataTableTypeInspector. It will query Rawls for information
-  // about
-  // the workspace and return the appropriate data table type based on the Rawls response.
+  // about the workspace and return the appropriate data table type based on the Rawls response.
   @Bean
   @ControlPlane
   DataTableTypeInspector rawlsDataTableTypeInspector(RawlsClient rawlsClient) {
