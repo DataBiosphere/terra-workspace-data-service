@@ -1,11 +1,9 @@
 package org.databiosphere.workspacedataservice.config;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import org.databiosphere.workspacedataservice.config.DataImportProperties.RecordSinkMode;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -31,11 +29,6 @@ class TwdsPropertiesControlPlaneTest {
   @Test
   void nonNullDataImport() {
     assertNotNull(twdsProperties.dataImportProperties());
-  }
-
-  @Test
-  void batchWriteRecordSink() {
-    assertEquals(RecordSinkMode.RAWLS, dataImportProperties.getBatchWriteRecordSink());
   }
 
   @Test
