@@ -38,7 +38,7 @@ jib {
 ext {
     parquet_mr_version = "1.14.1"
     hadoop_version = "3.4.0"
-    spring_cloud_gcp_version = "5.5.0"
+    spring_cloud_gcp_version = "5.5.1"
 }
 
 dependencies {
@@ -63,11 +63,11 @@ dependencies {
     implementation 'io.micrometer:micrometer-registry-prometheus'
     implementation 'org.springframework.integration:spring-integration-jdbc'
     implementation 'org.aspectj:aspectjweaver' // required by spring-retry, not used directly
-    implementation 'com.google.guava:guava:33.2.1-jre'
+    implementation 'com.google.guava:guava:33.3.0-jre'
     implementation 'org.postgresql:postgresql'
     implementation 'org.webjars:webjars-locator-core' // versioned by spring dependency management
     implementation 'com.fasterxml.jackson.dataformat:jackson-dataformat-csv'
-    implementation 'io.sentry:sentry-logback:7.13.0'
+    implementation 'io.sentry:sentry-logback:7.14.0'
     implementation 'net.logstash.logback:logstash-logback-encoder:8.0'
     implementation 'org.codehaus.janino:janino'
     implementation 'org.liquibase:liquibase-core'
