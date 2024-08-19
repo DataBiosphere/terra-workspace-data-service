@@ -138,7 +138,6 @@ twds:
     require-env-workspace: true
     enforce-collections-match-workspace-id: true
   data-import:
-    batch-write-record-sink: "wds"
     allowed-hosts:
       - anvil\.gi\.ucsc\.edu
       - .*\.singlecell\.gi\.ucsc\.edu,
