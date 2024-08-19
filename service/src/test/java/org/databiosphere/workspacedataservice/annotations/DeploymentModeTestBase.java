@@ -35,7 +35,6 @@ class DeploymentModeTestBase extends TestBase {
         "collectionInitializerBean",
         "wsmProtectedDataSupport",
         "wsmSnapshotSupportFactory",
-        "wdsRecordSinkFactory",
         "capabilitiesController",
         "cloningController",
         "collectionController",
@@ -50,7 +49,6 @@ class DeploymentModeTestBase extends TestBase {
         "rawlsClientConfig",
         "rawlsClient",
         "rawlsApi",
-        "rawlsRestClient",
-        "rawlsRecordSinkFactory");
+        "rawlsRestClient");
   }
 }

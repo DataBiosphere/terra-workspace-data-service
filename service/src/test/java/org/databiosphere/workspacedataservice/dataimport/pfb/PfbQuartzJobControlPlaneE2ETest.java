@@ -55,10 +55,12 @@ import org.databiosphere.workspacedataservice.recordsink.RawlsModel.EntityRefere
 import org.databiosphere.workspacedataservice.recordsink.RawlsModel.RemoveAttribute;
 import org.databiosphere.workspacedataservice.sam.MockSamUsersApi;
 import org.databiosphere.workspacedataservice.sam.SamDao;
-import org.databiosphere.workspacedataservice.service.CollectionService;
+import org.databiosphere.workspacedataservice.service.WorkspaceService;
 import org.databiosphere.workspacedataservice.shared.model.BearerToken;
 import org.databiosphere.workspacedataservice.shared.model.RecordType;
+import org.databiosphere.workspacedataservice.shared.model.WorkspaceId;
 import org.databiosphere.workspacedataservice.storage.GcsStorage;
+import org.databiosphere.workspacedataservice.workspace.WorkspaceDataTableType;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Tag;
@@ -101,7 +103,6 @@ import org.springframework.util.StreamUtils;
 @AutoConfigureMockMvc
 class PfbQuartzJobControlPlaneE2ETest {
   @Autowired ObjectMapper mapper;
-  @Autowired CollectionService collectionService;
   @Autowired PfbTestSupport testSupport;
   @Autowired MockMvc mockMvc;
 
@@ -114,6 +115,7 @@ class PfbQuartzJobControlPlaneE2ETest {
   // Mock ImportValidator to allow importing test data from a file:// URL.
   @MockBean ImportValidator importValidator;
   @MockBean RawlsClient rawlsClient;
+  @MockBean WorkspaceService workspaceService;
 
   /** ArgumentCaptor for the message passed to {@link PubSub#publishSync(Map)}. */
   @Captor private ArgumentCaptor<Map<String, String>> pubSubMessageCaptor;
@@ -145,6 +147,10 @@ class PfbQuartzJobControlPlaneE2ETest {
     // stub out rawls to report no snapshots already linked to this workspace
     when(rawlsClient.enumerateDataRepoSnapshotReferences(any(), anyInt(), anyInt()))
         .thenReturn(new SnapshotListResponse(Collections.emptyList()));
+
+    // stub out WorkspaceService to say this is an EntityService workspace
+    when(workspaceService.getDataTableType(WorkspaceId.of(collectionId)))
+        .thenReturn(WorkspaceDataTableType.RAWLS);
   }
 
   @AfterEach
