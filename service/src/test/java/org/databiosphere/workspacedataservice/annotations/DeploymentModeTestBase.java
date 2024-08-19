@@ -34,7 +34,6 @@ class DeploymentModeTestBase extends TestBase {
         "collectionInitializer",
         "collectionInitializerBean",
         "wsmProtectedDataSupport",
-        "wsmSnapshotSupportFactory",
         "capabilitiesController",
         "cloningController",
         "collectionController",
@@ -42,13 +41,6 @@ class DeploymentModeTestBase extends TestBase {
   }
 
   protected static Stream<String> controlPlaneConditionalBeans() {
-    return Stream.of(
-        "rawlsProtectedDataSupport",
-        "rawlsJsonQuartzJob",
-        "rawlsSnapshotSupportFactory",
-        "rawlsClientConfig",
-        "rawlsClient",
-        "rawlsApi",
-        "rawlsRestClient");
+    return Stream.of("rawlsProtectedDataSupport", "rawlsJsonQuartzJob");
   }
 }

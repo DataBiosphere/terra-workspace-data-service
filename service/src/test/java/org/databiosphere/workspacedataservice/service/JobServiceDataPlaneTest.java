@@ -27,7 +27,12 @@ import org.springframework.test.context.ActiveProfiles;
 
 @ActiveProfiles(profiles = {"data-plane"})
 @DirtiesContext
-@SpringBootTest(properties = {"twds.instance.workspace-id=" + HARDCODED_WORKSPACE_ID})
+@SpringBootTest(
+    properties = {
+      "twds.instance.workspace-id=" + HARDCODED_WORKSPACE_ID,
+      // Rawls url must be valid, else context initialization (Spring startup) will fail
+      "rawlsUrl=https://localhost/"
+    })
 class JobServiceDataPlaneTest extends JobServiceTestBase {
 
   @Autowired JobService jobService;
