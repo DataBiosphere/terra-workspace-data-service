@@ -14,6 +14,8 @@ public class WorkspaceRecord implements Persistable<WorkspaceId> {
 
   @Id private final WorkspaceId workspaceId;
   private final WorkspaceDataTableType dataTableType;
+  // newFlag is not saved to the db; it is used to differentiate db inserts and updates.
+  // see the isNew() method below.
   @Transient private final boolean newFlag;
 
   // Spring Data will use this constructor, which sets a default for the transient newFlag
@@ -55,8 +57,15 @@ public class WorkspaceRecord implements Persistable<WorkspaceId> {
   }
 
   /**
-   * Required by {@link Persistable} interface; determines if this row is an insert or an update
+   * Required by {@link Persistable} interface; determines if this row is an insert or an update.
    *
+   * <p>Spring Data, when writing this object to the database, will call this isNew() method. When
+   * isNew() returns true, Spring Data will insert this object as a new row. Else, Spring Data will
+   * update an existing row with this object.
+   *
+   * @see <a
+   *     href="https://docs.spring.io/spring-data/relational/reference/repositories/core-concepts.html#is-new-state-detection">Spring
+   *     Data doc</a>
    * @return true if an insert; false if update
    */
   @Override
