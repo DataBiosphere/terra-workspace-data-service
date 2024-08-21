@@ -18,6 +18,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Collectors;
+import org.databiosphere.workspacedataservice.TestUtils;
 import org.databiosphere.workspacedataservice.annotations.SingleTenant;
 import org.databiosphere.workspacedataservice.dataimport.ImportValidator;
 import org.databiosphere.workspacedataservice.sam.SamDao;
@@ -43,6 +44,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.boot.test.mock.mockito.SpyBean;
 import org.springframework.core.io.Resource;
+import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.TestPropertySource;
@@ -65,6 +67,7 @@ class PfbQuartzJobDataPlaneE2ETest {
   @Autowired RecordOrchestratorService recordOrchestratorService;
   @Autowired CollectionService collectionService;
   @Autowired PfbTestSupport testSupport;
+  @Autowired NamedParameterJdbcTemplate namedTemplate;
   @MockBean WorkspaceManagerDao wsmDao;
   // Mock ImportValidator to allow importing test data from a file:// URL.
   @MockBean ImportValidator importValidator;
@@ -99,7 +102,7 @@ class PfbQuartzJobDataPlaneE2ETest {
 
   @AfterEach
   void afterEach() {
-    collectionService.deleteCollection(collectionId, "v0.2");
+    TestUtils.cleanAllCollections(collectionService, namedTemplate);
   }
 
   /* import test.avro, and validate the tables and row counts it imported. */
