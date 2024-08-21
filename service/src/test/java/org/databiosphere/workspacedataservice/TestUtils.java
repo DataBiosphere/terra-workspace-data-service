@@ -9,13 +9,40 @@ import java.util.List;
 import java.util.Map;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.apache.commons.lang3.RandomUtils;
+import org.databiosphere.workspacedataservice.service.CollectionService;
 import org.databiosphere.workspacedataservice.service.RelationUtils;
+import org.databiosphere.workspacedataservice.shared.model.CollectionId;
 import org.databiosphere.workspacedataservice.shared.model.RecordAttributes;
 import org.databiosphere.workspacedataservice.shared.model.RecordType;
+import org.databiosphere.workspacedataservice.shared.model.WorkspaceId;
+import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 
 public class TestUtils {
 
   private TestUtils() {}
+
+  // deletes all collections, across all workspaces, in sys_wds.collection
+  public static void cleanAllCollections(
+      CollectionService collectionService, NamedParameterJdbcTemplate namedTemplate) {
+    // get all workspaces in the collections table
+    List<WorkspaceId> workspaces =
+        namedTemplate.queryForList(
+            "select workspace_id from sys_wds.collection;", Map.of(), WorkspaceId.class);
+    workspaces.forEach(
+        workspaceId -> {
+          collectionService
+              .list(workspaceId)
+              .forEach(
+                  collection -> {
+                    collectionService.delete(workspaceId, CollectionId.of(collection.getId()));
+                  });
+        });
+  }
+
+  // deletes all workspaces in sys_wds.workspace
+  public static void cleanAllWorkspaces(NamedParameterJdbcTemplate namedTemplate) {
+    namedTemplate.update("delete from sys_wds.workspace;", Map.of());
+  }
 
   public static String getExpectedAllAttributesJsonText() {
     return "{\"id\":\"newRecordId\",\"type\":\"all-types\",\"attributes\":{\"sys_name\":\"newRecordId\","
