@@ -30,4 +30,8 @@ public interface CollectionRepository extends CrudRepository<WdsCollection, UUID
   @Query(
       "SELECT * FROM sys_wds.collection WHERE workspace_id = :workspaceId and id = :collectionId")
   Optional<WdsCollection> find(WorkspaceId workspaceId, CollectionId collectionId);
+
+  // custom method to get a collection's workspaceId
+  @Query("SELECT workspace_id from sys_wds.collection WHERE id = :collectionId")
+  Optional<WorkspaceId> getWorkspaceId(CollectionId collectionId);
 }

@@ -5,7 +5,6 @@ import static org.databiosphere.workspacedataservice.service.RecordUtils.validat
 
 import bio.terra.common.db.WriteTransaction;
 import java.util.List;
-import java.util.Objects;
 import java.util.Optional;
 import java.util.Spliterator;
 import java.util.Spliterators;
@@ -22,17 +21,18 @@ import org.databiosphere.workspacedataservice.generated.CollectionServerModel;
 import org.databiosphere.workspacedataservice.service.model.exception.CollectionException;
 import org.databiosphere.workspacedataservice.service.model.exception.ConflictException;
 import org.databiosphere.workspacedataservice.service.model.exception.MissingObjectException;
+import org.databiosphere.workspacedataservice.service.model.exception.RestException;
 import org.databiosphere.workspacedataservice.service.model.exception.ValidationException;
 import org.databiosphere.workspacedataservice.shared.model.CollectionId;
 import org.databiosphere.workspacedataservice.shared.model.DefaultCollectionCreationResult;
 import org.databiosphere.workspacedataservice.shared.model.WdsCollection;
 import org.databiosphere.workspacedataservice.shared.model.WdsCollectionCreateRequest;
 import org.databiosphere.workspacedataservice.shared.model.WorkspaceId;
+import org.databiosphere.workspacedataservice.workspace.DataTableTypeInspector;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DuplicateKeyException;
-import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.data.relational.core.conversion.DbActionExecutionException;
 import org.springframework.http.HttpStatus;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
@@ -49,6 +49,7 @@ public class CollectionService {
 
   private final CollectionRepository collectionRepository;
   private final NamedParameterJdbcTemplate namedTemplate;
+  private final DataTableTypeInspector dataTableTypeInspector;
 
   // strings for use in error messages
   private static final String COLLECTION = "Collection";
@@ -61,12 +62,14 @@ public class CollectionService {
       ActivityLogger activityLogger,
       TenancyProperties tenancyProperties,
       CollectionRepository collectionRepository,
-      NamedParameterJdbcTemplate namedTemplate) {
+      NamedParameterJdbcTemplate namedTemplate,
+      DataTableTypeInspector dataTableTypeInspector) {
     this.collectionDao = collectionDao;
     this.activityLogger = activityLogger;
     this.tenancyProperties = tenancyProperties;
     this.collectionRepository = collectionRepository;
     this.namedTemplate = namedTemplate;
+    this.dataTableTypeInspector = dataTableTypeInspector;
   }
 
   @Autowired(required = false) // control plane won't have workspaceId
@@ -391,15 +394,48 @@ public class CollectionService {
 
   // ============================== helpers ==============================
 
-  public void validateCollection(UUID collectionId) {
-    // if this deployment allows virtual collections, there is nothing to validate
-    if (tenancyProperties.getAllowVirtualCollections()) {
+  public void validateCollection(CollectionId collectionId) {
+    // start with the ideal case first
+    Optional<WdsCollection> maybeCollection = collectionRepository.findById(collectionId.id());
+    // collection found; it is valid.
+    if (maybeCollection.isPresent()) {
       return;
     }
-    // else, check if this collection has a row in the collections table
-    if (!collectionDao.collectionSchemaExists(CollectionId.of(collectionId))) {
-      throw new MissingObjectException(COLLECTION);
+
+    // collection not found in the db. Next step is to determine if this collection is powered by
+    // Rawls Entity Service or WDS.
+
+    // get the workspace for this collection
+    WorkspaceId wid = getWorkspaceId(collectionId);
+
+    // try to get the data table type; this may return a RestException 404
+    try {
+      switch (dataTableTypeInspector.getWorkspaceDataTableType(wid)) {
+        case RAWLS -> {
+          // collection not found, but this is an Entity Service-powered workspace;
+          // it's a virtual collection. All ok.
+        }
+        case WDS -> {
+          // collection not found, but this is a WDS-powered workspace. This is an error.
+          throw new MissingObjectException(COLLECTION);
+        }
+      }
+    } catch (RestException restException) {
+      // we couldn't find the workspace in Rawls either. This is an error.
+      if (restException.getStatusCode() == HttpStatus.NOT_FOUND) {
+        throw new MissingObjectException(COLLECTION);
+      }
+      // Unexpected error querying Rawls about the workspace. Bubble this exception up.
+      throw restException;
     }
+  }
+
+  /**
+   * @deprecated Use {@link #validateCollection(CollectionId)} instead.
+   */
+  @Deprecated(since = "v0.19.0")
+  public void validateCollection(UUID collectionId) {
+    validateCollection(CollectionId.of(collectionId));
   }
 
   /**
@@ -421,35 +457,41 @@ public class CollectionService {
    */
   public WorkspaceId getWorkspaceId(CollectionId collectionId) {
     // look up the workspaceId for this collection in the collection table
-    WorkspaceId rowWorkspaceId = null;
-    try {
-      rowWorkspaceId = collectionDao.getWorkspaceId(collectionId);
-      // as of this writing, if a deployment allows virtual collections, it is an error if the
-      // collection DOES exist.
-      if (tenancyProperties.getAllowVirtualCollections()) {
-        throw new CollectionException("Expected a virtual collection");
+    Optional<WorkspaceId> maybeWorkspaceId = collectionRepository.getWorkspaceId(collectionId);
+
+    if (maybeWorkspaceId.isPresent()) {
+      WorkspaceId rowWorkspaceId = maybeWorkspaceId.get();
+
+      // safety check: if we are running as a single-tenant WDS, verify the workspace matches the
+      // $WORKSPACE_ID env var.
+      if (tenancyProperties.getEnforceCollectionsMatchWorkspaceId()
+          && !rowWorkspaceId.equals(workspaceId)) {
+        // log the details, including expected/actual workspace ids
+        LOGGER.error(
+            "Found unexpected workspaceId for collection {}. Expected {}, got {}.",
+            collectionId,
+            workspaceId,
+            rowWorkspaceId);
+        // but, don't include workspace ids when throwing a user-facing error
+        throw new CollectionException(
+            "Found unexpected workspaceId for collection %s.".formatted(collectionId));
       }
-    } catch (EmptyResultDataAccessException e) {
-      if (!tenancyProperties.getAllowVirtualCollections()) {
-        throw new MissingObjectException(COLLECTION);
-      }
+      return rowWorkspaceId;
     }
 
-    // safety check: if we are running as a single-tenant WDS, verify the workspace matches the
-    // $WORKSPACE_ID env var.
-    if (tenancyProperties.getEnforceCollectionsMatchWorkspaceId()
-        && rowWorkspaceId != null
-        && !rowWorkspaceId.equals(workspaceId)) {
-      // log the details, including expected/actual workspace ids
-      LOGGER.error(
-          "Found unexpected workspaceId for collection {}. Expected {}, got {}.",
-          collectionId,
-          workspaceId,
-          rowWorkspaceId);
-      // but, don't include workspace ids when throwing a user-facing error
-      throw new CollectionException(
-          "Found unexpected workspaceId for collection %s.".formatted(collectionId));
+    // We did not find a row in the collection table. Here, we have to handle RAWLS workspaces.
+    // Check which type of workspace this is; this may return a RestException 404
+    try {
+      return switch (dataTableTypeInspector.getWorkspaceDataTableType(
+          WorkspaceId.of(collectionId.id()))) {
+        case RAWLS -> WorkspaceId.of(collectionId.id());
+        case WDS -> throw new MissingObjectException(COLLECTION);
+      };
+    } catch (RestException restException) {
+      if (restException.getStatusCode() == HttpStatus.NOT_FOUND) {
+        throw new MissingObjectException(COLLECTION);
+      }
+      throw restException;
     }
-    return Objects.requireNonNullElseGet(rowWorkspaceId, () -> WorkspaceId.of(collectionId.id()));
   }
 }
