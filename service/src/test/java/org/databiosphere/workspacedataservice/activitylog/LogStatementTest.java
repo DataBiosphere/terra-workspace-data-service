@@ -8,9 +8,9 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
+import org.databiosphere.workspacedataservice.TestUtils;
 import org.databiosphere.workspacedataservice.common.TestBase;
 import org.databiosphere.workspacedataservice.datarepo.DataRepoClientFactory;
 import org.databiosphere.workspacedataservice.service.CollectionService;
@@ -31,6 +31,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.boot.test.system.CapturedOutput;
 import org.springframework.boot.test.system.OutputCaptureExtension;
+import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.web.multipart.MultipartFile;
@@ -45,6 +46,7 @@ class LogStatementTest extends TestBase {
   @Autowired CollectionService collectionService;
   @Autowired RecordOrchestratorService recordOrchestratorService;
   @Autowired ObjectMapper objectMapper;
+  @Autowired NamedParameterJdbcTemplate namedTemplate;
 
   // mocking for Workspace Manager
   @MockBean WorkspaceManagerClientFactory mockWorkspaceManagerClientFactory;
@@ -57,10 +59,7 @@ class LogStatementTest extends TestBase {
 
   @AfterEach
   void tearDown() {
-    List<UUID> allCollections = collectionService.listCollections(VERSION);
-    for (UUID id : allCollections) {
-      collectionService.deleteCollection(id, VERSION);
-    }
+    TestUtils.cleanAllCollections(collectionService, namedTemplate);
   }
 
   @Test
