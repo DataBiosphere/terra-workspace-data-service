@@ -9,6 +9,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
+import org.databiosphere.workspacedataservice.TestUtils;
 import org.databiosphere.workspacedataservice.generated.CollectionRequestServerModel;
 import org.databiosphere.workspacedataservice.generated.CollectionServerModel;
 import org.databiosphere.workspacedataservice.service.CloningService.ForeignKeyEdge;
@@ -54,7 +55,7 @@ public class CloningServiceTest {
   @BeforeEach
   @AfterEach
   void cleanup() {
-    //    TestUtils.cleanAllCollections(collectionService, namedTemplate);
+    TestUtils.cleanAllCollections(collectionService, namedTemplate);
   }
 
   // this tests the behavior of the JGraphT library. We don't need this test - I made it to help ME
@@ -181,13 +182,9 @@ public class CloningServiceTest {
 
     // we expect relations of:
     // blue->red
-    // sys_green_rel->green
-    // sys_green_rel->blue
+    // green->blue
     List<ForeignKeyEdge> expected =
-        List.of(
-            new ForeignKeyEdge("blue", "red"),
-            new ForeignKeyEdge("sys_green_rel", "green"),
-            new ForeignKeyEdge("sys_green_rel", "blue"));
+        List.of(new ForeignKeyEdge("blue", "red"), new ForeignKeyEdge("green", "blue"));
 
     assertThat(actual).containsExactlyInAnyOrderElementsOf(expected);
   }
