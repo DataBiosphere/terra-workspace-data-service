@@ -11,12 +11,13 @@ import java.util.List;
 import java.util.UUID;
 import java.util.stream.Stream;
 import org.apache.commons.io.FileUtils;
+import org.databiosphere.workspacedata.api.CollectionApi;
 import org.databiosphere.workspacedata.api.GeneralWdsInformationApi;
-import org.databiosphere.workspacedata.api.InstancesApi;
 import org.databiosphere.workspacedata.api.RecordsApi;
 import org.databiosphere.workspacedata.api.SchemaApi;
 import org.databiosphere.workspacedata.client.ApiClient;
 import org.databiosphere.workspacedata.client.ApiException;
+import org.databiosphere.workspacedata.model.CollectionRequest;
 import org.databiosphere.workspacedata.model.RecordAttributes;
 import org.databiosphere.workspacedata.model.RecordQueryResponse;
 import org.databiosphere.workspacedata.model.RecordRequest;
@@ -27,12 +28,14 @@ import org.databiosphere.workspacedata.model.SearchRequest;
 import org.databiosphere.workspacedata.model.StatusResponse;
 import org.databiosphere.workspacedata.model.TsvUploadResponse;
 import org.databiosphere.workspacedataservice.common.TestBase;
+import org.databiosphere.workspacedataservice.config.TwdsProperties;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.web.server.LocalServerPort;
 import org.springframework.lang.Nullable;
@@ -47,6 +50,8 @@ class GeneratedClientTests extends TestBase {
   private ApiClient apiClient;
   @LocalServerPort int port;
 
+  @Autowired TwdsProperties twdsProperties;
+  private final UUID workspaceId = twdsProperties.workspaceId().id();
   private final UUID collectionId = UUID.randomUUID();
   private final String version = "v0.2";
 
@@ -54,12 +59,14 @@ class GeneratedClientTests extends TestBase {
   void init() throws ApiException {
     apiClient = new ApiClient();
     apiClient.setBasePath("http://localhost:" + port);
-    createNewCollection(collectionId);
+    CollectionRequest collectionRequest = new CollectionRequest();
+    collectionRequest.setName("default");
+    createNewCollection(collectionRequest, workspaceId);
   }
 
   @AfterEach
   void afterEach() throws ApiException {
-    deleteCollection(collectionId);
+    deleteCollection(workspaceId, collectionId);
   }
 
   @Test
@@ -301,13 +308,14 @@ class GeneratedClientTests extends TestBase {
     assertThat(recordAttributes).containsEntry("greeting", "hello").containsEntry("double", -2.287);
   }
 
-  private void createNewCollection(UUID collectionId) throws ApiException {
-    InstancesApi instancesApi = new InstancesApi(apiClient);
-    instancesApi.createWDSInstance(collectionId.toString(), version);
+  private void createNewCollection(CollectionRequest collectionRequest, UUID workspaceId)
+      throws ApiException {
+    CollectionApi collectionApi = new CollectionApi(apiClient);
+    collectionApi.createCollectionV1(collectionRequest, workspaceId);
   }
 
-  private void deleteCollection(UUID collection) throws ApiException {
-    InstancesApi instancesApi = new InstancesApi(apiClient);
-    instancesApi.deleteWDSInstance(collection.toString(), version);
+  private void deleteCollection(UUID workspaceId, UUID collectionId) throws ApiException {
+    CollectionApi collectionApi = new CollectionApi(apiClient);
+    collectionApi.deleteCollectionV1(workspaceId, collectionId);
   }
 }
