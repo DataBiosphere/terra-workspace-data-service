@@ -14,6 +14,7 @@ import java.math.BigDecimal;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
+import org.databiosphere.workspacedataservice.TestUtils;
 import org.databiosphere.workspacedataservice.annotations.WithTestObservationRegistry;
 import org.databiosphere.workspacedataservice.common.TestBase;
 import org.databiosphere.workspacedataservice.dao.RecordDao;
@@ -26,6 +27,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.test.annotation.DirtiesContext;
 
 @SpringBootTest
@@ -37,6 +39,7 @@ class RecordServiceTest extends TestBase {
   @Autowired CollectionService collectionService;
   @Autowired RecordDao recordDao;
   @Autowired TestObservationRegistry observationRegistry;
+  @Autowired NamedParameterJdbcTemplate namedTemplate;
 
   private UUID collectionId;
 
@@ -48,7 +51,7 @@ class RecordServiceTest extends TestBase {
 
   @AfterEach
   void afterEach() {
-    collectionService.deleteCollection(collectionId, "v0.2");
+    TestUtils.cleanAllCollections(collectionService, namedTemplate);
   }
 
   @Test
