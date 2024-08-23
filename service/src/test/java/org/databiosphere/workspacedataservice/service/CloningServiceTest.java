@@ -178,14 +178,14 @@ public class CloningServiceTest {
             new RecordAttributes(Map.of("rel", List.of(new RelationAttribute(blue, "blue-one"))))));
 
     // list foreign keys
-    List<ForeignKeyEdge> actual = cloningService.getForeignKeys(collectionId.id());
+    Set<ForeignKeyEdge> actual = cloningService.getForeignKeys(collectionId.id());
 
     // we expect relations of:
     // blue->red
     // green->blue
-    List<ForeignKeyEdge> expected =
-        List.of(new ForeignKeyEdge("blue", "red"), new ForeignKeyEdge("green", "blue"));
+    Set<ForeignKeyEdge> expected =
+        Set.of(new ForeignKeyEdge("blue", "red"), new ForeignKeyEdge("green", "blue"));
 
-    assertThat(actual).containsExactlyInAnyOrderElementsOf(expected);
+    assertEquals(expected, actual);
   }
 }
