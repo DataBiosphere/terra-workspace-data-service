@@ -13,18 +13,9 @@ repositories {
     mavenCentral()
 }
 
-ext {
-    // these will be overridden by dependencies-jakarta.gradle or dependencies-javax.gradle
-    useJakartaEe = ""
-    libraryName = ""
-}
-
-// default to javax, since WDS is currently on Spring Boot 2. -Pjakarta=true overrides
-// the default and creates a Jakarta-based client.
-if (project.hasProperty("jakarta") && "false".equalsIgnoreCase(project.getProperty("jakarta"))) {
-    apply from: "dependencies-javax.gradle"
-} else {
-    apply from: "dependencies-jakarta.gradle"
+dependencies {
+    implementation 'jakarta.annotation:jakarta.annotation-api:2.1.1'
+    implementation 'jakarta.ws.rs:jakarta.ws.rs-api:3.1.0'
 }
 
 apply from: 'artifactory.gradle'
