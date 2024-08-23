@@ -458,6 +458,37 @@ class RecordOrchestratorServiceFilterQueryTest extends TestBase {
             });
   }
 
+  // ===== full-table search, no column specified
+  private static Stream<Arguments> fullTableSearchArguments() {
+    return Stream.of(
+        Arguments.of("Hello", List.of("1", "2")),
+        Arguments.of("\"example.org\"", List.of("1", "2")),
+        Arguments.of("goodbye", List.of("3")),
+        Arguments.of("\"how\"", List.of("1")),
+        Arguments.of("\"how are you\"", List.of("1")),
+        Arguments.of("bar", List.of("2", "3")),
+        Arguments.of(
+            "\"drs://example.org/dg.4503/cc32d93d-a73c-4d2c-a061-26c0410e74fa\"",
+            List.of("1", "2")),
+        Arguments.of("cc32d93d", List.of("1", "2")),
+        Arguments.of("\"cc32d93d-a73c-4d2c-a061-26c0410e74fa\"", List.of("1", "2")));
+  }
+
+  @ParameterizedTest(name = "full-table search for value <{0}>")
+  @MethodSource("fullTableSearchArguments")
+  void fullTableSearch(String criteria, List<String> expectedIds) {
+    // load the test data
+    loadTestData();
+
+    // build the by-column filter
+    SearchFilter searchFilter = new SearchFilter(Optional.empty(), Optional.of(criteria));
+    SearchRequest searchRequest = new SearchRequest();
+    searchRequest.setFilter(Optional.of(searchFilter));
+
+    // perform the filter, should return expected results
+    filterAndExpect(expectedIds, searchRequest);
+  }
+
   // can users search for null as a column value?
   @Disabled("not implemented yet")
   @Test
@@ -491,7 +522,7 @@ class RecordOrchestratorServiceFilterQueryTest extends TestBase {
     assertEquals(expectedIds.size(), resp.records().size(), "incorrect result count");
     // extract record ids from the response
     List<String> actualIds = resp.records().stream().map(RecordResponse::recordId).toList();
-    assertThat(expectedIds).hasSameElementsAs(actualIds);
+    assertThat(actualIds).hasSameElementsAs(expectedIds);
   }
 
   private void loadTestData() {

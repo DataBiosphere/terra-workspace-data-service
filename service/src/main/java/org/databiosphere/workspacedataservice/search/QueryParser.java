@@ -13,6 +13,8 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.lucene.queryparser.flexible.core.QueryNodeParseException;
 import org.apache.lucene.queryparser.flexible.core.nodes.FieldQueryNode;
@@ -55,6 +57,14 @@ public class QueryParser {
 
       validateColumnName(column);
 
+      // bind parameter names have syntax limitations, so we use artificial ones below
+      var paramName = "filterquery0";
+
+      // is this a full-table search?
+      if (DEFAULT_ALL_COLUMNS_NAME.equals(column)) {
+        return buildFullTableSearch(schema, value, paramName);
+      }
+
       // determine the datatype of the column on which we are filtering.
       var datatype = schema.get(column);
 
@@ -62,9 +72,6 @@ public class QueryParser {
       // so we need to support a list of clause fragments.
       List<String> clauses = new ArrayList<>();
       Map<String, Object> values = new HashMap<>();
-
-      // bind parameter names have syntax limitations, so we use artificial ones below
-      var paramName = "filterquery0";
 
       // based on the datatype of the column, build relevant SQL
       switch (datatype) {
@@ -228,15 +235,40 @@ public class QueryParser {
   private void validateColumnName(String columnName) {
     // The Lucene query parser requires a default column name to parse a query. If the end user
     // has not specified a column, the query parser will use the default column name. In our case,
-    // if we see the default column name we consider it an error - as of this writing, we require
-    // the end user to specify a column name.
+    // if we see the default column name we consider this to be a full-table search. No further
+    // validation is needed.
     if (DEFAULT_ALL_COLUMNS_NAME.equals(columnName)) {
-      throw new InvalidQueryException("Query must specify a column name");
+      return;
     }
     // does this column exist in the record type?
     if (!schema.containsKey(columnName)) {
       throw new InvalidQueryException(
           "Column specified in query does not exist in this record type");
     }
+  }
+
+  // TODO: this implementation is expected to be slow in the presence of large tables. It rebuilds
+  //  the search indexes for EVERY query, just-in-time. Ideally we'd build those indexes when data
+  //  is written and reuse them at runtime.
+  private WhereClausePart buildFullTableSearch(
+      Map<String, DataTypeMapping> schema, String value, String paramName) {
+    // SQL to cast each column to text and wrap in coalesce
+    Stream<String> columns = schema.keySet().stream().map("coalesce(\"%s\"::text, '')"::formatted);
+
+    // SQL to concatenate all columns
+    String concatenated = columns.collect(Collectors.joining(" || ' ' || "));
+
+    // final SQL part, including bind parameter
+    String sql =
+        "to_tsvector('english', %s) @@ plainto_tsquery(:%s)".formatted(concatenated, paramName);
+
+    // TODO: we should be more precise in building the tsvectors by using array_to_tsvector,
+    //  jsonb_to_tsvector, etc. We could also look at phraseto_tsquery, websearch_to_tsquery, etc.
+
+    return new WhereClausePart(List.of(sql), Map.of(paramName, value));
+
+    // to_tsvector('english', coalesce("col1"::text, '') || ' ' || coalesce("col2"::text, '')) @@
+    // plainto_tsquery('searchterm')
+
   }
 }
