@@ -92,6 +92,7 @@ class CollectionServiceTest extends TestBase {
 
   // ========== following tests test the deprecated v0.2 CollectionService APIs
   @Test
+  @Deprecated(forRemoval = true, since = "v0.14.0")
   void testCreateAndValidateCollection() {
     collectionService.createCollection(COLLECTION, VERSION);
     collectionService.validateCollection(COLLECTION);
@@ -104,6 +105,7 @@ class CollectionServiceTest extends TestBase {
   }
 
   @Test
+  @Deprecated(forRemoval = true, since = "v0.14.0")
   void listCollections() {
     collectionService.createCollection(COLLECTION, VERSION);
 
@@ -116,6 +118,7 @@ class CollectionServiceTest extends TestBase {
   }
 
   @Test
+  @Deprecated(forRemoval = true, since = "v0.14.0")
   void deleteCollection() {
     collectionService.createCollection(COLLECTION, VERSION);
     collectionService.validateCollection(COLLECTION);

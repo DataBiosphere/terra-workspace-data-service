@@ -19,6 +19,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Collectors;
+import org.databiosphere.workspacedataservice.TestUtils;
 import org.databiosphere.workspacedataservice.common.TestBase;
 import org.databiosphere.workspacedataservice.dataimport.ImportValidator;
 import org.databiosphere.workspacedataservice.generated.ImportRequestServerModel;
@@ -43,6 +44,7 @@ import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMock
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.core.io.Resource;
+import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.ActiveProfiles;
 
@@ -65,6 +67,7 @@ class TdrManifestQuartzJobE2ETest extends TestBase {
   @Autowired private ImportService importService;
   @Autowired private CollectionService collectionService;
   @Autowired private TdrTestSupport testSupport;
+  @Autowired private NamedParameterJdbcTemplate namedTemplate;
 
   // Mock ImportValidator to allow importing test data from a file:// URL.
   @MockBean ImportValidator importValidator;
@@ -86,7 +89,7 @@ class TdrManifestQuartzJobE2ETest extends TestBase {
 
   @AfterEach
   void afterEach() {
-    collectionService.deleteCollection(collectionId, "v0.2");
+    TestUtils.cleanAllCollections(collectionService, namedTemplate);
   }
 
   @Test
