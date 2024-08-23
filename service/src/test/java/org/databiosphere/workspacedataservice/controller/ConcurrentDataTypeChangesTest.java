@@ -3,6 +3,9 @@ package org.databiosphere.workspacedataservice.controller;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
@@ -10,6 +13,9 @@ import java.util.concurrent.CompletableFuture;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 import org.databiosphere.workspacedataservice.common.TestBase;
+import org.databiosphere.workspacedataservice.config.TwdsProperties;
+import org.databiosphere.workspacedataservice.generated.CollectionServerModel;
+import org.databiosphere.workspacedataservice.shared.model.CollectionId;
 import org.databiosphere.workspacedataservice.shared.model.RecordAttributes;
 import org.databiosphere.workspacedataservice.shared.model.RecordRequest;
 import org.databiosphere.workspacedataservice.shared.model.RecordResponse;
@@ -41,33 +47,46 @@ class ConcurrentDataTypeChangesTest extends TestBase {
   private static final RecordType recordType = RecordType.valueOf("concurrency");
   private static final String versionId = "v0.2";
 
+  @Autowired private TwdsProperties twdsProperties;
+
   @BeforeEach
-  void setUp() {
+  void setUp() throws JsonProcessingException {
+    CollectionId collectionId = CollectionId.of(UUID.randomUUID());
+    String name = "test-name";
+    String description = "test-description";
+
+    CollectionServerModel collectionServerModel = new CollectionServerModel(name, description);
+    collectionServerModel.id(collectionId.id());
+
+    ObjectMapper objectMapper = new ObjectMapper();
+
     headers = new HttpHeaders();
     headers.setContentType(MediaType.APPLICATION_JSON);
-    instanceId = UUID.randomUUID();
     ResponseEntity<String> response =
         restTemplate.exchange(
-            "/instances/{v}/{instanceid}",
+            "/collections/v1/{workspaceId}",
             HttpMethod.POST,
-            new HttpEntity<>("", headers),
+            new HttpEntity<>(objectMapper.writeValueAsString(collectionServerModel), headers),
             String.class,
-            versionId,
-            instanceId);
+            twdsProperties.workspaceId().id());
     assertEquals(HttpStatus.CREATED, response.getStatusCode());
+
+    JsonNode jsonNode = objectMapper.readTree(response.getBody());
+
+    instanceId = UUID.fromString(jsonNode.get("id").asText());
   }
 
   @AfterEach
   void tearDown() {
     ResponseEntity<String> response =
         restTemplate.exchange(
-            "/instances/{v}/{instanceid}",
+            "/collections/v1/{workspaceId}/{instanceid}",
             HttpMethod.DELETE,
             new HttpEntity<>("", headers),
             String.class,
-            versionId,
+            twdsProperties.workspaceId().id(),
             instanceId);
-    assertEquals(HttpStatus.OK, response.getStatusCode());
+    assertEquals(HttpStatus.NO_CONTENT, response.getStatusCode());
   }
 
   @Test

@@ -5,6 +5,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.math.BigDecimal;
 import java.util.Arrays;
@@ -13,7 +14,10 @@ import java.util.UUID;
 import java.util.stream.Stream;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.databiosphere.workspacedataservice.common.TestBase;
+import org.databiosphere.workspacedataservice.config.TwdsProperties;
 import org.databiosphere.workspacedataservice.dao.RecordDao;
+import org.databiosphere.workspacedataservice.generated.CollectionServerModel;
+import org.databiosphere.workspacedataservice.shared.model.CollectionId;
 import org.databiosphere.workspacedataservice.shared.model.Record;
 import org.databiosphere.workspacedataservice.shared.model.RecordType;
 import org.databiosphere.workspacedataservice.shared.model.attributes.JsonAttribute;
@@ -31,6 +35,7 @@ import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.transaction.annotation.Transactional;
 
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
@@ -47,20 +52,44 @@ class TsvInputFormatsTest extends TestBase {
   private UUID instanceId;
 
   private static final String versionId = "v0.2";
+  @Autowired private TwdsProperties twdsProperties;
 
   @BeforeEach
   void setUp() throws Exception {
-    instanceId = UUID.randomUUID();
-    mockMvc
-        .perform(post("/instances/{v}/{instanceid}", versionId, instanceId).content(""))
-        .andExpect(status().isCreated());
+    CollectionId collectionId = CollectionId.of(UUID.randomUUID());
+    String name = "test-name";
+    String description = "test-description";
+
+    CollectionServerModel collectionServerModel = new CollectionServerModel(name, description);
+    collectionServerModel.id(collectionId.id());
+
+    ObjectMapper objectMapper = new ObjectMapper();
+
+    MvcResult mvcResult =
+        mockMvc
+            .perform(
+                post("/collections/v1/{workspaceId}", twdsProperties.workspaceId().id())
+                    .content(objectMapper.writeValueAsString(collectionServerModel))
+                    .contentType(MediaType.APPLICATION_JSON))
+            .andExpect(status().isCreated())
+            .andReturn();
+
+    String responseContent = mvcResult.getResponse().getContentAsString();
+    JsonNode jsonNode = objectMapper.readTree(responseContent);
+
+    instanceId = UUID.fromString(jsonNode.get("id").asText());
   }
 
   @AfterEach
   void tearDown() {
     try {
       mockMvc
-          .perform(delete("/instances/{v}/{instanceid}", versionId, instanceId).content(""))
+          .perform(
+              delete(
+                      "/collections/v1/{workspaceId}/{instanceid}",
+                      twdsProperties.workspaceId().id(),
+                      instanceId)
+                  .content(""))
           .andExpect(status().isOk());
     } catch (Throwable t) {
       // noop - if we fail to delete the instance, don't fail the test
