@@ -6,7 +6,6 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 import org.databiosphere.workspacedataservice.annotations.DeploymentMode.DataPlane;
-import org.databiosphere.workspacedataservice.service.CollectionService;
 import org.databiosphere.workspacedataservice.service.PermissionService;
 import org.databiosphere.workspacedataservice.service.RecordOrchestratorService;
 import org.databiosphere.workspacedataservice.service.model.AttributeSchema;
@@ -42,15 +41,12 @@ import org.springframework.web.servlet.mvc.method.annotation.StreamingResponseBo
 @RestController
 public class RecordController {
 
-  private final CollectionService collectionService;
   private final RecordOrchestratorService recordOrchestratorService;
   private final PermissionService permissionService;
 
   public RecordController(
-      CollectionService collectionService,
       RecordOrchestratorService recordOrchestratorService,
       PermissionService permissionService) {
-    this.collectionService = collectionService;
     this.recordOrchestratorService = recordOrchestratorService;
     this.permissionService = permissionService;
   }
