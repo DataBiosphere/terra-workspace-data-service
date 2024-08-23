@@ -97,10 +97,9 @@ class WdsTests(TestCase):
     records_client = wds_client.RecordsApi(api_client)
     generalInfo_client = wds_client.GeneralWDSInformationApi(api_client)
     schema_client = wds_client.SchemaApi(api_client)
-    instance_client = wds_client.InstancesApi(api_client)
     import_client = wds_client.ImportApi(api_client)
     job_client = wds_client.JobApi(api_client)
-    current_workspaceId = instance_client.list_wds_instances(version)[0]
+    current_workspaceId = os.environ['WORKSPACE_ID']
 
     local_server_host = 'http://localhost:9889'
 
