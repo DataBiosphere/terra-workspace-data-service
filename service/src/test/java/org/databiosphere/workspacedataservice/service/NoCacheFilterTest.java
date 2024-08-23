@@ -4,13 +4,18 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.databiosphere.workspacedataservice.TestUtils.generateRandomAttributes;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.net.URI;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import org.apache.commons.lang3.RandomStringUtils;
 import org.apache.commons.text.StringSubstitutor;
 import org.databiosphere.workspacedataservice.common.TestBase;
+import org.databiosphere.workspacedataservice.config.TwdsProperties;
+import org.databiosphere.workspacedataservice.generated.CollectionServerModel;
+import org.databiosphere.workspacedataservice.shared.model.CollectionId;
 import org.databiosphere.workspacedataservice.shared.model.RecordAttributes;
 import org.databiosphere.workspacedataservice.shared.model.RecordRequest;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -31,27 +36,29 @@ import org.springframework.test.context.ActiveProfiles;
 @ActiveProfiles(profiles = "mock-sam")
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 class NoCacheFilterTest extends TestBase {
+  @Autowired private TwdsProperties twdsProperties;
+
   private static final String versionId = "v0.2";
 
   @Autowired private ObjectMapper mapper;
 
   @Autowired private TestRestTemplate restTemplate;
 
+  private UUID instanceId = UUID.randomUUID();
+
   @ParameterizedTest(name = "Responses from {0} should not be cached")
   @ValueSource(
       strings = {
-        "/instances/${version}",
         "/${instanceId}/types/${version}",
         "/${instanceId}/tsv/${version}/${recordType}",
         "/${instanceId}/records/${version}/${recordType}/${recordId}"
       })
   void apiResponsesAreNotCached(String urlTemplate) throws Exception {
     // Arrange
-    UUID instanceId = UUID.randomUUID();
     String recordType = "record";
     String recordId = "record_1";
 
-    createInstanceAndUploadRecord(instanceId, recordType, recordId);
+    createInstanceAndUploadRecord(recordType, recordId);
 
     URI requestUri =
         URI.create(
@@ -100,21 +107,32 @@ class NoCacheFilterTest extends TestBase {
     assertThat(pragmaHeaders).isNull();
   }
 
-  private void createInstanceAndUploadRecord(UUID instanceId, String recordType, String recordId)
-      throws Exception {
+  private void createInstanceAndUploadRecord(String recordType, String recordId) throws Exception {
+    CollectionId collectionId = CollectionId.of(UUID.randomUUID());
+    String name = RandomStringUtils.randomAlphabetic(16);
+    String description = "test-description";
+
+    CollectionServerModel collectionServerModel = new CollectionServerModel(name, description);
+    collectionServerModel.id(collectionId.id());
+
+    ObjectMapper objectMapper = new ObjectMapper();
+
     HttpHeaders headers = new HttpHeaders();
     headers.setContentType(MediaType.APPLICATION_JSON);
 
     // Create instance
     ResponseEntity<String> createInstanceResponse =
         restTemplate.exchange(
-            "/instances/{version}/{instanceId}",
+            "/collections/v1/{workspaceId}",
             HttpMethod.POST,
-            new HttpEntity<>(headers),
+            new HttpEntity<>(objectMapper.writeValueAsString(collectionServerModel), headers),
             String.class,
-            versionId,
-            instanceId);
+            twdsProperties.workspaceId().id());
     assertEquals(HttpStatus.CREATED, createInstanceResponse.getStatusCode());
+
+    JsonNode jsonNode = objectMapper.readTree(createInstanceResponse.getBody());
+
+    instanceId = UUID.fromString(jsonNode.get("id").asText());
 
     // Create a record
     RecordAttributes attributes = generateRandomAttributes();
