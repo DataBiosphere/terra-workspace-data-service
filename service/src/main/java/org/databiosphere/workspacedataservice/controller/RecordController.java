@@ -136,42 +136,6 @@ public class RecordController {
         instanceId, version, recordType, recordId, primaryKey, recordRequest);
   }
 
-  /**
-   * @deprecated Use {@link CollectionController#listCollectionsV1(UUID)} instead.
-   */
-  @Deprecated(forRemoval = true, since = "v0.14.0")
-  @GetMapping("/instances/{version}")
-  public ResponseEntity<List<UUID>> listInstances(@PathVariable("version") String version) {
-    permissionService.requireReadPermissionSingleTenant();
-    List<UUID> schemaList = collectionService.listCollections(version);
-    return new ResponseEntity<>(schemaList, HttpStatus.OK);
-  }
-
-  /**
-   * @deprecated Use {@link CollectionController#createCollectionV1(UUID, CollectionServerModel)}
-   *     instead.
-   */
-  @Deprecated(forRemoval = true, since = "v0.14.0")
-  @PostMapping("/instances/{version}/{instanceId}")
-  public ResponseEntity<String> createInstance(
-      @PathVariable("instanceId") UUID instanceId, @PathVariable("version") String version) {
-    permissionService.requireWritePermissionSingleTenant();
-    collectionService.createCollection(instanceId, version);
-    return new ResponseEntity<>(HttpStatus.CREATED);
-  }
-
-  /**
-   * @deprecated Use {@link CollectionController#deleteCollectionV1(UUID, UUID)} instead.
-   */
-  @Deprecated(forRemoval = true, since = "v0.14.0")
-  @DeleteMapping("/instances/{version}/{instanceId}")
-  public ResponseEntity<String> deleteInstance(
-      @PathVariable("instanceId") UUID instanceId, @PathVariable("version") String version) {
-    permissionService.requireWritePermissionSingleTenant();
-    collectionService.deleteCollection(instanceId, version);
-    return new ResponseEntity<>(HttpStatus.OK);
-  }
-
   @DeleteMapping("/{instanceId}/records/{version}/{recordType}/{recordId}")
   public ResponseEntity<Void> deleteSingleRecord(
       @PathVariable("instanceId") UUID instanceId,
