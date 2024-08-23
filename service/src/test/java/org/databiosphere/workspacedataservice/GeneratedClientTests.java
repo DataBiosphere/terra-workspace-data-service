@@ -11,12 +11,14 @@ import java.util.List;
 import java.util.UUID;
 import java.util.stream.Stream;
 import org.apache.commons.io.FileUtils;
+import org.apache.commons.lang3.RandomStringUtils;
 import org.databiosphere.workspacedata.api.CollectionApi;
 import org.databiosphere.workspacedata.api.GeneralWdsInformationApi;
 import org.databiosphere.workspacedata.api.RecordsApi;
 import org.databiosphere.workspacedata.api.SchemaApi;
 import org.databiosphere.workspacedata.client.ApiClient;
 import org.databiosphere.workspacedata.client.ApiException;
+import org.databiosphere.workspacedata.model.Collection;
 import org.databiosphere.workspacedata.model.CollectionRequest;
 import org.databiosphere.workspacedata.model.RecordAttributes;
 import org.databiosphere.workspacedata.model.RecordQueryResponse;
@@ -51,8 +53,7 @@ class GeneratedClientTests extends TestBase {
   @LocalServerPort int port;
 
   @Autowired TwdsProperties twdsProperties;
-  private final UUID workspaceId = twdsProperties.workspaceId().id();
-  private final UUID collectionId = UUID.randomUUID();
+  private UUID collectionId;
   private final String version = "v0.2";
 
   @BeforeEach
@@ -60,13 +61,14 @@ class GeneratedClientTests extends TestBase {
     apiClient = new ApiClient();
     apiClient.setBasePath("http://localhost:" + port);
     CollectionRequest collectionRequest = new CollectionRequest();
-    collectionRequest.setName("default");
-    createNewCollection(collectionRequest, workspaceId);
+    collectionRequest.setName(RandomStringUtils.randomAlphabetic(16));
+    collectionRequest.setDescription("description");
+    collectionId = createNewCollection(collectionRequest, twdsProperties.workspaceId().id());
   }
 
   @AfterEach
   void afterEach() throws ApiException {
-    deleteCollection(workspaceId, collectionId);
+    deleteCollection(twdsProperties.workspaceId().id(), collectionId);
   }
 
   @Test
@@ -308,10 +310,11 @@ class GeneratedClientTests extends TestBase {
     assertThat(recordAttributes).containsEntry("greeting", "hello").containsEntry("double", -2.287);
   }
 
-  private void createNewCollection(CollectionRequest collectionRequest, UUID workspaceId)
+  private UUID createNewCollection(CollectionRequest collectionRequest, UUID workspaceId)
       throws ApiException {
     CollectionApi collectionApi = new CollectionApi(apiClient);
-    collectionApi.createCollectionV1(collectionRequest, workspaceId);
+    Collection createdCollection = collectionApi.createCollectionV1(collectionRequest, workspaceId);
+    return createdCollection.getId();
   }
 
   private void deleteCollection(UUID workspaceId, UUID collectionId) throws ApiException {
