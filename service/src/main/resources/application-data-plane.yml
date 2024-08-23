@@ -1,8 +1,5 @@
 twds:
   tenancy:
-    # Should this WDS deployment allow virtual collections, i.e. collections that have no
-    # corresponding row in the sys_wds.collection table?
-    allow-virtual-collections: false
     # Should this WDS deployment require a valid $WORKSPACE_ID env var?
     require-env-workspace: true
     # Should this WDS deployment require collections to belong to the workspace with $WORKSPACE_ID?

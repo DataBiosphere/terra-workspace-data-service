@@ -2,13 +2,10 @@ package org.databiosphere.workspacedataservice.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.mockito.Mockito.when;
 
 import java.util.UUID;
 import org.databiosphere.workspacedataservice.common.TestBase;
 import org.databiosphere.workspacedataservice.config.TenancyProperties;
-import org.databiosphere.workspacedataservice.service.model.exception.CollectionException;
 import org.databiosphere.workspacedataservice.shared.model.CollectionId;
 import org.databiosphere.workspacedataservice.shared.model.WorkspaceId;
 import org.junit.jupiter.api.Test;
@@ -25,8 +22,7 @@ import org.springframework.test.context.TestPropertySource;
 @ActiveProfiles(
     value = {"control-plane"},
     inheritProfiles = false)
-@TestPropertySource(
-    properties = {"twds.instance.workspace-id=", "twds.tenancy.allow-virtual-collections=true"})
+@TestPropertySource(properties = {"twds.instance.workspace-id="})
 class CollectionServiceNoWorkspaceTest extends TestBase {
 
   @Autowired private CollectionService collectionService;
@@ -47,30 +43,5 @@ class CollectionServiceNoWorkspaceTest extends TestBase {
   void getWorkspaceId() {
     CollectionId collectionId = CollectionId.of(UUID.randomUUID());
     assertEquals(WorkspaceId.of(collectionId.id()), collectionService.getWorkspaceId(collectionId));
-  }
-
-  @Test
-  void createCollectionNotAllowed_virtualCollectionsEnabled() {
-    when(tenancyProperties.getAllowVirtualCollections()).thenReturn(true);
-    UUID collectionId = UUID.randomUUID();
-    var thrown =
-        assertThrows(
-            CollectionException.class,
-            () -> collectionService.createCollection(collectionId, "v0.2"));
-    assertThat(thrown)
-        .hasMessageContaining("createCollection not allowed when virtual collections are enabled");
-  }
-
-  @Test
-  void createCollectionNotAllowed_missingWorkspaceId() {
-    when(tenancyProperties.getAllowVirtualCollections()).thenReturn(false);
-    UUID collectionId = UUID.randomUUID();
-    var thrown =
-        assertThrows(
-            CollectionException.class,
-            () -> collectionService.createCollection(collectionId, "v0.2"));
-    assertThat(thrown)
-        .hasMessageContaining(
-            "createCollection requires a workspaceId to be configured or provided");
   }
 }

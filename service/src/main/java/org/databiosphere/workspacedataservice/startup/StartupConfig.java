@@ -45,7 +45,6 @@ public class StartupConfig {
   @EventListener
   public void onApplicationEvent(ContextRefreshedEvent ignoredEvent) {
     assertDeploymentModeProfileEnabled();
-    logger.info("allow virtual collections: {}", tenancyProperties.getAllowVirtualCollections());
     logger.info("require $WORKSPACE_ID env var: {}", tenancyProperties.getRequireEnvWorkspace());
 
     if (tenancyProperties.getRequireEnvWorkspace()) {

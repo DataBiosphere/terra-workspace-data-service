@@ -134,7 +134,6 @@ twds:
   # should be application-data-plane.yml or application-control-plane.yml; they are provided here
   # to allow Spring to boot without crashing and allow StartupConfig to run and check preconditions
   tenancy:
-    allow-virtual-collections: false
     require-env-workspace: true
     enforce-collections-match-workspace-id: true
   data-import:

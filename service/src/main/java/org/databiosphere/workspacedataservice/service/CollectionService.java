@@ -345,10 +345,6 @@ public class CollectionService {
    */
   @Deprecated(forRemoval = true, since = "v0.14.0")
   public void createCollection(UUID collectionId, String version) {
-    if (tenancyProperties.getAllowVirtualCollections()) {
-      throw new CollectionException(
-          "createCollection not allowed when virtual collections are enabled");
-    }
     if (workspaceId == null) {
       throw new CollectionException(
           "createCollection requires a workspaceId to be configured or provided");
