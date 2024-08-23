@@ -22,11 +22,13 @@ import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Stream;
 import org.apache.commons.lang3.RandomStringUtils;
+import org.databiosphere.workspacedataservice.TestUtils;
 import org.databiosphere.workspacedataservice.common.TestBase;
 import org.databiosphere.workspacedataservice.config.TwdsProperties;
 import org.databiosphere.workspacedataservice.dao.RecordDao;
 import org.databiosphere.workspacedataservice.generated.CollectionRequestServerModel;
 import org.databiosphere.workspacedataservice.generated.CollectionServerModel;
+import org.databiosphere.workspacedataservice.service.CollectionService;
 import org.databiosphere.workspacedataservice.service.model.DataTypeMapping;
 import org.databiosphere.workspacedataservice.shared.model.BatchResponse;
 import org.databiosphere.workspacedataservice.shared.model.RecordAttributes;
@@ -53,6 +55,7 @@ import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.ActiveProfiles;
@@ -76,6 +79,9 @@ class TsvDownloadTest extends TestBase {
 
   @Autowired TwdsProperties twdsProperties;
 
+  @Autowired CollectionService collectionService;
+  @Autowired NamedParameterJdbcTemplate namedTemplate;
+
   @BeforeEach
   void init() {
     version = "v0.2";
@@ -90,7 +96,7 @@ class TsvDownloadTest extends TestBase {
 
   @AfterEach
   void tearDown() {
-    collectionController.deleteCollectionV1(twdsProperties.workspaceId().id(), collectionId);
+    TestUtils.cleanAllCollections(collectionService, namedTemplate);
   }
 
   @ParameterizedTest(name = "PK name {0} should be honored")

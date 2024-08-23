@@ -31,6 +31,7 @@ import org.databiosphere.workspacedata.model.StatusResponse;
 import org.databiosphere.workspacedata.model.TsvUploadResponse;
 import org.databiosphere.workspacedataservice.common.TestBase;
 import org.databiosphere.workspacedataservice.config.TwdsProperties;
+import org.databiosphere.workspacedataservice.service.CollectionService;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -40,6 +41,7 @@ import org.junit.jupiter.params.provider.MethodSource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.web.server.LocalServerPort;
+import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.lang.Nullable;
 import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.ActiveProfiles;
@@ -56,6 +58,9 @@ class GeneratedClientTests extends TestBase {
   private UUID collectionId;
   private final String version = "v0.2";
 
+  @Autowired CollectionService collectionService;
+  @Autowired NamedParameterJdbcTemplate namedTemplate;
+
   @BeforeEach
   void init() throws ApiException {
     apiClient = new ApiClient();
@@ -67,8 +72,8 @@ class GeneratedClientTests extends TestBase {
   }
 
   @AfterEach
-  void afterEach() throws ApiException {
-    deleteCollection(twdsProperties.workspaceId().id(), collectionId);
+  void afterEach() {
+    TestUtils.cleanAllCollections(collectionService, namedTemplate);
   }
 
   @Test
@@ -315,10 +320,5 @@ class GeneratedClientTests extends TestBase {
     CollectionApi collectionApi = new CollectionApi(apiClient);
     Collection createdCollection = collectionApi.createCollectionV1(collectionRequest, workspaceId);
     return createdCollection.getId();
-  }
-
-  private void deleteCollection(UUID workspaceId, UUID collectionId) throws ApiException {
-    CollectionApi collectionApi = new CollectionApi(apiClient);
-    collectionApi.deleteCollectionV1(workspaceId, collectionId);
   }
 }
