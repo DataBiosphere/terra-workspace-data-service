@@ -43,7 +43,7 @@ class NoCacheFilterTest extends TestBase {
 
   @Autowired private TestRestTemplate restTemplate;
 
-  private UUID instanceId = UUID.randomUUID();
+  private UUID instanceId;
 
   @ParameterizedTest(name = "Responses from {0} should not be cached")
   @ValueSource(
