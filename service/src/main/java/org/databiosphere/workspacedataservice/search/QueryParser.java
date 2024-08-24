@@ -1,6 +1,7 @@
 package org.databiosphere.workspacedataservice.search;
 
 import static org.databiosphere.workspacedataservice.dao.SqlUtils.quote;
+import static org.databiosphere.workspacedataservice.service.model.DataTypeMapping.*;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
@@ -25,6 +26,7 @@ import org.databiosphere.workspacedataservice.service.model.DataTypeMapping;
 public class QueryParser {
 
   public static final String DEFAULT_ALL_COLUMNS_NAME = "sys_all_columns";
+  private static final String TSVECTOR_CONFIG = "english";
 
   private final Map<String, DataTypeMapping> schema;
 
@@ -253,22 +255,53 @@ public class QueryParser {
   private WhereClausePart buildFullTableSearch(
       Map<String, DataTypeMapping> schema, String value, String paramName) {
     // SQL to cast each column to text and wrap in coalesce
-    Stream<String> columns = schema.keySet().stream().map("coalesce(\"%s\"::text, '')"::formatted);
+    // Stream<String> columns = schema.keySet().stream().map("coalesce(\"%s\"::text,
+    // '')"::formatted);
 
-    // SQL to concatenate all columns
-    String concatenated = columns.collect(Collectors.joining(" || ' ' || "));
+    // TODO: mapping from (String, DataTypeMapping) to a "tsvector..." should be a standalone,
+    //  unit-testable method
+    Stream<String> columns =
+        schema.entrySet().stream()
+            .map(
+                (entry) -> {
+                  String colName = entry.getKey();
+                  DataTypeMapping dataType = entry.getValue();
+                  return switch (dataType) {
+                    case NULL, EMPTY_ARRAY -> "";
+
+                    case STRING, RELATION, FILE -> "to_tsvector('%s', coalesce(%s, ''))"
+                        .formatted(TSVECTOR_CONFIG, colName);
+                    case NUMBER,
+                        BOOLEAN,
+                        DATE,
+                        DATE_TIME -> "to_tsvector('%s', coalesce(%s::text, ''))"
+                        .formatted(TSVECTOR_CONFIG, colName);
+                    case JSON -> "to_tsvector('%s', coalesce(%s, '{}'::jsonb))"
+                        .formatted(TSVECTOR_CONFIG, colName);
+
+                    case ARRAY_OF_STRING,
+                        ARRAY_OF_RELATION,
+                        ARRAY_OF_FILE -> "array_to_tsvector(coalesce(%s, '{}'))".formatted(colName);
+                    case ARRAY_OF_NUMBER,
+                        ARRAY_OF_BOOLEAN,
+                        ARRAY_OF_DATE,
+                        ARRAY_OF_DATE_TIME -> "array_to_tsvector(coalesce(%s, '{}')::text[])"
+                        .formatted(colName);
+                    case ARRAY_OF_JSON ->
+                    // TODO: how to handle?
+                    "";
+                  };
+                });
+
+    // SQL to concatenate all columns, skipping any empty strings (which denote a column we couldn't
+    // turn into a search vector)
+    String concatenated = columns.filter(x -> !"".equals(x)).collect(Collectors.joining(" || "));
 
     // final SQL part, including bind parameter
-    String sql =
-        "to_tsvector('english', %s) @@ plainto_tsquery(:%s)".formatted(concatenated, paramName);
+    String sql = "(%s) @@ plainto_tsquery(:%s)".formatted(concatenated, paramName);
 
-    // TODO: we should be more precise in building the tsvectors by using array_to_tsvector,
-    //  jsonb_to_tsvector, etc. We could also look at phraseto_tsquery, websearch_to_tsquery, etc.
+    // TODO: look at phraseto_tsquery, websearch_to_tsquery, etc.
 
     return new WhereClausePart(List.of(sql), Map.of(paramName, value));
-
-    // to_tsvector('english', coalesce("col1"::text, '') || ' ' || coalesce("col2"::text, '')) @@
-    // plainto_tsquery('searchterm')
-
   }
 }
