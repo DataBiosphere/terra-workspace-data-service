@@ -14,8 +14,7 @@ import java.util.stream.IntStream;
 import java.util.stream.Stream;
 import org.databiosphere.workspacedataservice.common.TestBase;
 import org.databiosphere.workspacedataservice.config.TwdsProperties;
-import org.databiosphere.workspacedataservice.generated.CollectionServerModel;
-import org.databiosphere.workspacedataservice.shared.model.CollectionId;
+import org.databiosphere.workspacedataservice.generated.CollectionRequestServerModel;
 import org.databiosphere.workspacedataservice.shared.model.RecordAttributes;
 import org.databiosphere.workspacedataservice.shared.model.RecordRequest;
 import org.databiosphere.workspacedataservice.shared.model.RecordResponse;
@@ -51,12 +50,11 @@ class ConcurrentDataTypeChangesTest extends TestBase {
 
   @BeforeEach
   void setUp() throws JsonProcessingException {
-    CollectionId collectionId = CollectionId.of(UUID.randomUUID());
     String name = "test-name";
     String description = "test-description";
 
-    CollectionServerModel collectionServerModel = new CollectionServerModel(name, description);
-    collectionServerModel.id(collectionId.id());
+    CollectionRequestServerModel collectionRequestServerModel =
+        new CollectionRequestServerModel(name, description);
 
     ObjectMapper objectMapper = new ObjectMapper();
 
@@ -66,7 +64,8 @@ class ConcurrentDataTypeChangesTest extends TestBase {
         restTemplate.exchange(
             "/collections/v1/{workspaceId}",
             HttpMethod.POST,
-            new HttpEntity<>(objectMapper.writeValueAsString(collectionServerModel), headers),
+            new HttpEntity<>(
+                objectMapper.writeValueAsString(collectionRequestServerModel), headers),
             String.class,
             twdsProperties.workspaceId().id());
     assertEquals(HttpStatus.CREATED, response.getStatusCode());

@@ -16,8 +16,7 @@ import org.apache.commons.lang3.RandomStringUtils;
 import org.databiosphere.workspacedataservice.common.TestBase;
 import org.databiosphere.workspacedataservice.config.TwdsProperties;
 import org.databiosphere.workspacedataservice.dao.RecordDao;
-import org.databiosphere.workspacedataservice.generated.CollectionServerModel;
-import org.databiosphere.workspacedataservice.shared.model.CollectionId;
+import org.databiosphere.workspacedataservice.generated.CollectionRequestServerModel;
 import org.databiosphere.workspacedataservice.shared.model.Record;
 import org.databiosphere.workspacedataservice.shared.model.RecordType;
 import org.databiosphere.workspacedataservice.shared.model.attributes.JsonAttribute;
@@ -56,12 +55,11 @@ class TsvInputFormatsTest extends TestBase {
 
   @BeforeEach
   void setUp() throws Exception {
-    CollectionId collectionId = CollectionId.of(UUID.randomUUID());
     String name = "test-name";
     String description = "test-description";
 
-    CollectionServerModel collectionServerModel = new CollectionServerModel(name, description);
-    collectionServerModel.id(collectionId.id());
+    CollectionRequestServerModel collectionRequestServerModel =
+        new CollectionRequestServerModel(name, description);
 
     ObjectMapper objectMapper = new ObjectMapper();
 
@@ -69,7 +67,7 @@ class TsvInputFormatsTest extends TestBase {
         mockMvc
             .perform(
                 post("/collections/v1/{workspaceId}", twdsProperties.workspaceId().id())
-                    .content(objectMapper.writeValueAsString(collectionServerModel))
+                    .content(objectMapper.writeValueAsString(collectionRequestServerModel))
                     .contentType(MediaType.APPLICATION_JSON))
             .andExpect(status().isCreated())
             .andReturn();
