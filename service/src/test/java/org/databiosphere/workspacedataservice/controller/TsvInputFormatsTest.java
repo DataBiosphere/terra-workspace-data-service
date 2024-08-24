@@ -5,7 +5,6 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.math.BigDecimal;
 import java.util.Arrays;
@@ -13,6 +12,7 @@ import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Stream;
 import org.apache.commons.lang3.RandomStringUtils;
+import org.databiosphere.workspacedataservice.TestUtils;
 import org.databiosphere.workspacedataservice.common.TestBase;
 import org.databiosphere.workspacedataservice.config.TwdsProperties;
 import org.databiosphere.workspacedataservice.dao.RecordDao;
@@ -72,10 +72,8 @@ class TsvInputFormatsTest extends TestBase {
             .andExpect(status().isCreated())
             .andReturn();
 
-    String responseContent = mvcResult.getResponse().getContentAsString();
-    JsonNode jsonNode = objectMapper.readTree(responseContent);
-
-    instanceId = UUID.fromString(jsonNode.get("id").asText());
+    instanceId =
+        TestUtils.getCollectionId(objectMapper, mvcResult.getResponse().getContentAsString());
   }
 
   @AfterEach

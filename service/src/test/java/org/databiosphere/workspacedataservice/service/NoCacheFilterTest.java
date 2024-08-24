@@ -4,14 +4,15 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.databiosphere.workspacedataservice.TestUtils.generateRandomAttributes;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.net.URI;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.UUID;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.apache.commons.text.StringSubstitutor;
+import org.databiosphere.workspacedataservice.TestUtils;
 import org.databiosphere.workspacedataservice.common.TestBase;
 import org.databiosphere.workspacedataservice.config.TwdsProperties;
 import org.databiosphere.workspacedataservice.generated.CollectionRequestServerModel;
@@ -129,9 +130,9 @@ class NoCacheFilterTest extends TestBase {
             twdsProperties.workspaceId().id());
     assertEquals(HttpStatus.CREATED, createInstanceResponse.getStatusCode());
 
-    JsonNode jsonNode = objectMapper.readTree(createInstanceResponse.getBody());
-
-    instanceId = UUID.fromString(jsonNode.get("id").asText());
+    instanceId =
+        TestUtils.getCollectionId(
+            objectMapper, Objects.requireNonNull(createInstanceResponse.getBody()));
 
     // Create a record
     RecordAttributes attributes = generateRandomAttributes();

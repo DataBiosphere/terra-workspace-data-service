@@ -8,7 +8,6 @@ import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.math.BigDecimal;
 import java.math.BigInteger;
@@ -18,9 +17,11 @@ import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.UUID;
 import java.util.function.Supplier;
 import org.databiosphere.workspacedata.model.ErrorResponse;
+import org.databiosphere.workspacedataservice.TestUtils;
 import org.databiosphere.workspacedataservice.common.TestBase;
 import org.databiosphere.workspacedataservice.config.TwdsProperties;
 import org.databiosphere.workspacedataservice.generated.CollectionRequestServerModel;
@@ -95,9 +96,8 @@ class FullStackRecordControllerTest extends TestBase {
             twdsProperties.workspaceId().id());
     assertEquals(HttpStatus.CREATED, response.getStatusCode());
 
-    JsonNode jsonNode = objectMapper.readTree(response.getBody());
-
-    instanceId = UUID.fromString(jsonNode.get("id").asText());
+    instanceId =
+        TestUtils.getCollectionId(objectMapper, Objects.requireNonNull(response.getBody()));
   }
 
   @AfterEach

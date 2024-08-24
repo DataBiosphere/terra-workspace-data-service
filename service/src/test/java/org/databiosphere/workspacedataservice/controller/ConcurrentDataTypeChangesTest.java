@@ -4,14 +4,15 @@ import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Objects;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
+import org.databiosphere.workspacedataservice.TestUtils;
 import org.databiosphere.workspacedataservice.common.TestBase;
 import org.databiosphere.workspacedataservice.config.TwdsProperties;
 import org.databiosphere.workspacedataservice.generated.CollectionRequestServerModel;
@@ -70,9 +71,8 @@ class ConcurrentDataTypeChangesTest extends TestBase {
             twdsProperties.workspaceId().id());
     assertEquals(HttpStatus.CREATED, response.getStatusCode());
 
-    JsonNode jsonNode = objectMapper.readTree(response.getBody());
-
-    instanceId = UUID.fromString(jsonNode.get("id").asText());
+    instanceId =
+        TestUtils.getCollectionId(objectMapper, Objects.requireNonNull(response.getBody()));
   }
 
   @AfterEach

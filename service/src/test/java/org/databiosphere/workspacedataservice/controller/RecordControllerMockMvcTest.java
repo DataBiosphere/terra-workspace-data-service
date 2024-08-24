@@ -8,7 +8,6 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
-import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.math.BigDecimal;
 import java.math.BigInteger;
@@ -89,10 +88,8 @@ class RecordControllerMockMvcTest extends MockMvcTestBase {
             .andExpect(status().isCreated())
             .andReturn();
 
-    String responseContent = mvcResult.getResponse().getContentAsString();
-    JsonNode jsonNode = objectMapper.readTree(responseContent);
-
-    instanceId = UUID.fromString(jsonNode.get("id").asText());
+    instanceId =
+        TestUtils.getCollectionId(objectMapper, mvcResult.getResponse().getContentAsString());
   }
 
   @AfterEach
