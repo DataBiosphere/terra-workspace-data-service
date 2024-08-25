@@ -17,14 +17,14 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 import org.databiosphere.workspacedataservice.TestUtils;
 import org.databiosphere.workspacedataservice.common.TestBase;
+import org.databiosphere.workspacedataservice.config.TwdsProperties;
 import org.databiosphere.workspacedataservice.dataimport.ImportValidator;
+import org.databiosphere.workspacedataservice.generated.CollectionServerModel;
 import org.databiosphere.workspacedataservice.generated.ImportRequestServerModel;
 import org.databiosphere.workspacedataservice.service.CollectionService;
 import org.databiosphere.workspacedataservice.service.ImportService;
 import org.databiosphere.workspacedataservice.service.RecordOrchestratorService;
 import org.databiosphere.workspacedataservice.service.model.RecordTypeSchema;
-import org.databiosphere.workspacedataservice.shared.model.CollectionId;
-import org.databiosphere.workspacedataservice.shared.model.WorkspaceId;
 import org.databiosphere.workspacedataservice.workspacemanager.WorkspaceManagerDao;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -65,6 +65,7 @@ class TdrManifestQuartzJobMultipleBatchTest extends TestBase {
   @Autowired private CollectionService collectionService;
   @Autowired private TdrTestSupport testSupport;
   @Autowired private NamedParameterJdbcTemplate namedTemplate;
+  @Autowired private TwdsProperties twdsProperties;
 
   // Mock ImportValidator to allow importing test data from a file:// URL.
   @MockBean ImportValidator importValidator;
@@ -77,9 +78,9 @@ class TdrManifestQuartzJobMultipleBatchTest extends TestBase {
 
   @BeforeEach
   void beforeEach() {
-    collectionId = UUID.randomUUID();
-    collectionService.createCollection(
-        WorkspaceId.of(collectionId), CollectionId.of(collectionId), "v0.2");
+    CollectionServerModel collectionServerModel =
+        TestUtils.createCollection(collectionService, twdsProperties.workspaceId());
+    collectionId = collectionServerModel.getId();
   }
 
   @AfterEach
