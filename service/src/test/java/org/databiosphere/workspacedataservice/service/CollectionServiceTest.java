@@ -3,7 +3,6 @@ package org.databiosphere.workspacedataservice.service;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-import java.util.UUID;
 import org.databiosphere.workspacedataservice.common.TestBase;
 import org.databiosphere.workspacedataservice.config.TwdsProperties;
 import org.databiosphere.workspacedataservice.dao.CollectionDao;
@@ -25,8 +24,6 @@ class CollectionServiceTest extends TestBase {
   @Autowired private CollectionService collectionService;
   @Autowired private CollectionDao collectionDao;
   @Autowired private TwdsProperties twdsProperties;
-
-  private static final UUID COLLECTION = UUID.fromString("111e9999-e89b-12d3-a456-426614174000");
 
   @BeforeEach
   @AfterEach
