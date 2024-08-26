@@ -6,6 +6,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import java.util.UUID;
 import org.databiosphere.workspacedataservice.common.TestBase;
 import org.databiosphere.workspacedataservice.config.TenancyProperties;
+import org.databiosphere.workspacedataservice.config.TwdsProperties;
 import org.databiosphere.workspacedataservice.shared.model.CollectionId;
 import org.databiosphere.workspacedataservice.shared.model.WorkspaceId;
 import org.junit.jupiter.api.Test;
@@ -27,6 +28,7 @@ class CollectionServiceNoWorkspaceTest extends TestBase {
 
   @Autowired private CollectionService collectionService;
   @SpyBean private TenancyProperties tenancyProperties;
+  @Autowired TwdsProperties twdsProperties;
 
   @Value("${twds.instance.workspace-id:}")
   private String workspaceIdProperty;

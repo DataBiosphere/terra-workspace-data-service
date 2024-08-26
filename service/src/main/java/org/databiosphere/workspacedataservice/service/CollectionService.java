@@ -1,7 +1,6 @@
 package org.databiosphere.workspacedataservice.service;
 
 import static org.databiosphere.workspacedataservice.dao.SqlUtils.quote;
-import static org.databiosphere.workspacedataservice.service.RecordUtils.validateVersion;
 
 import bio.terra.common.db.WriteTransaction;
 import java.util.List;
@@ -34,11 +33,9 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DuplicateKeyException;
 import org.springframework.data.relational.core.conversion.DbActionExecutionException;
-import org.springframework.http.HttpStatus;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.lang.Nullable;
 import org.springframework.stereotype.Service;
-import org.springframework.web.server.ResponseStatusException;
 
 @Service
 public class CollectionService {
@@ -327,65 +324,6 @@ public class CollectionService {
       throw new ConflictException("Collection name or id conflict");
     }
     throw dbActionExecutionException;
-  }
-
-  // ============================== v0.2 methods ==============================
-
-  /**
-   * @deprecated Use {@link #list(WorkspaceId)} instead.
-   */
-  @Deprecated(forRemoval = true, since = "v0.14.0")
-  public List<UUID> listCollections(String version) {
-    validateVersion(version);
-    return collectionDao.listCollectionSchemas().stream().map(CollectionId::id).toList();
-  }
-
-  /**
-   * @deprecated Use {@link #save(WorkspaceId, CollectionRequestServerModel)} instead.
-   */
-  @Deprecated(forRemoval = true, since = "v0.14.0")
-  public void createCollection(UUID collectionId, String version) {
-    if (workspaceId == null) {
-      throw new CollectionException(
-          "createCollection requires a workspaceId to be configured or provided");
-    }
-    createCollection(workspaceId, CollectionId.of(collectionId), version);
-  }
-
-  /**
-   * @deprecated Use {@link #save(WorkspaceId, CollectionRequestServerModel)} instead.
-   */
-  @Deprecated(forRemoval = true, since = "v0.14.0")
-  public void createCollection(WorkspaceId workspaceId, CollectionId collectionId, String version) {
-    validateVersion(version);
-
-    if (collectionDao.collectionSchemaExists(collectionId)) {
-      throw new ResponseStatusException(HttpStatus.CONFLICT, "This collection already exists");
-    }
-
-    // TODO(AJ-1662): this needs to pass the workspaceId argument so the collection is created
-    //   correctly
-    // create collection schema in Postgres
-    collectionDao.createSchema(collectionId);
-
-    activityLogger.saveEventForCurrentUser(
-        user -> user.created().collection().withUuid(collectionId.id()));
-  }
-
-  /**
-   * @deprecated Use {@link #delete(WorkspaceId, CollectionId)} instead.
-   */
-  @Deprecated(forRemoval = true, since = "v0.14.0")
-  public void deleteCollection(UUID collectionUuid, String version) {
-    validateVersion(version);
-    validateCollection(collectionUuid);
-    CollectionId collectionId = CollectionId.of(collectionUuid);
-
-    // delete collection schema in Postgres
-    collectionDao.dropSchema(collectionId);
-
-    activityLogger.saveEventForCurrentUser(
-        user -> user.deleted().collection().withUuid(collectionUuid));
   }
 
   // ============================== helpers ==============================

@@ -32,8 +32,6 @@ tags:
     description: Job APIs
   - name: Collection
     description: Collection APIs
-  - name: Instances
-    description: Instance APIs
   - name: Schema
     description: Schema Manipulation APIs (coming soon)
   - name: Workspace
@@ -348,69 +346,6 @@ paths:
     $ref: 'apis-v1.yaml#/paths/~1collections~1v1~1{workspaceId}'
   /collections/v1/{workspaceId}/{collectionId}:
     $ref: 'apis-v1.yaml#/paths/~1collections~1v1~1{workspaceId}~1{collectionId}'
-
-  ##############################
-  # Instances APIs
-  ##############################
-  /instances/{v}:
-    get:
-      summary: This API will be deleted on or after August 25, 2024.
-      description: Use GET /collections/v1/{workspaceId} instead.
-      operationId: listWDSInstances
-      deprecated: true
-      tags:
-        - Instances
-      parameters:
-        - $ref: '#/components/parameters/versionPathParam'
-      responses:
-        200:
-          description: Success
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  type: string
-                  format: uuid
-  /instances/{v}/{instanceid}:
-    post:
-      summary: This API will be deleted on or after August 25, 2024.
-      description: Use POST /collections/v1/{workspaceId} instead.
-      operationId: createWDSInstance
-      deprecated: true
-      tags:
-        - Instances
-      parameters:
-        - $ref: '#/components/parameters/instanceIdPathParam'
-        - $ref: '#/components/parameters/versionPathParam'
-      responses:
-        201:
-          description: Success
-        409:
-          description: Conflict - schema already exists.
-          content:
-            'application/json':
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-    delete:
-      summary: This API will be deleted on or after August 25, 2024.
-      description: Use DELETE /collections/v1/{workspaceId}/{collectionId} instead.
-      operationId: deleteWDSInstance
-      deprecated: true
-      tags:
-        - Instances
-      parameters:
-        - $ref: '#/components/parameters/instanceIdPathParam'
-        - $ref: '#/components/parameters/versionPathParam'
-      responses:
-        200:
-          description: Success
-        404:
-          description: Not Found - instance does not exist.
-          content:
-            'application/json':
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
 
   ##############################
   # Schema APIs

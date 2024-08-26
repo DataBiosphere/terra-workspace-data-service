@@ -8,6 +8,7 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.util.ArrayList;
@@ -20,7 +21,9 @@ import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 import org.databiosphere.workspacedataservice.TestUtils;
+import org.databiosphere.workspacedataservice.config.TwdsProperties;
 import org.databiosphere.workspacedataservice.dao.TestDao;
+import org.databiosphere.workspacedataservice.generated.CollectionServerModel;
 import org.databiosphere.workspacedataservice.service.RelationUtils;
 import org.databiosphere.workspacedataservice.service.model.AttributeSchema;
 import org.databiosphere.workspacedataservice.service.model.DataTypeMapping;
@@ -29,6 +32,7 @@ import org.databiosphere.workspacedataservice.service.model.exception.InvalidNam
 import org.databiosphere.workspacedataservice.service.model.exception.InvalidRelationException;
 import org.databiosphere.workspacedataservice.service.model.exception.MissingObjectException;
 import org.databiosphere.workspacedataservice.shared.model.BatchOperation;
+import org.databiosphere.workspacedataservice.shared.model.CollectionId;
 import org.databiosphere.workspacedataservice.shared.model.OperationType;
 import org.databiosphere.workspacedataservice.shared.model.Record;
 import org.databiosphere.workspacedataservice.shared.model.RecordAttributes;
@@ -36,7 +40,6 @@ import org.databiosphere.workspacedataservice.shared.model.RecordQueryResponse;
 import org.databiosphere.workspacedataservice.shared.model.RecordRequest;
 import org.databiosphere.workspacedataservice.shared.model.RecordResponse;
 import org.databiosphere.workspacedataservice.shared.model.RecordType;
-import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -61,82 +64,48 @@ class RecordControllerMockMvcTest extends MockMvcTestBase {
 
   private static final String versionId = "v0.2";
 
+  @Autowired private TwdsProperties twdsProperties;
+
   @Autowired TestDao testDao;
 
   @BeforeEach
   void setUp() throws Exception {
-    instanceId = UUID.randomUUID();
-    mockMvc
-        .perform(post("/instances/{v}/{instanceid}", versionId, instanceId).content(""))
-        .andExpect(status().isCreated());
+    CollectionId collectionId = CollectionId.of(UUID.randomUUID());
+    String name = "test-name";
+    String description = "test-description";
+
+    CollectionServerModel collectionServerModel = new CollectionServerModel(name, description);
+    collectionServerModel.id(collectionId.id());
+
+    ObjectMapper objectMapper = new ObjectMapper();
+
+    MvcResult mvcResult =
+        mockMvc
+            .perform(
+                post("/collections/v1/{workspaceId}", twdsProperties.workspaceId().id())
+                    .content(objectMapper.writeValueAsString(collectionServerModel))
+                    .contentType(MediaType.APPLICATION_JSON))
+            .andExpect(status().isCreated())
+            .andReturn();
+
+    instanceId =
+        TestUtils.getCollectionId(objectMapper, mvcResult.getResponse().getContentAsString());
   }
 
   @AfterEach
   void tearDown() {
     try {
       mockMvc
-          .perform(delete("/instances/{v}/{instanceid}", versionId, instanceId).content(""))
+          .perform(
+              delete(
+                      "/collections/v1/{workspaceId}/{instanceid}",
+                      twdsProperties.workspaceId().id(),
+                      instanceId)
+                  .content(""))
           .andExpect(status().isOk());
     } catch (Throwable t) {
       // noop - if we fail to delete the instance, don't fail the test
     }
-  }
-
-  @AfterAll
-  void deleteAllInstances() throws Exception {
-    MvcResult response = mockMvc.perform(get("/instances/{v}", versionId)).andReturn();
-    UUID[] allInstances = fromJson(response, UUID[].class);
-    for (UUID id : allInstances) {
-      mockMvc.perform(delete("/instances/{v}/{instanceid}", versionId, id).content(""));
-    }
-  }
-
-  @Test
-  @Transactional
-  void createInstanceAndTryToCreateAgain() throws Exception {
-    UUID uuid = UUID.randomUUID();
-    mockMvc
-        .perform(post("/instances/{version}/{instanceId}", versionId, uuid))
-        .andExpect(status().isCreated());
-    mockMvc
-        .perform(post("/instances/{version}/{instanceId}", versionId, uuid))
-        .andExpect(status().isConflict());
-  }
-
-  @Test
-  void listInstances() throws Exception {
-    // get initial instance list
-    MvcResult initialResult =
-        mockMvc
-            .perform(get("/instances/{version}", versionId))
-            .andExpect(status().isOk())
-            .andReturn();
-    UUID[] initialInstances = fromJson(initialResult, UUID[].class);
-    // create new uuid; new uuid should not be in our initial instance list
-    UUID uuid = UUID.randomUUID();
-    assertFalse(
-        Arrays.asList(initialInstances).contains(uuid),
-        "initial instance list should not contain brand new UUID");
-    // create a new instance from the new uuid
-    mockMvc
-        .perform(post("/instances/{version}/{instanceId}", versionId, uuid))
-        .andExpect(status().isCreated());
-    // get instance list again
-    MvcResult afterCreationResult =
-        mockMvc
-            .perform(get("/instances/{version}", versionId))
-            .andExpect(status().isOk())
-            .andReturn();
-    UUID[] afterCreationInstances = fromJson(afterCreationResult, UUID[].class);
-    // new uuid should be in our initial instance list
-    assertTrue(
-        Arrays.asList(afterCreationInstances).contains(uuid),
-        "after-creation instance list should contain brand new UUID");
-
-    assertEquals(
-        initialInstances.length + 1,
-        afterCreationInstances.length,
-        "size of after-creation list should be equal to the initial size plus one");
   }
 
   @Test
@@ -200,32 +169,6 @@ class RecordControllerMockMvcTest extends MockMvcTestBase {
 
   @Test
   @Transactional
-  void deleteInstance() throws Exception {
-    UUID uuid = UUID.randomUUID();
-    // delete nonexistent instance should 404
-    mockMvc
-        .perform(delete("/instances/{version}/{instanceId}", versionId, uuid))
-        .andExpect(status().isNotFound());
-    // creating the instance should 201
-    mockMvc
-        .perform(post("/instances/{version}/{instanceId}", versionId, uuid))
-        .andExpect(status().isCreated());
-    // delete existing instance should 200
-    mockMvc
-        .perform(delete("/instances/{version}/{instanceId}", versionId, uuid))
-        .andExpect(status().isOk());
-    // deleting again should 404
-    mockMvc
-        .perform(delete("/instances/{version}/{instanceId}", versionId, uuid))
-        .andExpect(status().isNotFound());
-    // creating again should 201
-    mockMvc
-        .perform(post("/instances/{version}/{instanceId}", versionId, uuid))
-        .andExpect(status().isCreated());
-  }
-
-  @Test
-  @Transactional
   void deleteInstanceContainingData() throws Exception {
     RecordAttributes attributes = new RecordAttributes(Map.of("foo", "bar", "num", 123));
     // create "to" record, which will be the target of a relation
@@ -253,10 +196,14 @@ class RecordControllerMockMvcTest extends MockMvcTestBase {
                 .content(toJson(new RecordRequest(attributes2)))
                 .contentType(MediaType.APPLICATION_JSON))
         .andExpect(status().isCreated());
-    // delete existing instance should 200
+    // delete existing collection should 204
     mockMvc
-        .perform(delete("/instances/{version}/{instanceId}", versionId, instanceId))
-        .andExpect(status().isOk());
+        .perform(
+            delete(
+                "/collections/v1/{workspaceId}/{instanceId}",
+                twdsProperties.workspaceId().id(),
+                instanceId))
+        .andExpect(status().isNoContent());
   }
 
   @Test

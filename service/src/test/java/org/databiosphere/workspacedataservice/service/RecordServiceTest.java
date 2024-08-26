@@ -17,7 +17,9 @@ import java.util.UUID;
 import org.databiosphere.workspacedataservice.TestUtils;
 import org.databiosphere.workspacedataservice.annotations.WithTestObservationRegistry;
 import org.databiosphere.workspacedataservice.common.TestBase;
+import org.databiosphere.workspacedataservice.config.TwdsProperties;
 import org.databiosphere.workspacedataservice.dao.RecordDao;
+import org.databiosphere.workspacedataservice.generated.CollectionServerModel;
 import org.databiosphere.workspacedataservice.service.model.DataTypeMapping;
 import org.databiosphere.workspacedataservice.shared.model.RecordAttributes;
 import org.databiosphere.workspacedataservice.shared.model.RecordRequest;
@@ -40,13 +42,15 @@ class RecordServiceTest extends TestBase {
   @Autowired RecordDao recordDao;
   @Autowired TestObservationRegistry observationRegistry;
   @Autowired NamedParameterJdbcTemplate namedTemplate;
+  @Autowired TwdsProperties twdsProperties;
 
   private UUID collectionId;
 
   @BeforeEach
   void beforeEach() {
-    collectionId = UUID.randomUUID();
-    collectionService.createCollection(collectionId, "v0.2");
+    CollectionServerModel collectionServerModel =
+        TestUtils.createCollection(collectionService, twdsProperties.workspaceId());
+    collectionId = collectionServerModel.getId();
   }
 
   @AfterEach
