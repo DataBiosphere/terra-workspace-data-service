@@ -24,6 +24,8 @@ tags:
     description: Collection APIs
   - name: Workspace
     description: Workspace APIs
+  - name: Record
+    description: Record APIs
   - name: Capabilities
     description: Describes the features of WDS
 
@@ -250,6 +252,31 @@ paths:
                 $ref: '#/components/schemas/GenericJob'
 
   ##############################
+  # Records APIs
+  ##############################
+  /records/v1/{workspaceId}/delete:
+    post:
+      summary: Submit a request for record deletion in this workspace.
+      operationId: deleteRecordV1
+      description: |
+        deletes records by ID. TODO finish this description!
+      tags:
+        - Record
+      parameters:
+        - $ref: '#/components/parameters/workspaceIdPathParam'
+      requestBody:
+        description: Record deletion specification
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DeleteRecords'
+      responses:
+        202:
+          description: Deletion request accepted
+
+
+  ##############################
   # Capabilities APIs
   ##############################
   /capabilities/v1:
@@ -407,4 +434,31 @@ components:
       required:
         - sourceWorkspaceId
       additionalProperties: false
+    DeleteRecords:
+      type: object
+      description: a required deletion specification
+      oneOf:
+        - $ref: '#/components/schemas/IncludedRecordIDs'
+        - $ref: '#/components/schemas/ExcludedRecordIDs'
+      additionalProperties: false
+    IncludedRecordIDs:
+      type: object
+      description: included record IDs array
+      properties:
+        include: # Is this a clear enough term for this property?
+          type: array
+          description: an array of record IDs that should be deleted
+          items:
+            type: string
+            # should this be UUID format? format: uuid
+    ExcludedRecordIDs:
+      type: object
+      description: excluded record IDs array
+      properties:
+        exclude:  # Is this a clear enough term for this property?
+          type: array
+          description: delete all records *except* those specified by these record IDs
+          items:
+            type: string
+            # should this be UUID format? format: uuid
 
