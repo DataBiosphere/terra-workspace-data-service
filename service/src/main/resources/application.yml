@@ -162,7 +162,7 @@ twds:
     password: ${env.wds.db.password}
     host: ${env.wds.db.host}
     # When running on Azure in k8s with workload identity set PGDUMP_USE_AZURE_IDENTITY to true
-    useAzureIdentity: ${PGDUMP_USE_AZURE_IDENTITY:true}
+    useAzureIdentity: ${PGDUMP_USE_AZURE_IDENTITY:false}
 
 # retry configuration for REST clients (Sam, WSM, TDR, Leo, etc)
 rest:
