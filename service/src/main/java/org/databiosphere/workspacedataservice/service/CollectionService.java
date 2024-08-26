@@ -172,7 +172,7 @@ public class CollectionService {
         .getJdbcTemplate()
         .update("drop schema " + quote(collectionId.toString()) + " cascade");
 
-    collectionRepository.deleteById(collectionId.id());
+    collectionRepository.deleteById(collectionId);
 
     activityLogger.saveEventForCurrentUser(
         user -> user.deleted().collection().withUuid(collectionId.id()));
