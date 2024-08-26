@@ -17,6 +17,7 @@ import org.databiosphere.workspacedata.model.BackupResponse;
 import org.databiosphere.workspacedataservice.IntegrationServiceTestBase;
 import org.databiosphere.workspacedataservice.annotations.SingleTenant;
 import org.databiosphere.workspacedataservice.dao.CloneDao;
+import org.databiosphere.workspacedataservice.dao.CollectionDao;
 import org.databiosphere.workspacedataservice.dao.RecordDao;
 import org.databiosphere.workspacedataservice.leonardo.LeonardoDao;
 import org.databiosphere.workspacedataservice.service.CollectionService;
@@ -58,6 +59,7 @@ class CollectionInitializerCloneTest extends IntegrationServiceTestBase {
 
   // standard beans
   @Autowired CollectionInitializerBean collectionInitializerBean;
+  @Autowired CollectionDao collectionDao;
   @Autowired CollectionService collectionService;
   @Autowired RecordDao recordDao;
   @Autowired CloneDao cloneDao;
