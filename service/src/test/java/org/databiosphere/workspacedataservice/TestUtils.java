@@ -1,5 +1,7 @@
 package org.databiosphere.workspacedataservice;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.time.LocalDate;
@@ -7,8 +9,10 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.apache.commons.lang3.RandomUtils;
+import org.databiosphere.workspacedataservice.generated.CollectionServerModel;
 import org.databiosphere.workspacedataservice.service.CollectionService;
 import org.databiosphere.workspacedataservice.service.RelationUtils;
 import org.databiosphere.workspacedataservice.shared.model.CollectionId;
@@ -197,5 +201,13 @@ public class TestUtils {
             "2016-06-06T12:00:01",
             "1991-05-15T12:00:01")
         .get(seed % 8);
+  }
+
+  public static UUID getCollectionId(ObjectMapper objectMapper, String responseBody)
+      throws JsonProcessingException {
+    CollectionServerModel created =
+        objectMapper.readValue(responseBody, CollectionServerModel.class);
+
+    return created.getId();
   }
 }
