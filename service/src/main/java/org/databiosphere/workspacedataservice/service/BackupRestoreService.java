@@ -43,15 +43,15 @@ import org.springframework.stereotype.Service;
 @Service
 @DataPlane
 public class BackupRestoreService {
+  private final ActivityLogger activityLogger;
+  private final BackUpFileStorage storage;
   private final BackupRestoreDao<BackupResponse> backupDao;
   private final BackupRestoreDao<RestoreResponse> restoreDao;
   private final CloneDao cloneDao;
-  private final BackUpFileStorage storage;
   private final CollectionDao collectionDao;
   private final CollectionRepository collectionRepository;
-  private final TwdsProperties twdsProperties;
   private final NamedParameterJdbcTemplate namedTemplate;
-  private final ActivityLogger activityLogger;
+  private final TwdsProperties twdsProperties;
   private final WorkspaceId workspaceId;
 
   private static final Logger LOGGER = LoggerFactory.getLogger(BackupRestoreService.class);
@@ -84,25 +84,25 @@ public class BackupRestoreService {
   private boolean useAzureIdentity;
 
   public BackupRestoreService(
+      ActivityLogger activityLogger,
+      BackUpFileStorage storage,
       BackupRestoreDao<BackupResponse> backupDao,
       BackupRestoreDao<RestoreResponse> restoreDao,
-      CollectionDao collectionDao,
-      BackUpFileStorage backUpFileStorage,
       CloneDao cloneDao,
+      CollectionDao collectionDao,
       CollectionRepository collectionRepository,
-      TwdsProperties twdsProperties,
       NamedParameterJdbcTemplate namedTemplate,
-      ActivityLogger activityLogger,
-      @SingleTenant WorkspaceId workspaceId) {
+      TwdsProperties twdsProperties,
+      WorkspaceId workspaceId) {
+    this.activityLogger = activityLogger;
+    this.storage = storage;
     this.backupDao = backupDao;
     this.restoreDao = restoreDao;
-    this.collectionDao = collectionDao;
     this.cloneDao = cloneDao;
-    this.storage = backUpFileStorage;
+    this.collectionDao = collectionDao;
     this.collectionRepository = collectionRepository;
-    this.twdsProperties = twdsProperties;
     this.namedTemplate = namedTemplate;
-    this.activityLogger = activityLogger;
+    this.twdsProperties = twdsProperties;
     this.workspaceId = workspaceId;
   }
 
