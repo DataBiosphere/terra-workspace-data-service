@@ -21,7 +21,7 @@ openApiGenerate {
     httpUserAgent = "wds-client/${project.version.toString().replace('-SNAPSHOT', '')}/java"
     configOptions.set([
         disallowAdditionalPropertiesIfNotPresent: "false",
-        useJakartaEe                            : "${useJakartaEe}", // for compatibility with Spring Boot 2 or 3
+        useJakartaEe                            : "true",
         prependFormOrBodyParameters             : "true", // orders arguments in the Java client same as previous swagger-codegen
     ])
     invokerPackage = "${artifactGroup}.client".toString()
@@ -81,11 +81,6 @@ tasks.register('patchSources', Copy) {
 // control task order: openApiValidate -> openApiGenerate -> backUpSources -> patchSources
 tasks.getByName('openApiGenerate').dependsOn 'openApiValidate'
 tasks.register('fixOpenApiGenerate') {
-    doFirst {
-        logger.lifecycle("")
-        logger.lifecycle("WDS is building library ${libraryName}")
-        logger.lifecycle("specify -Pjakarta=(true|false) to control which library this task creates")
-    }
     dependsOn 'openApiGenerate'
     dependsOn 'backUpSources'
     dependsOn 'patchSources'
