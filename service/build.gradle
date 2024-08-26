@@ -48,8 +48,8 @@ dependencies {
     // Azure libraries
     // do not upgrade app insights past 3.5.1 until AJ-1897 is resolved
     implementation 'com.microsoft.azure:applicationinsights-runtime-attach:3.5.3'
-    implementation 'com.azure:azure-storage-blob:12.27.0'
-    implementation 'com.azure:azure-identity-extensions:1.1.18' // postgres password plugin
+    implementation 'com.azure:azure-storage-blob:12.27.1'
+    implementation 'com.azure:azure-identity-extensions:1.1.19' // postgres password plugin
 
     implementation 'org.springframework.boot:spring-boot-starter'
     implementation 'org.springframework.boot:spring-boot-starter-jdbc'
@@ -88,7 +88,7 @@ dependencies {
     implementation 'com.squareup.okhttp3:okhttp' // required by Sam client
     implementation "bio.terra:datarepo-client:2.13.0-SNAPSHOT"
     implementation "bio.terra:workspace-manager-client:0.254.983-SNAPSHOT"
-    implementation "bio.terra:java-pfb-library:0.51.0"
+    implementation "bio.terra:java-pfb-library:0.52.0"
     implementation project(path: ':client')
 
     // Parquet, used for TDR snapshot import
@@ -138,14 +138,14 @@ dependencies {
     testImplementation 'org.awaitility:awaitility'
 
     // google bucket mock
-    testImplementation 'com.google.cloud:google-cloud-nio:0.127.21'
+    testImplementation 'com.google.cloud:google-cloud-nio:0.127.22'
 
     constraints {
         implementation('org.json:json:20240303') {
             because("CVE-2022-45688")
         }
         // commons-compress required by org.apache.avro:avro:1.11.3, required by java-pfb-library:0.14.0
-        implementation('org.apache.commons:commons-compress:1.27.0') {
+        implementation('org.apache.commons:commons-compress:1.27.1') {
             because("CVE-2023-42503")
         }
         implementation('org.apache.commons:commons-configuration2:2.11.0') {
