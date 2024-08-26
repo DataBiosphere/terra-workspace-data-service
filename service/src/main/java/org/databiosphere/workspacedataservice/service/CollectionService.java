@@ -334,7 +334,7 @@ public class CollectionService {
   @Deprecated(forRemoval = true, since = "v0.14.0")
   public List<UUID> listCollections(String version) {
     validateVersion(version);
-    return collectionDao.listCollectionSchemas().stream().map(CollectionId::id).toList();
+    return collectionDao.listCollectionSchemas(workspaceId).stream().map(CollectionId::id).toList();
   }
 
   /**

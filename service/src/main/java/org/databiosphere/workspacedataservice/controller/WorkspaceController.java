@@ -1,7 +1,6 @@
 package org.databiosphere.workspacedataservice.controller;
 
 import java.util.UUID;
-import org.databiosphere.workspacedataservice.annotations.DeploymentMode.DataPlane;
 import org.databiosphere.workspacedataservice.generated.GenericJobServerModel;
 import org.databiosphere.workspacedataservice.generated.WorkspaceApi;
 import org.databiosphere.workspacedataservice.generated.WorkspaceInitServerModel;
@@ -12,7 +11,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.RestController;
 
-@DataPlane
+// @DataPlane
 @RestController
 public class WorkspaceController implements WorkspaceApi {
 

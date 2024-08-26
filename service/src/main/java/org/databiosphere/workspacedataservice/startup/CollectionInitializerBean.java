@@ -268,7 +268,13 @@ public class CollectionInitializerBean {
         backupFileName);
     cloneDao.updateCloneEntryStatus(cloneJobId, CloneStatus.RESTOREQUEUED);
     var restoreResponse =
-        restoreService.restoreAzureWDS("v0.2", backupFileName, cloneJobId, startupToken);
+        restoreService.restoreAzureWDS(
+            "v0.2",
+            backupFileName,
+            cloneJobId,
+            startupToken,
+            WorkspaceId.fromString(sourceWorkspaceIdString),
+            workspaceId);
     if (!restoreResponse.getStatus().equals(JobStatus.SUCCEEDED)) {
       LOGGER.error(
           "Something went wrong with restore: {}. Starting with empty default collection schema.",

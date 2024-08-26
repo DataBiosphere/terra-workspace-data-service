@@ -1,8 +1,12 @@
 package org.databiosphere.workspacedataservice.service;
 
+import java.util.UUID;
+import org.databiosphere.workspacedataservice.dao.CloneDao;
+import org.databiosphere.workspacedataservice.dao.CollectionDao;
 import org.databiosphere.workspacedataservice.dao.JobDao;
 import org.databiosphere.workspacedataservice.generated.GenericJobServerModel;
 import org.databiosphere.workspacedataservice.generated.WorkspaceInitServerModel;
+import org.databiosphere.workspacedataservice.shared.model.BackupResponse;
 import org.databiosphere.workspacedataservice.shared.model.CollectionId;
 import org.databiosphere.workspacedataservice.shared.model.DefaultCollectionCreationResult;
 import org.databiosphere.workspacedataservice.shared.model.WorkspaceId;
@@ -25,14 +29,23 @@ public class WorkspaceService {
   private final JobDao jobDao;
   private final CollectionService collectionService;
   private final DataTableTypeInspector dataTableTypeInspector;
+  private final CloneDao cloneDao;
+  private final CollectionDao collectionDao;
+  private final ControlPlaneBackupRestoreService backupRestoreService;
 
   public WorkspaceService(
       JobDao jobDao,
       CollectionService collectionService,
-      DataTableTypeInspector dataTableTypeInspector) {
+      DataTableTypeInspector dataTableTypeInspector,
+      CloneDao cloneDao,
+      CollectionDao collectionDao,
+      ControlPlaneBackupRestoreService backupRestoreService) {
     this.jobDao = jobDao;
     this.collectionService = collectionService;
     this.dataTableTypeInspector = dataTableTypeInspector;
+    this.cloneDao = cloneDao;
+    this.collectionDao = collectionDao;
+    this.backupRestoreService = backupRestoreService;
   }
 
   public WorkspaceDataTableType getDataTableType(WorkspaceId workspaceId) {
@@ -119,6 +132,90 @@ public class WorkspaceService {
    */
   private GenericJobServerModel initClone(WorkspaceInitJobInput jobInput) {
     // TODO AJ-1952: implement cloning
-    throw new RuntimeException("not implemented");
+    /* Copying from CollectionInitializerBean.initCloneMode as a first draft
+     */
+    logger.info("Initializing clone...");
+    WorkspaceId workspaceId = jobInput.workspaceId();
+    // TODO is this workspace_init or sync_clone?
+    Job<JobInput, JobResult> job =
+        Job.newJob(CollectionId.of(workspaceId.id()), JobType.WORKSPACE_INIT, jobInput);
+    // persist the job to WDS's db
+    GenericJobServerModel createdJob = jobDao.createJob(job);
+    UUID trackingId = UUID.randomUUID();
+
+    // TODO: Are replicas an issue here?  do we need to lock?
+    // We shouldn't be here unless this exists
+    WorkspaceId sourceWorkspaceId = jobInput.sourceWorkspaceId();
+    if (cloneDao.cloneExistsForWorkspace(sourceWorkspaceId)) {
+      // TODO can I do this with CollectionService so we don't have both service and dao?
+      boolean collectionSchemaExists =
+          collectionDao.collectionSchemaExists(CollectionId.of(workspaceId.id()));
+      logger.info(
+          "Previous clone entry found. Collection schema exists: {}.", collectionSchemaExists);
+      // TODO what is the appropriate behavior here?
+      createdJob.setResult(new DefaultCollectionCreationResult(false, null));
+      createdJob.setErrorMessage("Collection schema already exists");
+      return createdJob;
+    }
+
+    // First, create an entry in the clone table to mark cloning has started
+    logger.info("Creating entry to track cloning process.");
+    cloneDao.createCloneEntry(trackingId, sourceWorkspaceId);
+
+    // TODO implement SQL-based copy of schemas
+    org.databiosphere.workspacedataservice.shared.model.BackupRestoreRequest body =
+        new org.databiosphere.workspacedataservice.shared.model.BackupRestoreRequest(
+            workspaceId.id(), "clone requested");
+    // TODO new version?
+    Job<JobInput, BackupResponse> response =
+        backupRestoreService.backupAzureWDS("v0.2", trackingId, body, sourceWorkspaceId);
+    // TODO check on clone status
+    String filename = response.getResult().filename();
+    backupRestoreService.restoreAzureWDS(
+        "v0.2", filename, trackingId, "oh no i don't have a token", sourceWorkspaceId, workspaceId);
+
+    // after the restore attempt, check the current clone status one more time
+    // and return the result
+    // TODO is this necessary here?
+    logger.info("Re-checking clone job status after restore request");
+    var finalCloneStatus = cloneDao.getCloneStatus();
+    //      return finalCloneStatus.getStatus().equals(JobStatus.SUCCEEDED);
+
+    //    } catch (Exception e) {
+    //      LOGGER.error("An error occurred during clone mode. Error: {}", e.toString());
+    //      // handle the interrupt if lock was interrupted
+    //      if (e instanceof InterruptedException) {
+    //        LOGGER.error("Error with acquiring cloning Lock: {}", e.getMessage());
+    //        Thread.currentThread().interrupt();
+    //      }
+    //      try {
+    //        cloneDao.terminateCloneToError(
+    //            trackingId, "Backup not successful, cannot restore.", CloneTable.RESTORE);
+    //      } catch (Exception inner) {
+    //        LOGGER.error(
+    //            "Furthermore, an error occurred while updating the clone job's status. Error: {}",
+    //            inner.toString());
+    //      }
+    //      return false;
+    //    } finally {
+    //      lock.unlock();
+    //    }
+    //  }
+
+    // mark the job as successful
+    jobDao.succeeded(job.getJobId());
+    // ask collectionService to create the default collection; this call is idempotent
+    DefaultCollectionCreationResult defaultCollectionCreationResult =
+        collectionService.createDefaultCollection(jobInput.workspaceId());
+    WorkspaceInitJobResult jobResult =
+        new WorkspaceInitJobResult(
+            /* defaultCollectionCreated= */ defaultCollectionCreationResult.created(),
+            /* isClone= */ true);
+
+    createdJob.setResult(jobResult);
+
+    // return the successful job
+    return createdJob;
+    //    throw new RuntimeException("not implemented");
   }
 }

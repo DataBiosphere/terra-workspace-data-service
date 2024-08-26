@@ -48,10 +48,12 @@ public class PostgresCollectionDao implements CollectionDao {
   }
 
   @Override
-  public List<CollectionId> listCollectionSchemas() {
+  public List<CollectionId> listCollectionSchemas(WorkspaceId workspaceId) {
     return namedTemplate
-        .getJdbcTemplate()
-        .queryForList("select id from sys_wds.collection order by id", UUID.class)
+        .queryForList(
+            "select id from sys_wds.collection where workspace_id = :workspaceId order by id",
+            new MapSqlParameterSource("workspaceId", workspaceId.id()),
+            UUID.class)
         .stream()
         .map(CollectionId::of)
         .toList();
@@ -83,10 +85,10 @@ public class PostgresCollectionDao implements CollectionDao {
   @WriteTransaction
   @SuppressWarnings("squid:S2077") // since collectionId must be a UUID, it is safe to use inline
   public void alterSchema(CollectionId oldCollectionId, CollectionId newCollectionId) {
-    if (workspaceId == null) {
-      throw new UnsupportedOperationException(
-          "$WORKSPACE_ID environment variable is required for alterSchema()");
-    }
+    //    if (workspaceId == null) {
+    //      throw new UnsupportedOperationException(
+    //          "$WORKSPACE_ID environment variable is required for alterSchema()");
+    //    }
     // rename the pg schema from old to new
     namedTemplate
         .getJdbcTemplate()
@@ -101,7 +103,7 @@ public class PostgresCollectionDao implements CollectionDao {
         .update(
             "update sys_wds.collection set id = ?, workspace_id = ? where id = ?",
             newCollectionId.id(),
-            workspaceId,
+            newCollectionId.id(),
             oldCollectionId.id());
     // ensure new exists in sys_wds.collection. When this alterSchema() method is called after
     // restoring from a pg_dump,
