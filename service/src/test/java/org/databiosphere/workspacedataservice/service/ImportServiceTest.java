@@ -27,9 +27,7 @@ import org.broadinstitute.dsde.workbench.client.sam.api.GoogleApi;
 import org.databiosphere.workspacedataservice.TestUtils;
 import org.databiosphere.workspacedataservice.annotations.SingleTenant;
 import org.databiosphere.workspacedataservice.common.TestBase;
-import org.databiosphere.workspacedataservice.dao.CollectionDao;
 import org.databiosphere.workspacedataservice.dao.JobDao;
-import org.databiosphere.workspacedataservice.dao.MockCollectionDao;
 import org.databiosphere.workspacedataservice.dao.SchedulerDao;
 import org.databiosphere.workspacedataservice.dataimport.ImportJobInput;
 import org.databiosphere.workspacedataservice.dataimport.pfb.PfbQuartzJob;
@@ -44,7 +42,6 @@ import org.databiosphere.workspacedataservice.shared.model.CollectionId;
 import org.databiosphere.workspacedataservice.shared.model.Schedulable;
 import org.databiosphere.workspacedataservice.shared.model.WorkspaceId;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.EnumSource;
@@ -60,22 +57,22 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.boot.test.mock.mockito.SpyBean;
+import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.ActiveProfiles;
 
-@Disabled
 @ActiveProfiles(profiles = {"mock-collection-dao"})
 @DirtiesContext
 @SpringBootTest
 class ImportServiceTest extends TestBase {
 
   @Autowired ImportService importService;
-  @Autowired CollectionDao collectionDao;
   @Autowired CollectionService collectionService;
   @Autowired @SingleTenant WorkspaceId workspaceId;
   @SpyBean JobDao jobDao;
   @MockBean SchedulerDao schedulerDao;
   @MockBean SamClientFactory mockSamClientFactory;
+  @Autowired NamedParameterJdbcTemplate namedTemplate;
 
   /** ArgumentCaptor for the Schedulable passed to {@link SchedulerDao#schedule(Schedulable)}. */
   @Captor private ArgumentCaptor<Schedulable> schedulableCaptor;
@@ -93,9 +90,7 @@ class ImportServiceTest extends TestBase {
     given(mockSamGoogleApi.getArbitraryPetServiceAccountToken(any())).willReturn("arbitraryToken");
 
     // reset to zero collections
-    if (collectionDao instanceof MockCollectionDao mockCollectionDao) {
-      mockCollectionDao.clearAllCollections();
-    }
+    TestUtils.cleanAllCollections(collectionService, namedTemplate);
   }
 
   // does createSchedulable properly store the jobId, job group, and job data map?
