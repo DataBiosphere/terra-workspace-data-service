@@ -74,7 +74,7 @@ public class WdsCollection implements Persistable<CollectionId> {
    * @return true if an insert; false if update
    */
   public boolean isNew() {
-    return newFlag;
+    return isNewFlag();
   }
 
   public WorkspaceId workspaceId() {
