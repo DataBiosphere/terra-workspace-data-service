@@ -21,7 +21,9 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 import org.databiosphere.workspacedataservice.TestUtils;
 import org.databiosphere.workspacedataservice.common.TestBase;
+import org.databiosphere.workspacedataservice.config.TwdsProperties;
 import org.databiosphere.workspacedataservice.dataimport.ImportValidator;
+import org.databiosphere.workspacedataservice.generated.CollectionServerModel;
 import org.databiosphere.workspacedataservice.generated.ImportRequestServerModel;
 import org.databiosphere.workspacedataservice.service.CollectionService;
 import org.databiosphere.workspacedataservice.service.ImportService;
@@ -68,6 +70,7 @@ class TdrManifestQuartzJobE2ETest extends TestBase {
   @Autowired private CollectionService collectionService;
   @Autowired private TdrTestSupport testSupport;
   @Autowired private NamedParameterJdbcTemplate namedTemplate;
+  @Autowired private TwdsProperties twdsProperties;
 
   // Mock ImportValidator to allow importing test data from a file:// URL.
   @MockBean ImportValidator importValidator;
@@ -83,8 +86,9 @@ class TdrManifestQuartzJobE2ETest extends TestBase {
 
   @BeforeEach
   void beforeEach() {
-    collectionId = UUID.randomUUID();
-    collectionService.createCollection(collectionId, "v0.2");
+    CollectionServerModel collectionServerModel =
+        TestUtils.createCollection(collectionService, twdsProperties.workspaceId());
+    collectionId = collectionServerModel.getId();
   }
 
   @AfterEach

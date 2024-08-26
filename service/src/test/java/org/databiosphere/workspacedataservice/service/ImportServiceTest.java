@@ -24,11 +24,10 @@ import java.util.UUID;
 import java.util.stream.Stream;
 import org.broadinstitute.dsde.workbench.client.sam.ApiException;
 import org.broadinstitute.dsde.workbench.client.sam.api.GoogleApi;
+import org.databiosphere.workspacedataservice.TestUtils;
 import org.databiosphere.workspacedataservice.annotations.SingleTenant;
 import org.databiosphere.workspacedataservice.common.TestBase;
-import org.databiosphere.workspacedataservice.dao.CollectionDao;
 import org.databiosphere.workspacedataservice.dao.JobDao;
-import org.databiosphere.workspacedataservice.dao.MockCollectionDao;
 import org.databiosphere.workspacedataservice.dao.SchedulerDao;
 import org.databiosphere.workspacedataservice.dataimport.ImportJobInput;
 import org.databiosphere.workspacedataservice.dataimport.pfb.PfbQuartzJob;
@@ -58,6 +57,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.boot.test.mock.mockito.SpyBean;
+import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.ActiveProfiles;
 
@@ -67,12 +67,12 @@ import org.springframework.test.context.ActiveProfiles;
 class ImportServiceTest extends TestBase {
 
   @Autowired ImportService importService;
-  @Autowired CollectionDao collectionDao;
   @Autowired CollectionService collectionService;
   @Autowired @SingleTenant WorkspaceId workspaceId;
   @SpyBean JobDao jobDao;
   @MockBean SchedulerDao schedulerDao;
   @MockBean SamClientFactory mockSamClientFactory;
+  @Autowired NamedParameterJdbcTemplate namedTemplate;
 
   /** ArgumentCaptor for the Schedulable passed to {@link SchedulerDao#schedule(Schedulable)}. */
   @Captor private ArgumentCaptor<Schedulable> schedulableCaptor;
@@ -82,8 +82,6 @@ class ImportServiceTest extends TestBase {
   private final URI importUri =
       URI.create("https://teststorageaccount.blob.core.windows.net/testcontainer/path/to/file");
 
-  private static final String VERSION = "v0.2";
-
   @BeforeEach
   void setUp() throws ApiException {
     // return the mock ResourcesApi from the mock SamClientFactory
@@ -92,9 +90,7 @@ class ImportServiceTest extends TestBase {
     given(mockSamGoogleApi.getArbitraryPetServiceAccountToken(any())).willReturn("arbitraryToken");
 
     // reset to zero collections
-    if (collectionDao instanceof MockCollectionDao mockCollectionDao) {
-      mockCollectionDao.clearAllCollections();
-    }
+    TestUtils.cleanAllCollections(collectionService, namedTemplate);
   }
 
   // does createSchedulable properly store the jobId, job group, and job data map?
@@ -146,7 +142,7 @@ class ImportServiceTest extends TestBase {
     // schedulerDao.schedule(), which returns void, returns successfully
     doNothing().when(schedulerDao).schedule(any(Schedulable.class));
     // create collection (in the MockCollectionDao)
-    collectionService.createCollection(workspaceId, defaultCollectionId(), VERSION);
+    TestUtils.createCollection(collectionService, workspaceId);
     // define the import request
     ImportRequestServerModel importRequest = new ImportRequestServerModel(importType, importUri);
     // perform the import request
@@ -171,7 +167,7 @@ class ImportServiceTest extends TestBase {
     // schedulerDao.schedule(), which returns void, returns successfully
     doNothing().when(schedulerDao).schedule(any(Schedulable.class));
     // create collection (in the MockCollectionDao)
-    collectionService.createCollection(workspaceId, defaultCollectionId(), VERSION);
+    TestUtils.createCollection(collectionService, workspaceId);
     // define the import request
     ImportRequestServerModel importRequest = new ImportRequestServerModel(importType, importUri);
     // perform the import request
@@ -206,7 +202,7 @@ class ImportServiceTest extends TestBase {
         .when(schedulerDao)
         .schedule(any(Schedulable.class));
     // create collection (in the MockCollectionDao)
-    collectionService.createCollection(workspaceId, defaultCollectionId(), VERSION);
+    TestUtils.createCollection(collectionService, workspaceId);
     // define the import request
     ImportRequestServerModel importRequest = new ImportRequestServerModel(importType, importUri);
     // perform the import request; this will internally hit the exception from the schedulerDao
@@ -236,7 +232,8 @@ class ImportServiceTest extends TestBase {
     doNothing().when(schedulerDao).schedule(any(Schedulable.class));
     // create collection (in the MockCollectionDao)
     UUID randomCollectionId = UUID.randomUUID();
-    collectionService.createCollection(workspaceId, CollectionId.of(randomCollectionId), VERSION);
+    TestUtils.createCollection(collectionService, workspaceId);
+
     // define the import request
 
     ImportRequestServerModel importRequest = new ImportRequestServerModel(importType, importUri);
@@ -257,7 +254,7 @@ class ImportServiceTest extends TestBase {
     // schedulerDao.schedule(), which returns void, returns successfully
     doNothing().when(schedulerDao).schedule(any(Schedulable.class));
     // create collection (in the MockCollectionDao)
-    collectionService.createCollection(workspaceId, defaultCollectionId(), VERSION);
+    TestUtils.createCollection(collectionService, workspaceId);
 
     // Act/Assert
     URI importUri =
@@ -276,7 +273,7 @@ class ImportServiceTest extends TestBase {
   @ValueSource(booleans = {true, false})
   void passesThroughIsUpsert(boolean syncPermissions) {
     // Arrange
-    collectionService.createCollection(workspaceId, defaultCollectionId(), VERSION);
+    TestUtils.createCollection(collectionService, workspaceId);
     ImportRequestServerModel importRequest =
         new ImportRequestServerModel(TypeEnum.TDRMANIFEST, importUri);
     importRequest.getOptions().put(OPTION_TDR_SYNC_PERMISSIONS, syncPermissions);

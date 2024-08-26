@@ -1,16 +1,11 @@
 package org.databiosphere.workspacedataservice.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.databiosphere.workspacedataservice.service.RecordUtils.VERSION;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
 
-import java.util.List;
-import java.util.UUID;
 import org.databiosphere.workspacedataservice.common.TestBase;
 import org.databiosphere.workspacedataservice.config.TwdsProperties;
 import org.databiosphere.workspacedataservice.dao.CollectionDao;
-import org.databiosphere.workspacedataservice.service.model.exception.MissingObjectException;
 import org.databiosphere.workspacedataservice.shared.model.CollectionId;
 import org.databiosphere.workspacedataservice.shared.model.WorkspaceId;
 import org.junit.jupiter.api.AfterEach;
@@ -29,8 +24,6 @@ class CollectionServiceTest extends TestBase {
   @Autowired private CollectionService collectionService;
   @Autowired private CollectionDao collectionDao;
   @Autowired private TwdsProperties twdsProperties;
-
-  private static final UUID COLLECTION = UUID.fromString("111e9999-e89b-12d3-a456-426614174000");
 
   @BeforeEach
   @AfterEach
@@ -88,45 +81,5 @@ class CollectionServiceTest extends TestBase {
 
     // find should be empty again
     assertThat(collectionService.find(workspaceId, collectionId)).isEmpty();
-  }
-
-  // ========== following tests test the deprecated v0.2 CollectionService APIs
-  @Test
-  @Deprecated(forRemoval = true, since = "v0.14.0")
-  void testCreateAndValidateCollection() {
-    collectionService.createCollection(COLLECTION, VERSION);
-    collectionService.validateCollection(COLLECTION);
-
-    UUID invalidCollection = UUID.fromString("000e4444-e22b-22d1-a333-426614174000");
-    assertThrows(
-        MissingObjectException.class,
-        () -> collectionService.validateCollection(invalidCollection),
-        "validateCollection should have thrown an error");
-  }
-
-  @Test
-  @Deprecated(forRemoval = true, since = "v0.14.0")
-  void listCollections() {
-    collectionService.createCollection(COLLECTION, VERSION);
-
-    UUID secondCollectionId = UUID.fromString("999e1111-e89b-12d3-a456-426614174000");
-    collectionService.createCollection(secondCollectionId, VERSION);
-
-    List<UUID> collections = collectionService.listCollections(VERSION);
-
-    assertThat(collections).hasSize(2).contains(COLLECTION).contains(secondCollectionId);
-  }
-
-  @Test
-  @Deprecated(forRemoval = true, since = "v0.14.0")
-  void deleteCollection() {
-    collectionService.createCollection(COLLECTION, VERSION);
-    collectionService.validateCollection(COLLECTION);
-
-    collectionService.deleteCollection(COLLECTION, VERSION);
-    assertThrows(
-        MissingObjectException.class,
-        () -> collectionService.validateCollection(COLLECTION),
-        "validateCollection should have thrown an error");
   }
 }

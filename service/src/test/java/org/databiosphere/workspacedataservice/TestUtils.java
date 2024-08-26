@@ -12,6 +12,7 @@ import java.util.Map;
 import java.util.UUID;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.apache.commons.lang3.RandomUtils;
+import org.databiosphere.workspacedataservice.generated.CollectionRequestServerModel;
 import org.databiosphere.workspacedataservice.generated.CollectionServerModel;
 import org.databiosphere.workspacedataservice.service.CollectionService;
 import org.databiosphere.workspacedataservice.service.RelationUtils;
@@ -209,5 +210,14 @@ public class TestUtils {
         objectMapper.readValue(responseBody, CollectionServerModel.class);
 
     return created.getId();
+  }
+
+  public static CollectionServerModel createCollection(
+      CollectionService collectionService, WorkspaceId workspaceId) {
+    String name = RandomStringUtils.randomAlphabetic(16);
+    String description = "test-description";
+    CollectionRequestServerModel collectionRequestServerModel =
+        new CollectionRequestServerModel(name, description);
+    return collectionService.save(workspaceId, collectionRequestServerModel);
   }
 }
