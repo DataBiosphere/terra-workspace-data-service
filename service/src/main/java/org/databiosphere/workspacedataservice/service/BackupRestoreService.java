@@ -119,9 +119,10 @@ public class BackupRestoreService {
       // if request did not specify which workspace asked for the backup, default to the current
       // workspace
       WorkspaceId requesterWorkspaceId =
-          backupRestoreRequest.requestingWorkspaceId() == null
-              ? workspaceId
-              : WorkspaceId.of(backupRestoreRequest.requestingWorkspaceId());
+          WorkspaceId.of(backupRestoreRequest.requestingWorkspaceId());
+      //          backupRestoreRequest.requestingWorkspaceId() == null
+      //              ? workspaceId
+      //              : WorkspaceId.of(backupRestoreRequest.requestingWorkspaceId());
 
       // create an entry to track progress of this backup
       backupDao.createEntry(trackingId, backupRestoreRequest);
@@ -158,7 +159,12 @@ public class BackupRestoreService {
   }
 
   public Job<JobInput, RestoreResponse> restoreAzureWDS(
-      String version, String backupFileName, UUID trackingId, String startupToken) {
+      String version,
+      String backupFileName,
+      UUID trackingId,
+      String startupToken,
+      WorkspaceId sourceWorkspaceIdParam,
+      WorkspaceId requestingWorkspaceId) {
     validateVersion(version);
     boolean doCleanup = false;
     try {
@@ -168,7 +174,7 @@ public class BackupRestoreService {
       restoreDao.createEntry(
           trackingId,
           new BackupRestoreRequest(
-              workspaceId.id(), String.format("Restore from %s", backupFileName)));
+              requestingWorkspaceId.id(), String.format("Restore from %s", backupFileName)));
 
       // generate psql query
       List<String> commandList = generateCommandList(false);
@@ -184,7 +190,10 @@ public class BackupRestoreService {
       doCleanup = true;
       // grab blob from storage
       storage.streamInputFromBlobStorage(
-          localProcessLauncher.getOutputStream(), backupFileName, workspaceId, startupToken);
+          localProcessLauncher.getOutputStream(),
+          backupFileName,
+          requestingWorkspaceId,
+          startupToken);
 
       logSearchPath("Immediately after restore");
 
@@ -203,7 +212,8 @@ public class BackupRestoreService {
 
       // rename workspace schema from source to dest
       collectionDao.alterSchema(
-          CollectionId.fromString(sourceWorkspaceId), CollectionId.of(workspaceId.id()));
+          CollectionId.fromString(sourceWorkspaceIdParam.toString()),
+          CollectionId.of(requestingWorkspaceId.id()));
 
       activityLogger.saveEventForCurrentUser(
           user -> user.restored().backup().withId(backupFileName));
@@ -218,7 +228,7 @@ public class BackupRestoreService {
       // clean up
       if (doCleanup) {
         try {
-          storage.deleteBlob(backupFileName, workspaceId, startupToken);
+          storage.deleteBlob(backupFileName, requestingWorkspaceId, startupToken);
         } catch (Exception e) {
           LOGGER.warn(
               "Error cleaning up after restore. File '{}' was not deleted from storage container: {}",
@@ -257,7 +267,8 @@ public class BackupRestoreService {
       command.put(pgDumpPath, null);
       command.put("-b", null);
       // Grab all workspace collections/schemas in wds
-      for (CollectionId id : collectionDao.listCollectionSchemas()) {
+      for (CollectionId id :
+          collectionDao.listCollectionSchemas(WorkspaceId.fromString(sourceWorkspaceId))) {
         command.put("-n", id.toString());
       }
     } else {
@@ -285,7 +296,8 @@ public class BackupRestoreService {
     LocalDateTime now = LocalDateTime.now();
     DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd_HH-mm-ss");
     String timestamp = now.format(formatter);
-    return "wdsservice/cloning/backup/" + workspaceId + "-" + timestamp + ".sql";
+    //    return "wdsservice/cloning/backup/" + workspaceId + "-" + timestamp + ".sql";
+    return workspaceId + "-" + timestamp;
   }
 
   private String checkForError(LocalProcessLauncher localProcessLauncher) {
