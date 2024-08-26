@@ -1,8 +1,11 @@
 package org.databiosphere.workspacedataservice;
 
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
-import org.databiosphere.workspacedataservice.dao.CollectionDao;
+import org.databiosphere.workspacedataservice.service.CollectionService;
+import org.databiosphere.workspacedataservice.shared.model.CollectionId;
+import org.databiosphere.workspacedataservice.shared.model.WorkspaceId;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 
 public class IntegrationServiceTestBase {
@@ -11,10 +14,11 @@ public class IntegrationServiceTestBase {
    * Reusable utility to wipe the db of all user state created by integration tests, while leaving
    * in place the sys_wds.* table definitions (i.e. don't need to re-run Liquibase)
    *
-   * @param collectionDao dao to use for collection management
+   * @param collectionService dao to use for collection management
    * @param namedTemplate to use for direct SQL queries
    */
-  protected void cleanDb(CollectionDao collectionDao, NamedParameterJdbcTemplate namedTemplate) {
+  protected void cleanDb(
+      CollectionService collectionService, NamedParameterJdbcTemplate namedTemplate) {
     // drop all rows from backup, clone, restore tables
     // may need to add the job table at some point; current integration tests do not write to it
     namedTemplate.getJdbcTemplate().update("delete from sys_wds.backup");
@@ -22,7 +26,19 @@ public class IntegrationServiceTestBase {
     namedTemplate.getJdbcTemplate().update("delete from sys_wds.restore");
 
     // delete all collections that are currently known to WDS
-    collectionDao.listCollectionSchemas().forEach(collectionDao::dropSchema);
+    // TODO: why can't integration tests see the TestUtils class?
+    List<WorkspaceId> workspaces =
+        namedTemplate.queryForList(
+            "select workspace_id from sys_wds.collection;", Map.of(), WorkspaceId.class);
+    workspaces.forEach(
+        workspaceId -> {
+          collectionService
+              .list(workspaceId)
+              .forEach(
+                  collection -> {
+                    collectionService.delete(workspaceId, CollectionId.of(collection.getId()));
+                  });
+        });
 
     // and drop any orphaned Postgres schemas
     dropOrphanedSchemas(namedTemplate);

@@ -4,7 +4,6 @@ import static org.databiosphere.workspacedataservice.dao.SqlUtils.quote;
 import static org.databiosphere.workspacedataservice.service.CollectionService.NAME_DEFAULT;
 
 import bio.terra.common.db.WriteTransaction;
-import java.util.List;
 import java.util.Objects;
 import java.util.UUID;
 import org.databiosphere.workspacedataservice.annotations.SingleTenant;
@@ -45,16 +44,6 @@ public class PostgresCollectionDao implements CollectionDao {
             "select exists(select from sys_wds.collection WHERE id = :collectionId)",
             new MapSqlParameterSource("collectionId", collectionId.id()),
             Boolean.class));
-  }
-
-  @Override
-  public List<CollectionId> listCollectionSchemas() {
-    return namedTemplate
-        .getJdbcTemplate()
-        .queryForList("select id from sys_wds.collection order by id", UUID.class)
-        .stream()
-        .map(CollectionId::of)
-        .toList();
   }
 
   @Override
