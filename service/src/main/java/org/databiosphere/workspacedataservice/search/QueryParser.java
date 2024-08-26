@@ -276,7 +276,7 @@ public class QueryParser {
                         DATE,
                         DATE_TIME -> "to_tsvector('%s', coalesce(%s::text, ''))"
                         .formatted(TSVECTOR_CONFIG, colName);
-                    case JSON -> "to_tsvector('%s', coalesce(%s, '{}'::jsonb))"
+                    case JSON -> "jsonb_to_tsvector('%s', coalesce(%s, '{}'::jsonb), '\"all\"')"
                         .formatted(TSVECTOR_CONFIG, colName);
 
                     case ARRAY_OF_STRING,
@@ -287,9 +287,18 @@ public class QueryParser {
                         ARRAY_OF_DATE,
                         ARRAY_OF_DATE_TIME -> "array_to_tsvector(coalesce(%s, '{}')::text[])"
                         .formatted(colName);
-                    case ARRAY_OF_JSON ->
-                    // TODO: how to handle?
-                    "";
+                    case ARRAY_OF_JSON -> "";
+                      //                        "plainto_tsquery('english', 'bar') @@ ANY(\n" +
+                      //    "\tselect jsonb_to_tsvector('english', coalesce(unnest, '{}'::jsonb),
+                      // '\"all\"') from unnest(arrj))";
+                      //                    select * from "b95017ef-d0c9-4baf-9a1b-a9e692c37bce".js
+                      // where plainto_tsquery('english', 'bar') @@ ANY(select
+                      // jsonb_to_tsvector('english', coalesce(unnest, '{}'::jsonb), '"all"')
+                      //                    from (select unnest(arrj) from
+                      // "b95017ef-d0c9-4baf-9a1b-a9e692c37bce".js) as subq);
+                      // https://stackoverflow.com/questions/8584119/how-to-apply-a-function-to-each-element-of-an-array-column-in-postgres
+                      // "array_to_tsvector(coalesce(%s, '{}'::jsonb[]))".formatted(colName);
+                      // TODO: how to handle?
                   };
                 });
 
@@ -298,7 +307,8 @@ public class QueryParser {
     String concatenated = columns.filter(x -> !"".equals(x)).collect(Collectors.joining(" || "));
 
     // final SQL part, including bind parameter
-    String sql = "(%s) @@ plainto_tsquery(:%s)".formatted(concatenated, paramName);
+    String sql =
+        "(%s) @@ plainto_tsquery('%s', :%s)".formatted(concatenated, TSVECTOR_CONFIG, paramName);
 
     // TODO: look at phraseto_tsquery, websearch_to_tsquery, etc.
 
