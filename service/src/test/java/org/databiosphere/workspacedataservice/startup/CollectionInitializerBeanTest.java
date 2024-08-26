@@ -15,7 +15,6 @@ import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.locks.Lock;
 import org.databiosphere.workspacedataservice.TestUtils;
-import org.databiosphere.workspacedataservice.annotations.SingleTenant;
 import org.databiosphere.workspacedataservice.common.TestBase;
 import org.databiosphere.workspacedataservice.config.TwdsProperties;
 import org.databiosphere.workspacedataservice.dao.*;
@@ -54,8 +53,6 @@ class CollectionInitializerBeanTest extends TestBase {
   @MockBean JdbcLockRegistry registry;
   @SpyBean CollectionDao collectionDao;
   @SpyBean CloneDao cloneDao;
-
-  @Autowired @SingleTenant WorkspaceId workspaceIdXXX;
 
   // sourceWorkspaceId when we need one
   final WorkspaceId sourceWorkspaceId = WorkspaceId.of(randomUUID());
