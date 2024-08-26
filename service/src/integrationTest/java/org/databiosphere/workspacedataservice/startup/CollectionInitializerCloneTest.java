@@ -159,7 +159,10 @@ class CollectionInitializerCloneTest extends IntegrationServiceTestBase {
     // default collection should exist, with a single table named "thing" in it
     // the "thing" table is defined in WDS-integrationTest-LocalFileStorage-input.sql.
     UUID workspaceUuid = workspaceId.id();
-    List<CollectionId> actualCollections = collectionDao.listCollectionSchemas();
+    List<CollectionId> actualCollections =
+        collectionService.list(workspaceId).stream()
+            .map(coll -> CollectionId.of(coll.getId()))
+            .toList();
     assertEquals(List.of(CollectionId.of(workspaceUuid)), actualCollections);
     List<RecordType> actualTypes = recordDao.getAllRecordTypes(workspaceUuid);
     assertEquals(List.of(RecordType.valueOf("thing")), actualTypes);
