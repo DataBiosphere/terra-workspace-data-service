@@ -8,9 +8,6 @@ public interface CollectionDao {
   // 23 usages
   boolean collectionSchemaExists(CollectionId collectionId);
 
-  // 2 usages
-  void createSchema(CollectionId collectionId);
-
   // 1 usage
   void alterSchema(CollectionId oldCollectionId, CollectionId newCollectionId);
 
