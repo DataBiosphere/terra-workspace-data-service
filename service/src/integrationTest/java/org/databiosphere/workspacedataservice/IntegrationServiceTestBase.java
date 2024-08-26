@@ -14,7 +14,7 @@ public class IntegrationServiceTestBase {
    * Reusable utility to wipe the db of all user state created by integration tests, while leaving
    * in place the sys_wds.* table definitions (i.e. don't need to re-run Liquibase)
    *
-   * @param collectionService dao to use for collection management
+   * @param collectionService service to use for collection management
    * @param namedTemplate to use for direct SQL queries
    */
   protected void cleanDb(
