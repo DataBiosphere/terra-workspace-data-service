@@ -1,6 +1,5 @@
 package org.databiosphere.workspacedataservice.service;
 
-import static java.util.UUID.randomUUID;
 import static org.databiosphere.workspacedataservice.dataimport.pfb.PfbRecordConverter.ID_FIELD;
 import static org.databiosphere.workspacedataservice.service.model.ReservedNames.RECORD_ID;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -9,6 +8,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.fail;
 
 import bio.terra.pfb.PfbReader;
+import jakarta.annotation.Nullable;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -16,10 +16,12 @@ import java.net.URL;
 import java.util.Map;
 import org.apache.avro.file.DataFileStream;
 import org.apache.avro.generic.GenericRecord;
+import org.databiosphere.workspacedataservice.TestUtils;
 import org.databiosphere.workspacedataservice.common.TestBase;
-import org.databiosphere.workspacedataservice.dao.CollectionDao;
+import org.databiosphere.workspacedataservice.config.TwdsProperties;
 import org.databiosphere.workspacedataservice.dao.RecordDao;
 import org.databiosphere.workspacedataservice.dataimport.pfb.PfbTestUtils;
+import org.databiosphere.workspacedataservice.generated.CollectionServerModel;
 import org.databiosphere.workspacedataservice.recordsink.RecordSink;
 import org.databiosphere.workspacedataservice.recordsink.RecordSinkFactory;
 import org.databiosphere.workspacedataservice.recordsource.RecordSource;
@@ -35,7 +37,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
-import org.springframework.boot.test.mock.mockito.SpyBean;
+import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.TestPropertySource;
 
@@ -47,24 +49,24 @@ class BatchWriteServiceTest extends TestBase {
   @Autowired private RecordSourceFactory recordSourceFactory;
   @Autowired private RecordSinkFactory recordSinkFactory;
   @Autowired private BatchWriteService batchWriteService;
-  @Autowired private CollectionDao collectionDao;
-  @MockBean RecordDao recordDao;
-  @SpyBean DataTypeInferer inferer;
-  @SpyBean RecordService recordService;
+  @Autowired private CollectionService collectionService;
+  @Autowired private NamedParameterJdbcTemplate namedTemplate;
+  @Autowired private TwdsProperties twdsProperties;
+  @MockBean RecordDao recordDao; // prevents actual calls to the db
 
-  private static final CollectionId COLLECTION_ID = CollectionId.of(randomUUID());
+  @Nullable private CollectionId collectionId;
   private static final RecordType THING_TYPE = RecordType.valueOf("thing");
 
   @BeforeEach
   void setUp() {
-    if (!collectionDao.collectionSchemaExists(COLLECTION_ID)) {
-      collectionDao.createSchema(COLLECTION_ID);
-    }
+    CollectionServerModel collection =
+        collectionService.save(twdsProperties.workspaceId(), "name", "desc");
+    collectionId = CollectionId.of(collection.getId());
   }
 
   @AfterEach
   void tearDown() {
-    collectionDao.dropSchema(COLLECTION_ID);
+    TestUtils.cleanAllCollections(collectionService, namedTemplate);
   }
 
   @Test
@@ -74,7 +76,7 @@ class BatchWriteServiceTest extends TestBase {
     InputStream is = new ByteArrayInputStream(streamContents.getBytes());
 
     RecordSource recordSource = recordSourceFactory.forJson(is);
-    try (RecordSink recordSink = recordSinkFactory.buildRecordSink(COLLECTION_ID)) {
+    try (RecordSink recordSink = recordSinkFactory.buildRecordSink(collectionId)) {
       Exception ex =
           assertThrows(
               BadStreamingWriteRequestException.class,
@@ -157,7 +159,7 @@ class BatchWriteServiceTest extends TestBase {
   private BatchWriteResult batchWritePfbStream(
       DataFileStream<GenericRecord> pfbStream, String primaryKey, ImportMode importMode)
       throws IOException {
-    try (RecordSink recordSink = recordSinkFactory.buildRecordSink(COLLECTION_ID)) {
+    try (RecordSink recordSink = recordSinkFactory.buildRecordSink(collectionId)) {
       return batchWriteService.batchWrite(
           recordSourceFactory.forPfb(pfbStream, importMode),
           recordSink,
