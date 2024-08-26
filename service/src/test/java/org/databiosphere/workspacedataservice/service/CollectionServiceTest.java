@@ -3,9 +3,9 @@ package org.databiosphere.workspacedataservice.service;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
+import org.databiosphere.workspacedataservice.TestUtils;
 import org.databiosphere.workspacedataservice.common.TestBase;
 import org.databiosphere.workspacedataservice.config.TwdsProperties;
-import org.databiosphere.workspacedataservice.dao.CollectionDao;
 import org.databiosphere.workspacedataservice.shared.model.CollectionId;
 import org.databiosphere.workspacedataservice.shared.model.WorkspaceId;
 import org.junit.jupiter.api.AfterEach;
@@ -13,33 +13,22 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.test.annotation.DirtiesContext;
-import org.springframework.test.context.ActiveProfiles;
 
-@ActiveProfiles(profiles = {"mock-collection-dao"})
 @DirtiesContext
 @SpringBootTest
 class CollectionServiceTest extends TestBase {
 
   @Autowired private CollectionService collectionService;
-  @Autowired private CollectionDao collectionDao;
+  @Autowired private NamedParameterJdbcTemplate namedTemplate;
   @Autowired private TwdsProperties twdsProperties;
 
   @BeforeEach
   @AfterEach
   void dropCollectionSchemas() {
-    // Delete all collections (v0.2)
-    collectionDao
-        .listCollectionSchemas()
-        .forEach(collection -> collectionDao.dropSchema(collection));
-    // Delete all collections in this workspace (v1)
-    WorkspaceId workspaceId = twdsProperties.workspaceId();
-    collectionService
-        .list(workspaceId)
-        .forEach(
-            collection -> {
-              collectionService.delete(workspaceId, CollectionId.of(collection.getId()));
-            });
+    // Delete all collections
+    TestUtils.cleanAllCollections(collectionService, namedTemplate);
   }
 
   @Test

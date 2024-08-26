@@ -4,11 +4,13 @@ import static java.util.UUID.randomUUID;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 
-import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import org.databiosphere.workspacedataservice.TestUtils;
 import org.databiosphere.workspacedataservice.annotations.SingleTenant;
 import org.databiosphere.workspacedataservice.common.TestBase;
+import org.databiosphere.workspacedataservice.config.TwdsProperties;
+import org.databiosphere.workspacedataservice.service.CollectionService;
 import org.databiosphere.workspacedataservice.shared.model.CollectionId;
 import org.databiosphere.workspacedataservice.shared.model.WorkspaceId;
 import org.junit.jupiter.api.AfterAll;
@@ -27,22 +29,22 @@ import org.springframework.test.annotation.DirtiesContext;
 class PostgresCollectionDaoTest extends TestBase {
 
   @Autowired CollectionDao collectionDao;
+  @Autowired CollectionService collectionService;
   @Autowired NamedParameterJdbcTemplate namedParameterJdbcTemplate;
+  @Autowired TwdsProperties twdsProperties;
   @Autowired @SingleTenant WorkspaceId workspaceId;
 
   // clean up all collections before each test to ensure tests start from a clean slate
   @BeforeEach
   void beforeEach() {
-    List<CollectionId> allCollections = collectionDao.listCollectionSchemas();
-    allCollections.forEach(collectionId -> collectionDao.dropSchema(collectionId));
+    TestUtils.cleanAllCollections(collectionService, namedParameterJdbcTemplate);
   }
 
   // clean up all collections after all tests to ensure tests in other files start from a clean
   // slate
   @AfterAll
   void afterAll() {
-    List<CollectionId> allCollections = collectionDao.listCollectionSchemas();
-    allCollections.forEach(collectionId -> collectionDao.dropSchema(collectionId));
+    TestUtils.cleanAllCollections(collectionService, namedParameterJdbcTemplate);
   }
 
   // is this test set up correctly?
@@ -59,7 +61,7 @@ class PostgresCollectionDaoTest extends TestBase {
   // do we populate all db columns correctly?
   @Test
   void insertPopulatesAllColumns() {
-    assertEquals(0, collectionDao.listCollectionSchemas().size());
+    assertEquals(0, collectionService.list(twdsProperties.workspaceId()).size());
 
     CollectionId collectionId = CollectionId.of(randomUUID());
     UUID collectionUuid = collectionId.id();
@@ -81,7 +83,7 @@ class PostgresCollectionDaoTest extends TestBase {
   // do we populate all db columns correctly?
   @Test
   void defaultPopulatesAllColumns() {
-    assertEquals(0, collectionDao.listCollectionSchemas().size());
+    assertEquals(0, collectionService.list(twdsProperties.workspaceId()).size());
 
     UUID collectionUuid = workspaceId.id();
     CollectionId collectionId = CollectionId.of(collectionUuid);
