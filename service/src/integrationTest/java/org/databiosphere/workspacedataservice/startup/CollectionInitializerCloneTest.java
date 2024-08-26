@@ -20,6 +20,7 @@ import org.databiosphere.workspacedataservice.dao.CloneDao;
 import org.databiosphere.workspacedataservice.dao.CollectionDao;
 import org.databiosphere.workspacedataservice.dao.RecordDao;
 import org.databiosphere.workspacedataservice.leonardo.LeonardoDao;
+import org.databiosphere.workspacedataservice.service.CollectionService;
 import org.databiosphere.workspacedataservice.shared.model.CloneResponse;
 import org.databiosphere.workspacedataservice.shared.model.CloneStatus;
 import org.databiosphere.workspacedataservice.shared.model.CollectionId;
@@ -58,7 +59,7 @@ class CollectionInitializerCloneTest extends IntegrationServiceTestBase {
 
   // standard beans
   @Autowired CollectionInitializerBean collectionInitializerBean;
-  @Autowired CollectionDao collectionDao;
+  @Autowired CollectionService collectionService;
   @Autowired RecordDao recordDao;
   @Autowired CloneDao cloneDao;
   @Autowired NamedParameterJdbcTemplate namedTemplate;
@@ -81,7 +82,7 @@ class CollectionInitializerCloneTest extends IntegrationServiceTestBase {
   // ensure we clean up the db after our tests
   @AfterEach
   void cleanUp() {
-    cleanDb(collectionDao, namedTemplate);
+    cleanDb(collectionService, namedTemplate);
   }
 
   /*

@@ -6,7 +6,6 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import java.util.UUID;
 import org.databiosphere.workspacedataservice.IntegrationServiceTestBase;
 import org.databiosphere.workspacedataservice.dao.BackupRestoreDao;
-import org.databiosphere.workspacedataservice.dao.CollectionDao;
 import org.databiosphere.workspacedataservice.shared.model.BackupResponse;
 import org.databiosphere.workspacedataservice.shared.model.BackupRestoreRequest;
 import org.databiosphere.workspacedataservice.shared.model.job.JobStatus;
@@ -32,13 +31,13 @@ import org.springframework.test.context.TestPropertySource;
 class BackupServiceIntegrationTest extends IntegrationServiceTestBase {
   @Autowired private BackupRestoreService backupRestoreService;
   @Autowired private BackupRestoreDao<BackupResponse> backupDao;
-  @Autowired CollectionDao collectionDao;
+  @Autowired CollectionService collectionService;
   @Autowired NamedParameterJdbcTemplate namedTemplate;
 
   // ensure we clean up the db after our tests
   @AfterEach
   void cleanUp() {
-    cleanDb(collectionDao, namedTemplate);
+    cleanDb(collectionService, namedTemplate);
   }
 
   @Test
