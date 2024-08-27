@@ -5,10 +5,12 @@ import static org.hamcrest.Matchers.startsWith;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import java.io.InputStream;
-import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
+import org.databiosphere.workspacedataservice.TestUtils;
 import org.databiosphere.workspacedataservice.common.TestBase;
+import org.databiosphere.workspacedataservice.config.TwdsProperties;
+import org.databiosphere.workspacedataservice.generated.CollectionServerModel;
 import org.databiosphere.workspacedataservice.service.CollectionService;
 import org.databiosphere.workspacedataservice.service.RecordOrchestratorService;
 import org.databiosphere.workspacedataservice.service.model.exception.InvalidTsvException;
@@ -21,6 +23,7 @@ import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
+import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.test.annotation.DirtiesContext;
 
@@ -31,6 +34,8 @@ class TsvErrorMessageTest extends TestBase {
 
   @Autowired CollectionService collectionService;
   @Autowired RecordOrchestratorService recordOrchestratorService;
+  @Autowired NamedParameterJdbcTemplate namedTemplate;
+  @Autowired TwdsProperties twdsProperties;
 
   private UUID collectionId;
 
@@ -38,16 +43,14 @@ class TsvErrorMessageTest extends TestBase {
 
   @BeforeEach
   void setUp() {
-    collectionId = UUID.randomUUID();
-    collectionService.createCollection(collectionId, VERSION);
+    CollectionServerModel collectionServerModel =
+        TestUtils.createCollection(collectionService, twdsProperties.workspaceId());
+    collectionId = collectionServerModel.getId();
   }
 
   @AfterEach
   void tearDown() {
-    List<UUID> allCollections = collectionService.listCollections(VERSION);
-    for (UUID id : allCollections) {
-      collectionService.deleteCollection(id, VERSION);
-    }
+    TestUtils.cleanAllCollections(collectionService, namedTemplate);
   }
 
   @ParameterizedTest(name = "The malformed TSV file '{0}' should throw a helpful error")

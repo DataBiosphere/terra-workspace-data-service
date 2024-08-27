@@ -11,10 +11,11 @@ import java.util.*;
 import org.apache.commons.lang3.StringUtils;
 import org.databiosphere.workspacedataservice.activitylog.ActivityLogger;
 import org.databiosphere.workspacedataservice.annotations.DeploymentMode.DataPlane;
-import org.databiosphere.workspacedataservice.annotations.SingleTenant;
+import org.databiosphere.workspacedataservice.config.TwdsProperties;
 import org.databiosphere.workspacedataservice.dao.BackupRestoreDao;
 import org.databiosphere.workspacedataservice.dao.CloneDao;
 import org.databiosphere.workspacedataservice.dao.CollectionDao;
+import org.databiosphere.workspacedataservice.dao.CollectionRepository;
 import org.databiosphere.workspacedataservice.process.LocalProcessLauncher;
 import org.databiosphere.workspacedataservice.service.model.exception.LaunchProcessException;
 import org.databiosphere.workspacedataservice.service.model.exception.MissingObjectException;
@@ -23,6 +24,7 @@ import org.databiosphere.workspacedataservice.shared.model.BackupRestoreRequest;
 import org.databiosphere.workspacedataservice.shared.model.CloneResponse;
 import org.databiosphere.workspacedataservice.shared.model.CollectionId;
 import org.databiosphere.workspacedataservice.shared.model.RestoreResponse;
+import org.databiosphere.workspacedataservice.shared.model.WdsCollection;
 import org.databiosphere.workspacedataservice.shared.model.WorkspaceId;
 import org.databiosphere.workspacedataservice.shared.model.job.Job;
 import org.databiosphere.workspacedataservice.shared.model.job.JobInput;
@@ -40,13 +42,15 @@ import org.springframework.stereotype.Service;
 @Service
 @DataPlane
 public class BackupRestoreService {
+  private final ActivityLogger activityLogger;
+  private final BackUpFileStorage storage;
   private final BackupRestoreDao<BackupResponse> backupDao;
   private final BackupRestoreDao<RestoreResponse> restoreDao;
   private final CloneDao cloneDao;
-  private final BackUpFileStorage storage;
   private final CollectionDao collectionDao;
+  private final CollectionRepository collectionRepository;
   private final NamedParameterJdbcTemplate namedTemplate;
-  private final ActivityLogger activityLogger;
+  private final TwdsProperties twdsProperties;
   private final WorkspaceId workspaceId;
 
   private static final Logger LOGGER = LoggerFactory.getLogger(BackupRestoreService.class);
@@ -79,21 +83,25 @@ public class BackupRestoreService {
   private boolean useAzureIdentity;
 
   public BackupRestoreService(
+      ActivityLogger activityLogger,
+      BackUpFileStorage storage,
       BackupRestoreDao<BackupResponse> backupDao,
       BackupRestoreDao<RestoreResponse> restoreDao,
-      CollectionDao collectionDao,
-      BackUpFileStorage backUpFileStorage,
       CloneDao cloneDao,
+      CollectionDao collectionDao,
+      CollectionRepository collectionRepository,
       NamedParameterJdbcTemplate namedTemplate,
-      ActivityLogger activityLogger,
-      @SingleTenant WorkspaceId workspaceId) {
+      TwdsProperties twdsProperties,
+      WorkspaceId workspaceId) {
+    this.activityLogger = activityLogger;
+    this.storage = storage;
     this.backupDao = backupDao;
     this.restoreDao = restoreDao;
-    this.collectionDao = collectionDao;
     this.cloneDao = cloneDao;
-    this.storage = backUpFileStorage;
+    this.collectionDao = collectionDao;
+    this.collectionRepository = collectionRepository;
     this.namedTemplate = namedTemplate;
-    this.activityLogger = activityLogger;
+    this.twdsProperties = twdsProperties;
     this.workspaceId = workspaceId;
   }
 
@@ -257,8 +265,9 @@ public class BackupRestoreService {
       command.put(pgDumpPath, null);
       command.put("-b", null);
       // Grab all workspace collections/schemas in wds
-      for (CollectionId id : collectionDao.listCollectionSchemas()) {
-        command.put("-n", id.toString());
+      for (WdsCollection collection :
+          collectionRepository.findByWorkspace(twdsProperties.workspaceId())) {
+        command.put("-n", collection.collectionId().toString());
       }
     } else {
       command.put(psqlPath, null);

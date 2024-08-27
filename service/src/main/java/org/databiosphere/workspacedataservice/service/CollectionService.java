@@ -1,7 +1,6 @@
 package org.databiosphere.workspacedataservice.service;
 
 import static org.databiosphere.workspacedataservice.dao.SqlUtils.quote;
-import static org.databiosphere.workspacedataservice.service.RecordUtils.validateVersion;
 
 import bio.terra.common.db.WriteTransaction;
 import java.util.List;
@@ -26,7 +25,6 @@ import org.databiosphere.workspacedataservice.service.model.exception.Validation
 import org.databiosphere.workspacedataservice.shared.model.CollectionId;
 import org.databiosphere.workspacedataservice.shared.model.DefaultCollectionCreationResult;
 import org.databiosphere.workspacedataservice.shared.model.WdsCollection;
-import org.databiosphere.workspacedataservice.shared.model.WdsCollectionCreateRequest;
 import org.databiosphere.workspacedataservice.shared.model.WorkspaceId;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -34,11 +32,9 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DuplicateKeyException;
 import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.data.relational.core.conversion.DbActionExecutionException;
-import org.springframework.http.HttpStatus;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.lang.Nullable;
 import org.springframework.stereotype.Service;
-import org.springframework.web.server.ResponseStatusException;
 
 @Service
 public class CollectionService {
@@ -101,6 +97,22 @@ public class CollectionService {
   }
 
   /**
+   * Convenience method to insert a new collection of a given name and description
+   *
+   * @see #save(WorkspaceId, CollectionRequestServerModel)
+   * @param workspaceId the workspace to contain this collection
+   * @param name name for the created collection
+   * @param description description for the created collection
+   * @return the created collection
+   */
+  @WriteTransaction
+  public CollectionServerModel save(WorkspaceId workspaceId, String name, String description) {
+    CollectionRequestServerModel collectionRequestServerModel =
+        new CollectionRequestServerModel(name, description);
+    return save(workspaceId, collectionRequestServerModel);
+  }
+
+  /**
    * Insert a new collection, generating a random collection id.
    *
    * @param workspaceId the workspace to contain this collection
@@ -137,11 +149,12 @@ public class CollectionService {
 
     // translate CollectionServerModel to WdsCollection
     WdsCollection wdsCollectionRequest =
-        new WdsCollectionCreateRequest(
+        new WdsCollection(
             workspaceId,
             collectionId,
             collectionRequestServerModel.getName(),
-            collectionRequestServerModel.getDescription());
+            collectionRequestServerModel.getDescription(),
+            /* newFlag= */ true);
 
     // save, handle exceptions, and translate to the response model
     CollectionServerModel response = saveAndHandleExceptions(wdsCollectionRequest);
@@ -175,7 +188,7 @@ public class CollectionService {
         .getJdbcTemplate()
         .update("drop schema " + quote(collectionId.toString()) + " cascade");
 
-    collectionRepository.deleteById(collectionId.id());
+    collectionRepository.deleteById(collectionId);
 
     activityLogger.saveEventForCurrentUser(
         user -> user.deleted().collection().withUuid(collectionId.id()));
@@ -324,69 +337,6 @@ public class CollectionService {
       throw new ConflictException("Collection name or id conflict");
     }
     throw dbActionExecutionException;
-  }
-
-  // ============================== v0.2 methods ==============================
-
-  /**
-   * @deprecated Use {@link #list(WorkspaceId)} instead.
-   */
-  @Deprecated(forRemoval = true, since = "v0.14.0")
-  public List<UUID> listCollections(String version) {
-    validateVersion(version);
-    return collectionDao.listCollectionSchemas().stream().map(CollectionId::id).toList();
-  }
-
-  /**
-   * @deprecated Use {@link #save(WorkspaceId, CollectionRequestServerModel)} instead.
-   */
-  @Deprecated(forRemoval = true, since = "v0.14.0")
-  public void createCollection(UUID collectionId, String version) {
-    if (tenancyProperties.getAllowVirtualCollections()) {
-      throw new CollectionException(
-          "createCollection not allowed when virtual collections are enabled");
-    }
-    if (workspaceId == null) {
-      throw new CollectionException(
-          "createCollection requires a workspaceId to be configured or provided");
-    }
-    createCollection(workspaceId, CollectionId.of(collectionId), version);
-  }
-
-  /**
-   * @deprecated Use {@link #save(WorkspaceId, CollectionRequestServerModel)} instead.
-   */
-  @Deprecated(forRemoval = true, since = "v0.14.0")
-  public void createCollection(WorkspaceId workspaceId, CollectionId collectionId, String version) {
-    validateVersion(version);
-
-    if (collectionDao.collectionSchemaExists(collectionId)) {
-      throw new ResponseStatusException(HttpStatus.CONFLICT, "This collection already exists");
-    }
-
-    // TODO(AJ-1662): this needs to pass the workspaceId argument so the collection is created
-    //   correctly
-    // create collection schema in Postgres
-    collectionDao.createSchema(collectionId);
-
-    activityLogger.saveEventForCurrentUser(
-        user -> user.created().collection().withUuid(collectionId.id()));
-  }
-
-  /**
-   * @deprecated Use {@link #delete(WorkspaceId, CollectionId)} instead.
-   */
-  @Deprecated(forRemoval = true, since = "v0.14.0")
-  public void deleteCollection(UUID collectionUuid, String version) {
-    validateVersion(version);
-    validateCollection(collectionUuid);
-    CollectionId collectionId = CollectionId.of(collectionUuid);
-
-    // delete collection schema in Postgres
-    collectionDao.dropSchema(collectionId);
-
-    activityLogger.saveEventForCurrentUser(
-        user -> user.deleted().collection().withUuid(collectionUuid));
   }
 
   // ============================== helpers ==============================

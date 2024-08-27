@@ -1,7 +1,6 @@
 package org.databiosphere.workspacedataservice.dao;
 
 import java.sql.SQLException;
-import java.util.List;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import org.databiosphere.workspacedataservice.shared.model.CollectionId;
@@ -22,35 +21,6 @@ public class MockCollectionDao implements CollectionDao {
   @Override
   public boolean collectionSchemaExists(CollectionId collectionId) {
     return collections.contains(collectionId);
-  }
-
-  @Override
-  public List<CollectionId> listCollectionSchemas() {
-    return collections.stream().toList();
-  }
-
-  @Override
-  public void createSchema(CollectionId collectionId) {
-    if (collections.contains(collectionId)) {
-      ServerErrorMessage sqlMsg =
-          new ServerErrorMessage("ERROR: schema \"" + collectionId + "\" already exists");
-      SQLException ex = new org.postgresql.util.PSQLException(sqlMsg);
-      String sql = "create schema \"" + collectionId + "\"";
-      throw new org.springframework.jdbc.BadSqlGrammarException("StatementCallback", sql, ex);
-    }
-    collections.add(collectionId);
-  }
-
-  @Override
-  public void dropSchema(CollectionId collectionId) {
-    if (!collections.contains(collectionId)) {
-      ServerErrorMessage sqlMsg =
-          new ServerErrorMessage("ERROR: schema \"" + collectionId + "\" does not exist");
-      SQLException ex = new org.postgresql.util.PSQLException(sqlMsg);
-      String sql = "drop schema \"" + collectionId + "\" cascade";
-      throw new org.springframework.jdbc.BadSqlGrammarException("StatementCallback", sql, ex);
-    }
-    collections.remove(collectionId);
   }
 
   @Override

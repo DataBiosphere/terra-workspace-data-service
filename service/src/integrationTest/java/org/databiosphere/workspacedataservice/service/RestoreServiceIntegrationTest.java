@@ -7,12 +7,11 @@ import static org.junit.jupiter.api.Assertions.assertSame;
 import java.util.List;
 import java.util.UUID;
 import org.databiosphere.workspacedataservice.IntegrationServiceTestBase;
-import org.databiosphere.workspacedataservice.annotations.SingleTenant;
-import org.databiosphere.workspacedataservice.dao.CollectionDao;
+import org.databiosphere.workspacedataservice.config.TwdsProperties;
 import org.databiosphere.workspacedataservice.dao.RecordDao;
+import org.databiosphere.workspacedataservice.generated.CollectionServerModel;
 import org.databiosphere.workspacedataservice.shared.model.CollectionId;
 import org.databiosphere.workspacedataservice.shared.model.RecordType;
-import org.databiosphere.workspacedataservice.shared.model.WorkspaceId;
 import org.databiosphere.workspacedataservice.shared.model.job.JobStatus;
 import org.databiosphere.workspacedataservice.startup.CollectionInitializer;
 import org.junit.jupiter.api.AfterEach;
@@ -39,10 +38,10 @@ import org.springframework.test.context.TestPropertySource;
 class RestoreServiceIntegrationTest extends IntegrationServiceTestBase {
 
   @Autowired private BackupRestoreService backupRestoreService;
-  @Autowired CollectionDao collectionDao;
+  @Autowired CollectionService collectionService;
   @Autowired NamedParameterJdbcTemplate namedTemplate;
   @Autowired RecordDao recordDao;
-  @Autowired @SingleTenant WorkspaceId workspaceId;
+  @Autowired TwdsProperties twdsProperties;
 
   // Don't run the CollectionInitializer on startup, so this test can start with a clean slate.
   // By making an (empty) mock bean to replace CollectionInitializer, we ensure it is a noop.
@@ -51,17 +50,18 @@ class RestoreServiceIntegrationTest extends IntegrationServiceTestBase {
   // ensure we clean up the db after our tests
   @AfterEach
   void cleanUp() {
-    cleanDb(collectionDao, namedTemplate);
+    cleanDb(collectionService, namedTemplate);
   }
 
   // this test references the file src/integrationTest/resources/backup-test.sql as its backup
   @Test
   void testRestoreAzureWDS() {
-    CollectionId destCollection = CollectionId.of(workspaceId.id());
+    CollectionId destCollection = CollectionId.of(twdsProperties.workspaceId().id());
 
     // confirm neither source nor destination collection should exist in our list of schemas to
     // start
-    List<CollectionId> collectionsBefore = collectionDao.listCollectionSchemas();
+    List<CollectionServerModel> collectionsBefore =
+        collectionService.list(twdsProperties.workspaceId());
     assertThat(collectionsBefore).isEmpty();
 
     // perform the restore
@@ -72,7 +72,10 @@ class RestoreServiceIntegrationTest extends IntegrationServiceTestBase {
     // After restore, we should have one collection, the destination collection.
     // The source collection should not exist in the db.
     List<CollectionId> expectedCollections = List.of(destCollection);
-    List<CollectionId> actualCollections = collectionDao.listCollectionSchemas();
+    List<CollectionId> actualCollections =
+        collectionService.list(twdsProperties.workspaceId()).stream()
+            .map(coll -> CollectionId.of(coll.getId()))
+            .toList();
     assertEquals(expectedCollections, actualCollections);
 
     // after restore, destination collection should have one table named "thing"

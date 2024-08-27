@@ -1,7 +1,6 @@
 package org.databiosphere.workspacedataservice.dao;
 
 import static java.util.Collections.emptyMap;
-import static java.util.UUID.randomUUID;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.databiosphere.workspacedataservice.service.model.DataTypeMapping.*;
 import static org.databiosphere.workspacedataservice.service.model.DataTypeMapping.ARRAY_OF_NUMBER;
@@ -9,7 +8,6 @@ import static org.databiosphere.workspacedataservice.service.model.DataTypeMappi
 import static org.databiosphere.workspacedataservice.service.model.ReservedNames.RECORD_ID;
 import static org.junit.jupiter.api.Assertions.*;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -21,15 +19,16 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
+import org.databiosphere.workspacedataservice.TestUtils;
 import org.databiosphere.workspacedataservice.common.TestBase;
-import org.databiosphere.workspacedataservice.service.DataTypeInferer;
+import org.databiosphere.workspacedataservice.config.TwdsProperties;
+import org.databiosphere.workspacedataservice.service.CollectionService;
 import org.databiosphere.workspacedataservice.service.RelationUtils;
 import org.databiosphere.workspacedataservice.service.model.DataTypeMapping;
 import org.databiosphere.workspacedataservice.service.model.Relation;
 import org.databiosphere.workspacedataservice.service.model.RelationCollection;
 import org.databiosphere.workspacedataservice.service.model.RelationValue;
 import org.databiosphere.workspacedataservice.service.model.exception.InvalidRelationException;
-import org.databiosphere.workspacedataservice.shared.model.CollectionId;
 import org.databiosphere.workspacedataservice.shared.model.Record;
 import org.databiosphere.workspacedataservice.shared.model.RecordAttributes;
 import org.databiosphere.workspacedataservice.shared.model.RecordType;
@@ -54,7 +53,8 @@ class RecordDaoTest extends TestBase {
   private static final String PRIMARY_KEY = "row_id";
   @Autowired RecordDao recordDao;
 
-  @Autowired CollectionDao collectionDao;
+  @Autowired CollectionService collectionService;
+  @Autowired TwdsProperties twdsProperties;
 
   UUID collectionUuid;
   RecordType recordType;
@@ -63,91 +63,18 @@ class RecordDaoTest extends TestBase {
 
   @Autowired NamedParameterJdbcTemplate namedTemplate;
 
-  @Autowired DataTypeInferer dataTypeInferer;
-
-  @Autowired ObjectMapper objectMapper;
-
-  @Autowired PrimaryKeyDao primaryKeyDao;
-
   @BeforeEach
   void setUp() {
-    CollectionId collectionId = CollectionId.of(randomUUID());
-    collectionUuid = collectionId.id();
     recordType = RecordType.valueOf("testRecordType");
 
-    collectionDao.createSchema(collectionId);
+    collectionUuid = collectionService.save(twdsProperties.workspaceId(), "name", "desc").getId();
     recordDao.createRecordType(
         collectionUuid, emptyMap(), recordType, RelationCollection.empty(), PRIMARY_KEY);
   }
 
   @AfterEach
   void tearDown() {
-    collectionDao.dropSchema(CollectionId.of(collectionUuid));
-  }
-
-  /**
-   * This test is somewhat fuzzy. Because we use a persistent db for our unit tests, and because
-   * other tests in this codebase don't properly clean up their collections and/or human users don't
-   * clean up their collections, we can't effectively test the exact value that should be returned
-   * from list-collections. But we can test that the return value changes in the ways we expect when
-   * we create/delete collections.
-   */
-  @Test
-  void listCollections() {
-    // get the list of collections in this DB
-    List<CollectionId> actualInitialSchemas = collectionDao.listCollectionSchemas();
-
-    // generate some new UUIDs
-    List<CollectionId> someCollectionsToCreate =
-        IntStream.range(0, 5).mapToObj(i -> CollectionId.of(randomUUID())).toList();
-
-    // check that the new UUIDs do not exist in our collections list yet.
-    someCollectionsToCreate.forEach(
-        collectionId ->
-            assertFalse(
-                actualInitialSchemas.contains(collectionId),
-                "initial schema list should not contain brand new UUIDs"));
-
-    // create the collections
-    someCollectionsToCreate.forEach(collectionId -> collectionDao.createSchema(collectionId));
-
-    // get the list of collections again
-    List<CollectionId> actualSchemasAfterCreation = collectionDao.listCollectionSchemas();
-
-    // check that the new UUIDs do exist in our collections list.
-    someCollectionsToCreate.forEach(
-        collectionId ->
-            assertTrue(
-                actualSchemasAfterCreation.contains(collectionId),
-                "schema list after creation step should contain the new UUIDs"));
-
-    // delete the new collections
-    someCollectionsToCreate.forEach(collectionId -> collectionDao.dropSchema(collectionId));
-
-    // get the list of collections again
-    List<CollectionId> actualSchemasAfterDeletion = collectionDao.listCollectionSchemas();
-
-    // check that the new UUIDs do not exist in our collections list, now that we've deleted them
-    someCollectionsToCreate.forEach(
-        collectionId ->
-            assertFalse(
-                actualSchemasAfterDeletion.contains(collectionId),
-                "schema list after deletion step should not contain the new UUIDs"));
-
-    // at this point, the "after deletion" list and the "initial" list should be the same
-    assertIterableEquals(actualInitialSchemas, actualSchemasAfterDeletion);
-  }
-
-  @Test
-  void listNonUuidCollections() {
-    List<CollectionId> initialCollections = collectionDao.listCollectionSchemas();
-    namedTemplate.getJdbcTemplate().update("create schema if not exists notAUuid");
-    List<CollectionId> testableCollections =
-        collectionDao.listCollectionSchemas(); // should not throw
-    // second call should filter out the non-uuid
-    assertIterableEquals(initialCollections, testableCollections);
-    // cleanup
-    namedTemplate.getJdbcTemplate().update("drop schema if exists notAUuid");
+    TestUtils.cleanAllCollections(collectionService, namedTemplate);
   }
 
   @Test

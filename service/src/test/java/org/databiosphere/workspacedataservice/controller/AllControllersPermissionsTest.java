@@ -256,24 +256,7 @@ class AllControllersPermissionsTest extends MockMvcTestBase {
             named(
                 "GET /backup/v0.2/{trackingId}",
                 get("/backup/v0.2/{trackingId}", UUID.randomUUID()))),
-        arguments(named("GET /clone/v0.2", get("/clone/v0.2"))),
-        // Instances
-        arguments(named("GET /instances/v0.2", get("/instances/v0.2"))));
-  }
-
-  // these single-tenant APIs require write permission. When single-tenant APIs are fully retired,
-  // this method and any tests that use it should be deleted.
-  private static Stream<Arguments> singleTenantWriteApis() {
-    return Stream.of(
-        // Instances
-        arguments(
-            named(
-                "POST /instances/v0.2/{instanceid}",
-                post("/instances/v0.2/{instanceid}", UUID.randomUUID()))),
-        arguments(
-            named(
-                "DELETE /instances/v0.2/{instanceid}",
-                delete("/instances/v0.2/{instanceid}", collectionId))));
+        arguments(named("GET /clone/v0.2", get("/clone/v0.2"))));
   }
 
   // ========== write API tests
@@ -319,30 +302,6 @@ class AllControllersPermissionsTest extends MockMvcTestBase {
   @MethodSource("readOnlyApis")
   void readApiNoPermission(MockHttpServletRequestBuilder request) throws Exception {
     userNoPermissions(workspaceId);
-    requestShouldBeMaskedNotFound(request);
-  }
-
-  // ========== single-tenant write API tests
-
-  @ParameterizedTest(name = "single-tenant write API {0} succeeds with write permission")
-  @MethodSource("singleTenantWriteApis")
-  void singleTenantWriteApiWritePermission(MockHttpServletRequestBuilder request) throws Exception {
-    userCanWrite(twdsProperties.workspaceId());
-    requestShouldSucceed(request);
-  }
-
-  @ParameterizedTest(name = "single-tenant write API {0} is forbidden with read-only permission")
-  @MethodSource("singleTenantWriteApis")
-  void singleTenantWriteApiReadOnlyPermission(MockHttpServletRequestBuilder request)
-      throws Exception {
-    userCanRead(twdsProperties.workspaceId());
-    requestShouldBeForbidden(request);
-  }
-
-  @ParameterizedTest(name = "single-tenant write API {0} is not found with no permission")
-  @MethodSource("singleTenantWriteApis")
-  void singleTenantWriteApiNoPermission(MockHttpServletRequestBuilder request) throws Exception {
-    userNoPermissions(twdsProperties.workspaceId());
     requestShouldBeMaskedNotFound(request);
   }
 

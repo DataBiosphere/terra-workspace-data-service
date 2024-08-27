@@ -17,10 +17,14 @@ import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.UUID;
 import java.util.function.Supplier;
 import org.databiosphere.workspacedata.model.ErrorResponse;
+import org.databiosphere.workspacedataservice.TestUtils;
 import org.databiosphere.workspacedataservice.common.TestBase;
+import org.databiosphere.workspacedataservice.config.TwdsProperties;
+import org.databiosphere.workspacedataservice.generated.CollectionRequestServerModel;
 import org.databiosphere.workspacedataservice.service.RelationUtils;
 import org.databiosphere.workspacedataservice.shared.model.BatchOperation;
 import org.databiosphere.workspacedataservice.shared.model.OperationType;
@@ -68,34 +72,45 @@ class FullStackRecordControllerTest extends TestBase {
   private static final String versionId = "v0.2";
   @Autowired private ObjectMapper mapper;
 
+  @Autowired private TwdsProperties twdsProperties;
+
   @BeforeEach
-  void setUp() {
+  void setUp() throws JsonProcessingException {
+    String name = "test-name";
+    String description = "test-description";
+
+    CollectionRequestServerModel collectionRequestServerModel =
+        new CollectionRequestServerModel(name, description);
+
+    ObjectMapper objectMapper = new ObjectMapper();
+
     headers = new HttpHeaders();
     headers.setContentType(MediaType.APPLICATION_JSON);
-    instanceId = UUID.randomUUID();
-
     ResponseEntity<String> response =
         restTemplate.exchange(
-            "/instances/{v}/{instanceid}",
+            "/collections/v1/{workspaceId}",
             HttpMethod.POST,
-            new HttpEntity<>("", headers),
+            new HttpEntity<>(
+                objectMapper.writeValueAsString(collectionRequestServerModel), headers),
             String.class,
-            versionId,
-            instanceId);
+            twdsProperties.workspaceId().id());
     assertEquals(HttpStatus.CREATED, response.getStatusCode());
+
+    instanceId =
+        TestUtils.getCollectionId(objectMapper, Objects.requireNonNull(response.getBody()));
   }
 
   @AfterEach
   void tearDown() {
     ResponseEntity<String> response =
         restTemplate.exchange(
-            "/instances/{v}/{instanceid}",
+            "/collections/v1/{workspaceId}/{instanceid}",
             HttpMethod.DELETE,
             new HttpEntity<>("", headers),
             String.class,
-            versionId,
+            twdsProperties.workspaceId().id(),
             instanceId);
-    assertEquals(HttpStatus.OK, response.getStatusCode());
+    assertEquals(HttpStatus.NO_CONTENT, response.getStatusCode());
   }
 
   @Test
