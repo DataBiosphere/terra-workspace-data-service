@@ -1,7 +1,6 @@
 package org.databiosphere.workspacedataservice.dao;
 
 import java.util.Optional;
-import java.util.UUID;
 import org.databiosphere.workspacedataservice.shared.model.CollectionId;
 import org.databiosphere.workspacedataservice.shared.model.WdsCollection;
 import org.databiosphere.workspacedataservice.shared.model.WorkspaceId;
@@ -20,7 +19,7 @@ import org.springframework.data.repository.CrudRepository;
  *
  * <p>This means you won't see any code that actually implements those methods. They just work.
  */
-public interface CollectionRepository extends CrudRepository<WdsCollection, UUID> {
+public interface CollectionRepository extends CrudRepository<WdsCollection, CollectionId> {
 
   // custom method to list collections by workspace
   @Query("SELECT * FROM sys_wds.collection WHERE workspace_id = :workspaceId")

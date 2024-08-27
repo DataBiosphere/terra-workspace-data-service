@@ -25,7 +25,6 @@ import org.databiosphere.workspacedataservice.service.model.exception.Validation
 import org.databiosphere.workspacedataservice.shared.model.CollectionId;
 import org.databiosphere.workspacedataservice.shared.model.DefaultCollectionCreationResult;
 import org.databiosphere.workspacedataservice.shared.model.WdsCollection;
-import org.databiosphere.workspacedataservice.shared.model.WdsCollectionCreateRequest;
 import org.databiosphere.workspacedataservice.shared.model.WorkspaceId;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -134,11 +133,12 @@ public class CollectionService {
 
     // translate CollectionServerModel to WdsCollection
     WdsCollection wdsCollectionRequest =
-        new WdsCollectionCreateRequest(
+        new WdsCollection(
             workspaceId,
             collectionId,
             collectionRequestServerModel.getName(),
-            collectionRequestServerModel.getDescription());
+            collectionRequestServerModel.getDescription(),
+            /* newFlag= */ true);
 
     // save, handle exceptions, and translate to the response model
     CollectionServerModel response = saveAndHandleExceptions(wdsCollectionRequest);
@@ -172,7 +172,7 @@ public class CollectionService {
         .getJdbcTemplate()
         .update("drop schema " + quote(collectionId.toString()) + " cascade");
 
-    collectionRepository.deleteById(collectionId.id());
+    collectionRepository.deleteById(collectionId);
 
     activityLogger.saveEventForCurrentUser(
         user -> user.deleted().collection().withUuid(collectionId.id()));

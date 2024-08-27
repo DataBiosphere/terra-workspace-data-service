@@ -1,7 +1,6 @@
 package org.databiosphere.workspacedataservice.dao;
 
 import java.sql.SQLException;
-import java.util.List;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import org.databiosphere.workspacedataservice.shared.model.CollectionId;
@@ -22,11 +21,6 @@ public class MockCollectionDao implements CollectionDao {
   @Override
   public boolean collectionSchemaExists(CollectionId collectionId) {
     return collections.contains(collectionId);
-  }
-
-  @Override
-  public List<CollectionId> listCollectionSchemas() {
-    return collections.stream().toList();
   }
 
   @Override
