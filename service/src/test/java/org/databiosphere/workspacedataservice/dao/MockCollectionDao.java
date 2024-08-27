@@ -35,15 +35,4 @@ public class MockCollectionDao implements CollectionDao {
     collections.remove(oldCollectionId);
     collections.add(newCollectionId);
   }
-
-  @Override
-  public WorkspaceId getWorkspaceId(CollectionId collectionId) {
-    return workspaceId;
-  }
-
-  // convenience for unit tests: removes all collections
-  public void clearAllCollections() {
-    Set<CollectionId> toRemove = Set.copyOf(collections);
-    collections.removeAll(toRemove);
-  }
 }

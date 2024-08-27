@@ -76,16 +76,6 @@ public class PostgresCollectionDao implements CollectionDao {
     insertCollectionRow(newCollectionId, /* ignoreConflict= */ true);
   }
 
-  @Override
-  public WorkspaceId getWorkspaceId(CollectionId collectionId) {
-    UUID workspaceUuid =
-        namedTemplate.queryForObject(
-            "select workspace_id from sys_wds.collection where id = :collectionId",
-            new MapSqlParameterSource("collectionId", collectionId.id()),
-            UUID.class);
-    return WorkspaceId.of(workspaceUuid);
-  }
-
   private void insertCollectionRow(CollectionId collectionId, boolean ignoreConflict) {
     // if workspaceId as configured by the $WORKSPACE_ID is null, use
     // collectionId instead

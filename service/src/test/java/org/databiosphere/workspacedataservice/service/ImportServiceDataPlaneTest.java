@@ -6,20 +6,22 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.when;
 
 import java.net.URI;
+import java.util.Optional;
 import java.util.UUID;
 import org.databiosphere.workspacedataservice.annotations.SingleTenant;
 import org.databiosphere.workspacedataservice.common.TestBase;
 import org.databiosphere.workspacedataservice.dao.CollectionDao;
+import org.databiosphere.workspacedataservice.dao.CollectionRepository;
 import org.databiosphere.workspacedataservice.generated.ImportRequestServerModel;
 import org.databiosphere.workspacedataservice.service.model.exception.CollectionException;
 import org.databiosphere.workspacedataservice.service.model.exception.MissingObjectException;
 import org.databiosphere.workspacedataservice.shared.model.CollectionId;
+import org.databiosphere.workspacedataservice.shared.model.WdsCollection;
 import org.databiosphere.workspacedataservice.shared.model.WorkspaceId;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
-import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.ActiveProfiles;
 
@@ -36,6 +38,7 @@ class ImportServiceDataPlaneTest extends TestBase {
   @Autowired ImportService importService;
   @Autowired @SingleTenant WorkspaceId workspaceId;
   @MockBean CollectionDao collectionDao;
+  @MockBean CollectionRepository collectionRepository;
 
   private final URI importUri =
       URI.create("https://teststorageaccount.blob.core.windows.net/testcontainer/file");
@@ -50,7 +53,8 @@ class ImportServiceDataPlaneTest extends TestBase {
     // ARRANGE
     // collection dao says the collection exists and returns the expected workspace id
     when(collectionDao.collectionSchemaExists(collectionId)).thenReturn(true);
-    when(collectionDao.getWorkspaceId(collectionId)).thenReturn(workspaceId);
+    WdsCollection collection = new WdsCollection(workspaceId, collectionId, "name", "desc");
+    when(collectionRepository.findById(collectionId)).thenReturn(Optional.of(collection));
 
     // ACT/ASSERT
     // extract the UUID here so the lambda below has only one invocation possibly throwing a runtime
@@ -67,7 +71,9 @@ class ImportServiceDataPlaneTest extends TestBase {
     WorkspaceId nonMatchingWorkspaceId = WorkspaceId.of(UUID.randomUUID());
     // collection dao says the collection exists and returns an unexpected workspace id
     when(collectionDao.collectionSchemaExists(collectionId)).thenReturn(true);
-    when(collectionDao.getWorkspaceId(collectionId)).thenReturn(nonMatchingWorkspaceId);
+    WdsCollection collection =
+        new WdsCollection(nonMatchingWorkspaceId, collectionId, "name", "desc");
+    when(collectionRepository.findById(collectionId)).thenReturn(Optional.of(collection));
 
     // ACT/ASSERT
     // extract the UUID here so the lambda below has only one invocation possibly throwing a runtime
@@ -84,8 +90,7 @@ class ImportServiceDataPlaneTest extends TestBase {
     // ARRANGE
     // collection dao says the collection does not exist
     when(collectionDao.collectionSchemaExists(collectionId)).thenReturn(false);
-    when(collectionDao.getWorkspaceId(collectionId))
-        .thenThrow(new EmptyResultDataAccessException("unit test intentional error", 1));
+    when(collectionRepository.findById(collectionId)).thenReturn(Optional.empty());
 
     // ACT/ASSERT
     // extract the UUID here so the lambda below has only one invocation possibly throwing a runtime

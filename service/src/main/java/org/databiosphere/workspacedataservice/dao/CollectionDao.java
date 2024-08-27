@@ -10,7 +10,4 @@ public interface CollectionDao {
 
   // 1 usage
   void alterSchema(CollectionId oldCollectionId, CollectionId newCollectionId);
-
-  // 10 usages
-  WorkspaceId getWorkspaceId(CollectionId collectionId);
 }

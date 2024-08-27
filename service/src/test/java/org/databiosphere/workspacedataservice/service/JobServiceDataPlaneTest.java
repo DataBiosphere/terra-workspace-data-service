@@ -12,10 +12,12 @@ import java.util.Optional;
 import java.util.UUID;
 import org.databiosphere.workspacedataservice.annotations.SingleTenant;
 import org.databiosphere.workspacedataservice.dao.CollectionDao;
+import org.databiosphere.workspacedataservice.dao.CollectionRepository;
 import org.databiosphere.workspacedataservice.dao.JobDao;
 import org.databiosphere.workspacedataservice.generated.GenericJobServerModel;
 import org.databiosphere.workspacedataservice.service.model.exception.MissingObjectException;
 import org.databiosphere.workspacedataservice.shared.model.CollectionId;
+import org.databiosphere.workspacedataservice.shared.model.WdsCollection;
 import org.databiosphere.workspacedataservice.shared.model.WorkspaceId;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -40,6 +42,7 @@ class JobServiceDataPlaneTest extends JobServiceTestBase {
 
   @MockBean JobDao jobDao;
   @MockBean CollectionDao collectionDao;
+  @MockBean CollectionRepository collectionRepository;
 
   // ==================================================
   // ========== tests for getJob ======================
@@ -71,7 +74,8 @@ class JobServiceDataPlaneTest extends JobServiceTestBase {
     // job exists
     when(jobDao.getJob(jobId)).thenReturn(expectedJob);
     // collection for this job exists and is associated with the $WORKSPACE_ID workspace
-    when(collectionDao.getWorkspaceId(collectionId)).thenReturn(getEnvWorkspaceId());
+    WdsCollection collection = new WdsCollection(getEnvWorkspaceId(), collectionId, "name", "desc");
+    when(collectionRepository.findById(collectionId)).thenReturn(Optional.of(collection));
 
     // Act
     GenericJobServerModel actual = jobService.getJob(jobId);
@@ -90,8 +94,7 @@ class JobServiceDataPlaneTest extends JobServiceTestBase {
     // Arrange
     CollectionId collectionId = CollectionId.of(UUID.randomUUID());
     // collection for this job does not exist
-    when(collectionDao.getWorkspaceId(collectionId))
-        .thenThrow(new EmptyResultDataAccessException("unit test intentional error", 1));
+    when(collectionRepository.findById(collectionId)).thenReturn(Optional.empty());
 
     // Act / assert
     Exception actual =
@@ -110,7 +113,8 @@ class JobServiceDataPlaneTest extends JobServiceTestBase {
     CollectionId collectionId = CollectionId.of(UUID.randomUUID());
     // collection exists and is associated with the $WORKSPACE_ID workspace
     when(collectionDao.collectionSchemaExists(collectionId)).thenReturn(true);
-    when(collectionDao.getWorkspaceId(collectionId)).thenReturn(getEnvWorkspaceId());
+    WdsCollection collection = new WdsCollection(getEnvWorkspaceId(), collectionId, "name", "desc");
+    when(collectionRepository.findById(collectionId)).thenReturn(Optional.of(collection));
     // return some jobs when listing this collection
     when(jobDao.getJobsForCollection(eq(collectionId), any()))
         .thenReturn(makeJobList(collectionId, 2));
