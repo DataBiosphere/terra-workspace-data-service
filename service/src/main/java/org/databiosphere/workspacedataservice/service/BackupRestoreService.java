@@ -200,8 +200,8 @@ public class BackupRestoreService {
       }
 
       /* TODO: insert rows in sys_wds.collection for all schemas we just inserted.
-         The following SQL only handles the default collection;
-         if the source had any additional collections, they will not be handled correctly.
+          The following SQL only handles the default collection; if the source had any additional
+          collections, they will not be handled correctly.
       */
 
       // "adopt" the restored collection into its desired state
