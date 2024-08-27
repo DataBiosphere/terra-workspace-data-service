@@ -97,6 +97,22 @@ public class CollectionService {
   }
 
   /**
+   * Convenience method to insert a new collection of a given name and description
+   *
+   * @see #save(WorkspaceId, CollectionRequestServerModel)
+   * @param workspaceId the workspace to contain this collection
+   * @param name name for the created collection
+   * @param description description for the created collection
+   * @return the created collection
+   */
+  @WriteTransaction
+  public CollectionServerModel save(WorkspaceId workspaceId, String name, String description) {
+    CollectionRequestServerModel collectionRequestServerModel =
+        new CollectionRequestServerModel(name, description);
+    return save(workspaceId, collectionRequestServerModel);
+  }
+
+  /**
    * Insert a new collection, generating a random collection id.
    *
    * @param workspaceId the workspace to contain this collection

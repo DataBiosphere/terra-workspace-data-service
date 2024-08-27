@@ -11,6 +11,7 @@ import org.databiosphere.workspacedataservice.dao.CloneDao;
 import org.databiosphere.workspacedataservice.dao.CollectionDao;
 import org.databiosphere.workspacedataservice.leonardo.LeonardoDao;
 import org.databiosphere.workspacedataservice.service.BackupRestoreService;
+import org.databiosphere.workspacedataservice.service.CollectionService;
 import org.databiosphere.workspacedataservice.service.model.exception.CloningException;
 import org.databiosphere.workspacedataservice.service.model.exception.RestException;
 import org.databiosphere.workspacedataservice.shared.model.CloneResponse;
@@ -34,6 +35,7 @@ import org.springframework.lang.Nullable;
 public class CollectionInitializerBean {
 
   private final CollectionDao collectionDao;
+  private final CollectionService collectionService;
   private final LeonardoDao leoDao;
   private final WorkspaceDataServiceDao wdsDao;
   private final CloneDao cloneDao;
@@ -60,6 +62,7 @@ public class CollectionInitializerBean {
    */
   public CollectionInitializerBean(
       CollectionDao collectionDao,
+      CollectionService collectionService,
       LeonardoDao leoDao,
       WorkspaceDataServiceDao wdsDao,
       CloneDao cloneDao,
@@ -69,6 +72,7 @@ public class CollectionInitializerBean {
       @Nullable String sourceWorkspaceIdString,
       String startupToken) {
     this.collectionDao = collectionDao;
+    this.collectionService = collectionService;
     this.leoDao = leoDao;
     this.wdsDao = wdsDao;
     this.cloneDao = cloneDao;
@@ -286,16 +290,8 @@ public class CollectionInitializerBean {
   */
   private void initializeDefaultCollection() {
     try {
-      CollectionId collectionId = CollectionId.of(workspaceId.id());
-
-      if (!collectionDao.collectionSchemaExists(collectionId)) {
-        collectionDao.createSchema(collectionId);
-        LOGGER.info("Creating default schema id succeeded for workspaceId {}.", workspaceId);
-      } else {
-        LOGGER.debug(
-            "Default schema for workspaceId {} already exists; skipping creation.", workspaceId);
-      }
-
+      collectionService.createDefaultCollection(workspaceId);
+      LOGGER.info("Creating default schema id succeeded for workspaceId {}.", workspaceId);
     } catch (IllegalArgumentException e) {
       LOGGER.warn(
           "Workspace id {} could not be parsed, a default schema won't be created.", workspaceId);
