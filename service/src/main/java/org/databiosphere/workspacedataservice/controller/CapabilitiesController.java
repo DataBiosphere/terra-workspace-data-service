@@ -4,8 +4,6 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.io.IOException;
 import java.io.InputStream;
-import org.databiosphere.workspacedataservice.annotations.DeploymentMode.ControlPlane;
-import org.databiosphere.workspacedataservice.annotations.DeploymentMode.DataPlane;
 import org.databiosphere.workspacedataservice.generated.CapabilitiesApi;
 import org.databiosphere.workspacedataservice.generated.CapabilitiesServerModel;
 import org.slf4j.Logger;
@@ -16,8 +14,6 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.RestController;
 
 /** Controller for capabilities-related APIs */
-@DataPlane
-@ControlPlane
 @ConditionalOnProperty(name = "controlPlanePreview", havingValue = "on")
 @RestController
 public class CapabilitiesController implements CapabilitiesApi {
