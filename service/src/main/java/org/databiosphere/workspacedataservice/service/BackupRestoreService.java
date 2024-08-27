@@ -3,7 +3,6 @@ package org.databiosphere.workspacedataservice.service;
 import static org.databiosphere.workspacedataservice.service.CollectionService.NAME_DEFAULT;
 import static org.databiosphere.workspacedataservice.service.RecordUtils.validateVersion;
 
-import bio.terra.common.db.WriteTransaction;
 import com.azure.identity.extensions.jdbc.postgresql.AzurePostgresqlAuthenticationPlugin;
 import java.io.IOException;
 import java.io.InputStream;
@@ -162,7 +161,6 @@ public class BackupRestoreService {
     return backupDao.getStatus(trackingId);
   }
 
-  @WriteTransaction
   public Job<JobInput, RestoreResponse> restoreAzureWDS(
       String version, String backupFileName, UUID trackingId, String startupToken) {
     validateVersion(version);
