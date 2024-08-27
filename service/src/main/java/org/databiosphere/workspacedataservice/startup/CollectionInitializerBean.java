@@ -142,7 +142,7 @@ public class CollectionInitializerBean {
       // If there's a clone entry and a default schema there's nothing for us to do here.
       if (cloneDao.cloneExistsForWorkspace(sourceWorkspaceId)) {
         boolean collectionSchemaExists =
-            collectionDao.collectionSchemaExists(CollectionId.of(workspaceId.id()));
+            collectionService.exists(CollectionId.of(workspaceId.id()));
         LOGGER.info(
             "Previous clone entry found. Collection schema exists: {}.", collectionSchemaExists);
         return collectionSchemaExists;

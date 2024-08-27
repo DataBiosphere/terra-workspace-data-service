@@ -14,7 +14,6 @@ import java.util.stream.StreamSupport;
 import org.databiosphere.workspacedataservice.activitylog.ActivityLogger;
 import org.databiosphere.workspacedataservice.config.TenancyProperties;
 import org.databiosphere.workspacedataservice.config.TwdsProperties;
-import org.databiosphere.workspacedataservice.dao.CollectionDao;
 import org.databiosphere.workspacedataservice.dao.CollectionRepository;
 import org.databiosphere.workspacedataservice.generated.CollectionRequestServerModel;
 import org.databiosphere.workspacedataservice.generated.CollectionServerModel;
@@ -36,7 +35,6 @@ import org.springframework.stereotype.Service;
 @Service
 public class CollectionService {
   private static final Logger LOGGER = LoggerFactory.getLogger(CollectionService.class);
-  private final CollectionDao collectionDao;
   private final ActivityLogger activityLogger;
   private final TenancyProperties tenancyProperties;
   private final TwdsProperties twdsProperties;
@@ -49,13 +47,11 @@ public class CollectionService {
   public static final String NAME_DEFAULT = "default";
 
   public CollectionService(
-      CollectionDao collectionDao,
       ActivityLogger activityLogger,
       TenancyProperties tenancyProperties,
       TwdsProperties twdsProperties,
       CollectionRepository collectionRepository,
       NamedParameterJdbcTemplate namedTemplate) {
-    this.collectionDao = collectionDao;
     this.activityLogger = activityLogger;
     this.tenancyProperties = tenancyProperties;
     this.twdsProperties = twdsProperties;
@@ -212,6 +208,16 @@ public class CollectionService {
   }
 
   /**
+   * Does a collection exist at the given id?
+   *
+   * @param collectionId the collection id to inspect
+   * @return whether the collection exists
+   */
+  public Boolean exists(CollectionId collectionId) {
+    return collectionRepository.existsById(collectionId);
+  }
+
+  /**
    * Retrieve a single collection by its workspaceId and collectionId, or empty Optional if not
    * found.
    *
@@ -340,7 +346,7 @@ public class CollectionService {
       return;
     }
     // else, check if this collection has a row in the collections table
-    if (!collectionDao.collectionSchemaExists(CollectionId.of(collectionId))) {
+    if (!exists(CollectionId.of(collectionId))) {
       throw new MissingObjectException(COLLECTION);
     }
   }
@@ -362,6 +368,7 @@ public class CollectionService {
    * @param collectionId the collection for which to look up the workspace
    * @return the workspace containing the given collection.
    */
+  // TODO AJ-1971: unit tests?
   public WorkspaceId getWorkspaceId(CollectionId collectionId) {
     // look up the workspaceId for this collection in the collection table
     WorkspaceId rowWorkspaceId = null;

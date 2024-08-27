@@ -10,7 +10,6 @@ import java.util.Optional;
 import java.util.UUID;
 import org.databiosphere.workspacedataservice.annotations.SingleTenant;
 import org.databiosphere.workspacedataservice.common.TestBase;
-import org.databiosphere.workspacedataservice.dao.CollectionDao;
 import org.databiosphere.workspacedataservice.dao.CollectionRepository;
 import org.databiosphere.workspacedataservice.generated.ImportRequestServerModel;
 import org.databiosphere.workspacedataservice.service.model.exception.CollectionException;
@@ -37,7 +36,7 @@ import org.springframework.test.context.ActiveProfiles;
 class ImportServiceDataPlaneTest extends TestBase {
   @Autowired ImportService importService;
   @Autowired @SingleTenant WorkspaceId workspaceId;
-  @MockBean CollectionDao collectionDao;
+  @MockBean CollectionService collectionService;
   @MockBean CollectionRepository collectionRepository;
 
   private final URI importUri =
@@ -52,7 +51,7 @@ class ImportServiceDataPlaneTest extends TestBase {
   void singleTenantWorkspaceId() {
     // ARRANGE
     // collection dao says the collection exists and returns the expected workspace id
-    when(collectionDao.collectionSchemaExists(collectionId)).thenReturn(true);
+    when(collectionService.exists(collectionId)).thenReturn(true);
     WdsCollection collection = new WdsCollection(workspaceId, collectionId, "name", "desc");
     when(collectionRepository.findById(collectionId)).thenReturn(Optional.of(collection));
 
@@ -70,7 +69,7 @@ class ImportServiceDataPlaneTest extends TestBase {
     // ARRANGE
     WorkspaceId nonMatchingWorkspaceId = WorkspaceId.of(UUID.randomUUID());
     // collection dao says the collection exists and returns an unexpected workspace id
-    when(collectionDao.collectionSchemaExists(collectionId)).thenReturn(true);
+    when(collectionService.exists(collectionId)).thenReturn(true);
     WdsCollection collection =
         new WdsCollection(nonMatchingWorkspaceId, collectionId, "name", "desc");
     when(collectionRepository.findById(collectionId)).thenReturn(Optional.of(collection));
@@ -89,7 +88,7 @@ class ImportServiceDataPlaneTest extends TestBase {
   void collectionDoesNotExist() {
     // ARRANGE
     // collection dao says the collection does not exist
-    when(collectionDao.collectionSchemaExists(collectionId)).thenReturn(false);
+    when(collectionService.exists(collectionId)).thenReturn(false);
     when(collectionRepository.findById(collectionId)).thenReturn(Optional.empty());
 
     // ACT/ASSERT

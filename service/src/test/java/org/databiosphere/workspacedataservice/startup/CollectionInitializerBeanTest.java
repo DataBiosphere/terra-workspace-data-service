@@ -89,10 +89,10 @@ class CollectionInitializerBeanTest extends TestBase {
   void testSchemaAlreadyExists() {
     verify(collectionRepository, never()).save(any());
     // collection does not exist
-    assertFalse(collectionDao.collectionSchemaExists(collectionIdMatchingWorkspaceId()));
+    assertFalse(collectionService.exists(collectionIdMatchingWorkspaceId()));
     // create the collection outside the initializer
     collectionService.createDefaultCollection(twdsProperties.workspaceId());
-    assertTrue(collectionDao.collectionSchemaExists(collectionIdMatchingWorkspaceId()));
+    assertTrue(collectionService.exists(collectionIdMatchingWorkspaceId()));
     verify(collectionRepository, times(1)).save(any());
 
     // now run the initializer
@@ -101,14 +101,14 @@ class CollectionInitializerBeanTest extends TestBase {
     // verify that method to create collection was NOT called again. We expect one call from the
     // setup above.
     verify(collectionRepository, times(1)).save(any());
-    assertTrue(collectionDao.collectionSchemaExists(collectionIdMatchingWorkspaceId()));
+    assertTrue(collectionService.exists(collectionIdMatchingWorkspaceId()));
   }
 
   @Test
   // Cloning where we can get a lock and complete successfully.
   void cloneSuccessfully() {
     // collection does not exist
-    assertFalse(collectionDao.collectionSchemaExists(collectionIdMatchingWorkspaceId()));
+    assertFalse(collectionService.exists(collectionIdMatchingWorkspaceId()));
     // enter clone mode
     getBean().initCloneMode(sourceWorkspaceId);
     // confirm we have moved forward with cloning
@@ -120,7 +120,7 @@ class CollectionInitializerBeanTest extends TestBase {
   void cloneWithLockFail() throws InterruptedException {
     when(mockLock.tryLock(anyLong(), any())).thenReturn(false);
     // collection does not exist
-    assertFalse(collectionDao.collectionSchemaExists(collectionIdMatchingWorkspaceId()));
+    assertFalse(collectionService.exists(collectionIdMatchingWorkspaceId()));
     // enter clone mode
     boolean cleanExit = getBean().initCloneMode(sourceWorkspaceId);
     // initCloneMode() should have returned true since we did not enter a situation
@@ -151,7 +151,7 @@ class CollectionInitializerBeanTest extends TestBase {
     // start with clone entry
     cloneDao.createCloneEntry(randomUUID(), sourceWorkspaceId);
     // collection does not exist
-    assertFalse(collectionDao.collectionSchemaExists(collectionIdMatchingWorkspaceId()));
+    assertFalse(collectionService.exists(collectionIdMatchingWorkspaceId()));
     // enter clone mode
     boolean cleanExit = getBean().initCloneMode(sourceWorkspaceId);
     // initCloneMode() should have returned false since we encountered a situation
