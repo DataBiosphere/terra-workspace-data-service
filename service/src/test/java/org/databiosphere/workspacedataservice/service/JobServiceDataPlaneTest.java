@@ -16,7 +16,6 @@ import org.databiosphere.workspacedataservice.dao.JobDao;
 import org.databiosphere.workspacedataservice.generated.GenericJobServerModel;
 import org.databiosphere.workspacedataservice.service.model.exception.MissingObjectException;
 import org.databiosphere.workspacedataservice.shared.model.CollectionId;
-import org.databiosphere.workspacedataservice.shared.model.WorkspaceId;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
