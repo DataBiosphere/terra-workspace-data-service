@@ -14,8 +14,7 @@ import org.databiosphere.workspacedataservice.annotations.DeploymentMode.DataPla
 import org.databiosphere.workspacedataservice.config.TwdsProperties;
 import org.databiosphere.workspacedataservice.dao.BackupRestoreDao;
 import org.databiosphere.workspacedataservice.dao.CloneDao;
-import org.databiosphere.workspacedataservice.dao.CollectionDao;
-import org.databiosphere.workspacedataservice.dao.CollectionRepository;
+import org.databiosphere.workspacedataservice.generated.CollectionServerModel;
 import org.databiosphere.workspacedataservice.process.LocalProcessLauncher;
 import org.databiosphere.workspacedataservice.service.model.exception.LaunchProcessException;
 import org.databiosphere.workspacedataservice.service.model.exception.MissingObjectException;
@@ -24,7 +23,6 @@ import org.databiosphere.workspacedataservice.shared.model.BackupRestoreRequest;
 import org.databiosphere.workspacedataservice.shared.model.CloneResponse;
 import org.databiosphere.workspacedataservice.shared.model.CollectionId;
 import org.databiosphere.workspacedataservice.shared.model.RestoreResponse;
-import org.databiosphere.workspacedataservice.shared.model.WdsCollection;
 import org.databiosphere.workspacedataservice.shared.model.WorkspaceId;
 import org.databiosphere.workspacedataservice.shared.model.job.Job;
 import org.databiosphere.workspacedataservice.shared.model.job.JobInput;
@@ -47,8 +45,7 @@ public class BackupRestoreService {
   private final BackupRestoreDao<BackupResponse> backupDao;
   private final BackupRestoreDao<RestoreResponse> restoreDao;
   private final CloneDao cloneDao;
-  private final CollectionDao collectionDao;
-  private final CollectionRepository collectionRepository;
+  private final CollectionService collectionService;
   private final NamedParameterJdbcTemplate namedTemplate;
   private final TwdsProperties twdsProperties;
   private final WorkspaceId workspaceId;
@@ -88,8 +85,7 @@ public class BackupRestoreService {
       BackupRestoreDao<BackupResponse> backupDao,
       BackupRestoreDao<RestoreResponse> restoreDao,
       CloneDao cloneDao,
-      CollectionDao collectionDao,
-      CollectionRepository collectionRepository,
+      CollectionService collectionService,
       NamedParameterJdbcTemplate namedTemplate,
       TwdsProperties twdsProperties,
       WorkspaceId workspaceId) {
@@ -98,8 +94,7 @@ public class BackupRestoreService {
     this.backupDao = backupDao;
     this.restoreDao = restoreDao;
     this.cloneDao = cloneDao;
-    this.collectionDao = collectionDao;
-    this.collectionRepository = collectionRepository;
+    this.collectionService = collectionService;
     this.namedTemplate = namedTemplate;
     this.twdsProperties = twdsProperties;
     this.workspaceId = workspaceId;
@@ -210,8 +205,10 @@ public class BackupRestoreService {
       */
 
       // rename workspace schema from source to dest
-      collectionDao.alterSchema(
-          CollectionId.fromString(sourceWorkspaceId), CollectionId.of(workspaceId.id()));
+      collectionService.updateId(
+          workspaceId,
+          CollectionId.fromString(sourceWorkspaceId),
+          CollectionId.of(workspaceId.id()));
 
       activityLogger.saveEventForCurrentUser(
           user -> user.restored().backup().withId(backupFileName));
@@ -265,9 +262,9 @@ public class BackupRestoreService {
       command.put(pgDumpPath, null);
       command.put("-b", null);
       // Grab all workspace collections/schemas in wds
-      for (WdsCollection collection :
-          collectionRepository.findByWorkspace(twdsProperties.workspaceId())) {
-        command.put("-n", collection.collectionId().toString());
+      for (CollectionServerModel collection :
+          collectionService.list(twdsProperties.workspaceId())) {
+        command.put("-n", collection.getId().toString());
       }
     } else {
       command.put(psqlPath, null);
