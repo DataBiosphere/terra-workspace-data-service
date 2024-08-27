@@ -33,7 +33,7 @@ import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.ActiveProfiles;
 
 @DirtiesContext
-@ActiveProfiles(profiles = {"mock-sam", "mock-cwds-preview"})
+@ActiveProfiles(profiles = "mock-sam")
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 class NoCacheFilterTest extends TestBase {
   @Autowired private TwdsProperties twdsProperties;

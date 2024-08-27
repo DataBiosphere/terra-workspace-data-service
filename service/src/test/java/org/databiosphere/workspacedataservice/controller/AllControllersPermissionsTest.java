@@ -47,13 +47,7 @@ import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilde
 
 @DirtiesContext
 @SpringBootTest
-@ActiveProfiles({
-  "mock-collection-dao",
-  "mock-backup-dao",
-  "mock-restore-dao",
-  "mock-clone-dao",
-  "mock-cwds-preview"
-})
+@ActiveProfiles({"mock-collection-dao", "mock-backup-dao", "mock-restore-dao", "mock-clone-dao"})
 class AllControllersPermissionsTest extends MockMvcTestBase {
   @Autowired PermissionService permissionService;
   @MockBean SamAuthorizationDaoFactory samAuthorizationDaoFactory;

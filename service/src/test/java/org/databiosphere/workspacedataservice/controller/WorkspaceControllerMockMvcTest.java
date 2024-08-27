@@ -41,7 +41,6 @@ import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.MediaType;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.test.annotation.DirtiesContext;
-import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.web.servlet.MvcResult;
 
@@ -50,7 +49,6 @@ import org.springframework.test.web.servlet.MvcResult;
 // `enforce-collections-match-workspace-id` is turned off
 @TestPropertySource(properties = {"twds.tenancy.enforce-collections-match-workspace-id=false"})
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
-@ActiveProfiles(profiles = {"mock-cwds-preview"})
 class WorkspaceControllerMockMvcTest extends MockMvcTestBase {
 
   @Autowired private CollectionService collectionService;

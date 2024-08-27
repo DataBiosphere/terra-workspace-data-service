@@ -9,10 +9,8 @@ import org.databiosphere.workspacedataservice.generated.CapabilitiesServerModel;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.Resource;
-import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MvcResult;
 
-@ActiveProfiles(profiles = {"mock-cwds-preview"})
 class CapabilitiesControllerTest extends MockMvcTestBase {
 
   @Value("classpath:capabilities.json")

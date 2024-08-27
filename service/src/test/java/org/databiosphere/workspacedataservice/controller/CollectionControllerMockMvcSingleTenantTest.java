@@ -46,7 +46,7 @@ import org.springframework.test.web.servlet.MvcResult;
  * Tests for create-collection behavior in a WDS running in single-tenant mode. These tests are
  * invalid for a multi-tenant WDS.
  */
-@ActiveProfiles(profiles = {"mock-sam", "mock-cwds-preview"})
+@ActiveProfiles(profiles = {"mock-sam"})
 @DirtiesContext
 @TestPropertySource(
     properties = {"twds.instance.workspace-id=45f90f59-f83d-453f-961a-480ec740df9f"})
