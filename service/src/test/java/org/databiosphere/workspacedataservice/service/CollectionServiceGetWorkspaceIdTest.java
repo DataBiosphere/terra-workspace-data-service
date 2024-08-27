@@ -64,8 +64,7 @@ class CollectionServiceGetWorkspaceIdTest {
 
   @AfterAll
   void afterAll() {
-    TestUtils.cleanAllCollections(collectionService, namedTemplate);
-    TestUtils.cleanAllWorkspaces(namedTemplate);
+    beforeEach(); // execute the same cleanup after all as we do before each
   }
 
   // single-tenant; workspace and collection both exist; workspace matches env var; collection

@@ -63,7 +63,6 @@ class ImportServiceDataPlaneTest extends TestBase {
   @Test
   void unexpectedWorkspaceId() {
     // ARRANGE
-    WorkspaceId nonMatchingWorkspaceId = WorkspaceId.of(UUID.randomUUID());
     // collection dao says the collection exists and returns an unexpected workspace id
     // collectionService.validateCollection() does not throw
     when(collectionService.getWorkspaceId(collectionId))

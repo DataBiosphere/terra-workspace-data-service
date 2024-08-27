@@ -124,12 +124,4 @@ class JobServiceDataPlaneTest extends JobServiceTestBase {
     // this is verifying permissions only; only smoke-testing correctness of the result
     assertThat(actual).hasSize(2);
   }
-
-  // ==================================================
-  // ========== helpers ===============================
-  // ==================================================
-
-  private WorkspaceId getEnvWorkspaceId() {
-    return twdsProperties.workspaceId();
-  }
 }

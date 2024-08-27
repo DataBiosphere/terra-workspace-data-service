@@ -52,7 +52,6 @@ class CollectionInitializerBeanTest extends TestBase {
   @Autowired BackupRestoreService restoreService;
   @Autowired TwdsProperties twdsProperties;
   @MockBean JdbcLockRegistry registry;
-  @SpyBean CollectionDao collectionDao;
   @SpyBean CollectionRepository collectionRepository;
   @SpyBean CloneDao cloneDao;
 
@@ -197,7 +196,6 @@ class CollectionInitializerBeanTest extends TestBase {
 
   private CollectionInitializerBean getBean(@Nullable String sourceWorkspaceIdString) {
     return new CollectionInitializerBean(
-        collectionDao,
         collectionService,
         leoDao,
         wdsDao,

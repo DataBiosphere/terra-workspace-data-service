@@ -213,7 +213,7 @@ public class CollectionService {
    * @param collectionId the collection id to inspect
    * @return whether the collection exists
    */
-  public Boolean exists(CollectionId collectionId) {
+  public boolean exists(CollectionId collectionId) {
     return collectionRepository.existsById(collectionId);
   }
 
@@ -368,7 +368,6 @@ public class CollectionService {
    * @param collectionId the collection for which to look up the workspace
    * @return the workspace containing the given collection.
    */
-  // TODO AJ-1971: unit tests?
   public WorkspaceId getWorkspaceId(CollectionId collectionId) {
     // look up the workspaceId for this collection in the collection table
     WorkspaceId rowWorkspaceId = null;
