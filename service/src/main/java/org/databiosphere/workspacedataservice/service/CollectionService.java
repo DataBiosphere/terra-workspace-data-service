@@ -12,8 +12,8 @@ import java.util.UUID;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 import org.databiosphere.workspacedataservice.activitylog.ActivityLogger;
-import org.databiosphere.workspacedataservice.annotations.SingleTenant;
 import org.databiosphere.workspacedataservice.config.TenancyProperties;
+import org.databiosphere.workspacedataservice.config.TwdsProperties;
 import org.databiosphere.workspacedataservice.dao.CollectionDao;
 import org.databiosphere.workspacedataservice.dao.CollectionRepository;
 import org.databiosphere.workspacedataservice.generated.CollectionRequestServerModel;
@@ -28,12 +28,9 @@ import org.databiosphere.workspacedataservice.shared.model.WdsCollection;
 import org.databiosphere.workspacedataservice.shared.model.WorkspaceId;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DuplicateKeyException;
-import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.data.relational.core.conversion.DbActionExecutionException;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
-import org.springframework.lang.Nullable;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -42,6 +39,7 @@ public class CollectionService {
   private final CollectionDao collectionDao;
   private final ActivityLogger activityLogger;
   private final TenancyProperties tenancyProperties;
+  private final TwdsProperties twdsProperties;
 
   private final CollectionRepository collectionRepository;
   private final NamedParameterJdbcTemplate namedTemplate;
@@ -50,24 +48,19 @@ public class CollectionService {
   private static final String COLLECTION = "Collection";
   public static final String NAME_DEFAULT = "default";
 
-  @Nullable private WorkspaceId workspaceId;
-
   public CollectionService(
       CollectionDao collectionDao,
       ActivityLogger activityLogger,
       TenancyProperties tenancyProperties,
+      TwdsProperties twdsProperties,
       CollectionRepository collectionRepository,
       NamedParameterJdbcTemplate namedTemplate) {
     this.collectionDao = collectionDao;
     this.activityLogger = activityLogger;
     this.tenancyProperties = tenancyProperties;
+    this.twdsProperties = twdsProperties;
     this.collectionRepository = collectionRepository;
     this.namedTemplate = namedTemplate;
-  }
-
-  @Autowired(required = false) // control plane won't have workspaceId
-  void setWorkspaceId(@Nullable @SingleTenant WorkspaceId workspaceId) {
-    this.workspaceId = workspaceId;
   }
 
   // ============================== v1 methods ==============================
@@ -143,7 +136,7 @@ public class CollectionService {
 
     // if WDS is running in single-tenant mode, ensure the specified workspace matches
     if (tenancyProperties.getEnforceCollectionsMatchWorkspaceId()
-        && !workspaceId.equals(this.workspaceId)) {
+        && !workspaceId.equals(twdsProperties.workspaceId())) {
       throw new ValidationException("Cannot create collection in this workspace.");
     }
 
@@ -372,14 +365,11 @@ public class CollectionService {
   public WorkspaceId getWorkspaceId(CollectionId collectionId) {
     // look up the workspaceId for this collection in the collection table
     WorkspaceId rowWorkspaceId = null;
-    try {
-      rowWorkspaceId = collectionDao.getWorkspaceId(collectionId);
-      // as of this writing, if a deployment allows virtual collections, it is an error if the
-      // collection DOES exist.
-      if (tenancyProperties.getAllowVirtualCollections()) {
-        throw new CollectionException("Expected a virtual collection");
-      }
-    } catch (EmptyResultDataAccessException e) {
+
+    Optional<WdsCollection> maybeCollection = collectionRepository.findById(collectionId);
+    if (maybeCollection.isPresent()) {
+      rowWorkspaceId = maybeCollection.get().workspaceId();
+    } else {
       if (!tenancyProperties.getAllowVirtualCollections()) {
         throw new MissingObjectException(COLLECTION);
       }
@@ -389,12 +379,12 @@ public class CollectionService {
     // $WORKSPACE_ID env var.
     if (tenancyProperties.getEnforceCollectionsMatchWorkspaceId()
         && rowWorkspaceId != null
-        && !rowWorkspaceId.equals(workspaceId)) {
+        && !rowWorkspaceId.equals(twdsProperties.workspaceId())) {
       // log the details, including expected/actual workspace ids
       LOGGER.error(
           "Found unexpected workspaceId for collection {}. Expected {}, got {}.",
           collectionId,
-          workspaceId,
+          twdsProperties.workspaceId(),
           rowWorkspaceId);
       // but, don't include workspace ids when throwing a user-facing error
       throw new CollectionException(
