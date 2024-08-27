@@ -1,7 +1,9 @@
 package org.databiosphere.workspacedataservice.service;
 
+import static org.databiosphere.workspacedataservice.service.CollectionService.NAME_DEFAULT;
 import static org.databiosphere.workspacedataservice.service.RecordUtils.validateVersion;
 
+import bio.terra.common.db.WriteTransaction;
 import com.azure.identity.extensions.jdbc.postgresql.AzurePostgresqlAuthenticationPlugin;
 import java.io.IOException;
 import java.io.InputStream;
@@ -21,7 +23,6 @@ import org.databiosphere.workspacedataservice.service.model.exception.MissingObj
 import org.databiosphere.workspacedataservice.shared.model.BackupResponse;
 import org.databiosphere.workspacedataservice.shared.model.BackupRestoreRequest;
 import org.databiosphere.workspacedataservice.shared.model.CloneResponse;
-import org.databiosphere.workspacedataservice.shared.model.CollectionId;
 import org.databiosphere.workspacedataservice.shared.model.RestoreResponse;
 import org.databiosphere.workspacedataservice.shared.model.WorkspaceId;
 import org.databiosphere.workspacedataservice.shared.model.job.Job;
@@ -160,6 +161,7 @@ public class BackupRestoreService {
     return backupDao.getStatus(trackingId);
   }
 
+  @WriteTransaction
   public Job<JobInput, RestoreResponse> restoreAzureWDS(
       String version, String backupFileName, UUID trackingId, String startupToken) {
     validateVersion(version);
@@ -199,16 +201,32 @@ public class BackupRestoreService {
       }
 
       /* TODO: insert rows in sys_wds.collection for all schemas we just inserted.
-         The following call to alterSchema only handles the default collection;
+         The following SQL only handles the default collection;
          if the source had any additional collections, they will not be handled correctly.
-         If we insert rows here, we don't need the additional insert check in alterSchema.
       */
 
-      // rename workspace schema from source to dest
-      collectionService.updateId(
-          workspaceId,
-          CollectionId.fromString(sourceWorkspaceId),
-          CollectionId.of(workspaceId.id()));
+      // rename the pg schema from old to new
+      namedTemplate
+          .getJdbcTemplate()
+          .update(
+              "alter schema \"%s\" rename to \"%s\";"
+                  .formatted(sourceWorkspaceId, workspaceId.id()));
+
+      // ensure new exists in sys_wds.collection. After
+      // restoring from a pg_dump, the row doesn't exist yet
+      // Note: this is the only insert into sys_wds.collection that exists outside
+      // CollectionRepository/CollectionService
+      namedTemplate.update(
+          "insert into sys_wds.collection(id, workspace_id, name, description) values (:id, :workspaceId, :name, :description)",
+          Map.of(
+              "id",
+              workspaceId.id(),
+              "workspaceId",
+              workspaceId.id(),
+              "name",
+              NAME_DEFAULT,
+              "description",
+              NAME_DEFAULT));
 
       activityLogger.saveEventForCurrentUser(
           user -> user.restored().backup().withId(backupFileName));
