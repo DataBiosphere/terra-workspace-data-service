@@ -1,0 +1,112 @@
+openapi: 3.0.3
+
+info:
+  title: cWDS API Spec
+  version: v1
+  description: |
+    cWDS - the (c)ontrol-plane (W)orkspace (D)ata (S)ervice - is responsible for importing
+    tabular data into the Data tab of a workspace.
+  termsOfService: https://github.com/DataBiosphere/terra-workspace-data-service
+  license:
+    name: BSD
+    url: https://opensource.org/licenses/BSD-3-Clause
+
+security:
+  - bearerAuth: [ ]
+
+tags:
+  # Tags should be listed in the order they should appear in the UI
+  - name: Records
+    description: Record APIs
+  - name: Import
+    description: Import APIs
+  - name: Job
+    description: Job APIs
+  - name: Collection
+    description: Collection APIs
+  - name: Schema
+    description: Schema Manipulation APIs (coming soon)
+  - name: Workspace
+    description: Workspace APIs
+  - name: General WDS Information
+    description: Information regarding versioning, health, info, etc. for WDS
+  - name: Capabilities
+    description: Describes the features of WDS
+
+paths:
+  # Paths should be grouped by their tag, following the order of tags listed above.
+  # Within each tag group, paths should be listed alphabetically.
+
+
+  # OpenApi requires "/" to be replaced with "~1" when referencing paths in another file.
+
+  ##############################
+  # Records APIs
+  ##############################
+  /{instanceid}/batch/{v}/{type}:
+    $ref: 'openapi-docs.yaml#/paths/~1{instanceid}~1batch~1{v}~1{type}'
+  /{instanceid}/records/{v}/{type}/{id}:
+    $ref: 'openapi-docs.yaml#/paths/~1{instanceid}~1records~1{v}~1{type}~1{id}'
+  /{instanceid}/search/{v}/{type}:
+    $ref: 'openapi-docs.yaml#/paths/~1{instanceid}~1search~1{v}~1{type}'
+  /{instanceid}/tsv/{v}/{type}:
+    $ref: 'openapi-docs.yaml#/paths/~1{instanceid}~1tsv~1{v}~1{type}'
+
+  ##############################
+  # Import APIs
+  ##############################
+  /{instanceUuid}/import/v1:
+    $ref: 'apis-v1.yaml#/paths/~1{instanceUuid}~1import~1v1'
+
+  ##############################
+  # Job APIs
+  ##############################
+  /job/v1/{jobId}:
+    $ref: 'apis-v1.yaml#/paths/~1job~1v1~1{jobId}'
+  /job/v1/instance/{instanceUuid}:
+    $ref: 'apis-v1.yaml#/paths/~1job~1v1~1instance~1{instanceUuid}'
+
+  ##############################
+  # Collection APIs
+  ##############################
+  /collections/v1/{workspaceId}:
+    $ref: 'apis-v1.yaml#/paths/~1collections~1v1~1{workspaceId}'
+  /collections/v1/{workspaceId}/{collectionId}:
+    $ref: 'apis-v1.yaml#/paths/~1collections~1v1~1{workspaceId}~1{collectionId}'
+
+  ##############################
+  # Schema APIs
+  ##############################
+  /{instanceid}/types/{v}:
+    $ref: 'openapi-docs.yaml#/paths/~1{instanceid}~1types~1{v}'
+  /{instanceid}/types/{v}/{type}:
+    $ref: 'openapi-docs.yaml#/paths/~1{instanceid}~1types~1{v}~1{type}'
+  /{instanceid}/types/{v}/{type}/{attribute}:
+    $ref: 'openapi-docs.yaml#/paths/~1{instanceid}~1types~1{v}~1{type}~1{attribute}'
+
+  ##############################
+  # Workspace APIs
+  ##############################
+  /workspaces/v1/{workspaceId}:
+    $ref: 'apis-v1.yaml#/paths/~1workspaces~1v1~1{workspaceId}'
+
+  ##############################
+  # General WDS Information APIs
+  ##############################
+  /status:
+    $ref: 'openapi-docs.yaml#/paths/~1status'
+  /version:
+    $ref: 'openapi-docs.yaml#/paths/~1version'
+
+  ##############################
+  # Capabilities APIs
+  ##############################
+  /capabilities/v1:
+    $ref: 'apis-v1.yaml#/paths/~1capabilities~1v1'
+
+components:
+  # within each group, components should be listed alphabetically.
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer

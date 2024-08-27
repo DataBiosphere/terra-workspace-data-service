@@ -2,7 +2,6 @@ package org.databiosphere.workspacedataservice.controller;
 
 import java.util.List;
 import java.util.UUID;
-import org.databiosphere.workspacedataservice.annotations.DeploymentMode.DataPlane;
 import org.databiosphere.workspacedataservice.generated.CollectionApi;
 import org.databiosphere.workspacedataservice.generated.CollectionRequestServerModel;
 import org.databiosphere.workspacedataservice.generated.CollectionServerModel;
@@ -10,6 +9,7 @@ import org.databiosphere.workspacedataservice.service.CollectionService;
 import org.databiosphere.workspacedataservice.service.PermissionService;
 import org.databiosphere.workspacedataservice.shared.model.CollectionId;
 import org.databiosphere.workspacedataservice.shared.model.WorkspaceId;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.RestController;
@@ -18,7 +18,7 @@ import org.springframework.web.bind.annotation.RestController;
  * Implementations for collection API routes. This implements CollectionApi, which is auto-generated
  * from our OpenAPI spec.
  */
-@DataPlane
+@ConditionalOnProperty(name = "controlPlanePreview", havingValue = "on")
 @RestController
 public class CollectionController implements CollectionApi {
 
