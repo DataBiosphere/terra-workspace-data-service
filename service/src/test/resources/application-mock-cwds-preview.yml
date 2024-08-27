@@ -1,0 +1,4 @@
+# the "mock-cwds-preview" test profile enables the control plane preview feature flag
+# in the test environment. This is necessary to test the control plane preview feature
+
+controlPlanePreview: "on"
