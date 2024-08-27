@@ -3,8 +3,8 @@ package org.databiosphere.workspacedataservice.service;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
+import java.util.UUID;
 import org.databiosphere.workspacedataservice.TestUtils;
-import org.databiosphere.workspacedataservice.common.TestBase;
 import org.databiosphere.workspacedataservice.config.TwdsProperties;
 import org.databiosphere.workspacedataservice.shared.model.CollectionId;
 import org.databiosphere.workspacedataservice.shared.model.WorkspaceId;
@@ -15,10 +15,20 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.test.annotation.DirtiesContext;
+import org.springframework.test.context.ActiveProfiles;
 
+@ActiveProfiles("control-plane")
 @DirtiesContext
-@SpringBootTest
-class CollectionServiceTest extends TestBase {
+@SpringBootTest(
+    properties = { // turn off pubsub autoconfiguration for tests
+      "spring.cloud.gcp.pubsub.enabled=false",
+      // aggressive retry settings so unit tests don't run too long
+      "rest.retry.maxAttempts=2",
+      "rest.retry.backoff.delay=3",
+      // Rawls url must be valid, else context initialization (Spring startup) will fail
+      "rawlsUrl=https://localhost/"
+    })
+class CollectionServiceTest {
 
   @Autowired private CollectionService collectionService;
   @Autowired private NamedParameterJdbcTemplate namedTemplate;
@@ -33,7 +43,7 @@ class CollectionServiceTest extends TestBase {
 
   @Test
   void testCreateDefaultIsIdempotent() {
-    WorkspaceId workspaceId = twdsProperties.workspaceId();
+    WorkspaceId workspaceId = WorkspaceId.of(UUID.randomUUID());
     CollectionId collectionId = CollectionId.of(workspaceId.id());
 
     // at the start of the test, we expect the default collection does not exist
@@ -51,7 +61,7 @@ class CollectionServiceTest extends TestBase {
   @Test
   void testFindAndCreateDefault() {
 
-    WorkspaceId workspaceId = twdsProperties.workspaceId();
+    WorkspaceId workspaceId = WorkspaceId.of(UUID.randomUUID());
     CollectionId collectionId = CollectionId.of(workspaceId.id());
 
     // find should be empty to start

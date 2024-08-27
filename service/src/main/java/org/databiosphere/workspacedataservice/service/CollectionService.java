@@ -259,6 +259,7 @@ public class CollectionService {
    * @param collectionRequestServerModel object containing the updated name and description.
    * @return the updated collection
    */
+  @WriteTransaction
   public CollectionServerModel update(
       WorkspaceId workspaceId,
       CollectionId collectionId,

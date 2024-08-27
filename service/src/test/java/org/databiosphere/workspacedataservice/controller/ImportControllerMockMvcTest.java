@@ -6,7 +6,6 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import java.net.URI;
 import org.databiosphere.workspacedataservice.config.TwdsProperties;
-import org.databiosphere.workspacedataservice.dao.CollectionDao;
 import org.databiosphere.workspacedataservice.generated.CollectionServerModel;
 import org.databiosphere.workspacedataservice.generated.GenericJobServerModel;
 import org.databiosphere.workspacedataservice.generated.ImportRequestServerModel;
@@ -23,7 +22,6 @@ import org.springframework.test.web.servlet.MvcResult;
 @DirtiesContext
 class ImportControllerMockMvcTest extends MockMvcTestBase {
 
-  @Autowired private CollectionDao collectionDao;
   @Autowired private CollectionService collectionService;
   @Autowired private TwdsProperties twdsProperties;
 
