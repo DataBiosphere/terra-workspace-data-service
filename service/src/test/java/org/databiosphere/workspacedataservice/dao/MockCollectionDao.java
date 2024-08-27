@@ -19,11 +19,6 @@ public class MockCollectionDao implements CollectionDao {
   }
 
   @Override
-  public boolean collectionSchemaExists(CollectionId collectionId) {
-    return collections.contains(collectionId);
-  }
-
-  @Override
   public void alterSchema(CollectionId oldCollectionId, CollectionId newCollectionId) {
     if (!collections.contains(oldCollectionId)) {
       ServerErrorMessage sqlMsg =
