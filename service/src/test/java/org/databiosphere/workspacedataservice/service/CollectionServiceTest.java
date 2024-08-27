@@ -2,14 +2,10 @@ package org.databiosphere.workspacedataservice.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import java.util.Map;
 import java.util.UUID;
 import org.databiosphere.workspacedataservice.TestUtils;
 import org.databiosphere.workspacedataservice.config.TwdsProperties;
-import org.databiosphere.workspacedataservice.generated.CollectionServerModel;
 import org.databiosphere.workspacedataservice.shared.model.CollectionId;
 import org.databiosphere.workspacedataservice.shared.model.WorkspaceId;
 import org.junit.jupiter.api.AfterEach;
@@ -84,61 +80,5 @@ class CollectionServiceTest {
 
     // find should be empty again
     assertThat(collectionService.find(workspaceId, collectionId)).isEmpty();
-  }
-
-  @Test
-  void testUpdateId() {
-    WorkspaceId workspaceId = WorkspaceId.of(UUID.randomUUID());
-
-    // create a collection
-    CollectionServerModel oldColl = collectionService.save(workspaceId, "name", "desc");
-    CollectionId oldCollectionId = CollectionId.of(oldColl.getId());
-    assertTrue(
-        collectionService.exists(oldCollectionId),
-        "Collection row should exist for initial collection");
-    assertTrue(
-        postgresSchemaExists(oldCollectionId),
-        "Postgres schema should exist for initial collection");
-
-    // prepare to give this collection a new id
-    CollectionId newCollectionId = CollectionId.of(UUID.randomUUID());
-    assertFalse(
-        collectionService.exists(newCollectionId),
-        "Collection row should not exist yet for new id");
-    assertFalse(
-        postgresSchemaExists(newCollectionId), "Postgres schema should not exist yet for new id");
-
-    // perform the id change
-    collectionService.updateId(workspaceId, oldCollectionId, newCollectionId);
-
-    // old schema should not exist
-    assertFalse(
-        postgresSchemaExists(oldCollectionId),
-        "Postgres schema should not exist for original id after rename");
-    // new schema should exist
-    assertTrue(
-        postgresSchemaExists(newCollectionId),
-        "Postgres schema should exist for new id after rename");
-    // old collection should not exist
-    assertFalse(
-        collectionService.exists(oldCollectionId),
-        "Collection row should not exist for original id after rename");
-    // new collection should exist
-    assertTrue(
-        collectionService.exists(newCollectionId),
-        "Collection row should exist for new id after rename");
-
-    // name and description should not have changed
-    CollectionServerModel newColl = collectionService.get(workspaceId, newCollectionId);
-    assertEquals(oldColl.getName(), newColl.getName());
-    assertEquals(oldColl.getDescription(), newColl.getDescription());
-  }
-
-  private boolean postgresSchemaExists(CollectionId collectionId) {
-    // attempt to create the sc
-    return namedTemplate.queryForObject(
-        "select exists(select schema_name from information_schema.schemata where schema_name = :collectionId);",
-        Map.of("collectionId", collectionId.toString()),
-        Boolean.class);
   }
 }

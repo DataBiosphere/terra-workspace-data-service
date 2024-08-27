@@ -4,7 +4,6 @@ import static org.databiosphere.workspacedataservice.dao.SqlUtils.quote;
 
 import bio.terra.common.db.WriteTransaction;
 import java.util.List;
-import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Spliterator;
@@ -249,59 +248,6 @@ public class CollectionService {
   public CollectionServerModel get(WorkspaceId workspaceId, CollectionId collectionId) {
     Optional<CollectionServerModel> found = find(workspaceId, collectionId);
     return found.orElseThrow(() -> new MissingObjectException(COLLECTION));
-  }
-
-  /**
-   * Updates the id for a collection. Renames the corresponding Postgres schema accordingly.
-   *
-   * @param workspaceId the workspace containing the collection to be updated
-   * @param currentCollectionId current id of the collection to be updated
-   * @param newCollectionId desired new id of the collection to be updated
-   * @return the updated collection
-   */
-  @WriteTransaction
-  public CollectionServerModel updateId(
-      WorkspaceId workspaceId, CollectionId currentCollectionId, CollectionId newCollectionId) {
-    // retrieve the collection; throw if collection not found
-    WdsCollection found =
-        collectionRepository
-            .find(workspaceId, currentCollectionId)
-            .orElseThrow(() -> new MissingObjectException(COLLECTION));
-
-    // optimization: if the request doesn't change anything, don't bother writing to the db
-    if (found.collectionId().equals(newCollectionId)) {
-      // make sure this response has an id
-      CollectionServerModel response = new CollectionServerModel(found.name(), found.description());
-      response.id(found.collectionId().id());
-      return response;
-    }
-    try {
-      // update the id for this collection
-      namedTemplate.update(
-          "update sys_wds.collection set id = :newCollectionId where id = :currentCollectionId;",
-          Map.of(
-              "currentCollectionId",
-              currentCollectionId.id(),
-              "newCollectionId",
-              newCollectionId.id()));
-    } catch (DbActionExecutionException dbActionExecutionException) {
-      handleDbException(dbActionExecutionException);
-    }
-
-    // rename the postgres schema that corresponds to this collection
-    namedTemplate.update(
-        "alter schema "
-            + quote(currentCollectionId.toString())
-            + " rename to "
-            + quote(newCollectionId.toString()),
-        Map.of());
-
-    activityLogger.saveEventForCurrentUser(
-        user -> user.updated().collection().withUuid(newCollectionId.id()));
-
-    // respond
-    return find(workspaceId, newCollectionId)
-        .orElseThrow(() -> new MissingObjectException(COLLECTION));
   }
 
   /**
