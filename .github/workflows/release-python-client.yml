@@ -90,7 +90,7 @@ jobs:
           export SPRING_PROFILES_ACTIVE=data-plane,local
           ./gradlew --build-cache build -x test
           # Allow http imports from localhost to test with files from resources served by the mock API server
-          ./gradlew bootRun --args='--twds.data-import.require-validation=false' &
+          ./gradlew bootRun --args='--twds.data-import.require-validation=false --controlPlanePreview=on' &
           count=20
           until $(curl --output /dev/null --silent --head --fail http://localhost:8080/status); do
             printf '.'
