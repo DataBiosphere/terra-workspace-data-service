@@ -119,7 +119,7 @@ class CollectionInitializerCloneTest extends IntegrationServiceTestBase {
 
     // default collection should exist, with no tables in it
     UUID workspaceUuid = workspaceId.id();
-    assertTrue(collectionDao.collectionSchemaExists(CollectionId.of(workspaceUuid)));
+    assertTrue(collectionService.exists(CollectionId.of(workspaceUuid)));
     assertThat(recordDao.getAllRecordTypes(workspaceUuid)).isEmpty();
   }
 

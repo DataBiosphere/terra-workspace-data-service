@@ -19,11 +19,6 @@ public class MockCollectionDao implements CollectionDao {
   }
 
   @Override
-  public boolean collectionSchemaExists(CollectionId collectionId) {
-    return collections.contains(collectionId);
-  }
-
-  @Override
   public void alterSchema(CollectionId oldCollectionId, CollectionId newCollectionId) {
     if (!collections.contains(oldCollectionId)) {
       ServerErrorMessage sqlMsg =
@@ -34,16 +29,5 @@ public class MockCollectionDao implements CollectionDao {
     }
     collections.remove(oldCollectionId);
     collections.add(newCollectionId);
-  }
-
-  @Override
-  public WorkspaceId getWorkspaceId(CollectionId collectionId) {
-    return workspaceId;
-  }
-
-  // convenience for unit tests: removes all collections
-  public void clearAllCollections() {
-    Set<CollectionId> toRemove = Set.copyOf(collections);
-    collections.removeAll(toRemove);
   }
 }

@@ -38,15 +38,6 @@ public class PostgresCollectionDao implements CollectionDao {
   }
 
   @Override
-  public boolean collectionSchemaExists(CollectionId collectionId) {
-    return Boolean.TRUE.equals(
-        namedTemplate.queryForObject(
-            "select exists(select from sys_wds.collection WHERE id = :collectionId)",
-            new MapSqlParameterSource("collectionId", collectionId.id()),
-            Boolean.class));
-  }
-
-  @Override
   @WriteTransaction
   @SuppressWarnings("squid:S2077") // since collectionId must be a UUID, it is safe to use inline
   public void alterSchema(CollectionId oldCollectionId, CollectionId newCollectionId) {
@@ -74,16 +65,6 @@ public class PostgresCollectionDao implements CollectionDao {
     // restoring from a pg_dump,
     // the oldSchema doesn't exist, so is not renamed in the previous statement.
     insertCollectionRow(newCollectionId, /* ignoreConflict= */ true);
-  }
-
-  @Override
-  public WorkspaceId getWorkspaceId(CollectionId collectionId) {
-    UUID workspaceUuid =
-        namedTemplate.queryForObject(
-            "select workspace_id from sys_wds.collection where id = :collectionId",
-            new MapSqlParameterSource("collectionId", collectionId.id()),
-            UUID.class);
-    return WorkspaceId.of(workspaceUuid);
   }
 
   private void insertCollectionRow(CollectionId collectionId, boolean ignoreConflict) {

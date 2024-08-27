@@ -5,18 +5,17 @@ import static org.databiosphere.workspacedataservice.common.TestBase.HARDCODED_W
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.when;
 
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
-import org.databiosphere.workspacedataservice.annotations.SingleTenant;
-import org.databiosphere.workspacedataservice.dao.CollectionDao;
+import org.databiosphere.workspacedataservice.config.TwdsProperties;
 import org.databiosphere.workspacedataservice.dao.JobDao;
 import org.databiosphere.workspacedataservice.generated.GenericJobServerModel;
 import org.databiosphere.workspacedataservice.service.model.exception.MissingObjectException;
 import org.databiosphere.workspacedataservice.shared.model.CollectionId;
-import org.databiosphere.workspacedataservice.shared.model.WorkspaceId;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -36,10 +35,10 @@ import org.springframework.test.context.ActiveProfiles;
 class JobServiceDataPlaneTest extends JobServiceTestBase {
 
   @Autowired JobService jobService;
-  @Autowired @SingleTenant WorkspaceId workspaceId;
+  @Autowired TwdsProperties twdsProperties;
 
   @MockBean JobDao jobDao;
-  @MockBean CollectionDao collectionDao;
+  @MockBean CollectionService collectionService;
 
   // ==================================================
   // ========== tests for getJob ======================
@@ -70,8 +69,8 @@ class JobServiceDataPlaneTest extends JobServiceTestBase {
     GenericJobServerModel expectedJob = makeJob(jobId, collectionId);
     // job exists
     when(jobDao.getJob(jobId)).thenReturn(expectedJob);
-    // collection for this job exists and is associated with the $WORKSPACE_ID workspace
-    when(collectionDao.getWorkspaceId(collectionId)).thenReturn(getEnvWorkspaceId());
+
+    // CollectionService.validateCollection() does not throw
 
     // Act
     GenericJobServerModel actual = jobService.getJob(jobId);
@@ -90,8 +89,9 @@ class JobServiceDataPlaneTest extends JobServiceTestBase {
     // Arrange
     CollectionId collectionId = CollectionId.of(UUID.randomUUID());
     // collection for this job does not exist
-    when(collectionDao.getWorkspaceId(collectionId))
-        .thenThrow(new EmptyResultDataAccessException("unit test intentional error", 1));
+    doThrow(new MissingObjectException("Collection"))
+        .when(collectionService)
+        .validateCollection(collectionId.id());
 
     // Act / assert
     Exception actual =
@@ -108,9 +108,9 @@ class JobServiceDataPlaneTest extends JobServiceTestBase {
   void listJobsDefaultCollection() {
     // Arrange
     CollectionId collectionId = CollectionId.of(UUID.randomUUID());
-    // collection exists and is associated with the $WORKSPACE_ID workspace
-    when(collectionDao.collectionSchemaExists(collectionId)).thenReturn(true);
-    when(collectionDao.getWorkspaceId(collectionId)).thenReturn(getEnvWorkspaceId());
+
+    // CollectionService.validateCollection() does not throw
+
     // return some jobs when listing this collection
     when(jobDao.getJobsForCollection(eq(collectionId), any()))
         .thenReturn(makeJobList(collectionId, 2));
@@ -122,13 +122,5 @@ class JobServiceDataPlaneTest extends JobServiceTestBase {
     // Assert
     // this is verifying permissions only; only smoke-testing correctness of the result
     assertThat(actual).hasSize(2);
-  }
-
-  // ==================================================
-  // ========== helpers ===============================
-  // ==================================================
-
-  private WorkspaceId getEnvWorkspaceId() {
-    return workspaceId;
   }
 }
