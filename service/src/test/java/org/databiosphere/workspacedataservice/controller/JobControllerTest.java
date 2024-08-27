@@ -21,6 +21,7 @@ import java.util.UUID;
 import org.databiosphere.workspacedata.model.ErrorResponse;
 import org.databiosphere.workspacedata.model.ImportRequest.TypeEnum;
 import org.databiosphere.workspacedataservice.common.TestBase;
+import org.databiosphere.workspacedataservice.config.TwdsProperties;
 import org.databiosphere.workspacedataservice.dao.JobDao;
 import org.databiosphere.workspacedataservice.dataimport.ImportJobInput;
 import org.databiosphere.workspacedataservice.dataimport.pfb.PfbImportOptions;
@@ -58,6 +59,7 @@ class JobControllerTest extends TestBase {
   @Autowired private NamedParameterJdbcTemplate namedTemplate;
   @Autowired private TestRestTemplate restTemplate;
   @Autowired private JobDao jobDao;
+  @Autowired private TwdsProperties twdsProperties;
   @MockBean private CollectionService collectionService;
 
   private final CollectionId collectionId = CollectionId.of(randomUUID());
@@ -88,7 +90,7 @@ class JobControllerTest extends TestBase {
   @ParameterizedTest(name = "Return all jobs with a querystring of {0}")
   @ValueSource(strings = {"", "?someOtherParam=whatever", "?statuses="})
   void instanceJobsReturnAll(String queryString) {
-    when(collectionService.exists(collectionId)).thenReturn(true);
+    when(collectionService.getWorkspaceId(collectionId)).thenReturn(twdsProperties.workspaceId());
     HttpHeaders headers = new HttpHeaders();
     ResponseEntity<List<GenericJobServerModel>> result =
         restTemplate.exchange(
@@ -113,7 +115,7 @@ class JobControllerTest extends TestBase {
 
   @Test
   void instanceJobsWithMultipleStatuses() {
-    when(collectionService.exists(collectionId)).thenReturn(true);
+    when(collectionService.getWorkspaceId(collectionId)).thenReturn(twdsProperties.workspaceId());
     assertDoesNotThrow(() -> jobDao.updateStatus(jobId, StatusEnum.CANCELLED));
     HttpHeaders headers = new HttpHeaders();
     ResponseEntity<List<GenericJobServerModel>> result =
@@ -135,7 +137,9 @@ class JobControllerTest extends TestBase {
 
   @Test
   void instanceJobsWithMultipleDelimitedStatuses() {
-    when(collectionService.exists(collectionId)).thenReturn(true);
+
+    when(collectionService.getWorkspaceId(collectionId)).thenReturn(twdsProperties.workspaceId());
+
     assertDoesNotThrow(() -> jobDao.updateStatus(jobId, StatusEnum.CANCELLED));
     HttpHeaders headers = new HttpHeaders();
     ResponseEntity<List<GenericJobServerModel>> result =
