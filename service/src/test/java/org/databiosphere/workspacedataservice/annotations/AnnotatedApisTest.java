@@ -13,6 +13,7 @@ import org.databiosphere.workspacedataservice.workspace.WdsDataTableTypeInspecto
 import org.databiosphere.workspacedataservice.workspacemanager.WorkspaceManagerDao;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.context.ApplicationContext;
@@ -60,15 +61,20 @@ class AnnotatedApisTest extends TestBase {
   @Test
   void controllersMustHaveDeploymentAnnotation() {
     String[] beanNames = context.getBeanNamesForAnnotation(RestController.class);
-    // every @RestController should also be annotated with @DataPlane and/or @ControlPlane
+    // every @RestController should also be annotated with @DataPlane and/or @ControlPlane or
+    // @ConditionalOnProperty
     for (String bean : beanNames) {
       Optional<DataPlane> dataPlaneAnnotation =
           Optional.ofNullable(context.findAnnotationOnBean(bean, DataPlane.class));
       Optional<ControlPlane> controlPlaneAnnotation =
           Optional.ofNullable(context.findAnnotationOnBean(bean, ControlPlane.class));
+      Optional<ConditionalOnProperty> conditionalOnPropertyAnnotation =
+          Optional.ofNullable(context.findAnnotationOnBean(bean, ConditionalOnProperty.class));
 
       assertTrue(
-          dataPlaneAnnotation.isPresent() || controlPlaneAnnotation.isPresent(),
+          dataPlaneAnnotation.isPresent()
+              || controlPlaneAnnotation.isPresent()
+              || conditionalOnPropertyAnnotation.isPresent(),
           "No platform annotation on class " + bean);
     }
   }
