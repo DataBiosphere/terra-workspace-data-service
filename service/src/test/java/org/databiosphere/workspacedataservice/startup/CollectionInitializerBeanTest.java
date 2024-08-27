@@ -7,6 +7,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -52,6 +53,7 @@ class CollectionInitializerBeanTest extends TestBase {
   @Autowired TwdsProperties twdsProperties;
   @MockBean JdbcLockRegistry registry;
   @SpyBean CollectionDao collectionDao;
+  @SpyBean CollectionRepository collectionRepository;
   @SpyBean CloneDao cloneDao;
 
   // sourceWorkspaceId when we need one
@@ -85,16 +87,20 @@ class CollectionInitializerBeanTest extends TestBase {
 
   @Test
   void testSchemaAlreadyExists() {
+    verify(collectionRepository, never()).save(any());
     // collection does not exist
     assertFalse(collectionDao.collectionSchemaExists(collectionIdMatchingWorkspaceId()));
     // create the collection outside the initializer
-    collectionDao.createSchema(collectionIdMatchingWorkspaceId());
+    collectionService.createDefaultCollection(twdsProperties.workspaceId());
     assertTrue(collectionDao.collectionSchemaExists(collectionIdMatchingWorkspaceId()));
+    verify(collectionRepository, times(1)).save(any());
+
     // now run the initializer
     getBean().initializeCollection();
+
     // verify that method to create collection was NOT called again. We expect one call from the
     // setup above.
-    verify(collectionDao, times(1)).createSchema(any());
+    verify(collectionRepository, times(1)).save(any());
     assertTrue(collectionDao.collectionSchemaExists(collectionIdMatchingWorkspaceId()));
   }
 
@@ -129,7 +135,7 @@ class CollectionInitializerBeanTest extends TestBase {
   // exists.
   void cloneWithCloneTableAndCollectionExist() {
     // start with collection and clone entry
-    collectionDao.createSchema(collectionIdMatchingWorkspaceId());
+    collectionService.createDefaultCollection(twdsProperties.workspaceId());
     cloneDao.createCloneEntry(randomUUID(), sourceWorkspaceId);
     // enter clone mode
     boolean cleanExit = getBean().initCloneMode(sourceWorkspaceId);
@@ -192,6 +198,7 @@ class CollectionInitializerBeanTest extends TestBase {
   private CollectionInitializerBean getBean(@Nullable String sourceWorkspaceIdString) {
     return new CollectionInitializerBean(
         collectionDao,
+        collectionService,
         leoDao,
         wdsDao,
         cloneDao,
