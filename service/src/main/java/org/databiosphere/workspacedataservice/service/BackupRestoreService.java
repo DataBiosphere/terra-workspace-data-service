@@ -23,6 +23,7 @@ import org.databiosphere.workspacedataservice.service.model.exception.MissingObj
 import org.databiosphere.workspacedataservice.shared.model.BackupResponse;
 import org.databiosphere.workspacedataservice.shared.model.BackupRestoreRequest;
 import org.databiosphere.workspacedataservice.shared.model.CloneResponse;
+import org.databiosphere.workspacedataservice.shared.model.CollectionId;
 import org.databiosphere.workspacedataservice.shared.model.RestoreResponse;
 import org.databiosphere.workspacedataservice.shared.model.WorkspaceId;
 import org.databiosphere.workspacedataservice.shared.model.job.Job;
@@ -205,28 +206,11 @@ public class BackupRestoreService {
          if the source had any additional collections, they will not be handled correctly.
       */
 
-      // rename the pg schema from old to new
-      namedTemplate
-          .getJdbcTemplate()
-          .update(
-              "alter schema \"%s\" rename to \"%s\";"
-                  .formatted(sourceWorkspaceId, workspaceId.id()));
-
-      // ensure new exists in sys_wds.collection. After
-      // restoring from a pg_dump, the row doesn't exist yet
-      // Note: this is the only insert into sys_wds.collection that exists outside
-      // CollectionRepository/CollectionService
-      namedTemplate.update(
-          "insert into sys_wds.collection(id, workspace_id, name, description) values (:id, :workspaceId, :name, :description)",
-          Map.of(
-              "id",
-              workspaceId.id(),
-              "workspaceId",
-              workspaceId.id(),
-              "name",
-              NAME_DEFAULT,
-              "description",
-              NAME_DEFAULT));
+      // "adopt" the restored collection into its desired state
+      adoptCollection(
+          workspaceId,
+          CollectionId.fromString(sourceWorkspaceId),
+          CollectionId.of(workspaceId.id()));
 
       activityLogger.saveEventForCurrentUser(
           user -> user.restored().backup().withId(backupFileName));
@@ -252,6 +236,41 @@ public class BackupRestoreService {
       }
     }
     return restoreDao.getStatus(trackingId);
+  }
+
+  /**
+   * "Adopts" a collection which has been restored from backup. This method will: <br>
+   * 1. Rename the Postgres schema from its restored name to its desired name <br>
+   * 2. Insert a row into sys_wds.collection for the desired id
+   *
+   * @param parentWorkspaceId the workspace containing the restored collection
+   * @param oldSchemaName the collection id to which the backup was restored
+   * @param newSchemaName the desired collection id which should be used instead
+   */
+  @SuppressWarnings("squid:S2077")
+  private void adoptCollection(
+      WorkspaceId parentWorkspaceId, CollectionId oldSchemaName, CollectionId newSchemaName) {
+    // rename the pg schema from old to new
+    // S2077: the strings used here are already validated as uuids so they are safe
+    namedTemplate
+        .getJdbcTemplate()
+        .update("alter schema \"%s\" rename to \"%s\";".formatted(oldSchemaName, newSchemaName));
+
+    // ensure new exists in sys_wds.collection. After
+    // restoring from a pg_dump, the row doesn't exist yet
+    // Note: this is the only insert into sys_wds.collection that exists outside
+    // CollectionRepository/CollectionService.
+    namedTemplate.update(
+        "insert into sys_wds.collection(id, workspace_id, name, description) values (:id, :workspaceId, :name, :description)",
+        Map.of(
+            "id",
+            newSchemaName.id(),
+            "workspaceId",
+            parentWorkspaceId.id(),
+            "name",
+            NAME_DEFAULT,
+            "description",
+            NAME_DEFAULT));
   }
 
   private void logSearchPath(String logPrefix) {
