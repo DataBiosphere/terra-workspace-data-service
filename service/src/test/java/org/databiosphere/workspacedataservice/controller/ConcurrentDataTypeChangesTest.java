@@ -35,7 +35,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.ActiveProfiles;
 
-@ActiveProfiles(profiles = "mock-sam")
+@ActiveProfiles(profiles = {"mock-sam", "mock-cwds-preview"})
 @DirtiesContext
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 class ConcurrentDataTypeChangesTest extends TestBase {

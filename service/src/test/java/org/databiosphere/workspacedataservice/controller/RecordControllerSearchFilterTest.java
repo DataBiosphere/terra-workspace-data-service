@@ -28,7 +28,7 @@ import org.springframework.http.MediaType;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MvcResult;
 
-@ActiveProfiles(profiles = "mock-sam")
+@ActiveProfiles(profiles = {"mock-sam", "mock-cwds-preview"})
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class RecordControllerSearchFilterTest extends MockMvcTestBase {
 

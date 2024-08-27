@@ -10,7 +10,7 @@ import org.springframework.beans.factory.NoSuchBeanDefinitionException;
 import org.springframework.test.context.ActiveProfiles;
 
 @ActiveProfiles(
-    profiles = {"data-plane"},
+    profiles = {"data-plane", "mock-cwds-preview"},
     inheritProfiles = false)
 class DataPlaneDeploymentModeTest extends DeploymentModeTestBase {
 

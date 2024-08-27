@@ -38,7 +38,7 @@ import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.transaction.annotation.Transactional;
 
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
-@ActiveProfiles(profiles = "mock-sam")
+@ActiveProfiles(profiles = {"mock-sam", "mock-cwds-preview"})
 @DirtiesContext
 @SpringBootTest
 @AutoConfigureMockMvc

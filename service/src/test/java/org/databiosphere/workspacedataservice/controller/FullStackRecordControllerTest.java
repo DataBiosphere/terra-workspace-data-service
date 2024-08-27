@@ -59,7 +59,7 @@ import org.springframework.transaction.annotation.Transactional;
  * href="https://github.com/spring-projects/spring-framework/issues/17290">https://github.com/spring-projects/spring-framework/issues/17290</a>
  * As a result, this test suite is currently focused on validating expected error handling
  */
-@ActiveProfiles(profiles = "mock-sam")
+@ActiveProfiles(profiles = {"mock-sam", "mock-cwds-preview"})
 @DirtiesContext
 @SpringBootTest(
     webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT,
