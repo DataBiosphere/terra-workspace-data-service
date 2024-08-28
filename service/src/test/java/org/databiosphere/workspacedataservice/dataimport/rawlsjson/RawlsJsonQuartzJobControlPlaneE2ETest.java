@@ -19,7 +19,6 @@ import org.databiosphere.workspacedataservice.dataimport.ImportValidator;
 import org.databiosphere.workspacedataservice.generated.ImportRequestServerModel;
 import org.databiosphere.workspacedataservice.pubsub.PubSub;
 import org.databiosphere.workspacedataservice.sam.MockSamUsersApi;
-import org.databiosphere.workspacedataservice.service.CollectionService;
 import org.databiosphere.workspacedataservice.service.ImportService;
 import org.databiosphere.workspacedataservice.shared.model.WorkspaceId;
 import org.databiosphere.workspacedataservice.storage.GcsStorage;
@@ -60,7 +59,6 @@ import org.springframework.test.context.TestPropertySource;
     })
 @AutoConfigureMockMvc
 class RawlsJsonQuartzJobControlPlaneE2ETest {
-  @Autowired private CollectionService collectionService;
   @Autowired private ImportService importService;
   @Autowired private NamedParameterJdbcTemplate namedTemplate;
   @Autowired private RawlsJsonTestSupport testSupport;
@@ -82,7 +80,7 @@ class RawlsJsonQuartzJobControlPlaneE2ETest {
 
   @BeforeEach
   void setup() {
-    TestUtils.cleanAllCollections(collectionService, namedTemplate);
+    TestUtils.cleanAllWorkspaces(namedTemplate);
     collectionId = UUID.randomUUID();
     workspaceId = WorkspaceId.of(collectionId);
     // do not create a collection; we want to test virtual collections here.
@@ -94,6 +92,7 @@ class RawlsJsonQuartzJobControlPlaneE2ETest {
   @AfterEach
   void teardown() {
     deleteAllBlobs(storage);
+    TestUtils.cleanAllWorkspaces(namedTemplate);
   }
 
   @Test

@@ -352,7 +352,6 @@ public class CollectionService {
     if (tenancyProperties.getAllowVirtualCollections()) {
       return;
     }
-
     // else, check if this collection has a row in the collections table
     if (!exists(CollectionId.of(collectionId))) {
       throw new MissingObjectException(COLLECTION);
@@ -403,16 +402,6 @@ public class CollectionService {
    * @return the workspace containing the given collection.
    */
   private WorkspaceId calculateWorkspaceId(CollectionId collectionId) {
-    /*
-       get row from sys_wds.collection
-       if present, return workspaceId
-       if not present:
-         if virtual collections NOT allowed, throw error
-         if virtual collections allowed, call data table inspector
-         if inspector == RAWLS, return workspaceid=collectionid
-         if inspector == WDS or inspector errors, throw MissingObjectException(COLLECTION)
-       if getEnforceCollectionsMatchWorkspaceId, throw error if workspaceId != env var
-    */
     // look up the workspaceId for this collection in the collection table
     Optional<WdsCollection> maybeCollection = collectionRepository.findById(collectionId);
 
@@ -434,15 +423,11 @@ public class CollectionService {
     // ask if this is a known workspace
     try {
       return switch (dataTableTypeInspector.getWorkspaceDataTableType(virtualWorkspaceId)) {
-        case RAWLS -> {
-          // this is a known, Rawls-powered workspace. It's a virtual collection.
-          yield virtualWorkspaceId;
-        }
-        case WDS -> {
-          // this is a known, WDS-powered workspace. Virtual collections are not allowed for
-          // WDS-powered workspaces. This is an error.
-          throw new MissingObjectException(COLLECTION);
-        }
+        case RAWLS -> // this is a known, Rawls-powered workspace. It's a virtual collection.
+        virtualWorkspaceId;
+        case WDS -> // this is a known, WDS-powered workspace. Virtual collections are not allowed
+        // for WDS-powered workspaces. This is an error.
+        throw new MissingObjectException(COLLECTION);
       };
     } catch (RawlsException rawlsException) {
       if (HttpStatus.NOT_FOUND.equals(rawlsException.getStatusCode())) {
