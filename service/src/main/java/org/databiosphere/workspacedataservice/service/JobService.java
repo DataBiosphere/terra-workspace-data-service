@@ -44,7 +44,7 @@ public class JobService {
   public List<GenericJobServerModel> getJobsForCollection(
       CollectionId collectionId, Optional<List<String>> statuses) {
     // verify collection exists
-    collectionService.validateCollection(collectionId.id());
+    collectionService.existsOrThrow(collectionId.id());
     return jobDao.getJobsForCollection(collectionId, statuses);
   }
 

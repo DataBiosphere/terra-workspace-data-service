@@ -91,7 +91,7 @@ class JobServiceDataPlaneTest extends JobServiceTestBase {
     // collection for this job does not exist
     doThrow(new MissingObjectException("Collection"))
         .when(collectionService)
-        .validateCollection(collectionId.id());
+        .existsOrThrow(collectionId.id());
 
     // Act / assert
     Exception actual =

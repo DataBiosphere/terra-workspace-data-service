@@ -105,16 +105,16 @@ public class RecordOrchestratorService { // TODO give me a better name
     return response;
   }
 
+  // convenience to validate user inputs
   public void validateCollectionAndVersion(UUID collectionId, String version) {
     validateVersion(version);
-    collectionService.validateCollection(collectionId);
+    collectionService.existsOrThrow(collectionId);
   }
 
   @ReadTransaction
   public RecordResponse getSingleRecord(
       UUID collectionId, String version, RecordType recordType, String recordId) {
-    validateVersion(version);
-    collectionService.validateCollection(collectionId);
+    validateCollectionAndVersion(collectionId, version);
     checkRecordTypeExists(collectionId, recordType);
     Record result =
         recordDao
@@ -159,8 +159,7 @@ public class RecordOrchestratorService { // TODO give me a better name
   // TODO: enable read transaction
   public StreamingResponseBody streamAllEntities(
       UUID collectionId, String version, RecordType recordType) {
-    validateVersion(version);
-    collectionService.validateCollection(collectionId);
+    validateCollectionAndVersion(collectionId, version);
     checkRecordTypeExists(collectionId, recordType);
     List<String> headers = recordDao.getAllAttributeNames(collectionId, recordType);
 
@@ -182,8 +181,7 @@ public class RecordOrchestratorService { // TODO give me a better name
       String version,
       // SearchRequest isn't required in the controller, so it can be null here
       @Nullable SearchRequest searchRequest) {
-    validateVersion(version);
-    collectionService.validateCollection(collectionId);
+    validateCollectionAndVersion(collectionId, version);
     checkRecordTypeExists(collectionId, recordType);
     if (null == searchRequest) {
       searchRequest = new SearchRequest();
@@ -384,16 +382,14 @@ public class RecordOrchestratorService { // TODO give me a better name
   @ReadTransaction
   public RecordTypeSchema describeRecordType(
       UUID collectionId, String version, RecordType recordType) {
-    validateVersion(version);
-    collectionService.validateCollection(collectionId);
+    validateCollectionAndVersion(collectionId, version);
     checkRecordTypeExists(collectionId, recordType);
     return getSchemaDescription(collectionId, recordType);
   }
 
   @ReadTransaction
   public List<RecordTypeSchema> describeAllRecordTypes(UUID collectionId, String version) {
-    validateVersion(version);
-    collectionService.validateCollection(collectionId);
+    validateCollectionAndVersion(collectionId, version);
     List<RecordType> allRecordTypes = recordDao.getAllRecordTypes(collectionId);
     return allRecordTypes.stream()
         .map(recordType -> getSchemaDescription(collectionId, recordType))
