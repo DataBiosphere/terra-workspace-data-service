@@ -347,17 +347,6 @@ public class CollectionService {
   // ============================== helpers ==============================
 
   /**
-   * Check if this collection has a row in the collections table; throw if it doesn't
-   *
-   * @param collectionId the collection to check
-   */
-  public void existsOrThrow(UUID collectionId) {
-    if (!exists(CollectionId.of(collectionId))) {
-      throw new MissingObjectException(COLLECTION);
-    }
-  }
-
-  /**
    * Return the workspace that contains the specified collection, validating against the
    * twds.tenancy.enforce-collections-match-workspace-id configuration setting.
    *
