@@ -6,7 +6,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 import org.databiosphere.workspacedataservice.annotations.DeploymentMode.DataPlane;
-import org.databiosphere.workspacedataservice.generated.DeleteRecordsRequestServerModel;
+import org.databiosphere.workspacedataservice.generated.DeleteRecordsByWorkspaceV1RequestServerModel;
 import org.databiosphere.workspacedataservice.generated.DeleteRecordsResponseServerModel;
 import org.databiosphere.workspacedataservice.generated.RecordApi;
 import org.databiosphere.workspacedataservice.service.PermissionService;
@@ -248,8 +248,7 @@ public class RecordController implements RecordApi {
   public ResponseEntity<DeleteRecordsResponseServerModel> deleteRecordsByWorkspaceV1(
       UUID workspaceId,
       String collectionName,
-      DeleteRecordsRequestServerModel deleteRecordsRequestServerModel) {
-
+      DeleteRecordsByWorkspaceV1RequestServerModel deleteRecordsByWorkspaceV1RequestServerModel) {
     DeleteRecordsResponseServerModel response = new DeleteRecordsResponseServerModel();
     response.setDeletedRecords(List.of("dummyRecord1", "dummyRecord2"));
     return new ResponseEntity<>(response, HttpStatus.OK);
