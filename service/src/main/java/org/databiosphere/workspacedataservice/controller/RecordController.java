@@ -6,6 +6,9 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 import org.databiosphere.workspacedataservice.annotations.DeploymentMode.DataPlane;
+import org.databiosphere.workspacedataservice.generated.DeleteRecordsRequestServerModel;
+import org.databiosphere.workspacedataservice.generated.DeleteRecordsResponseServerModel;
+import org.databiosphere.workspacedataservice.generated.RecordApi;
 import org.databiosphere.workspacedataservice.service.PermissionService;
 import org.databiosphere.workspacedataservice.service.RecordOrchestratorService;
 import org.databiosphere.workspacedataservice.service.model.AttributeSchema;
@@ -39,7 +42,7 @@ import org.springframework.web.servlet.mvc.method.annotation.StreamingResponseBo
 
 @DataPlane
 @RestController
-public class RecordController {
+public class RecordController implements RecordApi {
 
   private final RecordOrchestratorService recordOrchestratorService;
   private final PermissionService permissionService;
@@ -239,5 +242,16 @@ public class RecordController {
     int recordsModified =
         recordOrchestratorService.streamingWrite(instanceId, version, recordType, primaryKey, is);
     return new ResponseEntity<>(new BatchResponse(recordsModified, "Huzzah"), HttpStatus.OK);
+  }
+
+  @Override
+  public ResponseEntity<DeleteRecordsResponseServerModel> deleteRecordsByWorkspaceV1(
+      UUID workspaceId,
+      String collectionName,
+      DeleteRecordsRequestServerModel deleteRecordsRequestServerModel) {
+
+    DeleteRecordsResponseServerModel response = new DeleteRecordsResponseServerModel();
+    response.setDeletedRecords(List.of("dummyRecord1", "dummyRecord2"));
+    return new ResponseEntity<>(response, HttpStatus.OK);
   }
 }

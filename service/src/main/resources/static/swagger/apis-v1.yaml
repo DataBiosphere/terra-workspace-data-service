@@ -254,26 +254,58 @@ paths:
   ##############################
   # Records APIs
   ##############################
-  /records/v1/{workspaceId}/delete:
+  /records/v1/{workspaceId}/{collectionName}/delete:
     post:
-      summary: Submit a request for record deletion in this workspace.
-      operationId: deleteRecordV1
+      summary: Bulk delete records
+      operationId: deleteRecordsByWorkspaceV1
       description: |
-        deletes records by ID. TODO finish this description!
+        Deletes records by record ID, using workspace ID and collection name.
+        To delete by collection ID instead, see deleteRecordsByCollectionV1
       tags:
         - Record
       parameters:
         - $ref: '#/components/parameters/workspaceIdPathParam'
+        - $ref: '#/components/parameters/collectionNamePathParam'
       requestBody:
         description: Record deletion specification
         required: true
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/DeleteRecords'
+              $ref: '#/components/schemas/DeleteRecordsRequest'
       responses:
-        202:
+        200:
           description: Deletion request accepted
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DeleteRecordsResponse'
+
+  /records/v1/{collectionId}/delete:
+    post:
+      summary: Bulk delete records
+      operationId: deleteRecordsByCollectionV1
+      description: |
+        Deletes records by record ID, using collection ID.
+        To delete by workspace ID and collection name instead, see deleteRecordsByWorkspaceV1
+      tags:
+        - Record
+      parameters:
+        - $ref: '#/components/parameters/collectionIdPathParam'
+      requestBody:
+        description: Record deletion specification
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DeleteRecordsRequest'
+      responses:
+        200:
+          description: Deletion request accepted
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DeleteRecordsResponse'
 
 
   ##############################
@@ -329,6 +361,14 @@ components:
       schema:
         type: string
         format: uuid
+    collectionNamePathParam:
+      name: collectionName
+      in: path
+      description: Collection name
+      required: true
+      schema:
+        type: string
+        default: default
 
   schemas:
     Capabilities:
@@ -434,12 +474,20 @@ components:
       required:
         - sourceWorkspaceId
       additionalProperties: false
-    DeleteRecords:
+    DeleteRecordsRequest:
       type: object
-      description: a required deletion specification
       oneOf:
         - $ref: '#/components/schemas/IncludedRecordIDs'
         - $ref: '#/components/schemas/ExcludedRecordIDs'
+    DeleteRecordsResponse:
+      type: object
+      description: a required deletion specification
+      properties:
+        deletedRecords:
+          type: array
+          description: an array of record IDs that have been deleted
+          items:
+            type: string
       additionalProperties: false
     IncludedRecordIDs:
       type: object
@@ -450,7 +498,6 @@ components:
           description: an array of record IDs that should be deleted
           items:
             type: string
-            # should this be UUID format? format: uuid
     ExcludedRecordIDs:
       type: object
       description: excluded record IDs array
@@ -460,5 +507,4 @@ components:
           description: delete all records *except* those specified by these record IDs
           items:
             type: string
-            # should this be UUID format? format: uuid
 
