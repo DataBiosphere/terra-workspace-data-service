@@ -58,7 +58,7 @@ public class CollectionController implements CollectionApi {
    */
   @Override
   public ResponseEntity<Void> deleteCollectionV1(UUID workspaceId, UUID collectionId) {
-    permissionService.requireWritePermission(CollectionId.of(collectionId));
+    permissionService.requireWritePermission(WorkspaceId.of(workspaceId));
     collectionService.delete(WorkspaceId.of(workspaceId), CollectionId.of(collectionId));
     return new ResponseEntity<>(HttpStatus.NO_CONTENT);
   }
@@ -105,7 +105,7 @@ public class CollectionController implements CollectionApi {
       UUID workspaceId,
       UUID collectionId,
       CollectionRequestServerModel collectionRequestServerModel) {
-    permissionService.requireWritePermission(CollectionId.of(collectionId));
+    permissionService.requireWritePermission(WorkspaceId.of(workspaceId));
     CollectionServerModel coll =
         collectionService.update(
             WorkspaceId.of(workspaceId),
