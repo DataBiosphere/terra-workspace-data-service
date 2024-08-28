@@ -184,10 +184,11 @@ class CollectionServiceGetWorkspaceIdTest {
 
     workspaceRepository.save(new WorkspaceRecord(workspaceId, WDS, true));
 
+    CollectionId virtualCollectionId = CollectionId.of(workspaceId.id());
     MissingObjectException actual =
         assertThrows(
             MissingObjectException.class,
-            () -> collectionService.getWorkspaceId(CollectionId.of(workspaceId.id())));
+            () -> collectionService.getWorkspaceId(virtualCollectionId));
 
     // Assert
     assertThat(actual).hasMessageContaining("Collection does not exist");
@@ -207,10 +208,11 @@ class CollectionServiceGetWorkspaceIdTest {
 
     // note we do not insert a workspace here
 
+    CollectionId virtualCollectionId = CollectionId.of(workspaceId.id());
     MissingObjectException actual =
         assertThrows(
             MissingObjectException.class,
-            () -> collectionService.getWorkspaceId(CollectionId.of(workspaceId.id())));
+            () -> collectionService.getWorkspaceId(virtualCollectionId));
 
     // Assert
     assertThat(actual).hasMessageContaining("Collection does not exist");
@@ -231,10 +233,10 @@ class CollectionServiceGetWorkspaceIdTest {
 
     // note we do not insert a workspace here
 
+    CollectionId virtualCollectionId = CollectionId.of(workspaceId.id());
     CollectionException actual =
         assertThrows(
-            CollectionException.class,
-            () -> collectionService.getWorkspaceId(CollectionId.of(workspaceId.id())));
+            CollectionException.class, () -> collectionService.getWorkspaceId(virtualCollectionId));
 
     // Assert
     assertThat(actual).hasMessage("Unexpected error validating collection");

@@ -1,7 +1,6 @@
 package org.databiosphere.workspacedataservice.service;
 
 import static org.databiosphere.workspacedataservice.dao.SqlUtils.quote;
-import static org.databiosphere.workspacedataservice.workspace.WorkspaceDataTableType.RAWLS;
 
 import bio.terra.common.db.WriteTransaction;
 import java.util.List;
