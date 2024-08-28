@@ -1,6 +1,7 @@
 package org.databiosphere.workspacedataservice.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.databiosphere.workspacedataservice.workspace.WorkspaceDataTableType.RAWLS;
 import static org.databiosphere.workspacedataservice.workspace.WorkspaceDataTableType.WDS;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -13,6 +14,8 @@ import org.databiosphere.workspacedataservice.config.TenancyProperties;
 import org.databiosphere.workspacedataservice.config.TwdsProperties;
 import org.databiosphere.workspacedataservice.dao.WorkspaceRepository;
 import org.databiosphere.workspacedataservice.dataimport.ImportValidator;
+import org.databiosphere.workspacedataservice.rawls.RawlsClient;
+import org.databiosphere.workspacedataservice.rawls.RawlsException;
 import org.databiosphere.workspacedataservice.service.model.exception.CollectionException;
 import org.databiosphere.workspacedataservice.service.model.exception.MissingObjectException;
 import org.databiosphere.workspacedataservice.shared.model.CollectionId;
@@ -25,6 +28,7 @@ import org.junit.jupiter.api.TestInstance;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.http.HttpStatus;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.ActiveProfiles;
@@ -49,6 +53,7 @@ class CollectionServiceGetWorkspaceIdTest {
   @Autowired private NamedParameterJdbcTemplate namedTemplate;
   @Autowired private WorkspaceRepository workspaceRepository;
 
+  @MockBean RawlsClient rawlsClient;
   @MockBean TenancyProperties tenancyProperties;
   @MockBean TwdsProperties twdsProperties;
 
@@ -151,10 +156,26 @@ class CollectionServiceGetWorkspaceIdTest {
     assertEquals(workspaceId, collectionService.getWorkspaceId(collectionId));
   }
 
-  // multi-tenant; workspace exists but collection does not; since virtual collections are allowed,
-  // returns workspaceId=collectionId
+  // multi-tenant; workspace exists but collection does not; workspace is RAWLS.
+  // since virtual collections are allowed, returns workspaceId=collectionId
   @Test
-  void multiTenantVirtual() {
+  void multiTenantVirtualRawls() {
+    WorkspaceId workspaceId = WorkspaceId.of(UUID.randomUUID());
+
+    when(twdsProperties.workspaceId()).thenReturn(null);
+    when(tenancyProperties.getAllowVirtualCollections()).thenReturn(true);
+    when(tenancyProperties.getEnforceCollectionsMatchWorkspaceId()).thenReturn(false);
+
+    workspaceRepository.save(new WorkspaceRecord(workspaceId, RAWLS, true));
+
+    // request the collection whose id matches the known workspace
+    assertEquals(workspaceId, collectionService.getWorkspaceId(CollectionId.of(workspaceId.id())));
+  }
+
+  // multi-tenant; workspace exists but collection does not; workspace is WDS.
+  // even though virtual collections are allowed, throws error because workspace is WDS-powered.
+  @Test
+  void multiTenantVirtualWds() {
     WorkspaceId workspaceId = WorkspaceId.of(UUID.randomUUID());
 
     when(twdsProperties.workspaceId()).thenReturn(null);
@@ -163,8 +184,13 @@ class CollectionServiceGetWorkspaceIdTest {
 
     workspaceRepository.save(new WorkspaceRecord(workspaceId, WDS, true));
 
-    // request the collection whose id matches the known workspace
-    assertEquals(workspaceId, collectionService.getWorkspaceId(CollectionId.of(workspaceId.id())));
+    MissingObjectException actual =
+        assertThrows(
+            MissingObjectException.class,
+            () -> collectionService.getWorkspaceId(CollectionId.of(workspaceId.id())));
+
+    // Assert
+    assertThat(actual).hasMessageContaining("Collection does not exist");
   }
 
   // multi-tenant; workspace virtual collections allowed; workspace does not exist
@@ -176,11 +202,41 @@ class CollectionServiceGetWorkspaceIdTest {
     when(tenancyProperties.getAllowVirtualCollections()).thenReturn(true);
     when(tenancyProperties.getEnforceCollectionsMatchWorkspaceId()).thenReturn(false);
 
+    when(rawlsClient.getWorkspaceDetails(workspaceId.id()))
+        .thenThrow(new RawlsException(HttpStatus.NOT_FOUND, "unit test intentional error"));
+
     // note we do not insert a workspace here
 
-    // request the collection whose id matches the known workspace
-    // this passes, even though the workspace doesn't exist; workspace validation happens at a
-    // higher layer
-    assertEquals(workspaceId, collectionService.getWorkspaceId(CollectionId.of(workspaceId.id())));
+    MissingObjectException actual =
+        assertThrows(
+            MissingObjectException.class,
+            () -> collectionService.getWorkspaceId(CollectionId.of(workspaceId.id())));
+
+    // Assert
+    assertThat(actual).hasMessageContaining("Collection does not exist");
+  }
+
+  // multi-tenant; workspace virtual collections allowed; could not contact Rawls to determine
+  // the type of workspace.
+  @Test
+  void multiTenantVirtualErrorFromWorkspace() {
+    WorkspaceId workspaceId = WorkspaceId.of(UUID.randomUUID());
+
+    when(twdsProperties.workspaceId()).thenReturn(null);
+    when(tenancyProperties.getAllowVirtualCollections()).thenReturn(true);
+    when(tenancyProperties.getEnforceCollectionsMatchWorkspaceId()).thenReturn(false);
+
+    when(rawlsClient.getWorkspaceDetails(workspaceId.id()))
+        .thenThrow(new RawlsException(HttpStatus.BAD_GATEWAY, "failure contacting Rawls"));
+
+    // note we do not insert a workspace here
+
+    CollectionException actual =
+        assertThrows(
+            CollectionException.class,
+            () -> collectionService.getWorkspaceId(CollectionId.of(workspaceId.id())));
+
+    // Assert
+    assertThat(actual).hasMessage("Unexpected error validating collection");
   }
 }
