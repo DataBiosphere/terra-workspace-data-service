@@ -93,28 +93,6 @@ public class PermissionService {
   }
 
   /**
-   * Check read permission on the single-tenant workspace id set in the environment.
-   *
-   * @deprecated Use {@link #requireReadPermission(WorkspaceId)} or {@link
-   *     #requireReadPermission(CollectionId)} instead.
-   */
-  @Deprecated(since = "v0.14.0")
-  public void requireReadPermissionSingleTenant() {
-    requireReadPermission(twdsProperties.workspaceId());
-  }
-
-  /**
-   * Check write permission on the single-tenant workspace id set in the environment.
-   *
-   * @deprecated Use {@link #requireWritePermission(WorkspaceId)} or {@link
-   *     #requireWritePermission(CollectionId)} instead.
-   */
-  @Deprecated(since = "v0.14.0")
-  public void requireWritePermissionSingleTenant() {
-    requireWritePermission(twdsProperties.workspaceId());
-  }
-
-  /**
    * Check if the user has write permission on the workspace; return the result
    *
    * @param workspaceId the workspace on which to check permissions
