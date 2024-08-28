@@ -272,7 +272,9 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/DeleteRecordsRequest'
+              oneOf:
+                - $ref: '#/components/schemas/DeleteRecordsIncludeRequest'
+                - $ref: '#/components/schemas/DeleteRecordsExcludeRequest'
       responses:
         200:
           description: Deletion request accepted
@@ -298,7 +300,9 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/DeleteRecordsRequest'
+              oneOf:
+                - $ref: '#/components/schemas/DeleteRecordsIncludeRequest'
+                - $ref: '#/components/schemas/DeleteRecordsExcludeRequest'
       responses:
         200:
           description: Deletion request accepted
@@ -474,11 +478,24 @@ components:
       required:
         - sourceWorkspaceId
       additionalProperties: false
-    DeleteRecordsRequest:
+    DeleteRecordsIncludeRequest:
       type: object
-      oneOf:
-        - $ref: '#/components/schemas/IncludedRecordIDs'
-        - $ref: '#/components/schemas/ExcludedRecordIDs'
+      description: included record IDs array
+      properties:
+        include: # Is this a clear enough term for this property?
+          type: array
+          description: an array of record IDs that should be deleted
+          items:
+            type: string
+    DeleteRecordsExcludeRequest:
+      type: object
+      description: excluded record IDs array
+      properties:
+        exclude:  # Is this a clear enough term for this property?
+          type: array
+          description: delete all records *except* those specified by these record IDs
+          items:
+            type: string
     DeleteRecordsResponse:
       type: object
       description: a required deletion specification
@@ -489,22 +506,5 @@ components:
           items:
             type: string
       additionalProperties: false
-    IncludedRecordIDs:
-      type: object
-      description: included record IDs array
-      properties:
-        include: # Is this a clear enough term for this property?
-          type: array
-          description: an array of record IDs that should be deleted
-          items:
-            type: string
-    ExcludedRecordIDs:
-      type: object
-      description: excluded record IDs array
-      properties:
-        exclude:  # Is this a clear enough term for this property?
-          type: array
-          description: delete all records *except* those specified by these record IDs
-          items:
-            type: string
+
 
