@@ -16,7 +16,6 @@ import java.time.ZoneId;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
-import org.databiosphere.workspacedataservice.dao.CollectionRepository;
 import org.databiosphere.workspacedataservice.dao.JobDao;
 import org.databiosphere.workspacedataservice.generated.GenericJobServerModel;
 import org.databiosphere.workspacedataservice.pubsub.JobStatusUpdate;
@@ -42,11 +41,10 @@ import org.springframework.test.context.TestPropertySource;
       // Rawls url must be valid, else context initialization (Spring startup) will fail
       "rawlsUrl=https://localhost/"
     })
-class JobServiceControlPlaneTest extends JobServiceTestBase {
+class JobServiceTest extends JobServiceTestBase {
 
   @Autowired JobService jobService;
   @MockBean JobDao jobDao;
-  @MockBean CollectionRepository collectionRepository;
 
   /** requested job does not exist */
   @Test
@@ -64,7 +62,7 @@ class JobServiceControlPlaneTest extends JobServiceTestBase {
     assertThat(actual.getMessage()).startsWith("Job");
   }
 
-  /** requested job exists; its collection is virtual */
+  /** requested job exists */
   @Test
   void virtualCollectionWithPermission() {
     // Arrange
@@ -73,8 +71,6 @@ class JobServiceControlPlaneTest extends JobServiceTestBase {
     GenericJobServerModel expectedJob = makeJob(jobId, collectionId);
     // job exists
     when(jobDao.getJob(jobId)).thenReturn(expectedJob);
-    // collection for this job does not exist
-    when(collectionRepository.findById(collectionId)).thenReturn(Optional.empty());
 
     // Act
     GenericJobServerModel actual = jobService.getJob(jobId);
@@ -89,11 +85,9 @@ class JobServiceControlPlaneTest extends JobServiceTestBase {
 
   /** Collection is virtual */
   @Test
-  void listJobsVirtualCollection() {
+  void listJobs() {
     // Arrange
     CollectionId collectionId = CollectionId.of(randomUUID());
-    // collection for this job does not exist
-    when(collectionRepository.findById(collectionId)).thenReturn(Optional.empty());
     // return some jobs when listing this collection
     when(jobDao.getJobsForCollection(eq(collectionId), any()))
         .thenReturn(makeJobList(collectionId, 2));
