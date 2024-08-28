@@ -13,12 +13,18 @@ import java.net.URI;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import org.databiosphere.workspacedataservice.TestUtils;
+import org.databiosphere.workspacedataservice.dao.WorkspaceRepository;
 import org.databiosphere.workspacedataservice.dataimport.ImportValidator;
 import org.databiosphere.workspacedataservice.generated.ImportRequestServerModel;
 import org.databiosphere.workspacedataservice.pubsub.PubSub;
 import org.databiosphere.workspacedataservice.sam.MockSamUsersApi;
+import org.databiosphere.workspacedataservice.service.CollectionService;
 import org.databiosphere.workspacedataservice.service.ImportService;
+import org.databiosphere.workspacedataservice.shared.model.WorkspaceId;
 import org.databiosphere.workspacedataservice.storage.GcsStorage;
+import org.databiosphere.workspacedataservice.workspace.WorkspaceDataTableType;
+import org.databiosphere.workspacedataservice.workspace.WorkspaceRecord;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -32,6 +38,7 @@ import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMock
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.boot.test.mock.mockito.SpyBean;
+import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.TestPropertySource;
@@ -53,9 +60,13 @@ import org.springframework.test.context.TestPropertySource;
     })
 @AutoConfigureMockMvc
 class RawlsJsonQuartzJobControlPlaneE2ETest {
-  @Autowired private RawlsJsonTestSupport testSupport;
+  @Autowired private CollectionService collectionService;
   @Autowired private ImportService importService;
+  @Autowired private NamedParameterJdbcTemplate namedTemplate;
+  @Autowired private RawlsJsonTestSupport testSupport;
+  @Autowired private WorkspaceRepository workspaceRepository;
   @SpyBean private PubSub pubSub;
+
   // Mock ImportValidator to allow importing test data from a file:// URL.
   @MockBean ImportValidator importValidator;
 
@@ -67,10 +78,17 @@ class RawlsJsonQuartzJobControlPlaneE2ETest {
   @Captor private ArgumentCaptor<Map<String, String>> pubSubMessageCaptor;
 
   private UUID collectionId;
+  private WorkspaceId workspaceId;
 
   @BeforeEach
   void setup() {
+    TestUtils.cleanAllCollections(collectionService, namedTemplate);
     collectionId = UUID.randomUUID();
+    workspaceId = WorkspaceId.of(collectionId);
+    // do not create a collection; we want to test virtual collections here.
+    // however, create a record of the corresponding workspace indicating the workspace is
+    // Rawls-powered, so we know this workspace is valid for virtual collections.
+    workspaceRepository.save(new WorkspaceRecord(workspaceId, WorkspaceDataTableType.RAWLS, true));
   }
 
   @AfterEach
@@ -102,7 +120,7 @@ class RawlsJsonQuartzJobControlPlaneE2ETest {
 
   private ImmutableMap<String, String> expectedPubSubMessageFor(UUID jobId, boolean isUpsert) {
     return new ImmutableMap.Builder<String, String>()
-        .put("workspaceId", collectionId.toString())
+        .put("workspaceId", workspaceId.toString())
         .put("userEmail", MockSamUsersApi.MOCK_USER_EMAIL)
         .put("jobId", jobId.toString())
         .put("upsertFile", storage.getBucketName() + "/" + rawlsJsonBlobName(jobId))

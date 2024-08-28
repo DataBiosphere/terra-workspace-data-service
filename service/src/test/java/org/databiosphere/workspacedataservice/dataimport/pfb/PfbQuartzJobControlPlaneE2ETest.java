@@ -60,6 +60,7 @@ import org.databiosphere.workspacedataservice.shared.model.BearerToken;
 import org.databiosphere.workspacedataservice.shared.model.RecordType;
 import org.databiosphere.workspacedataservice.shared.model.WorkspaceId;
 import org.databiosphere.workspacedataservice.storage.GcsStorage;
+import org.databiosphere.workspacedataservice.workspace.DataTableTypeInspector;
 import org.databiosphere.workspacedataservice.workspace.WorkspaceDataTableType;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -116,6 +117,7 @@ class PfbQuartzJobControlPlaneE2ETest {
   @MockBean ImportValidator importValidator;
   @MockBean RawlsClient rawlsClient;
   @MockBean WorkspaceService workspaceService;
+  @MockBean DataTableTypeInspector dataTableTypeInspector;
 
   /** ArgumentCaptor for the message passed to {@link PubSub#publishSync(Map)}. */
   @Captor private ArgumentCaptor<Map<String, String>> pubSubMessageCaptor;
@@ -143,6 +145,11 @@ class PfbQuartzJobControlPlaneE2ETest {
   @BeforeEach
   void setup() {
     collectionId = UUID.randomUUID();
+
+    // do not create a collection; we want to test virtual collections here.
+    // mock out the DataTableTypeInspector to show that this workspace is Rawls-powered.
+    when(dataTableTypeInspector.getWorkspaceDataTableType(WorkspaceId.of(collectionId)))
+        .thenReturn(WorkspaceDataTableType.RAWLS);
 
     // stub out rawls to report no snapshots already linked to this workspace
     when(rawlsClient.enumerateDataRepoSnapshotReferences(any(), anyInt(), anyInt()))
