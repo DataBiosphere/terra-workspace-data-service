@@ -64,7 +64,6 @@ public class RecordOrchestratorService { // TODO give me a better name
   private final RecordSinkFactory recordSinkFactory;
   private final BatchWriteService batchWriteService;
   private final RecordService recordService;
-  private final CollectionService collectionService;
   private final ActivityLogger activityLogger;
   private final TsvSupport tsvSupport;
   private final ObservationRegistry observations;
@@ -75,7 +74,6 @@ public class RecordOrchestratorService { // TODO give me a better name
       RecordSinkFactory recordSinkFactory,
       BatchWriteService batchWriteService,
       RecordService recordService,
-      CollectionService collectionService,
       ActivityLogger activityLogger,
       TsvSupport tsvSupport,
       ObservationRegistry observations) {
@@ -84,7 +82,6 @@ public class RecordOrchestratorService { // TODO give me a better name
     this.recordSinkFactory = recordSinkFactory;
     this.batchWriteService = batchWriteService;
     this.recordService = recordService;
-    this.collectionService = collectionService;
     this.activityLogger = activityLogger;
     this.tsvSupport = tsvSupport;
     this.observations = observations;
