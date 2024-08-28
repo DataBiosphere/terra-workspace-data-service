@@ -5,11 +5,12 @@ import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.mockito.Mockito.when;
 
 import java.net.URI;
-import java.util.Optional;
 import java.util.UUID;
-import org.databiosphere.workspacedataservice.dao.CollectionRepository;
 import org.databiosphere.workspacedataservice.generated.ImportRequestServerModel;
 import org.databiosphere.workspacedataservice.shared.model.CollectionId;
+import org.databiosphere.workspacedataservice.shared.model.WorkspaceId;
+import org.databiosphere.workspacedataservice.workspace.DataTableTypeInspector;
+import org.databiosphere.workspacedataservice.workspace.WorkspaceDataTableType;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -37,7 +38,8 @@ import org.springframework.test.context.TestPropertySource;
 class ImportServiceControlPlaneTest {
 
   @Autowired ImportService importService;
-  @MockBean CollectionRepository collectionRepository;
+
+  @MockBean DataTableTypeInspector dataTableTypeInspector;
 
   private final URI importUri =
       URI.create("https://teststorageaccount.blob.core.windows.net/testcontainer/file");
@@ -49,8 +51,10 @@ class ImportServiceControlPlaneTest {
   void virtualCollection() {
     // ARRANGE
     CollectionId collectionId = CollectionId.of(UUID.randomUUID());
-    // collection repository says the collection does not exist
-    when(collectionRepository.findById(collectionId)).thenReturn(Optional.empty());
+    // do not create a collection; we want to test virtual collections here.
+    // mock out the DataTableTypeInspector to show that this workspace is Rawls-powered.
+    when(dataTableTypeInspector.getWorkspaceDataTableType(WorkspaceId.of(collectionId.id())))
+        .thenReturn(WorkspaceDataTableType.RAWLS);
 
     // ACT/ASSERT
     // extract the UUID here so the lambda below has only one invocation possibly throwing a runtime

@@ -12,11 +12,14 @@ import java.net.URI;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import org.databiosphere.workspacedataservice.TestUtils;
 import org.databiosphere.workspacedataservice.common.TestBase;
 import org.databiosphere.workspacedataservice.dao.JobDao;
 import org.databiosphere.workspacedataservice.pubsub.PubSub;
 import org.databiosphere.workspacedataservice.sam.MockSamUsersApi;
+import org.databiosphere.workspacedataservice.service.CollectionService;
 import org.databiosphere.workspacedataservice.shared.model.CollectionId;
+import org.databiosphere.workspacedataservice.shared.model.WorkspaceId;
 import org.databiosphere.workspacedataservice.storage.GcsStorage;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -31,6 +34,7 @@ import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.boot.test.mock.mockito.SpyBean;
+import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.TestPropertySource;
@@ -47,6 +51,8 @@ import org.springframework.test.context.TestPropertySource;
       "rawlsUrl=https://localhost/",
     })
 class RawlsJsonQuartzJobTest extends TestBase {
+  @Autowired private CollectionService collectionService;
+  @Autowired private NamedParameterJdbcTemplate namedTemplate;
   @Autowired private RawlsJsonTestSupport testSupport;
   @SpyBean private PubSub pubSub;
 
@@ -61,15 +67,19 @@ class RawlsJsonQuartzJobTest extends TestBase {
   @Captor private ArgumentCaptor<Map<String, String>> pubSubMessageCaptor;
 
   private CollectionId collectionId;
+  private WorkspaceId workspaceId;
 
   @BeforeEach
   void setup() {
-    collectionId = CollectionId.of(UUID.randomUUID());
+    TestUtils.cleanAllCollections(collectionService, namedTemplate);
+    workspaceId = WorkspaceId.of(UUID.randomUUID());
+    collectionId = CollectionId.of(collectionService.save(workspaceId, "name", "desc").getId());
   }
 
   @AfterEach
   void teardown() {
     deleteAllBlobs(storage);
+    TestUtils.cleanAllCollections(collectionService, namedTemplate);
   }
 
   @ParameterizedTest(name = "isUpsert should be passed through to pubsub ({0})")
@@ -91,7 +101,7 @@ class RawlsJsonQuartzJobTest extends TestBase {
 
   private ImmutableMap<String, String> expectedPubSubMessageFor(UUID jobId, boolean isUpsert) {
     return new ImmutableMap.Builder<String, String>()
-        .put("workspaceId", collectionId.toString())
+        .put("workspaceId", workspaceId.toString())
         .put("userEmail", MockSamUsersApi.MOCK_USER_EMAIL)
         .put("jobId", jobId.toString())
         .put("upsertFile", storage.getBucketName() + "/" + rawlsJsonBlobName(jobId))
@@ -108,7 +118,11 @@ class RawlsJsonQuartzJobTest extends TestBase {
   private void assertSingleBlobWritten(String expectedBlobName) {
     List<Blob> blobsWritten = listBlobs(storage);
     assertThat(blobsWritten).hasSize(1);
-    assertThat(blobsWritten.get(0).getName()).isEqualTo(expectedBlobName);
+    assertThat(blobsWritten.get(0).getName())
+        .withFailMessage(
+            "Expected blob name is incorrect; expected %s got %s",
+            expectedBlobName, blobsWritten.get(0).getName())
+        .isEqualTo(expectedBlobName);
   }
 
   private List<Blob> listBlobs(GcsStorage storage) {
