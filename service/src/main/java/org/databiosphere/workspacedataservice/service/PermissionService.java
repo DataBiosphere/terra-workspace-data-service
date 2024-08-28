@@ -1,6 +1,5 @@
 package org.databiosphere.workspacedataservice.service;
 
-import org.databiosphere.workspacedataservice.config.TwdsProperties;
 import org.databiosphere.workspacedataservice.sam.SamAuthorizationDao;
 import org.databiosphere.workspacedataservice.sam.SamAuthorizationDaoFactory;
 import org.databiosphere.workspacedataservice.service.model.exception.AuthenticationMaskableException;
@@ -15,15 +14,11 @@ public class PermissionService {
 
   private final SamAuthorizationDaoFactory samAuthorizationDaoFactory;
   private final CollectionService collectionService;
-  private final TwdsProperties twdsProperties;
 
   public PermissionService(
-      SamAuthorizationDaoFactory samAuthorizationDaoFactory,
-      CollectionService collectionService,
-      TwdsProperties twdsProperties) {
+      SamAuthorizationDaoFactory samAuthorizationDaoFactory, CollectionService collectionService) {
     this.samAuthorizationDaoFactory = samAuthorizationDaoFactory;
     this.collectionService = collectionService;
-    this.twdsProperties = twdsProperties;
   }
 
   /**
