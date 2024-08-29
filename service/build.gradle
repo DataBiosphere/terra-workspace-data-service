@@ -10,6 +10,7 @@ plugins {
     id 'jacoco'
     id "au.com.dius.pact" version "4.6.13"
     id 'jvm-test-suite'
+    id 'antlr'
 }
 
 springBoot {
@@ -42,6 +43,8 @@ ext {
 }
 
 dependencies {
+    antlr "org.antlr:antlr4:4.13.2" // use ANTLR version 4
+
     // logging
     implementation 'org.zalando:logbook-spring-boot-starter:3.9.0'
 
@@ -198,11 +201,11 @@ spotless {
 }
 spotlessJavaCheck.onlyIf({ spotlessEnabled })
 
-// multiple gradle tasks need generateApiInterfaces to run before they do
-spotlessJava.dependsOn(generateApiInterfaces)
-compileJava.dependsOn(generateApiInterfaces)
+// multiple gradle tasks need generateApiInterfaces and generateGrammarSource to run before they do
+generateGrammarSource.dependsOn(generateApiInterfaces)
+spotlessJava.dependsOn(generateGrammarSource)
 tasks.withType(ProcessResources).configureEach {
-    it.dependsOn(generateApiInterfaces)
+    it.dependsOn(generateGrammarSource)
 }
 
 // Run spotless check when running in github actions, otherwise run spotless apply.
