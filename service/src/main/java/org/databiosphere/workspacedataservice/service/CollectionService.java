@@ -346,17 +346,6 @@ public class CollectionService {
 
   // ============================== helpers ==============================
 
-  public void validateCollection(UUID collectionId) {
-    // if this deployment allows virtual collections, there is nothing to validate
-    if (tenancyProperties.getAllowVirtualCollections()) {
-      return;
-    }
-    // else, check if this collection has a row in the collections table
-    if (!exists(CollectionId.of(collectionId))) {
-      throw new MissingObjectException(COLLECTION);
-    }
-  }
-
   /**
    * Return the workspace that contains the specified collection, validating against the
    * twds.tenancy.enforce-collections-match-workspace-id configuration setting.

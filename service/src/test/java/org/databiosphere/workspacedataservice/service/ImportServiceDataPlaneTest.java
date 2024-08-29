@@ -84,7 +84,7 @@ class ImportServiceDataPlaneTest extends TestBase {
     // collection dao says the collection does not exist
     doThrow(new MissingObjectException("Collection"))
         .when(collectionService)
-        .validateCollection(collectionId.id());
+        .getWorkspaceId(collectionId);
 
     // ACT/ASSERT
     // extract the UUID here so the lambda below has only one invocation possibly throwing a runtime
