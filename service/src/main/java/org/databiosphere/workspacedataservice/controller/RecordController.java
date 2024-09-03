@@ -248,7 +248,6 @@ public class RecordController implements RecordApi {
   private List<UUID> deleteRecords(UUID workspaceId) {
     permissionService.requireWritePermission(WorkspaceId.of(workspaceId));
 
-
     return List.of(UUID.fromString("00000000-0000-0000-0000-000000000000"));
   }
 
