@@ -29,7 +29,7 @@ import org.databiosphere.workspacedata.model.SearchFilter;
 import org.databiosphere.workspacedata.model.SearchRequest;
 import org.databiosphere.workspacedata.model.StatusResponse;
 import org.databiosphere.workspacedata.model.TsvUploadResponse;
-import org.databiosphere.workspacedataservice.common.TestBase;
+import org.databiosphere.workspacedataservice.common.DataPlaneTestBase;
 import org.databiosphere.workspacedataservice.config.TwdsProperties;
 import org.databiosphere.workspacedataservice.service.CollectionService;
 import org.junit.jupiter.api.AfterEach;
@@ -49,7 +49,7 @@ import org.springframework.test.context.ActiveProfiles;
 @ActiveProfiles(profiles = "mock-sam")
 @DirtiesContext
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
-class GeneratedClientTests extends TestBase {
+class GeneratedClientTests extends DataPlaneTestBase {
 
   private ApiClient apiClient;
   @LocalServerPort int port;

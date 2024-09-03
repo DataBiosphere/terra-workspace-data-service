@@ -11,7 +11,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Stream;
-import org.databiosphere.workspacedataservice.common.TestBase;
+import org.databiosphere.workspacedataservice.common.DataPlaneTestBase;
 import org.databiosphere.workspacedataservice.config.TwdsProperties;
 import org.databiosphere.workspacedataservice.dao.RecordDao;
 import org.databiosphere.workspacedataservice.generated.CollectionRequestServerModel;
@@ -48,7 +48,7 @@ import org.springframework.test.context.ActiveProfiles;
 @ActiveProfiles(profiles = {"mock-sam"})
 @SpringBootTest
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
-class RecordOrchestratorServiceFilterQueryTest extends TestBase {
+class RecordOrchestratorServiceFilterQueryTest extends DataPlaneTestBase {
 
   @Autowired private CollectionService collectionService;
   @Autowired private RecordOrchestratorService recordOrchestratorService;

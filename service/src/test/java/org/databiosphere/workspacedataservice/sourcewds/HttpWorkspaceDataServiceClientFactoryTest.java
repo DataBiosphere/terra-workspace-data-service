@@ -7,13 +7,13 @@ import java.util.Set;
 import org.databiosphere.workspacedata.client.ApiClient;
 import org.databiosphere.workspacedata.client.auth.Authentication;
 import org.databiosphere.workspacedata.client.auth.HttpBearerAuth;
-import org.databiosphere.workspacedataservice.common.TestBase;
+import org.databiosphere.workspacedataservice.common.DataPlaneTestBase;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 
 @SpringBootTest
-class HttpWorkspaceDataServiceClientFactoryTest extends TestBase {
+class HttpWorkspaceDataServiceClientFactoryTest extends DataPlaneTestBase {
 
   @Autowired private WorkspaceDataServiceClientFactory workspaceDataServiceClientFactory;
 
