@@ -26,6 +26,7 @@ import org.databiosphere.workspacedataservice.shared.model.RecordRequest;
 import org.databiosphere.workspacedataservice.shared.model.RecordType;
 import org.databiosphere.workspacedataservice.workspacemanager.WorkspaceManagerClientFactory;
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mockito;
@@ -61,6 +62,7 @@ class LogStatementTest extends TestBase {
   @MockBean DataRepoClientFactory mockDataRepoClientFactory;
   final RepositoryApi mockRepositoryApi = Mockito.mock(RepositoryApi.class);
 
+  @BeforeEach
   @AfterEach
   void tearDown() {
     TestUtils.cleanAllCollections(collectionService, namedTemplate);
