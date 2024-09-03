@@ -1,6 +1,7 @@
 package org.databiosphere.workspacedataservice.activitylog;
 
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
+import static org.mockito.Mockito.when;
 
 import bio.terra.datarepo.api.RepositoryApi;
 import bio.terra.workspace.api.ReferencedGcpResourceApi;
@@ -9,9 +10,9 @@ import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.Optional;
+import java.util.UUID;
 import org.databiosphere.workspacedataservice.TestUtils;
-import org.databiosphere.workspacedataservice.common.TestBase;
-import org.databiosphere.workspacedataservice.config.TwdsProperties;
+import org.databiosphere.workspacedataservice.common.ControlPlaneTestBase;
 import org.databiosphere.workspacedataservice.datarepo.DataRepoClientFactory;
 import org.databiosphere.workspacedataservice.generated.CollectionRequestServerModel;
 import org.databiosphere.workspacedataservice.generated.CollectionServerModel;
@@ -24,6 +25,9 @@ import org.databiosphere.workspacedataservice.shared.model.Record;
 import org.databiosphere.workspacedataservice.shared.model.RecordAttributes;
 import org.databiosphere.workspacedataservice.shared.model.RecordRequest;
 import org.databiosphere.workspacedataservice.shared.model.RecordType;
+import org.databiosphere.workspacedataservice.shared.model.WorkspaceId;
+import org.databiosphere.workspacedataservice.workspace.DataTableTypeInspector;
+import org.databiosphere.workspacedataservice.workspace.WorkspaceDataTableType;
 import org.databiosphere.workspacedataservice.workspacemanager.WorkspaceManagerClientFactory;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -43,7 +47,7 @@ import org.springframework.web.multipart.MultipartFile;
 @SpringBootTest
 @ExtendWith(OutputCaptureExtension.class)
 @DirtiesContext
-class LogStatementTest extends TestBase {
+class LogStatementTest extends ControlPlaneTestBase {
 
   private final String VERSION = "v0.2";
 
@@ -51,7 +55,6 @@ class LogStatementTest extends TestBase {
   @Autowired RecordOrchestratorService recordOrchestratorService;
   @Autowired ObjectMapper objectMapper;
   @Autowired NamedParameterJdbcTemplate namedTemplate;
-  @Autowired TwdsProperties twdsProperties;
 
   // mocking for Workspace Manager
   @MockBean WorkspaceManagerClientFactory mockWorkspaceManagerClientFactory;
@@ -62,9 +65,23 @@ class LogStatementTest extends TestBase {
   @MockBean DataRepoClientFactory mockDataRepoClientFactory;
   final RepositoryApi mockRepositoryApi = Mockito.mock(RepositoryApi.class);
 
+  @MockBean DataTableTypeInspector dataTableTypeInspector;
+
+  private WorkspaceId workspaceId;
+
   @BeforeEach
+  void setUp() {
+    // use a new, random workspaceId for each test
+    workspaceId = WorkspaceId.of(UUID.randomUUID());
+    when(dataTableTypeInspector.getWorkspaceDataTableType(workspaceId))
+        .thenReturn(WorkspaceDataTableType.WDS);
+    // clean collections before each test
+    TestUtils.cleanAllCollections(collectionService, namedTemplate);
+  }
+
   @AfterEach
   void tearDown() {
+    // clean collections after each test
     TestUtils.cleanAllCollections(collectionService, namedTemplate);
   }
 
@@ -72,10 +89,10 @@ class LogStatementTest extends TestBase {
   void createAndDeleteCollectionLogging(CapturedOutput output) {
     CollectionServerModel saved =
         collectionService.save(
-            twdsProperties.workspaceId(), new CollectionRequestServerModel("name", "description"));
+            workspaceId, new CollectionRequestServerModel("name", "description"));
     CollectionId collectionId = CollectionId.of(saved.getId());
 
-    collectionService.delete(twdsProperties.workspaceId(), collectionId);
+    collectionService.delete(workspaceId, collectionId);
     assertThat(output.getOut())
         .contains("user anonymous created 1 collection(s) with id(s) [%s]".formatted(collectionId));
     assertThat(output.getOut())
@@ -88,7 +105,7 @@ class LogStatementTest extends TestBase {
     String recordId = "my-record-id";
     CollectionServerModel saved =
         collectionService.save(
-            twdsProperties.workspaceId(), new CollectionRequestServerModel("name", "description"));
+            workspaceId, new CollectionRequestServerModel("name", "description"));
     CollectionId collectionId = CollectionId.of(saved.getId());
     // loop twice - this creates the record and then updates it,
     // using the same upsert method.
@@ -117,7 +134,7 @@ class LogStatementTest extends TestBase {
     String recordId = "my-record-id";
     CollectionServerModel saved =
         collectionService.save(
-            twdsProperties.workspaceId(), new CollectionRequestServerModel("name", "description"));
+            workspaceId, new CollectionRequestServerModel("name", "description"));
     CollectionId collectionId = CollectionId.of(saved.getId());
     // create the record
     recordOrchestratorService.upsertSingleRecord(
@@ -146,7 +163,7 @@ class LogStatementTest extends TestBase {
     String recordId = "my-record-id";
     CollectionServerModel saved =
         collectionService.save(
-            twdsProperties.workspaceId(), new CollectionRequestServerModel("name", "description"));
+            workspaceId, new CollectionRequestServerModel("name", "description"));
     CollectionId collectionId = CollectionId.of(saved.getId());
     // create the record
     recordOrchestratorService.upsertSingleRecord(
@@ -170,7 +187,7 @@ class LogStatementTest extends TestBase {
     String recordId = "my-record-id";
     CollectionServerModel saved =
         collectionService.save(
-            twdsProperties.workspaceId(), new CollectionRequestServerModel("name", "description"));
+            workspaceId, new CollectionRequestServerModel("name", "description"));
     CollectionId collectionId = CollectionId.of(saved.getId());
     // create the record
     recordOrchestratorService.upsertSingleRecord(
@@ -191,7 +208,7 @@ class LogStatementTest extends TestBase {
     RecordType recordType = RecordType.valueOf("mytype");
     CollectionServerModel saved =
         collectionService.save(
-            twdsProperties.workspaceId(), new CollectionRequestServerModel("name", "description"));
+            workspaceId, new CollectionRequestServerModel("name", "description"));
     CollectionId collectionId = CollectionId.of(saved.getId());
 
     try (InputStream tsvStream = ClassLoader.getSystemResourceAsStream("tsv/small-test.tsv")) {
@@ -209,7 +226,7 @@ class LogStatementTest extends TestBase {
     RecordType recordType = RecordType.valueOf("mytype");
     CollectionServerModel saved =
         collectionService.save(
-            twdsProperties.workspaceId(), new CollectionRequestServerModel("name", "description"));
+            workspaceId, new CollectionRequestServerModel("name", "description"));
     CollectionId collectionId = CollectionId.of(saved.getId());
 
     BatchOperation[] ops =
