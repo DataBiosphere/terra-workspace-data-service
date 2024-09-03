@@ -19,6 +19,7 @@ import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Collectors;
 import org.databiosphere.workspacedataservice.TestUtils;
+import org.databiosphere.workspacedataservice.common.TestBase;
 import org.databiosphere.workspacedataservice.config.TwdsProperties;
 import org.databiosphere.workspacedataservice.dataimport.ImportValidator;
 import org.databiosphere.workspacedataservice.generated.CollectionServerModel;
@@ -46,22 +47,16 @@ import org.springframework.core.io.Resource;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.ActiveProfiles;
-import org.springframework.test.context.TestPropertySource;
 
 /**
  * Tests for PFB import that execute "end-to-end" - that is, they go through the whole process of
  * parsing the PFB, creating tables in Postgres, inserting rows, and then reading back the
  * rows/counts/schema from Postgres.
  */
-@ActiveProfiles(profiles = {"mock-sam", "noop-scheduler-dao", "data-plane"})
+@ActiveProfiles(profiles = {"mock-sam", "noop-scheduler-dao"})
 @DirtiesContext
 @SpringBootTest
-@TestPropertySource(
-    properties = {
-      // Rawls url must be valid, else context initialization (Spring startup) will fail
-      "rawlsUrl=https://localhost/"
-    })
-class PfbQuartzJobDataPlaneE2ETest {
+class PfbQuartzJobDataPlaneE2ETest extends TestBase {
   @Autowired TwdsProperties twdsProperties;
   @Autowired RecordOrchestratorService recordOrchestratorService;
   @Autowired CollectionService collectionService;
