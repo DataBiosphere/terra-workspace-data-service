@@ -272,12 +272,10 @@ paths:
         content:
           application/json:
             schema:
-              oneOf:
-                - $ref: '#/components/schemas/DeleteRecordsIncludeRequest'
-                - $ref: '#/components/schemas/DeleteRecordsExcludeRequest'
+              $ref: '#/components/schemas/DeleteRecordsRequest'
       responses:
         200:
-          description: Deletion request accepted
+          description: Deletion successful
           content:
             application/json:
               schema:
@@ -300,12 +298,10 @@ paths:
         content:
           application/json:
             schema:
-              oneOf:
-                - $ref: '#/components/schemas/DeleteRecordsIncludeRequest'
-                - $ref: '#/components/schemas/DeleteRecordsExcludeRequest'
+              $ref: '#/components/schemas/DeleteRecordsRequest'
       responses:
         200:
-          description: Deletion request accepted
+          description: Deletion successful
           content:
             application/json:
               schema:
@@ -478,24 +474,23 @@ components:
       required:
         - sourceWorkspaceId
       additionalProperties: false
-    DeleteRecordsIncludeRequest:
+    DeleteRecordsRequest:
       type: object
-      description: included record IDs array
+      description: request body to delete records by ID
       properties:
-        include: # Is this a clear enough term for this property?
+        record_ids:
           type: array
           description: an array of record IDs that should be deleted
           items:
             type: string
-    DeleteRecordsExcludeRequest:
-      type: object
-      description: excluded record IDs array
-      properties:
-        exclude:  # Is this a clear enough term for this property?
-          type: array
-          description: delete all records *except* those specified by these record IDs
+        excluded_record_ids:
+          description: an array of record IDs that should NOT be deleted.
           items:
             type: string
+        delete_all:
+          type: boolean
+          description: if true, deletes all records
+          default: false
     DeleteRecordsResponse:
       type: object
       description: a required deletion specification
