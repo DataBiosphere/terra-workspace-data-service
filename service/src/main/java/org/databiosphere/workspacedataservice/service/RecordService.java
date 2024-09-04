@@ -421,6 +421,11 @@ public class RecordService {
   }
 
   @WriteTransaction
+  public List<String> deleteRecords(UUID collectionId) {
+    return List.of("deletedRecord1");
+  }
+
+  @WriteTransaction
   public void renameAttribute(
       UUID collectionId, RecordType recordType, String attribute, String newAttributeName) {
     recordDao.renameAttribute(collectionId, recordType, attribute, newAttributeName);

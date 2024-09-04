@@ -22,7 +22,6 @@ import org.databiosphere.workspacedataservice.shared.model.RecordResponse;
 import org.databiosphere.workspacedataservice.shared.model.RecordType;
 import org.databiosphere.workspacedataservice.shared.model.SearchRequest;
 import org.databiosphere.workspacedataservice.shared.model.TsvUploadResponse;
-import org.databiosphere.workspacedataservice.shared.model.WorkspaceId;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -245,27 +244,30 @@ public class RecordController implements RecordApi {
     return new ResponseEntity<>(new BatchResponse(recordsModified, "Huzzah"), HttpStatus.OK);
   }
 
-  private List<UUID> deleteRecords(UUID workspaceId) {
-    permissionService.requireWritePermission(WorkspaceId.of(workspaceId));
-
-    return List.of(UUID.fromString("00000000-0000-0000-0000-000000000000"));
-  }
-
   @Override
   public ResponseEntity<DeleteRecordsResponseServerModel> deleteRecordsByWorkspaceV1(
       UUID workspaceId,
       String collectionName,
       DeleteRecordsRequestServerModel deleteRecordsRequestServerModel) {
-    DeleteRecordsResponseServerModel response = new DeleteRecordsResponseServerModel();
-    response.setDeletedRecords(List.of("dummyRecord1", "dummyRecord2"));
+
+    List<String> recordIds = deleteRecordsRequestServerModel.getRecordIds();
+    List<String> excludedRecordIds = deleteRecordsRequestServerModel.getExcludedRecordIds();
+    Boolean deleteAll = deleteRecordsRequestServerModel.getDeleteAll();
+    DeleteRecordsResponseServerModel response =
+        recordOrchestratorService.deleteRecordsByWorkspace(
+            workspaceId, collectionName, recordIds, excludedRecordIds, deleteAll);
     return new ResponseEntity<>(response, HttpStatus.OK);
   }
 
   @Override
   public ResponseEntity<DeleteRecordsResponseServerModel> deleteRecordsByCollectionV1(
       UUID collectionId, DeleteRecordsRequestServerModel deleteRecordsRequestServerModel) {
-    DeleteRecordsResponseServerModel response = new DeleteRecordsResponseServerModel();
-    response.setDeletedRecords(List.of("dummyRecord1", "dummyRecord2"));
+    List<String> recordIds = deleteRecordsRequestServerModel.getRecordIds();
+    List<String> excludedRecordIds = deleteRecordsRequestServerModel.getExcludedRecordIds();
+    Boolean deleteAll = deleteRecordsRequestServerModel.getDeleteAll();
+    DeleteRecordsResponseServerModel response =
+        recordOrchestratorService.deleteRecordsByCollection(
+            collectionId, recordIds, excludedRecordIds, deleteAll);
     return new ResponseEntity<>(response, HttpStatus.OK);
   }
 }
