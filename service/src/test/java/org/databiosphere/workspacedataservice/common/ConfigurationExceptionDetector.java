@@ -10,7 +10,7 @@ public class ConfigurationExceptionDetector implements TestWatcher {
 
   private static final String RESOLUTION_HINT =
       "You may need to specify @ActiveProfiles with \"data-plane\" or \"control-plane\" or extend %s"
-          .formatted(TestBase.class.getSimpleName());
+          .formatted(DataPlaneTestBase.class.getSimpleName());
 
   @Override
   public void testFailed(ExtensionContext context, Throwable cause) {

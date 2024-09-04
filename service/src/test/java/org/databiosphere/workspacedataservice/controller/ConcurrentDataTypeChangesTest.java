@@ -13,7 +13,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 import org.databiosphere.workspacedataservice.TestUtils;
-import org.databiosphere.workspacedataservice.common.TestBase;
+import org.databiosphere.workspacedataservice.common.DataPlaneTestBase;
 import org.databiosphere.workspacedataservice.config.TwdsProperties;
 import org.databiosphere.workspacedataservice.generated.CollectionRequestServerModel;
 import org.databiosphere.workspacedataservice.shared.model.RecordAttributes;
@@ -38,7 +38,7 @@ import org.springframework.test.context.ActiveProfiles;
 @ActiveProfiles(profiles = "mock-sam")
 @DirtiesContext
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
-class ConcurrentDataTypeChangesTest extends TestBase {
+class ConcurrentDataTypeChangesTest extends DataPlaneTestBase {
   @Autowired private TestRestTemplate restTemplate;
   private HttpHeaders headers;
   private UUID instanceId;

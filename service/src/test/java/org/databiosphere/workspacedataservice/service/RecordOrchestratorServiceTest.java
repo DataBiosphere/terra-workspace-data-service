@@ -20,7 +20,7 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.databiosphere.workspacedataservice.TestUtils;
 import org.databiosphere.workspacedataservice.annotations.WithTestObservationRegistry;
-import org.databiosphere.workspacedataservice.common.TestBase;
+import org.databiosphere.workspacedataservice.common.DataPlaneTestBase;
 import org.databiosphere.workspacedataservice.config.TwdsProperties;
 import org.databiosphere.workspacedataservice.service.model.AttributeSchema;
 import org.databiosphere.workspacedataservice.service.model.DataTypeMapping;
@@ -54,7 +54,7 @@ import org.springframework.web.server.ResponseStatusException;
 
 @SpringBootTest
 @WithTestObservationRegistry
-class RecordOrchestratorServiceTest extends TestBase {
+class RecordOrchestratorServiceTest extends DataPlaneTestBase {
 
   @Autowired private CollectionService collectionService;
   @Autowired private NamedParameterJdbcTemplate namedTemplate;

@@ -10,7 +10,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.util.Optional;
 import org.databiosphere.workspacedataservice.TestUtils;
-import org.databiosphere.workspacedataservice.common.TestBase;
+import org.databiosphere.workspacedataservice.common.DataPlaneTestBase;
 import org.databiosphere.workspacedataservice.config.TwdsProperties;
 import org.databiosphere.workspacedataservice.datarepo.DataRepoClientFactory;
 import org.databiosphere.workspacedataservice.generated.CollectionRequestServerModel;
@@ -42,7 +42,7 @@ import org.springframework.web.multipart.MultipartFile;
 @SpringBootTest
 @ExtendWith(OutputCaptureExtension.class)
 @DirtiesContext
-class LogStatementTest extends TestBase {
+class LogStatementTest extends DataPlaneTestBase {
 
   private final String VERSION = "v0.2";
 

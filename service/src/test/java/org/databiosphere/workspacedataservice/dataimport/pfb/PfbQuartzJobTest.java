@@ -31,7 +31,7 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import org.databiosphere.workspacedataservice.activitylog.ActivityLogger;
-import org.databiosphere.workspacedataservice.common.TestBase;
+import org.databiosphere.workspacedataservice.common.DataPlaneTestBase;
 import org.databiosphere.workspacedataservice.dao.JobDao;
 import org.databiosphere.workspacedataservice.service.BatchWriteService;
 import org.databiosphere.workspacedataservice.service.CollectionService;
@@ -56,7 +56,7 @@ import org.springframework.test.annotation.DirtiesContext;
 
 @DirtiesContext
 @SpringBootTest
-class PfbQuartzJobTest extends TestBase {
+class PfbQuartzJobTest extends DataPlaneTestBase {
   @MockBean JobDao jobDao;
   @MockBean WorkspaceManagerDao wsmDao;
   @MockBean BatchWriteService batchWriteService;
