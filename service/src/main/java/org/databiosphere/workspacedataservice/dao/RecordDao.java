@@ -37,6 +37,7 @@ import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 import javax.sql.DataSource;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.text.StringSubstitutor;
 import org.databiosphere.workspacedataservice.search.QueryParser;
 import org.databiosphere.workspacedataservice.search.WhereClause;
 import org.databiosphere.workspacedataservice.search.WhereClausePart;
@@ -295,6 +296,124 @@ public class RecordDao {
             + offset,
         where.params(),
         new RecordRowMapper(recordType, objectMapper, collectionId));
+  }
+
+  public Map<String, List<Record>> queryRelatedRecords(
+      UUID collectionId, RecordType recordType, String recordId, List<Relation> relations) {
+
+    var queryRecordType =
+        relations.isEmpty() ? recordType : relations.get(relations.size() - 1).relationRecordType();
+    primaryKeyDao.getPrimaryKeyColumn(queryRecordType, collectionId);
+
+    var joinClause = new StringBuilder();
+    for (int relationIndex = 0; relationIndex < relations.size(); relationIndex++) {
+      var relation = relations.get(relationIndex);
+      var priorRecordType =
+          relationIndex == 0 ? recordType : relations.get(relationIndex - 1).relationRecordType();
+      var priorRelationSchema = getExistingTableSchema(collectionId, priorRecordType);
+      if (priorRelationSchema.get(relation.relationColName()).isArrayType()) {
+        var joinTableName =
+            getQualifiedJoinTableName(collectionId, relation.relationColName(), recordType);
+
+        joinClause.append(
+            constructRelationArrayJoinFragment(
+                joinTableName,
+                relationIndex,
+                relation,
+                getQualifiedTableName(relation.relationRecordType(), collectionId),
+                primaryKeyDao.getPrimaryKeyColumn(relation.relationRecordType(), collectionId),
+                primaryKeyDao.getPrimaryKeyColumn(priorRecordType, collectionId),
+                priorRecordType));
+      } else {
+        joinClause.append(
+            constructRelationJoinFragment(
+                getQualifiedTableName(relation.relationRecordType(), collectionId),
+                relationIndex,
+                primaryKeyDao.getPrimaryKeyColumn(relation.relationRecordType(), collectionId),
+                relation));
+      }
+    }
+
+    return namedTemplate
+        .query(
+            StringSubstitutor.replace(
+                "select tab0.${primaryKey} sys_root, tab${finalRelationIndex}.* from ${rootTable} tab0 ${joinClause} where tab0.${primaryKey} = :recordId",
+                Map.of(
+                    "primaryKey",
+                    quote(primaryKeyDao.getPrimaryKeyColumn(recordType, collectionId)),
+                    "finalRelationIndex",
+                    relations.size(),
+                    "rootTable",
+                    getQualifiedTableName(recordType, collectionId),
+                    "joinClause",
+                    joinClause)),
+            new MapSqlParameterSource(RECORD_ID_PARAM, recordId),
+            new RecordRowMapper(
+                queryRecordType,
+                objectMapper,
+                collectionId,
+                Map.of("sys_root", DataTypeMapping.STRING)))
+        .stream()
+        .map(
+            r -> {
+              var sysRoot = r.getAttributeValue("sys_root").toString();
+              r.getAttributes().removeAttribute("sys_root");
+              return Map.entry(sysRoot, r);
+            })
+        .collect(
+            Collectors.toMap(
+                Map.Entry::getKey,
+                e -> List.of(e.getValue()),
+                (x, y) -> Stream.concat(x.stream(), y.stream()).toList()));
+  }
+
+  private String constructRelationJoinFragment(
+      String currentRelationTableName,
+      int relationIndex,
+      String currentRelationPK,
+      Relation currentRelation) {
+    return StringSubstitutor.replace(
+        " join ${relationTable} tab${currentIndex} on tab${currentIndex}.${relationPK} = tab${priorIndex}.${relationColumn}",
+        Map.of(
+            "relationTable",
+            currentRelationTableName,
+            "currentIndex",
+            relationIndex + 1,
+            "relationPK",
+            quote(currentRelationPK),
+            "priorIndex",
+            relationIndex,
+            "relationColumn",
+            quote(currentRelation.relationColName())));
+  }
+
+  private String constructRelationArrayJoinFragment(
+      String joinTableName,
+      int relationIndex,
+      Relation currentRelation,
+      String currentRelationTableName,
+      String currentRelationPK,
+      String priorPK,
+      RecordType priorRecordType) {
+    return StringSubstitutor.replace(
+        " join ${relationJoinTable} jointab${currentIndex} on jointab${currentIndex}.${fromColumn} = tab${priorIndex}.${priorPK} join ${relationTable} tab${currentIndex} on tab${currentIndex}.${relationPK} = jointab${currentIndex}.${toColumn}",
+        Map.of(
+            "relationJoinTable",
+            joinTableName,
+            "currentIndex",
+            relationIndex + 1,
+            "fromColumn",
+            quote(getFromColumnName(priorRecordType)),
+            "priorIndex",
+            relationIndex,
+            "priorPK",
+            quote(priorPK),
+            "relationTable",
+            currentRelationTableName,
+            "relationPK",
+            quote(currentRelationPK),
+            "toColumn",
+            quote(getToColumnName(currentRelation.relationRecordType()))));
   }
 
   // helper method to generate the SQL where clause for queryForRecords()
@@ -990,6 +1109,15 @@ public class RecordDao {
       this.referenceColToTable =
           RecordDao.this.getRelationColumnsByName(
               RecordDao.this.getRelationCols(collectionId, recordType));
+    }
+
+    public RecordRowMapper(
+        RecordType recordType,
+        ObjectMapper objectMapper,
+        UUID collectionId,
+        Map<String, DataTypeMapping> extraColumns) {
+      this(recordType, objectMapper, collectionId);
+      this.schema.putAll(extraColumns);
     }
 
     @Override

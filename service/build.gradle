@@ -303,3 +303,11 @@ tasks.named('integrationTest') {
         showStandardStreams = false
     }
 }
+
+generateGrammarSource {
+    arguments += [
+        "-visitor", // generate a visitor class
+        "-package", "org.databiosphere.workspacedataservice.expressions.parser.antlr",
+        "-Werror" // treat warnings as errors
+    ]
+}

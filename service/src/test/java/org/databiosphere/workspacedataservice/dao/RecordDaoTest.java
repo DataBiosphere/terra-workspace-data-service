@@ -23,6 +23,7 @@ import org.databiosphere.workspacedataservice.TestUtils;
 import org.databiosphere.workspacedataservice.common.TestBase;
 import org.databiosphere.workspacedataservice.config.TwdsProperties;
 import org.databiosphere.workspacedataservice.service.CollectionService;
+import org.databiosphere.workspacedataservice.service.RecordService;
 import org.databiosphere.workspacedataservice.service.RelationUtils;
 import org.databiosphere.workspacedataservice.service.model.DataTypeMapping;
 import org.databiosphere.workspacedataservice.service.model.Relation;
@@ -31,6 +32,7 @@ import org.databiosphere.workspacedataservice.service.model.RelationValue;
 import org.databiosphere.workspacedataservice.service.model.exception.InvalidRelationException;
 import org.databiosphere.workspacedataservice.shared.model.Record;
 import org.databiosphere.workspacedataservice.shared.model.RecordAttributes;
+import org.databiosphere.workspacedataservice.shared.model.RecordRequest;
 import org.databiosphere.workspacedataservice.shared.model.RecordType;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -52,6 +54,7 @@ class RecordDaoTest extends TestBase {
 
   private static final String PRIMARY_KEY = "row_id";
   @Autowired RecordDao recordDao;
+  @Autowired RecordService recordService;
 
   @Autowired CollectionService collectionService;
   @Autowired TwdsProperties twdsProperties;
@@ -1183,5 +1186,227 @@ class RecordDaoTest extends TestBase {
     Object[] actual = recordDao.getListAsArray(input, ARRAY_OF_NUMBER);
 
     assertArrayEquals(expected, actual);
+  }
+
+  /** Test query resulting from an expressions like `this.relationAttr.xxx` */
+  @Test
+  @Transactional
+  void testQueryRelatedRecords() {
+    Record referencedRecord = new Record("referencedRecord", recordType, RecordAttributes.empty());
+
+    Record testRecord = new Record("testRecord", recordType, RecordAttributes.empty());
+
+    recordDao.batchUpsert(
+        collectionUuid, recordType, List.of(referencedRecord, testRecord), emptyMap());
+    recordService.updateSingleRecord(
+        collectionUuid,
+        recordType,
+        testRecord.getId(),
+        new RecordRequest(
+            new RecordAttributes(
+                Map.of(
+                    "relationAttr",
+                    RelationUtils.createRelationString(recordType, referencedRecord.getId())))));
+
+    List<Relation> relations = recordDao.getRelationCols(collectionUuid, recordType);
+    assertThat(relations).hasSize(1);
+
+    var results =
+        recordDao.queryRelatedRecords(collectionUuid, recordType, testRecord.getId(), relations);
+
+    assertEquals(Map.of(testRecord.getId(), List.of(referencedRecord)), results);
+  }
+
+  /** Test query resulting from an expressions like `this.relationAttr.otherRelationAttr.xxx` */
+  @Test
+  @Transactional
+  void testQueryRelatedRecordsTwoRelations() {
+    var otherRecordType = RecordType.valueOf("testRecordType2");
+    recordDao.createRecordType(
+        collectionUuid, emptyMap(), otherRecordType, RelationCollection.empty(), PRIMARY_KEY);
+
+    Record referencedRecord = new Record("referencedRecord", recordType, RecordAttributes.empty());
+    Record referencedRecordOtherType =
+        new Record("referencedRecordOtherType", otherRecordType, RecordAttributes.empty());
+
+    Record testRecord = new Record("testRecord", recordType, RecordAttributes.empty());
+
+    recordDao.batchUpsert(
+        collectionUuid, recordType, List.of(referencedRecord, testRecord), emptyMap());
+    recordDao.batchUpsert(
+        collectionUuid, otherRecordType, List.of(referencedRecordOtherType), emptyMap());
+    recordService.updateSingleRecord(
+        collectionUuid,
+        recordType,
+        testRecord.getId(),
+        new RecordRequest(
+            new RecordAttributes(
+                Map.of(
+                    "relationAttr",
+                    RelationUtils.createRelationString(
+                        otherRecordType, referencedRecordOtherType.getId())))));
+    recordService.updateSingleRecord(
+        collectionUuid,
+        otherRecordType,
+        referencedRecordOtherType.getId(),
+        new RecordRequest(
+            new RecordAttributes(
+                Map.of(
+                    "otherRelationAttr",
+                    RelationUtils.createRelationString(recordType, referencedRecord.getId())))));
+
+    List<Relation> relations = recordDao.getRelationCols(collectionUuid, recordType);
+    assertThat(relations).hasSize(1);
+    List<Relation> relationsOtherType = recordDao.getRelationCols(collectionUuid, otherRecordType);
+    assertThat(relationsOtherType).hasSize(1);
+
+    var results =
+        recordDao.queryRelatedRecords(
+            collectionUuid,
+            recordType,
+            testRecord.getId(),
+            Stream.of(relations, relationsOtherType).flatMap(List::stream).toList());
+
+    assertEquals(Map.of(testRecord.getId(), List.of(referencedRecord)), results);
+  }
+
+  /** Test query resulting from an expressions like `this.xxx` */
+  @Test
+  @Transactional
+  void testQueryRelatedRecordsNoRelations() {
+    String recordId = "testRecord";
+    Record testRecord = new Record(recordId, recordType, RecordAttributes.empty());
+
+    recordDao.batchUpsert(collectionUuid, recordType, List.of(testRecord), emptyMap());
+
+    var results =
+        recordDao.queryRelatedRecords(collectionUuid, recordType, testRecord.getId(), List.of());
+
+    assertEquals(Map.of(testRecord.getId(), List.of(testRecord)), results);
+  }
+
+  /**
+   * Test query resulting from an expressions like `this.relationAttr.xxx` where relationAttr is an
+   * array
+   */
+  @Test
+  @Transactional
+  void testQueryRelatedRecordsWitArray() {
+    Record referencedRecord1 =
+        new Record("referencedRecord1", recordType, RecordAttributes.empty());
+    Record referencedRecord2 =
+        new Record("referencedRecord2", recordType, RecordAttributes.empty());
+
+    String recordId = "testRecord";
+    Record testRecord = new Record(recordId, recordType, RecordAttributes.empty());
+
+    recordDao.batchUpsert(
+        collectionUuid,
+        recordType,
+        List.of(referencedRecord1, referencedRecord2, testRecord),
+        emptyMap());
+    recordService.updateSingleRecord(
+        collectionUuid,
+        recordType,
+        testRecord.getId(),
+        new RecordRequest(
+            new RecordAttributes(
+                Map.of(
+                    "relationAttr",
+                    Stream.of(referencedRecord1, referencedRecord2)
+                        .map(r -> RelationUtils.createRelationString(recordType, r.getId()))
+                        .toList()))));
+
+    List<Relation> relations = recordDao.getRelationArrayCols(collectionUuid, recordType);
+    assertThat(relations).hasSize(1);
+
+    var results =
+        recordDao.queryRelatedRecords(collectionUuid, recordType, testRecord.getId(), relations);
+
+    assertEquals(
+        Map.of(testRecord.getId(), List.of(referencedRecord1, referencedRecord2)), results);
+  }
+
+  /**
+   * Test query resulting from an expressions like `this.relationAttr.otherRelation.xxx` where
+   * relationAttr is an array
+   */
+  @Test
+  @Transactional
+  void testQueryRelatedRecordsWitArrayPlusAnotherRelation() {
+    var otherRecordType = RecordType.valueOf("testRecordType2");
+    recordDao.createRecordType(
+        collectionUuid, emptyMap(), otherRecordType, RelationCollection.empty(), PRIMARY_KEY);
+
+    Record referencedRecordOtherType1 =
+        new Record("referencedRecordOtherType1", otherRecordType, RecordAttributes.empty());
+    Record referencedRecordOtherType2 =
+        new Record("referencedRecordOtherType2", otherRecordType, RecordAttributes.empty());
+
+    Record referencedRecord1 =
+        new Record("referencedRecord1", recordType, RecordAttributes.empty());
+    Record referencedRecord2 =
+        new Record("referencedRecord2", recordType, RecordAttributes.empty());
+
+    String recordId = "testRecord";
+    Record testRecord = new Record(recordId, recordType, RecordAttributes.empty());
+
+    recordDao.batchUpsert(
+        collectionUuid,
+        recordType,
+        List.of(referencedRecord1, referencedRecord2, testRecord),
+        emptyMap());
+    recordDao.batchUpsert(
+        collectionUuid,
+        otherRecordType,
+        List.of(referencedRecordOtherType1, referencedRecordOtherType2),
+        emptyMap());
+    recordService.updateSingleRecord(
+        collectionUuid,
+        recordType,
+        testRecord.getId(),
+        new RecordRequest(
+            new RecordAttributes(
+                Map.of(
+                    "relationAttr",
+                    Stream.of(referencedRecord1, referencedRecord2)
+                        .map(r -> RelationUtils.createRelationString(recordType, r.getId()))
+                        .toList()))));
+    recordService.updateSingleRecord(
+        collectionUuid,
+        recordType,
+        referencedRecord1.getId(),
+        new RecordRequest(
+            new RecordAttributes(
+                Map.of(
+                    "otherRelation",
+                    RelationUtils.createRelationString(
+                        otherRecordType, referencedRecordOtherType1.getId())))));
+    recordService.updateSingleRecord(
+        collectionUuid,
+        recordType,
+        referencedRecord2.getId(),
+        new RecordRequest(
+            new RecordAttributes(
+                Map.of(
+                    "otherRelation",
+                    RelationUtils.createRelationString(
+                        otherRecordType, referencedRecordOtherType2.getId())))));
+
+    List<Relation> relations = recordDao.getRelationArrayCols(collectionUuid, recordType);
+    assertThat(relations).hasSize(1);
+    List<Relation> otherRelations = recordDao.getRelationCols(collectionUuid, recordType);
+    assertThat(otherRelations).hasSize(1);
+
+    var results =
+        recordDao.queryRelatedRecords(
+            collectionUuid,
+            recordType,
+            testRecord.getId(),
+            Stream.of(relations, otherRelations).flatMap(List::stream).toList());
+
+    assertEquals(
+        Map.of(testRecord.getId(), List.of(referencedRecordOtherType1, referencedRecordOtherType2)),
+        results);
   }
 }
