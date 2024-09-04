@@ -8,7 +8,7 @@ plugins {
     id 'org.openapi.generator'
     id 'com.diffplug.spotless'
     id 'jacoco'
-    id "au.com.dius.pact" version "4.6.13"
+    id "au.com.dius.pact" version "4.6.14"
     id 'jvm-test-suite'
 }
 
@@ -36,9 +36,9 @@ jib {
 }
 
 ext {
-    parquet_mr_version = "1.14.1"
+    parquet_mr_version = "1.14.2"
     hadoop_version = "3.4.0"
-    spring_cloud_gcp_version = "5.5.1"
+    spring_cloud_gcp_version = "5.6.0"
 }
 
 dependencies {
@@ -80,7 +80,7 @@ dependencies {
 
     // required by openapi-generated models and api interfaces
     implementation 'jakarta.validation:jakarta.validation-api'
-    implementation 'io.swagger.core.v3:swagger-annotations:2.2.22'
+    implementation 'io.swagger.core.v3:swagger-annotations:2.2.23'
 
     // Terra libraries
     implementation group: 'org.broadinstitute.dsde.workbench', name: 'sam-client_2.13', version: '0.1-752b4f3'
@@ -88,7 +88,7 @@ dependencies {
     implementation 'com.squareup.okhttp3:okhttp' // required by Sam client
     implementation "bio.terra:datarepo-client:2.13.0-SNAPSHOT"
     implementation "bio.terra:workspace-manager-client:0.254.983-SNAPSHOT"
-    implementation "bio.terra:java-pfb-library:0.52.0"
+    implementation "bio.terra:java-pfb-library:0.53.0"
     implementation project(path: ':client')
 
     // Parquet, used for TDR snapshot import
@@ -132,8 +132,8 @@ dependencies {
     testImplementation 'org.springframework.boot:spring-boot-starter-test'
     testImplementation 'org.junit.jupiter:junit-jupiter'
     testImplementation project(':client')
-    testImplementation 'au.com.dius.pact.provider:spring:4.6.13'
-    testImplementation 'au.com.dius.pact.consumer:junit5:4.6.13'
+    testImplementation 'au.com.dius.pact.provider:spring:4.6.14'
+    testImplementation 'au.com.dius.pact.consumer:junit5:4.6.14'
     testImplementation 'org.junit-pioneer:junit-pioneer:2.2.0'
     testImplementation 'org.awaitility:awaitility'
 
