@@ -39,5 +39,5 @@ import org.springframework.test.context.TestPropertySource;
     })
 @ExtendWith(ConfigurationExceptionDetector.class)
 public abstract class DataPlaneTestBase {
-  public static final String HARDCODED_WORKSPACE_ID = "123e4567-e89b-12d3-a456-426614174000=";
+  public static final String HARDCODED_WORKSPACE_ID = "123e4567-e89b-12d3-a456-426614174000";
 }
