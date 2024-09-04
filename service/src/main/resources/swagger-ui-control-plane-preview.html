@@ -1,0 +1,68 @@
+<!-- *** HTML copied from the swagger-ui-dist webjar, then
+      edited to customize for WDS -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>cWDS API</title>
+  <!-- *** next 4 lines updated to reference /webjars/swagger-ui-dist/ instead of ./ -->
+  <link rel="stylesheet" type="text/css" href="/webjars/swagger-ui-dist/swagger-ui.css"/>
+  <link rel="stylesheet" type="text/css" href="/webjars/swagger-ui-dist/index.css"/>
+  <link rel="icon" type="image/png" href="/webjars/swagger-ui-dist/favicon-32x32.png"
+        sizes="32x32"/>
+  <link rel="icon" type="image/png" href="/webjars/swagger-ui-dist/favicon-16x16.png"
+        sizes="16x16"/>
+</head>
+
+<body>
+<div id="swagger-ui"></div>
+<!-- *** next 4 lines updated to reference ../webjars/swagger-ui-dist/ instead of ./ -->
+<script src="/webjars/swagger-ui-dist/swagger-ui-bundle.js" charset="UTF-8"></script>
+<script src="/webjars/swagger-ui-dist/swagger-ui-standalone-preset.js" charset="UTF-8"></script>
+<!-- *** call to swagger-initializer.js removed here, replaced by customization below -->
+<!-- *** start WDS customization -->
+<script>
+  const cleanupPlugin = function (system) {
+    return {
+      components: {
+        // we don't need to load different specs here...
+        Topbar: () => null,
+        // since everything's application/json, the content-type dropdown just takes up space
+        contentType: ({value, contentTypes}) => {
+          return system.React.createElement('div', null, value || contentTypes.first())
+        }
+      }
+    }
+  }
+
+  window.onload = function () {
+    // Begin Swagger UI call region
+    const ui = SwaggerUIBundle({
+      url: '/swagger/cwds-api-docs-preview.yaml',
+      dom_id: '#swagger-ui',
+      deepLinking: true,
+      presets: [
+        SwaggerUIBundle.presets.apis,
+        SwaggerUIStandalonePreset
+      ],
+      plugins: [
+        SwaggerUIBundle.plugins.DownloadUrl,
+        cleanupPlugin
+      ],
+      layout: 'StandaloneLayout',
+      displayOperationId: true,       // show generated-client method names for each endpoint
+      defaultModelsExpandDepth: -1,   // hide the huge list of schemas under the routes
+      defaultModelRendering: 'model', // schema has the descriptions, unlike the example value
+      defaultModelExpandDepth: 2,     // affects the schema shown for a request or response
+      displayRequestDuration: true,   // show timing
+      docExpansion: 'none',           // expand tags; nice when the spec has few APIs
+      filter: false,                  // no need for filter when the spec has few APIs
+    })
+    // End Swagger UI call region
+
+    window.ui = ui
+  }
+</script>
+<!-- *** end WDS customization -->
+</body>
+</html>

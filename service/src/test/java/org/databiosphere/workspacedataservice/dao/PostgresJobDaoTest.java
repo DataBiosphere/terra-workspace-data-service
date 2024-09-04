@@ -22,9 +22,9 @@ import java.time.Duration;
 import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
+import org.databiosphere.workspacedataservice.common.DataPlaneTestBase;
 import org.databiosphere.workspacedataservice.common.MockInstantSource;
 import org.databiosphere.workspacedataservice.common.MockInstantSourceConfig;
-import org.databiosphere.workspacedataservice.common.TestBase;
 import org.databiosphere.workspacedataservice.dataimport.ImportJobInput;
 import org.databiosphere.workspacedataservice.generated.GenericJobServerModel;
 import org.databiosphere.workspacedataservice.generated.ImportRequestServerModel;
@@ -50,7 +50,7 @@ import org.springframework.test.annotation.DirtiesContext;
 @DirtiesContext
 @SpringBootTest
 @Import(MockInstantSourceConfig.class)
-class PostgresJobDaoTest extends TestBase {
+class PostgresJobDaoTest extends DataPlaneTestBase {
   private static final String TEST_IMPORT_URI = "http://some/uri";
 
   // createJob

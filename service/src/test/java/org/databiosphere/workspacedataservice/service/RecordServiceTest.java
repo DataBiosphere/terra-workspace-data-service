@@ -16,7 +16,7 @@ import java.util.Optional;
 import java.util.UUID;
 import org.databiosphere.workspacedataservice.TestUtils;
 import org.databiosphere.workspacedataservice.annotations.WithTestObservationRegistry;
-import org.databiosphere.workspacedataservice.common.TestBase;
+import org.databiosphere.workspacedataservice.common.DataPlaneTestBase;
 import org.databiosphere.workspacedataservice.config.TwdsProperties;
 import org.databiosphere.workspacedataservice.dao.RecordDao;
 import org.databiosphere.workspacedataservice.generated.CollectionServerModel;
@@ -35,7 +35,7 @@ import org.springframework.test.annotation.DirtiesContext;
 @SpringBootTest
 @DirtiesContext
 @WithTestObservationRegistry
-class RecordServiceTest extends TestBase {
+class RecordServiceTest extends DataPlaneTestBase {
 
   @Autowired DataTypeInferer inferer;
   @Autowired CollectionService collectionService;

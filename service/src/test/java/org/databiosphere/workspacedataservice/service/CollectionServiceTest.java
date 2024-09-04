@@ -3,9 +3,9 @@ package org.databiosphere.workspacedataservice.service;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
+import java.util.UUID;
 import org.databiosphere.workspacedataservice.TestUtils;
-import org.databiosphere.workspacedataservice.common.TestBase;
-import org.databiosphere.workspacedataservice.config.TwdsProperties;
+import org.databiosphere.workspacedataservice.common.ControlPlaneTestBase;
 import org.databiosphere.workspacedataservice.shared.model.CollectionId;
 import org.databiosphere.workspacedataservice.shared.model.WorkspaceId;
 import org.junit.jupiter.api.AfterEach;
@@ -18,11 +18,10 @@ import org.springframework.test.annotation.DirtiesContext;
 
 @DirtiesContext
 @SpringBootTest
-class CollectionServiceTest extends TestBase {
+class CollectionServiceTest extends ControlPlaneTestBase {
 
   @Autowired private CollectionService collectionService;
   @Autowired private NamedParameterJdbcTemplate namedTemplate;
-  @Autowired private TwdsProperties twdsProperties;
 
   @BeforeEach
   @AfterEach
@@ -33,7 +32,7 @@ class CollectionServiceTest extends TestBase {
 
   @Test
   void testCreateDefaultIsIdempotent() {
-    WorkspaceId workspaceId = twdsProperties.workspaceId();
+    WorkspaceId workspaceId = WorkspaceId.of(UUID.randomUUID());
     CollectionId collectionId = CollectionId.of(workspaceId.id());
 
     // at the start of the test, we expect the default collection does not exist
@@ -51,7 +50,7 @@ class CollectionServiceTest extends TestBase {
   @Test
   void testFindAndCreateDefault() {
 
-    WorkspaceId workspaceId = twdsProperties.workspaceId();
+    WorkspaceId workspaceId = WorkspaceId.of(UUID.randomUUID());
     CollectionId collectionId = CollectionId.of(workspaceId.id());
 
     // find should be empty to start

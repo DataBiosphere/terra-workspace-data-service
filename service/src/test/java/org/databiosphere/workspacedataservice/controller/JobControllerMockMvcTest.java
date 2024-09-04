@@ -13,19 +13,22 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
-import org.databiosphere.workspacedataservice.dao.CollectionDao;
+import org.databiosphere.workspacedataservice.config.TwdsProperties;
 import org.databiosphere.workspacedataservice.dao.JobDao;
 import org.databiosphere.workspacedataservice.generated.GenericJobServerModel;
+import org.databiosphere.workspacedataservice.service.CollectionService;
 import org.databiosphere.workspacedataservice.shared.model.CollectionId;
 import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MvcResult;
 
 @ActiveProfiles(profiles = {"mock-sam"})
 class JobControllerMockMvcTest extends MockMvcTestBase {
+  @Autowired TwdsProperties twdsProperties;
   @MockBean private JobDao jobDao;
-  @MockBean private CollectionDao collectionDao;
+  @MockBean private CollectionService collectionService;
 
   @Test
   void smokeTestGetJob() throws Exception {
@@ -42,6 +45,9 @@ class JobControllerMockMvcTest extends MockMvcTestBase {
             OffsetDateTime.now(ZoneId.of("Z")),
             OffsetDateTime.now(ZoneId.of("Z")));
     when(jobDao.getJob(jobId)).thenReturn(expected);
+
+    when(collectionService.getWorkspaceId(CollectionId.of(collectionId)))
+        .thenReturn(twdsProperties.workspaceId());
 
     // calling the API should result in 202 Accepted
     MvcResult mvcResult =
@@ -66,7 +72,7 @@ class JobControllerMockMvcTest extends MockMvcTestBase {
     // set created and updated to now, but in UTC because that's how Postgres stores it
     OffsetDateTime time = OffsetDateTime.now(ZoneId.of("Z"));
 
-    when(collectionDao.collectionSchemaExists(collectionId)).thenReturn(true);
+    when(collectionService.getWorkspaceId(collectionId)).thenReturn(twdsProperties.workspaceId());
 
     List<GenericJobServerModel> expected = new ArrayList<GenericJobServerModel>(2);
     expected.add(

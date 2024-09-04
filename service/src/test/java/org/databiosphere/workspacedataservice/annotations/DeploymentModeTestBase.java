@@ -5,7 +5,7 @@ import static org.springframework.context.annotation.FilterType.ANNOTATION;
 import java.util.stream.Stream;
 import org.databiosphere.workspacedataservice.annotations.DeploymentMode.ControlPlane;
 import org.databiosphere.workspacedataservice.annotations.DeploymentMode.DataPlane;
-import org.databiosphere.workspacedataservice.common.TestBase;
+import org.databiosphere.workspacedataservice.common.DataPlaneTestBase;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.TestConfiguration;
@@ -24,7 +24,7 @@ import org.springframework.test.annotation.DirtiesContext;
     })
 @DirtiesContext
 @SpringBootTest
-class DeploymentModeTestBase extends TestBase {
+class DeploymentModeTestBase extends DataPlaneTestBase {
 
   @Autowired protected ApplicationContext context;
 

@@ -16,7 +16,7 @@ import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.locks.Lock;
 import org.databiosphere.workspacedataservice.TestUtils;
-import org.databiosphere.workspacedataservice.common.TestBase;
+import org.databiosphere.workspacedataservice.common.DataPlaneTestBase;
 import org.databiosphere.workspacedataservice.config.TwdsProperties;
 import org.databiosphere.workspacedataservice.dao.*;
 import org.databiosphere.workspacedataservice.leonardo.LeonardoDao;
@@ -41,7 +41,7 @@ import org.springframework.test.context.ActiveProfiles;
 @ActiveProfiles({"mock-backup-dao", "mock-restore-dao", "mock-clone-dao", "local-cors"})
 @DirtiesContext
 @SpringBootTest
-class CollectionInitializerBeanTest extends TestBase {
+class CollectionInitializerBeanTest extends DataPlaneTestBase {
   // Don't run the CollectionInitializer on startup, so this test can start with a clean slate.
   // By making an (empty) mock bean to replace CollectionInitializer, we ensure it is a noop.
   @MockBean CollectionInitializer collectionInitializer;
@@ -52,7 +52,6 @@ class CollectionInitializerBeanTest extends TestBase {
   @Autowired BackupRestoreService restoreService;
   @Autowired TwdsProperties twdsProperties;
   @MockBean JdbcLockRegistry registry;
-  @SpyBean CollectionDao collectionDao;
   @SpyBean CollectionRepository collectionRepository;
   @SpyBean CloneDao cloneDao;
 
@@ -89,10 +88,10 @@ class CollectionInitializerBeanTest extends TestBase {
   void testSchemaAlreadyExists() {
     verify(collectionRepository, never()).save(any());
     // collection does not exist
-    assertFalse(collectionDao.collectionSchemaExists(collectionIdMatchingWorkspaceId()));
+    assertFalse(collectionService.exists(collectionIdMatchingWorkspaceId()));
     // create the collection outside the initializer
     collectionService.createDefaultCollection(twdsProperties.workspaceId());
-    assertTrue(collectionDao.collectionSchemaExists(collectionIdMatchingWorkspaceId()));
+    assertTrue(collectionService.exists(collectionIdMatchingWorkspaceId()));
     verify(collectionRepository, times(1)).save(any());
 
     // now run the initializer
@@ -101,14 +100,14 @@ class CollectionInitializerBeanTest extends TestBase {
     // verify that method to create collection was NOT called again. We expect one call from the
     // setup above.
     verify(collectionRepository, times(1)).save(any());
-    assertTrue(collectionDao.collectionSchemaExists(collectionIdMatchingWorkspaceId()));
+    assertTrue(collectionService.exists(collectionIdMatchingWorkspaceId()));
   }
 
   @Test
   // Cloning where we can get a lock and complete successfully.
   void cloneSuccessfully() {
     // collection does not exist
-    assertFalse(collectionDao.collectionSchemaExists(collectionIdMatchingWorkspaceId()));
+    assertFalse(collectionService.exists(collectionIdMatchingWorkspaceId()));
     // enter clone mode
     getBean().initCloneMode(sourceWorkspaceId);
     // confirm we have moved forward with cloning
@@ -120,7 +119,7 @@ class CollectionInitializerBeanTest extends TestBase {
   void cloneWithLockFail() throws InterruptedException {
     when(mockLock.tryLock(anyLong(), any())).thenReturn(false);
     // collection does not exist
-    assertFalse(collectionDao.collectionSchemaExists(collectionIdMatchingWorkspaceId()));
+    assertFalse(collectionService.exists(collectionIdMatchingWorkspaceId()));
     // enter clone mode
     boolean cleanExit = getBean().initCloneMode(sourceWorkspaceId);
     // initCloneMode() should have returned true since we did not enter a situation
@@ -151,7 +150,7 @@ class CollectionInitializerBeanTest extends TestBase {
     // start with clone entry
     cloneDao.createCloneEntry(randomUUID(), sourceWorkspaceId);
     // collection does not exist
-    assertFalse(collectionDao.collectionSchemaExists(collectionIdMatchingWorkspaceId()));
+    assertFalse(collectionService.exists(collectionIdMatchingWorkspaceId()));
     // enter clone mode
     boolean cleanExit = getBean().initCloneMode(sourceWorkspaceId);
     // initCloneMode() should have returned false since we encountered a situation
@@ -197,7 +196,6 @@ class CollectionInitializerBeanTest extends TestBase {
 
   private CollectionInitializerBean getBean(@Nullable String sourceWorkspaceIdString) {
     return new CollectionInitializerBean(
-        collectionDao,
         collectionService,
         leoDao,
         wdsDao,

@@ -11,7 +11,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.util.List;
-import org.databiosphere.workspacedataservice.common.TestBase;
+import org.databiosphere.workspacedataservice.common.DataPlaneTestBase;
 import org.databiosphere.workspacedataservice.shared.model.RecordAttributes;
 import org.databiosphere.workspacedataservice.shared.model.RecordRequest;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -26,7 +26,7 @@ import org.springframework.boot.test.context.SpringBootTest;
  * @see TsvJsonArgumentsProvider
  */
 @SpringBootTest
-class TsvJsonEquivalenceTest extends TestBase {
+class TsvJsonEquivalenceTest extends DataPlaneTestBase {
 
   @Autowired private ObjectReader tsvReader;
 

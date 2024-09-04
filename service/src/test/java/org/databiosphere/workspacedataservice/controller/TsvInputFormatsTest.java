@@ -13,7 +13,7 @@ import java.util.UUID;
 import java.util.stream.Stream;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.databiosphere.workspacedataservice.TestUtils;
-import org.databiosphere.workspacedataservice.common.TestBase;
+import org.databiosphere.workspacedataservice.common.DataPlaneTestBase;
 import org.databiosphere.workspacedataservice.config.TwdsProperties;
 import org.databiosphere.workspacedataservice.dao.RecordDao;
 import org.databiosphere.workspacedataservice.generated.CollectionRequestServerModel;
@@ -42,7 +42,7 @@ import org.springframework.transaction.annotation.Transactional;
 @DirtiesContext
 @SpringBootTest
 @AutoConfigureMockMvc
-class TsvInputFormatsTest extends TestBase {
+class TsvInputFormatsTest extends DataPlaneTestBase {
 
   @Autowired private MockMvc mockMvc;
   @Autowired RecordDao recordDao;
