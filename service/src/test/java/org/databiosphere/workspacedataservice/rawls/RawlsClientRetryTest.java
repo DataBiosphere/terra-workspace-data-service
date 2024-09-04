@@ -11,6 +11,7 @@ import static org.mockito.Mockito.when;
 import com.google.api.client.http.HttpStatusCodes;
 import java.util.List;
 import java.util.UUID;
+import org.databiosphere.workspacedataservice.common.ControlPlaneTestBase;
 import org.databiosphere.workspacedataservice.shared.model.WorkspaceId;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -22,25 +23,19 @@ import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatusCode;
 import org.springframework.test.annotation.DirtiesContext;
-import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.TestPropertySource;
 import org.springframework.web.client.HttpServerErrorException;
 
 @DirtiesContext
-@ActiveProfiles(value = "control-plane", inheritProfiles = false)
 @SpringBootTest
 @TestPropertySource(
     properties = {
-      // URI parsing requires a valid hostname here, even if we don't contact this host
-      "rawlsUrl=https://localhost/",
-      // turn off pubsub autoconfiguration for tests
-      "spring.cloud.gcp.pubsub.enabled=false",
       // allow 3 retry attempts, so we can better verify retries
       "rest.retry.maxAttempts=3",
       // with aggressive delay settings so unit tests don't run too long
       "rest.retry.backoff.delay=3",
     })
-class RawlsClientRetryTest {
+class RawlsClientRetryTest extends ControlPlaneTestBase {
   // create mock for RawlsApi
   @MockBean RawlsApi mockRawlsApi;
 
