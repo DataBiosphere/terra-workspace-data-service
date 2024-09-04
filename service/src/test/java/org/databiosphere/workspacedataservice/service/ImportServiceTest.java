@@ -27,7 +27,7 @@ import org.broadinstitute.dsde.workbench.client.sam.ApiException;
 import org.broadinstitute.dsde.workbench.client.sam.api.GoogleApi;
 import org.databiosphere.workspacedataservice.TestUtils;
 import org.databiosphere.workspacedataservice.annotations.SingleTenant;
-import org.databiosphere.workspacedataservice.common.TestBase;
+import org.databiosphere.workspacedataservice.common.DataPlaneTestBase;
 import org.databiosphere.workspacedataservice.dao.JobDao;
 import org.databiosphere.workspacedataservice.dao.SchedulerDao;
 import org.databiosphere.workspacedataservice.dataimport.ImportJobInput;
@@ -67,7 +67,7 @@ import org.springframework.test.annotation.DirtiesContext;
 @DirtiesContext
 @SpringBootTest
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
-class ImportServiceTest extends TestBase {
+class ImportServiceTest extends DataPlaneTestBase {
 
   @Autowired ImportService importService;
   @Autowired CollectionService collectionService;

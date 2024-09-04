@@ -13,7 +13,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import org.databiosphere.workspacedataservice.TestUtils;
-import org.databiosphere.workspacedataservice.common.TestBase;
+import org.databiosphere.workspacedataservice.common.DataPlaneTestBase;
 import org.databiosphere.workspacedataservice.dao.JobDao;
 import org.databiosphere.workspacedataservice.pubsub.PubSub;
 import org.databiosphere.workspacedataservice.sam.MockSamUsersApi;
@@ -50,7 +50,7 @@ import org.springframework.test.context.TestPropertySource;
       "spring.cloud.gcp.pubsub.enabled=false",
       "rawlsUrl=https://localhost/",
     })
-class RawlsJsonQuartzJobTest extends TestBase {
+class RawlsJsonQuartzJobTest extends DataPlaneTestBase {
   @Autowired private CollectionService collectionService;
   @Autowired private NamedParameterJdbcTemplate namedTemplate;
   @Autowired private RawlsJsonTestSupport testSupport;

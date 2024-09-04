@@ -20,7 +20,7 @@ import java.util.Map;
 import java.util.UUID;
 import org.databiosphere.workspacedata.model.ErrorResponse;
 import org.databiosphere.workspacedata.model.ImportRequest.TypeEnum;
-import org.databiosphere.workspacedataservice.common.TestBase;
+import org.databiosphere.workspacedataservice.common.DataPlaneTestBase;
 import org.databiosphere.workspacedataservice.config.TwdsProperties;
 import org.databiosphere.workspacedataservice.dao.JobDao;
 import org.databiosphere.workspacedataservice.dataimport.ImportJobInput;
@@ -53,7 +53,7 @@ import org.springframework.test.context.ActiveProfiles;
 @DirtiesContext
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
-class JobControllerTest extends TestBase {
+class JobControllerTest extends DataPlaneTestBase {
   private static final String TEST_IMPORT_URI = "http://some/uri";
 
   @Autowired private NamedParameterJdbcTemplate namedTemplate;

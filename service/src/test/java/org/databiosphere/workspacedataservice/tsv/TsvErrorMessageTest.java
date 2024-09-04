@@ -8,7 +8,7 @@ import java.io.InputStream;
 import java.util.Optional;
 import java.util.UUID;
 import org.databiosphere.workspacedataservice.TestUtils;
-import org.databiosphere.workspacedataservice.common.TestBase;
+import org.databiosphere.workspacedataservice.common.DataPlaneTestBase;
 import org.databiosphere.workspacedataservice.config.TwdsProperties;
 import org.databiosphere.workspacedataservice.generated.CollectionServerModel;
 import org.databiosphere.workspacedataservice.service.CollectionService;
@@ -30,7 +30,7 @@ import org.springframework.test.annotation.DirtiesContext;
 @SpringBootTest
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 @DirtiesContext
-class TsvErrorMessageTest extends TestBase {
+class TsvErrorMessageTest extends DataPlaneTestBase {
 
   @Autowired CollectionService collectionService;
   @Autowired RecordOrchestratorService recordOrchestratorService;

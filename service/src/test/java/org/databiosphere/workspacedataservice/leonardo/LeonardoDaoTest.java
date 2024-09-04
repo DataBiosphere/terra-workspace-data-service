@@ -17,7 +17,7 @@ import org.broadinstitute.dsde.workbench.client.leonardo.model.AppStatus;
 import org.broadinstitute.dsde.workbench.client.leonardo.model.AppType;
 import org.broadinstitute.dsde.workbench.client.leonardo.model.AuditInfo;
 import org.broadinstitute.dsde.workbench.client.leonardo.model.ListAppResponse;
-import org.databiosphere.workspacedataservice.common.TestBase;
+import org.databiosphere.workspacedataservice.common.DataPlaneTestBase;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -28,7 +28,7 @@ import org.springframework.test.annotation.DirtiesContext;
 
 @DirtiesContext
 @SpringBootTest
-class LeonardoDaoTest extends TestBase {
+class LeonardoDaoTest extends DataPlaneTestBase {
   @Autowired LeonardoDao leonardoDao;
 
   @MockBean LeonardoClientFactory leonardoClientFactory;

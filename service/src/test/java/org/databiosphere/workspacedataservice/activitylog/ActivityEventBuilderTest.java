@@ -12,7 +12,7 @@ import org.broadinstitute.dsde.workbench.client.sam.api.ResourcesApi;
 import org.broadinstitute.dsde.workbench.client.sam.api.UsersApi;
 import org.broadinstitute.dsde.workbench.client.sam.model.UserStatusInfo;
 import org.databiosphere.workspacedataservice.TestUtils;
-import org.databiosphere.workspacedataservice.common.TestBase;
+import org.databiosphere.workspacedataservice.common.DataPlaneTestBase;
 import org.databiosphere.workspacedataservice.config.TwdsProperties;
 import org.databiosphere.workspacedataservice.generated.CollectionServerModel;
 import org.databiosphere.workspacedataservice.sam.BearerTokenFilter;
@@ -37,7 +37,7 @@ import org.springframework.web.context.request.RequestContextHolder;
 @SpringBootTest
 @AutoConfigureMockMvc
 @ExtendWith(OutputCaptureExtension.class)
-class ActivityEventBuilderTest extends TestBase {
+class ActivityEventBuilderTest extends DataPlaneTestBase {
 
   @Autowired CollectionService collectionService;
   @Autowired TwdsProperties twdsProperties;

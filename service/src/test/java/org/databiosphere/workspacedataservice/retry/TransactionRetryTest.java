@@ -3,7 +3,7 @@ package org.databiosphere.workspacedataservice.retry;
 import static org.junit.jupiter.api.Assertions.*;
 
 import java.util.stream.Stream;
-import org.databiosphere.workspacedataservice.common.TestBase;
+import org.databiosphere.workspacedataservice.common.DataPlaneTestBase;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
@@ -26,7 +26,7 @@ import org.springframework.transaction.CannotCreateTransactionException;
       "terra.common.retry.transaction.slowRetryMultiplier=1.1",
       "terra.common.retry.transaction.fastRetryMaxAttempts=2"
     })
-class TransactionRetryTest extends TestBase {
+class TransactionRetryTest extends DataPlaneTestBase {
 
   @Autowired TransactionRetryTestBean transactionRetryTestBean;
 

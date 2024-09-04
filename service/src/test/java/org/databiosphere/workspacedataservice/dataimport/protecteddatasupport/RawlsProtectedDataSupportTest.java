@@ -8,7 +8,7 @@ import bio.terra.workspace.model.WsmPolicyInput;
 import java.util.List;
 import java.util.UUID;
 import java.util.stream.Stream;
-import org.databiosphere.workspacedataservice.common.TestBase;
+import org.databiosphere.workspacedataservice.common.DataPlaneTestBase;
 import org.databiosphere.workspacedataservice.rawls.RawlsClient;
 import org.databiosphere.workspacedataservice.rawls.RawlsWorkspaceDetails;
 import org.databiosphere.workspacedataservice.rawls.RawlsWorkspaceDetails.RawlsWorkspace.WorkspaceType;
@@ -23,7 +23,7 @@ import org.springframework.test.context.ActiveProfiles;
 
 @SpringBootTest
 @ActiveProfiles(profiles = "control-plane", inheritProfiles = false)
-class RawlsProtectedDataSupportTest extends TestBase {
+class RawlsProtectedDataSupportTest extends DataPlaneTestBase {
   @MockBean RawlsClient rawlsClient;
 
   @Autowired RawlsProtectedDataSupport rawlsProtectedDataSupport;

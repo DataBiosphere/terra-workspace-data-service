@@ -16,7 +16,7 @@ import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.locks.Lock;
 import org.databiosphere.workspacedataservice.TestUtils;
-import org.databiosphere.workspacedataservice.common.TestBase;
+import org.databiosphere.workspacedataservice.common.DataPlaneTestBase;
 import org.databiosphere.workspacedataservice.config.TwdsProperties;
 import org.databiosphere.workspacedataservice.dao.*;
 import org.databiosphere.workspacedataservice.leonardo.LeonardoDao;
@@ -41,7 +41,7 @@ import org.springframework.test.context.ActiveProfiles;
 @ActiveProfiles({"mock-backup-dao", "mock-restore-dao", "mock-clone-dao", "local-cors"})
 @DirtiesContext
 @SpringBootTest
-class CollectionInitializerBeanTest extends TestBase {
+class CollectionInitializerBeanTest extends DataPlaneTestBase {
   // Don't run the CollectionInitializer on startup, so this test can start with a clean slate.
   // By making an (empty) mock bean to replace CollectionInitializer, we ensure it is a noop.
   @MockBean CollectionInitializer collectionInitializer;

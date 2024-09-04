@@ -13,7 +13,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
-import org.databiosphere.workspacedataservice.common.TestBase;
+import org.databiosphere.workspacedataservice.common.DataPlaneTestBase;
 import org.databiosphere.workspacedataservice.dao.BackupRestoreDao;
 import org.databiosphere.workspacedataservice.service.model.exception.LaunchProcessException;
 import org.databiosphere.workspacedataservice.shared.model.RestoreResponse;
@@ -30,7 +30,7 @@ import org.springframework.test.context.TestPropertySource;
 @SpringBootTest(properties = "spring.cache.type=NONE")
 @TestPropertySource(
     properties = {"twds.pg_dump.path=/unit/test/pg_dump", "twds.pg_dump.psqlPath=/unit/test/psql"})
-class BackupRestoreServiceTest extends TestBase {
+class BackupRestoreServiceTest extends DataPlaneTestBase {
   @Autowired private BackupRestoreService backupRestoreService;
   @Autowired private NamedParameterJdbcTemplate namedTemplate;
   @Autowired private WorkspaceId workspaceId;

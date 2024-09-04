@@ -5,7 +5,7 @@ import static org.mockito.Mockito.*;
 
 import org.broadinstitute.dsde.workbench.client.sam.api.StatusApi;
 import org.broadinstitute.dsde.workbench.client.sam.model.SystemStatus;
-import org.databiosphere.workspacedataservice.common.TestBase;
+import org.databiosphere.workspacedataservice.common.DataPlaneTestBase;
 import org.databiosphere.workspacedataservice.sam.HttpSamDao;
 import org.databiosphere.workspacedataservice.sam.PermissionsStatusService;
 import org.databiosphere.workspacedataservice.sam.SamClientFactory;
@@ -24,7 +24,7 @@ import org.springframework.test.annotation.DirtiesContext;
 
 @DirtiesContext
 @SpringBootTest(properties = "spring.cache.type=NONE")
-class PermissionsStatusServiceTest extends TestBase {
+class PermissionsStatusServiceTest extends DataPlaneTestBase {
 
   @Autowired private PermissionsStatusService samStatusService;
 

@@ -8,7 +8,7 @@ import bio.terra.workspace.model.WsmPolicyInput;
 import java.util.List;
 import java.util.UUID;
 import java.util.stream.Stream;
-import org.databiosphere.workspacedataservice.common.TestBase;
+import org.databiosphere.workspacedataservice.common.DataPlaneTestBase;
 import org.databiosphere.workspacedataservice.shared.model.WorkspaceId;
 import org.databiosphere.workspacedataservice.workspacemanager.WorkspaceManagerDao;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -19,7 +19,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 
 @SpringBootTest
-class WsmProtectedDataSupportTest extends TestBase {
+class WsmProtectedDataSupportTest extends DataPlaneTestBase {
   @MockBean WorkspaceManagerDao wsmDao;
 
   @Autowired WsmProtectedDataSupport wsmProtectedDataSupport;

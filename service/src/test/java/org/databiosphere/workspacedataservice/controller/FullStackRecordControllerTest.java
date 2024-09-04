@@ -22,7 +22,7 @@ import java.util.UUID;
 import java.util.function.Supplier;
 import org.databiosphere.workspacedata.model.ErrorResponse;
 import org.databiosphere.workspacedataservice.TestUtils;
-import org.databiosphere.workspacedataservice.common.TestBase;
+import org.databiosphere.workspacedataservice.common.DataPlaneTestBase;
 import org.databiosphere.workspacedataservice.config.TwdsProperties;
 import org.databiosphere.workspacedataservice.generated.CollectionRequestServerModel;
 import org.databiosphere.workspacedataservice.service.RelationUtils;
@@ -65,7 +65,7 @@ import org.springframework.transaction.annotation.Transactional;
     webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT,
     properties = {"spring.main.allow-bean-definition-overriding=true"})
 @Import(SmallBatchWriteTestConfig.class)
-class FullStackRecordControllerTest extends TestBase {
+class FullStackRecordControllerTest extends DataPlaneTestBase {
   @Autowired private TestRestTemplate restTemplate;
   private HttpHeaders headers;
   private UUID instanceId;

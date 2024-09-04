@@ -20,7 +20,7 @@ import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 import org.databiosphere.workspacedataservice.TestUtils;
-import org.databiosphere.workspacedataservice.common.TestBase;
+import org.databiosphere.workspacedataservice.common.DataPlaneTestBase;
 import org.databiosphere.workspacedataservice.config.TwdsProperties;
 import org.databiosphere.workspacedataservice.service.CollectionService;
 import org.databiosphere.workspacedataservice.service.RelationUtils;
@@ -48,7 +48,7 @@ import org.springframework.web.server.ResponseStatusException;
 
 @SpringBootTest
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
-class RecordDaoTest extends TestBase {
+class RecordDaoTest extends DataPlaneTestBase {
 
   private static final String PRIMARY_KEY = "row_id";
   @Autowired RecordDao recordDao;
