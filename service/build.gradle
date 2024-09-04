@@ -274,29 +274,3 @@ tasks.register("pactTests") {
     dependsOn "wdsPactTests"
     dependsOn "cwdsPactTests"
 }
-
-testing {
-    suites {
-        integrationTest(JvmTestSuite) {
-            dependencies {
-                implementation project(':service')
-                implementation project(':client')
-                implementation 'org.springframework.boot:spring-boot-starter-test'
-                implementation 'org.springframework.boot:spring-boot-starter-jdbc'
-                implementation 'org.liquibase:liquibase-core'
-                implementation "org.glassfish.jersey.core:jersey-client"
-                implementation "org.glassfish.jersey.core:jersey-common"
-                implementation "org.glassfish.jersey.inject:jersey-hk2"
-            }
-        }
-    }
-}
-
-tasks.named('integrationTest') {
-    testLogging {
-        events = ["passed", "failed", "skipped", "started"]
-        exceptionFormat = "full"
-        // should command-line test output show stdout/stderr?
-        showStandardStreams = false
-    }
-}
