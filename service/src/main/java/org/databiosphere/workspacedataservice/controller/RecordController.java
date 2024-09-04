@@ -272,28 +272,24 @@ public class RecordController implements RecordApi {
       UUID collectionId, DeleteRecordsRequestServerModel deleteRecordsRequestServerModel) {
 
     DeleteRecordsResponseServerModel response = new DeleteRecordsResponseServerModel();
-    List<String> deletedRecordIds;
-    /*
-    Only one of `record_ids`, `excluded_record_ids`, and `delete_all`
-    should contain records / be set to true.
-    */
+
     Boolean hasRecordIds = !deleteRecordsRequestServerModel.getRecordIds().isEmpty();
     Boolean hasExcludedRecordIds =
         !deleteRecordsRequestServerModel.getExcludedRecordIds().isEmpty();
-    Boolean deleteAll = deleteRecordsRequestServerModel.getDeleteAll();
 
-    // Take the XOR of these three attributes. Continue if XOR is true. If not, throw an error.
     if (hasRecordIds && hasExcludedRecordIds) {
       throw new ResponseStatusException(
           HttpStatus.BAD_REQUEST, "record_ids and excluded_record_ids are mutually exclusive");
     }
 
+    Boolean deleteAll = deleteRecordsRequestServerModel.getDeleteAll();
     if (deleteAll && (hasRecordIds || hasExcludedRecordIds)) {
       throw new ResponseStatusException(
           HttpStatus.BAD_REQUEST,
           "delete_all cannot be set to true if record_ids or excluded_record_ids are nonempty");
     }
 
+    List<String> deletedRecordIds;
     if (hasRecordIds) {
       deletedRecordIds =
           recordOrchestratorService.deleteRecords(
