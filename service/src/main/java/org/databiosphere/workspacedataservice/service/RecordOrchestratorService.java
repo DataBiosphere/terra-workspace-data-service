@@ -20,8 +20,6 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.databiosphere.workspacedataservice.activitylog.ActivityLogger;
 import org.databiosphere.workspacedataservice.dao.RecordDao;
-import org.databiosphere.workspacedataservice.generated.CollectionServerModel;
-import org.databiosphere.workspacedataservice.generated.DeleteRecordsResponseServerModel;
 import org.databiosphere.workspacedataservice.recordsink.RecordSink;
 import org.databiosphere.workspacedataservice.recordsink.RecordSinkFactory;
 import org.databiosphere.workspacedataservice.recordsource.PrimaryKeyResolver;
@@ -45,7 +43,6 @@ import org.databiosphere.workspacedataservice.shared.model.RecordRequest;
 import org.databiosphere.workspacedataservice.shared.model.RecordResponse;
 import org.databiosphere.workspacedataservice.shared.model.RecordType;
 import org.databiosphere.workspacedataservice.shared.model.SearchRequest;
-import org.databiosphere.workspacedataservice.shared.model.WorkspaceId;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
@@ -298,40 +295,17 @@ public class RecordOrchestratorService { // TODO give me a better name
         user -> user.deleted().table().ofQuantity(1).withRecordType(recordType));
   }
 
-  public DeleteRecordsResponseServerModel deleteRecordsByCollection(
-      UUID collectionId,
-      List<String> recordIds,
-      List<String> excludedRecordIds,
-      Boolean deleteAll) {
-    List<String> deletedRecordIds =
-        deleteRecords(collectionId, recordIds, excludedRecordIds, deleteAll);
+  public List<String> deleteRecords(UUID collectionId, List<String> recordIds) {
 
-    DeleteRecordsResponseServerModel response = new DeleteRecordsResponseServerModel();
-    response.setDeletedRecords(deletedRecordIds);
-    return response;
+    return List.of("dummyRecordId");
   }
 
-  public DeleteRecordsResponseServerModel deleteRecordsByWorkspace(
-      UUID workspaceId,
-      String collectionName,
-      List<String> recordIds,
-      List<String> excludedRecordIds,
-      Boolean deleteAll) {
-    CollectionServerModel collection =
-        collectionService.get(WorkspaceId.of(workspaceId), collectionName);
-    List<String> deletedRecordIds =
-        deleteRecords(collection.getId(), recordIds, excludedRecordIds, deleteAll);
-
-    DeleteRecordsResponseServerModel response = new DeleteRecordsResponseServerModel();
-    response.setDeletedRecords(deletedRecordIds);
-    return response;
+  public List<String> deleteAllRecords(UUID collectionId) {
+    return deleteAllRecords(collectionId, Collections.emptyList());
   }
 
-  private List<String> deleteRecords(
-      UUID collectionId,
-      List<String> recordIds,
-      List<String> excludedRecordIds,
-      Boolean deleteAll) {
+  public List<String> deleteAllRecords(UUID collectionId, List<String> excludedRecordIds) {
+
     return List.of("dummyRecordId");
   }
 

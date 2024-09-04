@@ -2,13 +2,16 @@ package org.databiosphere.workspacedataservice.controller;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 import org.databiosphere.workspacedataservice.annotations.DeploymentMode.DataPlane;
+import org.databiosphere.workspacedataservice.generated.CollectionServerModel;
 import org.databiosphere.workspacedataservice.generated.DeleteRecordsRequestServerModel;
 import org.databiosphere.workspacedataservice.generated.DeleteRecordsResponseServerModel;
 import org.databiosphere.workspacedataservice.generated.RecordApi;
+import org.databiosphere.workspacedataservice.service.CollectionService;
 import org.databiosphere.workspacedataservice.service.PermissionService;
 import org.databiosphere.workspacedataservice.service.RecordOrchestratorService;
 import org.databiosphere.workspacedataservice.service.model.AttributeSchema;
@@ -22,6 +25,7 @@ import org.databiosphere.workspacedataservice.shared.model.RecordResponse;
 import org.databiosphere.workspacedataservice.shared.model.RecordType;
 import org.databiosphere.workspacedataservice.shared.model.SearchRequest;
 import org.databiosphere.workspacedataservice.shared.model.TsvUploadResponse;
+import org.databiosphere.workspacedataservice.shared.model.WorkspaceId;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -46,11 +50,15 @@ public class RecordController implements RecordApi {
 
   private final RecordOrchestratorService recordOrchestratorService;
   private final PermissionService permissionService;
+  private final CollectionService collectionService;
 
   public RecordController(
-      RecordOrchestratorService recordOrchestratorService, PermissionService permissionService) {
+      RecordOrchestratorService recordOrchestratorService,
+      PermissionService permissionService,
+      CollectionService collectionService) {
     this.recordOrchestratorService = recordOrchestratorService;
     this.permissionService = permissionService;
+    this.collectionService = collectionService;
   }
 
   @PatchMapping("/{instanceId}/records/{version}/{recordType}/{recordId}")
@@ -249,25 +257,59 @@ public class RecordController implements RecordApi {
       UUID workspaceId,
       String collectionName,
       DeleteRecordsRequestServerModel deleteRecordsRequestServerModel) {
-
-    List<String> recordIds = deleteRecordsRequestServerModel.getRecordIds();
-    List<String> excludedRecordIds = deleteRecordsRequestServerModel.getExcludedRecordIds();
-    Boolean deleteAll = deleteRecordsRequestServerModel.getDeleteAll();
-    DeleteRecordsResponseServerModel response =
-        recordOrchestratorService.deleteRecordsByWorkspace(
-            workspaceId, collectionName, recordIds, excludedRecordIds, deleteAll);
-    return new ResponseEntity<>(response, HttpStatus.OK);
+    CollectionServerModel collection =
+        collectionService.get(WorkspaceId.of(workspaceId), collectionName);
+    return deleteRecords(collection.getId(), deleteRecordsRequestServerModel);
   }
 
   @Override
   public ResponseEntity<DeleteRecordsResponseServerModel> deleteRecordsByCollectionV1(
       UUID collectionId, DeleteRecordsRequestServerModel deleteRecordsRequestServerModel) {
-    List<String> recordIds = deleteRecordsRequestServerModel.getRecordIds();
-    List<String> excludedRecordIds = deleteRecordsRequestServerModel.getExcludedRecordIds();
+    return deleteRecords(collectionId, deleteRecordsRequestServerModel);
+  }
+
+  private ResponseEntity<DeleteRecordsResponseServerModel> deleteRecords(
+      UUID collectionId, DeleteRecordsRequestServerModel deleteRecordsRequestServerModel) {
+
+    DeleteRecordsResponseServerModel response = new DeleteRecordsResponseServerModel();
+    List<String> deletedRecordIds;
+    /*
+    Only one of `record_ids`, `excluded_record_ids`, and `delete_all`
+    should contain records / be set to true.
+    */
+    Boolean hasRecordIds = !deleteRecordsRequestServerModel.getRecordIds().isEmpty();
+    Boolean hasExcludedRecordIds =
+        !deleteRecordsRequestServerModel.getExcludedRecordIds().isEmpty();
     Boolean deleteAll = deleteRecordsRequestServerModel.getDeleteAll();
-    DeleteRecordsResponseServerModel response =
-        recordOrchestratorService.deleteRecordsByCollection(
-            collectionId, recordIds, excludedRecordIds, deleteAll);
+
+    // Take the XOR of these three attributes. Continue if XOR is true. If not, throw an error.
+    if (hasRecordIds && hasExcludedRecordIds) {
+      throw new ResponseStatusException(
+          HttpStatus.BAD_REQUEST, "record_ids and excluded_record_ids are mutually exclusive");
+    }
+
+    if (deleteAll && (hasRecordIds || hasExcludedRecordIds)) {
+      throw new ResponseStatusException(
+          HttpStatus.BAD_REQUEST,
+          "delete_all cannot be set to true if record_ids or excluded_record_ids are nonempty");
+    }
+
+    if (hasRecordIds) {
+      deletedRecordIds =
+          recordOrchestratorService.deleteRecords(
+              collectionId, deleteRecordsRequestServerModel.getRecordIds());
+    } else if (hasExcludedRecordIds) {
+      deletedRecordIds =
+          recordOrchestratorService.deleteAllRecords(
+              collectionId, deleteRecordsRequestServerModel.getExcludedRecordIds());
+    } else if (deleteAll) {
+      deletedRecordIds = recordOrchestratorService.deleteAllRecords(collectionId);
+    } else {
+      deletedRecordIds = Collections.emptyList();
+    }
+
+    response.setDeletedRecords(deletedRecordIds);
+
     return new ResponseEntity<>(response, HttpStatus.OK);
   }
 }
