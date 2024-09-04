@@ -14,6 +14,7 @@ import java.net.URI;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import org.databiosphere.workspacedataservice.common.ControlPlaneTestBase;
 import org.databiosphere.workspacedataservice.dataimport.ImportValidator;
 import org.databiosphere.workspacedataservice.generated.ImportRequestServerModel;
 import org.databiosphere.workspacedataservice.pubsub.PubSub;
@@ -38,25 +39,17 @@ import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.boot.test.mock.mockito.SpyBean;
 import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.ActiveProfiles;
-import org.springframework.test.context.TestPropertySource;
 
 /**
  * Tests for RAWLSJSON import that execute "end-to-end" - which for this format is relatively
  * simple, merely moving the import file from the given URI to an expected location without any
  * reprocessing and communicating that the new location to Rawls via pubsub.
  */
-@ActiveProfiles(profiles = {"mock-sam", "noop-scheduler-dao", "control-plane"})
+@ActiveProfiles(profiles = {"mock-sam", "noop-scheduler-dao"})
 @DirtiesContext
 @SpringBootTest
-@TestPropertySource(
-    properties = {
-      // turn off pubsub autoconfiguration for tests
-      "spring.cloud.gcp.pubsub.enabled=false",
-      // Rawls url must be valid, else context initialization (Spring startup) will fail
-      "rawlsUrl=https://localhost/",
-    })
 @AutoConfigureMockMvc
-class RawlsJsonQuartzJobControlPlaneE2ETest {
+class RawlsJsonQuartzJobControlPlaneE2ETest extends ControlPlaneTestBase {
   @Autowired private ImportService importService;
   @Autowired private RawlsJsonTestSupport testSupport;
   @SpyBean private PubSub pubSub;
