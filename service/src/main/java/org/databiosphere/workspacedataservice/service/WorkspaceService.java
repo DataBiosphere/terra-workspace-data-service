@@ -1,6 +1,8 @@
 package org.databiosphere.workspacedataservice.service;
 
+import java.util.Optional;
 import org.databiosphere.workspacedataservice.dao.JobDao;
+import org.databiosphere.workspacedataservice.dao.WorkspaceRepository;
 import org.databiosphere.workspacedataservice.generated.GenericJobServerModel;
 import org.databiosphere.workspacedataservice.generated.WorkspaceInitServerModel;
 import org.databiosphere.workspacedataservice.shared.model.CollectionId;
@@ -14,6 +16,7 @@ import org.databiosphere.workspacedataservice.workspace.DataTableTypeInspector;
 import org.databiosphere.workspacedataservice.workspace.WorkspaceDataTableType;
 import org.databiosphere.workspacedataservice.workspace.WorkspaceInitJobInput;
 import org.databiosphere.workspacedataservice.workspace.WorkspaceInitJobResult;
+import org.databiosphere.workspacedataservice.workspace.WorkspaceRecord;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
@@ -25,14 +28,17 @@ public class WorkspaceService {
   private final JobDao jobDao;
   private final CollectionService collectionService;
   private final DataTableTypeInspector dataTableTypeInspector;
+  private final WorkspaceRepository workspaceRepository;
 
   public WorkspaceService(
       JobDao jobDao,
       CollectionService collectionService,
-      DataTableTypeInspector dataTableTypeInspector) {
+      DataTableTypeInspector dataTableTypeInspector,
+      WorkspaceRepository workspaceRepository) {
     this.jobDao = jobDao;
     this.collectionService = collectionService;
     this.dataTableTypeInspector = dataTableTypeInspector;
+    this.workspaceRepository = workspaceRepository;
   }
 
   public WorkspaceDataTableType getDataTableType(WorkspaceId workspaceId) {
@@ -60,6 +66,9 @@ public class WorkspaceService {
     // translate the input arguments to JobInput format
     WorkspaceInitJobInput jobInput =
         WorkspaceInitJobInput.from(workspaceId, workspaceInitServerModel);
+
+    // Save the workspace record to the database
+    initSystemWorkspace(workspaceId);
 
     // branch for clones vs. non-clones
     if (jobInput.sourceWorkspaceId() != null) {
@@ -120,5 +129,21 @@ public class WorkspaceService {
   private GenericJobServerModel initClone(WorkspaceInitJobInput jobInput) {
     // TODO AJ-1952: implement cloning
     throw new RuntimeException("not implemented");
+  }
+
+  /**
+   * Initialize the workspace record in the database (sys_wds.workspace) if it does not exist.
+   *
+   * @param workspaceId the workspace to initialize
+   */
+  public void initSystemWorkspace(WorkspaceId workspaceId) {
+    Optional<WorkspaceRecord> maybeWorkspaceRecord = workspaceRepository.findById(workspaceId);
+    if (maybeWorkspaceRecord.isEmpty()) {
+      WorkspaceDataTableType dataTableType =
+          dataTableTypeInspector.getWorkspaceDataTableType(workspaceId);
+      WorkspaceRecord newWorkspaceRecord =
+          new WorkspaceRecord(workspaceId, dataTableType, /* newFlag= */ true);
+      workspaceRepository.save(newWorkspaceRecord);
+    }
   }
 }
