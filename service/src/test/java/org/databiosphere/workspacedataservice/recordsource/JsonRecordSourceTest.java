@@ -9,7 +9,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.util.Arrays;
 import java.util.stream.Stream;
-import org.databiosphere.workspacedataservice.common.DataPlaneTestBase;
+import org.databiosphere.workspacedataservice.common.ControlPlaneTestBase;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -17,7 +17,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 
 @SpringBootTest
-class JsonRecordSourceTest extends DataPlaneTestBase {
+class JsonRecordSourceTest extends ControlPlaneTestBase {
   @Autowired ObjectMapper objectMapper; // as defined in JsonConfig
 
   private static Stream<Arguments> parserFeatures() {
