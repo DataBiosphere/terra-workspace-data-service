@@ -41,13 +41,12 @@ class TsvErrorMessageTest extends ControlPlaneTestBase {
   @Autowired private WorkspaceRepository workspaceRepository;
 
   private UUID collectionId;
-  private WorkspaceId workspaceId;
 
   private static final String VERSION = "v0.2";
 
   @BeforeEach
   void setUp() {
-    workspaceId = WorkspaceId.of(UUID.randomUUID());
+    WorkspaceId workspaceId = WorkspaceId.of(UUID.randomUUID());
 
     // create the workspace record
     workspaceRepository.save(

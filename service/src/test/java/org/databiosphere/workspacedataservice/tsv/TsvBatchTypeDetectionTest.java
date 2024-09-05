@@ -61,12 +61,11 @@ class TsvBatchTypeDetectionTest extends ControlPlaneTestBase {
   @SpyBean RecordService recordService;
 
   @Nullable private UUID collectionId;
-  @Nullable private WorkspaceId workspaceId;
   private static final RecordType THING_TYPE = RecordType.valueOf("thing");
 
   @BeforeEach
   void setUp() {
-    workspaceId = WorkspaceId.of(UUID.randomUUID());
+    WorkspaceId workspaceId = WorkspaceId.of(UUID.randomUUID());
 
     // create the workspace record
     workspaceRepository.save(
