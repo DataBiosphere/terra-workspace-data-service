@@ -14,12 +14,13 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.net.URL;
 import java.util.Map;
+import java.util.UUID;
 import org.apache.avro.file.DataFileStream;
 import org.apache.avro.generic.GenericRecord;
 import org.databiosphere.workspacedataservice.TestUtils;
-import org.databiosphere.workspacedataservice.common.DataPlaneTestBase;
-import org.databiosphere.workspacedataservice.config.TwdsProperties;
+import org.databiosphere.workspacedataservice.common.ControlPlaneTestBase;
 import org.databiosphere.workspacedataservice.dao.RecordDao;
+import org.databiosphere.workspacedataservice.dao.WorkspaceRepository;
 import org.databiosphere.workspacedataservice.dataimport.pfb.PfbTestUtils;
 import org.databiosphere.workspacedataservice.generated.CollectionServerModel;
 import org.databiosphere.workspacedataservice.recordsink.RecordSink;
@@ -31,6 +32,9 @@ import org.databiosphere.workspacedataservice.service.model.BatchWriteResult;
 import org.databiosphere.workspacedataservice.service.model.exception.BadStreamingWriteRequestException;
 import org.databiosphere.workspacedataservice.shared.model.CollectionId;
 import org.databiosphere.workspacedataservice.shared.model.RecordType;
+import org.databiosphere.workspacedataservice.shared.model.WorkspaceId;
+import org.databiosphere.workspacedataservice.workspace.WorkspaceDataTableType;
+import org.databiosphere.workspacedataservice.workspace.WorkspaceRecord;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -44,14 +48,14 @@ import org.springframework.test.context.TestPropertySource;
 @DirtiesContext
 @SpringBootTest
 @TestPropertySource(properties = {"twds.write.batch.size=2"})
-class BatchWriteServiceTest extends DataPlaneTestBase {
+class BatchWriteServiceTest extends ControlPlaneTestBase {
 
   @Autowired private RecordSourceFactory recordSourceFactory;
   @Autowired private RecordSinkFactory recordSinkFactory;
   @Autowired private BatchWriteService batchWriteService;
   @Autowired private CollectionService collectionService;
   @Autowired private NamedParameterJdbcTemplate namedTemplate;
-  @Autowired private TwdsProperties twdsProperties;
+  @Autowired private WorkspaceRepository workspaceRepository;
   @MockBean RecordDao recordDao; // prevents actual calls to the db
 
   @Nullable private CollectionId collectionId;
@@ -59,14 +63,17 @@ class BatchWriteServiceTest extends DataPlaneTestBase {
 
   @BeforeEach
   void setUp() {
-    CollectionServerModel collection =
-        collectionService.save(twdsProperties.workspaceId(), "name", "desc");
+    WorkspaceId workspaceId = WorkspaceId.of(UUID.randomUUID());
+    workspaceRepository.save(
+        new WorkspaceRecord(workspaceId, WorkspaceDataTableType.WDS, /* newFlag= */ true));
+    CollectionServerModel collection = collectionService.save(workspaceId, "name", "desc");
     collectionId = CollectionId.of(collection.getId());
   }
 
   @AfterEach
   void tearDown() {
     TestUtils.cleanAllCollections(collectionService, namedTemplate);
+    TestUtils.cleanAllWorkspaces(namedTemplate);
   }
 
   @Test
