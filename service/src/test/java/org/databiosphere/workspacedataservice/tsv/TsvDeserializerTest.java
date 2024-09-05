@@ -12,7 +12,7 @@ import java.math.BigInteger;
 import java.util.List;
 import java.util.Objects;
 import java.util.stream.Stream;
-import org.databiosphere.workspacedataservice.common.DataPlaneTestBase;
+import org.databiosphere.workspacedataservice.common.ControlPlaneTestBase;
 import org.databiosphere.workspacedataservice.shared.model.attributes.JsonAttribute;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
@@ -30,7 +30,7 @@ import org.springframework.boot.test.context.SpringBootTest;
  */
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 @SpringBootTest
-class TsvDeserializerTest extends DataPlaneTestBase {
+class TsvDeserializerTest extends ControlPlaneTestBase {
 
   @Autowired TsvDeserializer tsvDeserializer;
   @Autowired ObjectMapper mapper;
