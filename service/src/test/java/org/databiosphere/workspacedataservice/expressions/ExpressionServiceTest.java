@@ -163,10 +163,6 @@ public class ExpressionServiceTest extends TestBase {
                     Set.of(sib1GrandChildAttrLookup, sib1GrandChildPkLookup)),
                 new ExpressionQueryInfo(
                     List.of(sib2Relation, grandRelation), Set.of(sib2GrandChildAttrLookup))));
-
-    results.forEach(
-        result ->
-            recordDao.queryRelatedRecords(collectionUuid, parentType, "asfd", result.relations()));
   }
 
   @Test

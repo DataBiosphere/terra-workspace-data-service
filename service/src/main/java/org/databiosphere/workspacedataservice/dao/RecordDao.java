@@ -299,21 +299,123 @@ public class RecordDao {
   }
 
   public Map<String, List<Record>> queryRelatedRecords(
-      UUID collectionId, RecordType recordType, String recordId, List<Relation> relations) {
+      UUID collectionId,
+      RecordType arrayRecordType,
+      String arrayRecordId,
+      List<Relation> arrayRelations,
+      List<Relation> relations,
+      int pageSize,
+      int offset) {
+    if (arrayRelations.isEmpty()) {
+      throw new IllegalArgumentException("Array relations must not be empty");
+    }
+
+    var rootRecordType = arrayRelations.get(arrayRelations.size() - 1).relationRecordType();
 
     var queryRecordType =
-        relations.isEmpty() ? recordType : relations.get(relations.size() - 1).relationRecordType();
-    primaryKeyDao.getPrimaryKeyColumn(queryRecordType, collectionId);
+        relations.isEmpty()
+            ? rootRecordType
+            : relations.get(relations.size() - 1).relationRecordType();
 
+    return namedTemplate
+        .query(
+            StringSubstitutor.replace(
+                """
+                select tab0.${primaryKey} sys_root, tab${finalRelationIndex}.*
+                from ${rootTable} tab0
+                ${joinClause}
+                where tab0.${primaryKey} in (
+                  select tab${finalArrayRelationIndex}.${primaryKey}
+                  from ${arrayRootTable} tab0
+                  ${arrayJoinClause}
+                  where tab0.${arrayPrimaryKey} = :recordId
+                  order by tab${finalArrayRelationIndex}.${primaryKey}
+                  limit :pageSize
+                  offset :offset
+                )""",
+                Map.of(
+                    "primaryKey",
+                    quote(primaryKeyDao.getPrimaryKeyColumn(rootRecordType, collectionId)),
+                    "finalRelationIndex",
+                    relations.size(),
+                    "rootTable",
+                    getQualifiedTableName(rootRecordType, collectionId),
+                    "joinClause",
+                    buildJoinClauseForRelations(collectionId, rootRecordType, relations),
+                    "finalArrayRelationIndex",
+                    arrayRelations.size(),
+                    "arrayRootTable",
+                    getQualifiedTableName(arrayRecordType, collectionId),
+                    "arrayJoinClause",
+                    buildJoinClauseForRelations(collectionId, arrayRecordType, arrayRelations),
+                    "arrayPrimaryKey",
+                    quote(primaryKeyDao.getPrimaryKeyColumn(arrayRecordType, collectionId)))),
+            new MapSqlParameterSource(
+                Map.of(RECORD_ID_PARAM, arrayRecordId, "pageSize", pageSize, "offset", offset)),
+            new RecordRowMapper(
+                queryRecordType,
+                objectMapper,
+                collectionId,
+                Map.of("sys_root", DataTypeMapping.STRING)))
+        .stream()
+        .map(
+            r -> {
+              var sysRoot = r.getAttributeValue("sys_root").toString();
+              r.getAttributes().removeAttribute("sys_root");
+              return Map.entry(sysRoot, r);
+            })
+        .collect(
+            Collectors.toMap(
+                Map.Entry::getKey,
+                e -> List.of(e.getValue()),
+                (x, y) -> Stream.concat(x.stream(), y.stream()).toList()));
+  }
+
+  public List<Record> queryRelatedRecords(
+      UUID collectionId, RecordType rootRecordType, String rootRecordId, List<Relation> relations) {
+
+    var queryRecordType =
+        relations.isEmpty()
+            ? rootRecordType
+            : relations.get(relations.size() - 1).relationRecordType();
+
+    return namedTemplate.query(
+        StringSubstitutor.replace(
+            """
+                select tab${finalRelationIndex}.*
+                from ${rootTable} tab0
+                ${joinClause}
+                where tab0.${primaryKey} = :recordId""",
+            Map.of(
+                "primaryKey",
+                quote(primaryKeyDao.getPrimaryKeyColumn(rootRecordType, collectionId)),
+                "finalRelationIndex",
+                relations.size(),
+                "rootTable",
+                getQualifiedTableName(rootRecordType, collectionId),
+                "joinClause",
+                buildJoinClauseForRelations(collectionId, rootRecordType, relations))),
+        new MapSqlParameterSource(RECORD_ID_PARAM, rootRecordId),
+        new RecordRowMapper(
+            queryRecordType,
+            objectMapper,
+            collectionId,
+            Map.of("sys_root", DataTypeMapping.STRING)));
+  }
+
+  private String buildJoinClauseForRelations(
+      UUID collectionId, RecordType rootRecordType, List<Relation> relations) {
     var joinClause = new StringBuilder();
     for (int relationIndex = 0; relationIndex < relations.size(); relationIndex++) {
       var relation = relations.get(relationIndex);
       var priorRecordType =
-          relationIndex == 0 ? recordType : relations.get(relationIndex - 1).relationRecordType();
+          relationIndex == 0
+              ? rootRecordType
+              : relations.get(relationIndex - 1).relationRecordType();
       var priorRelationSchema = getExistingTableSchema(collectionId, priorRecordType);
       if (priorRelationSchema.get(relation.relationColName()).isArrayType()) {
         var joinTableName =
-            getQualifiedJoinTableName(collectionId, relation.relationColName(), recordType);
+            getQualifiedJoinTableName(collectionId, relation.relationColName(), rootRecordType);
 
         joinClause.append(
             constructRelationArrayJoinFragment(
@@ -333,38 +435,7 @@ public class RecordDao {
                 relation));
       }
     }
-
-    return namedTemplate
-        .query(
-            StringSubstitutor.replace(
-                "select tab0.${primaryKey} sys_root, tab${finalRelationIndex}.* from ${rootTable} tab0 ${joinClause} where tab0.${primaryKey} = :recordId",
-                Map.of(
-                    "primaryKey",
-                    quote(primaryKeyDao.getPrimaryKeyColumn(recordType, collectionId)),
-                    "finalRelationIndex",
-                    relations.size(),
-                    "rootTable",
-                    getQualifiedTableName(recordType, collectionId),
-                    "joinClause",
-                    joinClause)),
-            new MapSqlParameterSource(RECORD_ID_PARAM, recordId),
-            new RecordRowMapper(
-                queryRecordType,
-                objectMapper,
-                collectionId,
-                Map.of("sys_root", DataTypeMapping.STRING)))
-        .stream()
-        .map(
-            r -> {
-              var sysRoot = r.getAttributeValue("sys_root").toString();
-              r.getAttributes().removeAttribute("sys_root");
-              return Map.entry(sysRoot, r);
-            })
-        .collect(
-            Collectors.toMap(
-                Map.Entry::getKey,
-                e -> List.of(e.getValue()),
-                (x, y) -> Stream.concat(x.stream(), y.stream()).toList()));
+    return joinClause.toString();
   }
 
   private String constructRelationJoinFragment(

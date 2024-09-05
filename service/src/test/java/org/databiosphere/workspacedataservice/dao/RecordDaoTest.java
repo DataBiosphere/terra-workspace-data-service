@@ -1214,7 +1214,7 @@ class RecordDaoTest extends TestBase {
     var results =
         recordDao.queryRelatedRecords(collectionUuid, recordType, testRecord.getId(), relations);
 
-    assertEquals(Map.of(testRecord.getId(), List.of(referencedRecord)), results);
+    assertEquals(List.of(referencedRecord), results);
   }
 
   /** Test query resulting from an expressions like `this.relationAttr.otherRelationAttr.xxx` */
@@ -1267,7 +1267,7 @@ class RecordDaoTest extends TestBase {
             testRecord.getId(),
             Stream.of(relations, relationsOtherType).flatMap(List::stream).toList());
 
-    assertEquals(Map.of(testRecord.getId(), List.of(referencedRecord)), results);
+    assertEquals(List.of(referencedRecord), results);
   }
 
   /** Test query resulting from an expressions like `this.xxx` */
@@ -1282,7 +1282,7 @@ class RecordDaoTest extends TestBase {
     var results =
         recordDao.queryRelatedRecords(collectionUuid, recordType, testRecord.getId(), List.of());
 
-    assertEquals(Map.of(testRecord.getId(), List.of(testRecord)), results);
+    assertEquals(List.of(testRecord), results);
   }
 
   /**
@@ -1323,8 +1323,7 @@ class RecordDaoTest extends TestBase {
     var results =
         recordDao.queryRelatedRecords(collectionUuid, recordType, testRecord.getId(), relations);
 
-    assertEquals(
-        Map.of(testRecord.getId(), List.of(referencedRecord1, referencedRecord2)), results);
+    assertEquals(List.of(referencedRecord1, referencedRecord2), results);
   }
 
   /**
@@ -1405,8 +1404,87 @@ class RecordDaoTest extends TestBase {
             testRecord.getId(),
             Stream.of(relations, otherRelations).flatMap(List::stream).toList());
 
+    assertEquals(List.of(referencedRecordOtherType1, referencedRecordOtherType2), results);
+  }
+
+  /**
+   * Test query resulting from an expressions like `this.relationAttr.xxx` where relationAttr is an
+   * array and there is another record that has an array of the records to evaluate the expression
+   * against
+   */
+  @Test
+  void testQueryRelatedRecordsWitArrayRecord() {
+    var arrayRecordType = RecordType.valueOf("arrayRecordType");
+    recordDao.createRecordType(
+        collectionUuid, emptyMap(), arrayRecordType, RelationCollection.empty(), PRIMARY_KEY);
+
+    var records =
+        Stream.of(0, 1, 2, 3, 4, 5)
+            .map(i -> new Record("rec" + i, recordType, RecordAttributes.empty()))
+            .toList();
+
+    recordDao.batchUpsert(collectionUuid, recordType, records, emptyMap());
+    for (int i = 0; i < records.size(); i += 3) {
+      recordService.updateSingleRecord(
+          collectionUuid,
+          recordType,
+          records.get(i).getId(),
+          new RecordRequest(
+              new RecordAttributes(
+                  Map.of(
+                      "relationAttr",
+                      Stream.of(records.get(i + 1), records.get(i + 2))
+                          .map(r -> RelationUtils.createRelationString(recordType, r.getId()))
+                          .toList()))));
+    }
+
+    Record arrayRecord = new Record("arrayRecord", arrayRecordType, RecordAttributes.empty());
+    recordDao.batchUpsert(collectionUuid, arrayRecordType, List.of(arrayRecord), emptyMap());
+    recordService.updateSingleRecord(
+        collectionUuid,
+        arrayRecordType,
+        arrayRecord.getId(),
+        new RecordRequest(
+            new RecordAttributes(
+                Map.of(
+                    "arrayAttr",
+                    Stream.of(records.get(0), records.get(3))
+                        .map(r -> RelationUtils.createRelationString(recordType, r.getId()))
+                        .toList()))));
+
+    List<Relation> relations = recordDao.getRelationArrayCols(collectionUuid, recordType);
+    assertThat(relations).hasSize(1);
+    List<Relation> arrayRelations = recordDao.getRelationArrayCols(collectionUuid, arrayRecordType);
+    assertThat(arrayRelations).hasSize(1);
+
+    var results =
+        recordDao.queryRelatedRecords(
+            collectionUuid, arrayRecordType, arrayRecord.getId(), arrayRelations, relations, 10, 0);
+
     assertEquals(
-        Map.of(testRecord.getId(), List.of(referencedRecordOtherType1, referencedRecordOtherType2)),
+        Map.of(
+            records.get(0).getId(),
+            List.of(records.get(1), records.get(2)),
+            records.get(3).getId(),
+            List.of(records.get(4), records.get(5))),
         results);
+
+    // Test pagination
+    for (int page = 0; page < 2; page++) {
+      var pagedResults =
+          recordDao.queryRelatedRecords(
+              collectionUuid,
+              arrayRecordType,
+              arrayRecord.getId(),
+              arrayRelations,
+              relations,
+              1,
+              page);
+      assertEquals(
+          Map.of(
+              records.get(page * 3).getId(),
+              List.of(records.get(page * 3 + 1), records.get(page * 3 + 2))),
+          pagedResults);
+    }
   }
 }
