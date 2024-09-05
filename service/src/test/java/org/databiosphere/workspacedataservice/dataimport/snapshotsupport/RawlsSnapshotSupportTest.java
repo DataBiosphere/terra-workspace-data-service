@@ -14,7 +14,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 import org.databiosphere.workspacedataservice.activitylog.ActivityLogger;
-import org.databiosphere.workspacedataservice.common.DataPlaneTestBase;
+import org.databiosphere.workspacedataservice.common.ControlPlaneTestBase;
 import org.databiosphere.workspacedataservice.rawls.RawlsClient;
 import org.databiosphere.workspacedataservice.rawls.SnapshotListResponse;
 import org.databiosphere.workspacedataservice.shared.model.WorkspaceId;
@@ -23,12 +23,10 @@ import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.test.annotation.DirtiesContext;
-import org.springframework.test.context.ActiveProfiles;
 
 @DirtiesContext
-@ActiveProfiles(value = "control-plane", inheritProfiles = false)
 @SpringBootTest
-class RawlsSnapshotSupportTest extends DataPlaneTestBase {
+class RawlsSnapshotSupportTest extends ControlPlaneTestBase {
 
   @MockBean RawlsClient rawlsClient;
   @MockBean ActivityLogger activityLogger;

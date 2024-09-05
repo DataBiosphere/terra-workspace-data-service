@@ -14,22 +14,17 @@ import com.google.cloud.storage.StorageException;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.net.URI;
-import org.databiosphere.workspacedataservice.common.DataPlaneTestBase;
+import org.databiosphere.workspacedataservice.common.ControlPlaneTestBase;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.stereotype.Component;
 import org.springframework.test.annotation.DirtiesContext;
-import org.springframework.test.context.ActiveProfiles;
 
-@Component
 @DirtiesContext
 @SpringBootTest
-// inheritProfiles = false to make sure data-plane is not active from DataPlaneTestBase
-@ActiveProfiles(value = "control-plane", inheritProfiles = false)
-class GcsStorageTest extends DataPlaneTestBase {
+class GcsStorageTest extends ControlPlaneTestBase {
   @Qualifier("mockGcsStorage")
   @Autowired
   private GcsStorage storage;

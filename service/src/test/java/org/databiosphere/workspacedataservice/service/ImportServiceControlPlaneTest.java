@@ -6,6 +6,7 @@ import static org.mockito.Mockito.when;
 
 import java.net.URI;
 import java.util.UUID;
+import org.databiosphere.workspacedataservice.common.ControlPlaneTestBase;
 import org.databiosphere.workspacedataservice.generated.ImportRequestServerModel;
 import org.databiosphere.workspacedataservice.shared.model.CollectionId;
 import org.databiosphere.workspacedataservice.shared.model.WorkspaceId;
@@ -17,7 +18,6 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.ActiveProfiles;
-import org.springframework.test.context.TestPropertySource;
 
 /**
  * Tests for permission behaviors in the control plane. See also {@link ImportServiceTest} for tests
@@ -25,17 +25,10 @@ import org.springframework.test.context.TestPropertySource;
  *
  * @see ImportServiceTest
  */
-@ActiveProfiles({"control-plane", "noop-scheduler-dao", "mock-sam"})
+@ActiveProfiles({"noop-scheduler-dao", "mock-sam"})
 @DirtiesContext
 @SpringBootTest
-@TestPropertySource(
-    properties = {
-      // turn off pubsub autoconfiguration for tests
-      "spring.cloud.gcp.pubsub.enabled=false",
-      // Rawls url must be valid, else context initialization (Spring startup) will fail
-      "rawlsUrl=https://localhost/"
-    })
-class ImportServiceControlPlaneTest {
+class ImportServiceControlPlaneTest extends ControlPlaneTestBase {
 
   @Autowired ImportService importService;
 

@@ -35,7 +35,7 @@ import java.util.UUID;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-import org.databiosphere.workspacedataservice.common.DataPlaneTestBase;
+import org.databiosphere.workspacedataservice.common.ControlPlaneTestBase;
 import org.databiosphere.workspacedataservice.dataimport.ImportDetails;
 import org.databiosphere.workspacedataservice.dataimport.ImportJobInput;
 import org.databiosphere.workspacedataservice.dataimport.rawlsjson.RawlsJsonImportOptions;
@@ -69,13 +69,11 @@ import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.test.annotation.DirtiesContext;
-import org.springframework.test.context.ActiveProfiles;
 import org.springframework.util.StreamUtils;
 
 @DirtiesContext
 @SpringBootTest
-@ActiveProfiles(value = "control-plane", inheritProfiles = false)
-class RawlsRecordSinkTest extends DataPlaneTestBase {
+class RawlsRecordSinkTest extends ControlPlaneTestBase {
   @Autowired private ObjectMapper mapper;
   @MockBean private PubSub pubSub;
 
