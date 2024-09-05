@@ -64,6 +64,8 @@ class CollectionInitializerBeanTest extends DataPlaneTestBase {
   void setUp() throws InterruptedException {
     when(mockLock.tryLock(anyLong(), any())).thenReturn(true);
     when(registry.obtain(anyString())).thenReturn(mockLock);
+    // start fresh
+    TestUtils.cleanAllCollections(collectionService, namedTemplate);
   }
 
   @AfterEach
