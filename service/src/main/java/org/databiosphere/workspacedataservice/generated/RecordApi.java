@@ -44,10 +44,11 @@ public interface RecordApi {
     }
 
     /**
-     * POST /records/v1/{collectionId}/delete : Bulk delete records
+     * POST /records/v1/{collectionId}/{recordType}/delete : Bulk delete records
      * Deletes records by record ID, using collection ID. To delete by workspace ID and collection name instead, see deleteRecordsByWorkspaceV1 
      *
      * @param collectionId Collection id (required)
+     * @param type Record type (required)
      * @param deleteRecordsRequestServerModel Record deletion specification (required)
      * @return Deletion successful (status code 200)
      */
@@ -67,13 +68,14 @@ public interface RecordApi {
     )
     @RequestMapping(
         method = RequestMethod.POST,
-        value = "/records/v1/{collectionId}/delete",
+        value = "/records/v1/{collectionId}/{recordType}/delete",
         produces = { "application/json" },
         consumes = { "application/json" }
     )
     
     default ResponseEntity<DeleteRecordsResponseServerModel> deleteRecordsByCollectionV1(
         @Parameter(name = "collectionId", description = "Collection id", required = true, in = ParameterIn.PATH) @PathVariable("collectionId") UUID collectionId,
+        @Parameter(name = "type", description = "Record type", required = true, in = ParameterIn.PATH) @PathVariable("type") String type,
         @Parameter(name = "DeleteRecordsRequestServerModel", description = "Record deletion specification", required = true) @Valid @RequestBody DeleteRecordsRequestServerModel deleteRecordsRequestServerModel
     ) {
         return new ResponseEntity<>(HttpStatus.NOT_IMPLEMENTED);
@@ -82,11 +84,12 @@ public interface RecordApi {
 
 
     /**
-     * POST /records/v1/{workspaceId}/{collectionName}/delete : Bulk delete records
+     * POST /records/v1/{workspaceId}/{collectionName}/{recordType}/delete : Bulk delete records
      * Deletes records by record ID, using workspace ID and collection name. To delete by collection ID instead, see deleteRecordsByCollectionV1 
      *
      * @param workspaceId Workspace id (required)
      * @param collectionName Collection name (required)
+     * @param type Record type (required)
      * @param deleteRecordsRequestServerModel Record deletion specification (required)
      * @return Deletion successful (status code 200)
      */
@@ -106,7 +109,7 @@ public interface RecordApi {
     )
     @RequestMapping(
         method = RequestMethod.POST,
-        value = "/records/v1/{workspaceId}/{collectionName}/delete",
+        value = "/records/v1/{workspaceId}/{collectionName}/{recordType}/delete",
         produces = { "application/json" },
         consumes = { "application/json" }
     )
@@ -114,6 +117,7 @@ public interface RecordApi {
     default ResponseEntity<DeleteRecordsResponseServerModel> deleteRecordsByWorkspaceV1(
         @Parameter(name = "workspaceId", description = "Workspace id", required = true, in = ParameterIn.PATH) @PathVariable("workspaceId") UUID workspaceId,
         @Parameter(name = "collectionName", description = "Collection name", required = true, in = ParameterIn.PATH) @PathVariable("collectionName") String collectionName,
+        @Parameter(name = "type", description = "Record type", required = true, in = ParameterIn.PATH) @PathVariable("type") String type,
         @Parameter(name = "DeleteRecordsRequestServerModel", description = "Record deletion specification", required = true) @Valid @RequestBody DeleteRecordsRequestServerModel deleteRecordsRequestServerModel
     ) {
         return new ResponseEntity<>(HttpStatus.NOT_IMPLEMENTED);

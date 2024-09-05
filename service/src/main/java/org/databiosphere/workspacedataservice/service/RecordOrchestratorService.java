@@ -284,17 +284,19 @@ public class RecordOrchestratorService { // TODO give me a better name
         user -> user.deleted().table().ofQuantity(1).withRecordType(recordType));
   }
 
-  public List<String> deleteRecords(UUID collectionId, List<String> recordIds) {
+  public List<String> deleteRecords(
+      UUID collectionId, RecordType recordType, List<String> recordIds) {
 
     return List.of("dummyRecordId");
   }
 
-  public List<String> deleteAllRecords(UUID collectionId) {
-    return deleteAllRecords(collectionId, Collections.emptyList());
+  public List<String> deleteAllRecords(UUID collectionId, RecordType recordType) {
+    return deleteAllRecords(collectionId, recordType, Collections.emptyList());
   }
 
-  public List<String> deleteAllRecords(UUID collectionId, List<String> excludedRecordIds) {
-
+  public List<String> deleteAllRecords(
+      UUID collectionId, RecordType recordType, List<String> excludedRecordIds) {
+    recordService.deleteAllRecords(collectionId, recordType, excludedRecordIds);
     return List.of("dummyRecordId");
   }
 

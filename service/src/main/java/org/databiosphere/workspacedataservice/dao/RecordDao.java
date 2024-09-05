@@ -550,6 +550,26 @@ public class RecordDao {
     }
   }
 
+  public boolean deleteRecords(UUID collectionId, RecordType recordType, List<String> recordIds) {
+    String recordTypePrimaryKey = primaryKeyDao.getPrimaryKeyColumn(recordType, collectionId);
+    //    try {
+    //      return namedTemplate.update(
+    //              "delete from "
+    //                  + getQualifiedTableName(recordType, collectionId)
+    //                  + " where "
+    //                  + quote(recordTypePrimaryKey)
+    //                  + " = :recordId",
+    //              new MapSqlParameterSource(RECORD_ID_PARAM, recordId))
+    //          == 1;
+    //    } catch (DataIntegrityViolationException e) {
+    //      if (e.getRootCause() instanceof SQLException sqlEx) {
+    //        checkForTableRelation(sqlEx);
+    //      }
+    //      throw e;
+    //    }
+    return true;
+  }
+
   public void addForeignKeyForReference(
       RecordType recordType,
       RecordType referencedRecordType,

@@ -256,20 +256,27 @@ public class RecordController implements RecordApi {
   public ResponseEntity<DeleteRecordsResponseServerModel> deleteRecordsByWorkspaceV1(
       UUID workspaceId,
       String collectionName,
+      String recordType,
       DeleteRecordsRequestServerModel deleteRecordsRequestServerModel) {
     CollectionServerModel collection =
         collectionService.get(WorkspaceId.of(workspaceId), collectionName);
-    return deleteRecords(collection.getId(), deleteRecordsRequestServerModel);
+    return deleteRecords(
+        collection.getId(), RecordType.valueOf(recordType), deleteRecordsRequestServerModel);
   }
 
   @Override
   public ResponseEntity<DeleteRecordsResponseServerModel> deleteRecordsByCollectionV1(
-      UUID collectionId, DeleteRecordsRequestServerModel deleteRecordsRequestServerModel) {
-    return deleteRecords(collectionId, deleteRecordsRequestServerModel);
+      UUID collectionId,
+      String recordType,
+      DeleteRecordsRequestServerModel deleteRecordsRequestServerModel) {
+    return deleteRecords(
+        collectionId, RecordType.valueOf(recordType), deleteRecordsRequestServerModel);
   }
 
   private ResponseEntity<DeleteRecordsResponseServerModel> deleteRecords(
-      UUID collectionId, DeleteRecordsRequestServerModel deleteRecordsRequestServerModel) {
+      UUID collectionId,
+      RecordType recordType,
+      DeleteRecordsRequestServerModel deleteRecordsRequestServerModel) {
 
     DeleteRecordsResponseServerModel response = new DeleteRecordsResponseServerModel();
 
@@ -293,13 +300,13 @@ public class RecordController implements RecordApi {
     if (hasRecordIds) {
       deletedRecordIds =
           recordOrchestratorService.deleteRecords(
-              collectionId, deleteRecordsRequestServerModel.getRecordIds());
+              collectionId, recordType, deleteRecordsRequestServerModel.getRecordIds());
     } else if (hasExcludedRecordIds) {
       deletedRecordIds =
           recordOrchestratorService.deleteAllRecords(
-              collectionId, deleteRecordsRequestServerModel.getExcludedRecordIds());
+              collectionId, recordType, deleteRecordsRequestServerModel.getExcludedRecordIds());
     } else if (deleteAll) {
-      deletedRecordIds = recordOrchestratorService.deleteAllRecords(collectionId);
+      deletedRecordIds = recordOrchestratorService.deleteAllRecords(collectionId, recordType);
     } else {
       deletedRecordIds = Collections.emptyList();
     }

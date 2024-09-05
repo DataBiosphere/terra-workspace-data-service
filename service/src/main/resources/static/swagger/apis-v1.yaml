@@ -254,7 +254,7 @@ paths:
   ##############################
   # Records APIs
   ##############################
-  /records/v1/{workspaceId}/{collectionName}/delete:
+  /records/v1/{workspaceId}/{collectionName}/{recordType}/delete:
     post:
       summary: Bulk delete records
       operationId: deleteRecordsByWorkspaceV1
@@ -266,6 +266,7 @@ paths:
       parameters:
         - $ref: '#/components/parameters/workspaceIdPathParam'
         - $ref: '#/components/parameters/collectionNamePathParam'
+        - $ref: '#/components/parameters/recordTypePathParam'
       requestBody:
         description: Record deletion specification
         required: true
@@ -281,7 +282,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/DeleteRecordsResponse'
 
-  /records/v1/{collectionId}/delete:
+  /records/v1/{collectionId}/{recordType}/delete:
     post:
       summary: Bulk delete records
       operationId: deleteRecordsByCollectionV1
@@ -292,6 +293,7 @@ paths:
         - Record
       parameters:
         - $ref: '#/components/parameters/collectionIdPathParam'
+        - $ref: '#/components/parameters/recordTypePathParam'
       requestBody:
         description: Record deletion specification
         required: true
@@ -369,6 +371,13 @@ components:
       schema:
         type: string
         default: default
+    recordTypePathParam:
+      name: type
+      in: path
+      description: Record type
+      required: true
+      schema:
+        type: string
 
   schemas:
     Capabilities:

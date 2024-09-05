@@ -421,7 +421,20 @@ public class RecordService {
   }
 
   @WriteTransaction
-  public List<String> deleteRecords(UUID collectionId) {
+  public List<String> deleteRecords(
+      UUID collectionId, RecordType recordType, List<String> recordIds) {
+    recordDao.deleteRecords(collectionId, recordType, recordIds);
+
+    // TODO: replace this
+    return List.of("deletedRecord1");
+  }
+
+  @WriteTransaction
+  public List<String> deleteAllRecords(
+      UUID collectionId, RecordType recordType, List<String> excludedRecordIds) {
+    // recordDao.deleteAllRecordsExcept(collectionId, recordType, excludedRecordIds);
+
+    // TODO: replace this
     return List.of("deletedRecord1");
   }
 

@@ -487,10 +487,10 @@ paths:
   ##############################
   # Record APIs
   ##############################
-  /records/v1/{workspaceId}/{collectionName}/delete:
-    $ref: 'apis-v1.yaml#/paths/~1records~1v1~1{workspaceId}~1{collectionName}~1delete'
-  /records/v1/{collectionId}/delete:
-    $ref: 'apis-v1.yaml#/paths/~1records~1v1~1{collectionId}~1delete'
+  /records/v1/{workspaceId}/{collectionName}/{recordType}/delete:
+    $ref: 'apis-v1.yaml#/paths/~1records~1v1~1{workspaceId}~1{collectionName}~1{recordType}~1delete'
+  /records/v1/{collectionId}/{recordType}/delete:
+    $ref: 'apis-v1.yaml#/paths/~1records~1v1~1{collectionId}~1{recordType}~1delete'
 
 
   ##############################
