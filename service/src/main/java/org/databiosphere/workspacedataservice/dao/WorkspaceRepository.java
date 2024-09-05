@@ -1,8 +1,12 @@
 package org.databiosphere.workspacedataservice.dao;
 
 import org.databiosphere.workspacedataservice.shared.model.WorkspaceId;
+import org.databiosphere.workspacedataservice.workspace.WorkspaceDataTableType;
 import org.databiosphere.workspacedataservice.workspace.WorkspaceRecord;
+import org.springframework.data.jdbc.repository.query.Modifying;
+import org.springframework.data.jdbc.repository.query.Query;
 import org.springframework.data.repository.CrudRepository;
+import org.springframework.transaction.annotation.Transactional;
 
 /**
  * Spring Data repository for managing WorkspaceRecord objects in the sys_wds.workspace table.
@@ -16,4 +20,12 @@ import org.springframework.data.repository.CrudRepository;
  *
  * <p>This means you won't see any code that actually implements those methods. They just work.
  */
-public interface WorkspaceRepository extends CrudRepository<WorkspaceRecord, WorkspaceId> {}
+public interface WorkspaceRepository extends CrudRepository<WorkspaceRecord, WorkspaceId> {
+
+  // custom method to save a workspace record
+  @Transactional
+  @Modifying
+  @Query(
+      "INSERT INTO sys_wds.workspace (workspace_id, data_table_type) VALUES (:workspaceId, :workspaceDataTableType) ON CONFLICT DO NOTHING")
+  void saveWorkspaceRecord(WorkspaceId workspaceId, WorkspaceDataTableType workspaceDataTableType);
+}
