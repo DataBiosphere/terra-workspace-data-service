@@ -115,7 +115,7 @@ class RawlsDataTableTypeInspectorTest {
   }
 
   @Test
-  void useRemoteResult() {
+  void useAndPersistRemoteResult() {
     WorkspaceId workspaceId = WorkspaceId.of(UUID.randomUUID());
 
     // mock Rawls client
@@ -143,5 +143,9 @@ class RawlsDataTableTypeInspectorTest {
 
     // we should have made the one remote request to Rawls
     verify(mockRawlsClient, times(1)).getWorkspaceDetails(workspaceId.id());
+
+    // and we should have saved the result to the local repository
+    WorkspaceRecord expectedSave = new WorkspaceRecord(workspaceId, WDS, true);
+    verify(mockWorkspaceRepository, times(1)).save(expectedSave);
   }
 }

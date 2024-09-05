@@ -37,9 +37,17 @@ public class RawlsDataTableTypeInspector implements DataTableTypeInspector {
     // if not found in local database, query Rawls to determine the type of workspace
     RawlsWorkspaceDetails details = rawlsClient.getWorkspaceDetails(workspaceId.id());
 
-    return switch (details.workspace().workspaceType()) {
-      case MC -> WorkspaceDataTableType.WDS;
-      case RAWLS -> WorkspaceDataTableType.RAWLS;
-    };
+    WorkspaceDataTableType dataTableType =
+        switch (details.workspace().workspaceType()) {
+          case MC -> WorkspaceDataTableType.WDS;
+          case RAWLS -> WorkspaceDataTableType.RAWLS;
+        };
+
+    // persist the Rawls result to the local db for future use
+    WorkspaceRecord newWorkspaceRecord =
+        new WorkspaceRecord(workspaceId, dataTableType, /* newFlag= */ true);
+    workspaceRepository.save(newWorkspaceRecord);
+
+    return dataTableType;
   }
 }
