@@ -3,30 +3,17 @@ package org.databiosphere.workspacedataservice.dao;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import java.util.UUID;
-import org.databiosphere.workspacedataservice.TestUtils;
 import org.databiosphere.workspacedataservice.shared.model.WorkspaceId;
 import org.databiosphere.workspacedataservice.workspace.WorkspaceDataTableType;
 import org.databiosphere.workspacedataservice.workspace.WorkspaceRecord;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
-import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.transaction.annotation.Transactional;
 
-@DirtiesContext
 @SpringBootTest
 class WorkspaceRepositoryTest {
   @Autowired private WorkspaceRepository workspaceRepository;
-  @Autowired private NamedParameterJdbcTemplate namedTemplate;
-
-  @BeforeEach
-  @AfterEach
-  void clearWorkspaces() {
-    TestUtils.cleanAllWorkspaces(namedTemplate);
-  }
 
   @Test
   @Transactional
