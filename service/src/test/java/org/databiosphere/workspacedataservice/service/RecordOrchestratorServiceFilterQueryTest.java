@@ -11,20 +11,23 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Stream;
-import org.databiosphere.workspacedataservice.common.DataPlaneTestBase;
-import org.databiosphere.workspacedataservice.config.TwdsProperties;
+import org.databiosphere.workspacedataservice.TestUtils;
+import org.databiosphere.workspacedataservice.common.ControlPlaneTestBase;
 import org.databiosphere.workspacedataservice.dao.RecordDao;
+import org.databiosphere.workspacedataservice.dao.WorkspaceRepository;
 import org.databiosphere.workspacedataservice.generated.CollectionRequestServerModel;
 import org.databiosphere.workspacedataservice.generated.CollectionServerModel;
 import org.databiosphere.workspacedataservice.search.InvalidQueryException;
 import org.databiosphere.workspacedataservice.service.model.DataTypeMapping;
 import org.databiosphere.workspacedataservice.service.model.RelationCollection;
-import org.databiosphere.workspacedataservice.shared.model.CollectionId;
 import org.databiosphere.workspacedataservice.shared.model.RecordQueryResponse;
 import org.databiosphere.workspacedataservice.shared.model.RecordResponse;
 import org.databiosphere.workspacedataservice.shared.model.RecordType;
 import org.databiosphere.workspacedataservice.shared.model.SearchFilter;
 import org.databiosphere.workspacedataservice.shared.model.SearchRequest;
+import org.databiosphere.workspacedataservice.shared.model.WorkspaceId;
+import org.databiosphere.workspacedataservice.workspace.WorkspaceDataTableType;
+import org.databiosphere.workspacedataservice.workspace.WorkspaceRecord;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Disabled;
@@ -37,6 +40,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.core.io.Resource;
+import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.test.context.ActiveProfiles;
 
@@ -48,12 +52,13 @@ import org.springframework.test.context.ActiveProfiles;
 @ActiveProfiles(profiles = {"mock-sam"})
 @SpringBootTest
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
-class RecordOrchestratorServiceFilterQueryTest extends DataPlaneTestBase {
+class RecordOrchestratorServiceFilterQueryTest extends ControlPlaneTestBase {
 
   @Autowired private CollectionService collectionService;
+  @Autowired private NamedParameterJdbcTemplate namedTemplate;
   @Autowired private RecordOrchestratorService recordOrchestratorService;
   @Autowired private RecordDao recordDao;
-  @Autowired private TwdsProperties twdsProperties;
+  @Autowired private WorkspaceRepository workspaceRepository;
 
   @Value("classpath:searchfilter/testdata.tsv")
   Resource testDataTsv;
@@ -62,28 +67,28 @@ class RecordOrchestratorServiceFilterQueryTest extends DataPlaneTestBase {
   Resource testRelationsTsv;
 
   private UUID testCollectionId;
+  private WorkspaceId workspaceId;
   private static final RecordType TEST_TYPE = RecordType.valueOf("test");
 
   private static final String PRIMARY_KEY = "test_id";
 
-  // delete all collections, across all workspaces
-  private void cleanupAll() {
-    List<CollectionServerModel> colls = collectionService.list(twdsProperties.workspaceId());
-    colls.forEach(
-        coll ->
-            collectionService.delete(twdsProperties.workspaceId(), CollectionId.of(coll.getId())));
-  }
-
   @BeforeEach
   void beforeEach() {
+    workspaceId = WorkspaceId.of(UUID.randomUUID());
+
+    // create the workspace record
+    workspaceRepository.save(
+        new WorkspaceRecord(workspaceId, WorkspaceDataTableType.WDS, /* newFlag= */ true));
+
     // delete all existing collections
-    cleanupAll();
+    TestUtils.cleanAllCollections(collectionService, namedTemplate);
+
     // create our collection
     CollectionRequestServerModel coll =
         new CollectionRequestServerModel(
             "unit-test", "RecordOrchestratorServiceFilterQueryTest unit test collection");
 
-    CollectionServerModel actual = collectionService.save(twdsProperties.workspaceId(), coll);
+    CollectionServerModel actual = collectionService.save(workspaceId, coll);
 
     // save the created collection's id for use in tests
     testCollectionId = actual.getId();
@@ -92,7 +97,9 @@ class RecordOrchestratorServiceFilterQueryTest extends DataPlaneTestBase {
   @AfterAll
   void afterAll() {
     // delete all existing collections
-    cleanupAll();
+    TestUtils.cleanAllCollections(collectionService, namedTemplate);
+    // delete all existing workspaces
+    TestUtils.cleanAllWorkspaces(namedTemplate);
   }
 
   // ===== STRING column

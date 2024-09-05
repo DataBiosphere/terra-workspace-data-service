@@ -26,10 +26,10 @@ import java.util.stream.Stream;
 import org.broadinstitute.dsde.workbench.client.sam.ApiException;
 import org.broadinstitute.dsde.workbench.client.sam.api.GoogleApi;
 import org.databiosphere.workspacedataservice.TestUtils;
-import org.databiosphere.workspacedataservice.annotations.SingleTenant;
-import org.databiosphere.workspacedataservice.common.DataPlaneTestBase;
+import org.databiosphere.workspacedataservice.common.ControlPlaneTestBase;
 import org.databiosphere.workspacedataservice.dao.JobDao;
 import org.databiosphere.workspacedataservice.dao.SchedulerDao;
+import org.databiosphere.workspacedataservice.dao.WorkspaceRepository;
 import org.databiosphere.workspacedataservice.dataimport.ImportJobInput;
 import org.databiosphere.workspacedataservice.dataimport.pfb.PfbQuartzJob;
 import org.databiosphere.workspacedataservice.dataimport.tdr.TdrManifestImportOptions;
@@ -42,6 +42,8 @@ import org.databiosphere.workspacedataservice.shared.model.BearerToken;
 import org.databiosphere.workspacedataservice.shared.model.CollectionId;
 import org.databiosphere.workspacedataservice.shared.model.Schedulable;
 import org.databiosphere.workspacedataservice.shared.model.WorkspaceId;
+import org.databiosphere.workspacedataservice.workspace.WorkspaceDataTableType;
+import org.databiosphere.workspacedataservice.workspace.WorkspaceRecord;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
@@ -67,15 +69,17 @@ import org.springframework.test.annotation.DirtiesContext;
 @DirtiesContext
 @SpringBootTest
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
-class ImportServiceTest extends DataPlaneTestBase {
+class ImportServiceTest extends ControlPlaneTestBase {
 
   @Autowired ImportService importService;
   @Autowired CollectionService collectionService;
-  @Autowired @SingleTenant WorkspaceId workspaceId;
   @SpyBean JobDao jobDao;
   @MockBean SchedulerDao schedulerDao;
   @MockBean SamClientFactory mockSamClientFactory;
   @Autowired NamedParameterJdbcTemplate namedTemplate;
+  @Autowired WorkspaceRepository workspaceRepository;
+
+  private WorkspaceId workspaceId;
 
   /** ArgumentCaptor for the Schedulable passed to {@link SchedulerDao#schedule(Schedulable)}. */
   @Captor private ArgumentCaptor<Schedulable> schedulableCaptor;
@@ -89,6 +93,12 @@ class ImportServiceTest extends DataPlaneTestBase {
   void beforeAll() {
     // reset to zero collections
     TestUtils.cleanAllCollections(collectionService, namedTemplate);
+
+    // create the WDS-powered workspace
+    workspaceId = WorkspaceId.of(UUID.randomUUID());
+    workspaceRepository.save(
+        new WorkspaceRecord(workspaceId, WorkspaceDataTableType.WDS, /* newFlag= */ true));
+
     // create the default collection
     collectionService.createDefaultCollection(workspaceId);
   }
@@ -106,6 +116,8 @@ class ImportServiceTest extends DataPlaneTestBase {
   void afterAll() {
     // reset to zero collections
     TestUtils.cleanAllCollections(collectionService, namedTemplate);
+    // reset to zero workspaces
+    TestUtils.cleanAllWorkspaces(namedTemplate);
   }
 
   // does createSchedulable properly store the jobId, job group, and job data map?
