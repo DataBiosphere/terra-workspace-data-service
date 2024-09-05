@@ -8,7 +8,6 @@ twds:
     # Should this WDS deployment require collections to belong to the workspace with $WORKSPACE_ID?
     enforce-collections-match-workspace-id: true
   data-import:
-    batch-write-record-sink: "wds"
     succeed-on-completion: true
 
 spring:
@@ -24,3 +23,5 @@ sentry:
   deploymentMode: data-plane
   dsn: https://e59ecdd940784bd2922f25a0f3197ffd@o54426.ingest.sentry.io/4504299946835968
 
+# Enable preview of control plane apis
+controlPlanePreview: "on"

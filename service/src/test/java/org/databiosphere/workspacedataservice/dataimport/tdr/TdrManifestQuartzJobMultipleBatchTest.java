@@ -15,15 +15,16 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.stream.Collectors;
-import org.databiosphere.workspacedataservice.common.TestBase;
+import org.databiosphere.workspacedataservice.TestUtils;
+import org.databiosphere.workspacedataservice.common.DataPlaneTestBase;
+import org.databiosphere.workspacedataservice.config.TwdsProperties;
 import org.databiosphere.workspacedataservice.dataimport.ImportValidator;
+import org.databiosphere.workspacedataservice.generated.CollectionServerModel;
 import org.databiosphere.workspacedataservice.generated.ImportRequestServerModel;
 import org.databiosphere.workspacedataservice.service.CollectionService;
 import org.databiosphere.workspacedataservice.service.ImportService;
 import org.databiosphere.workspacedataservice.service.RecordOrchestratorService;
 import org.databiosphere.workspacedataservice.service.model.RecordTypeSchema;
-import org.databiosphere.workspacedataservice.shared.model.CollectionId;
-import org.databiosphere.workspacedataservice.shared.model.WorkspaceId;
 import org.databiosphere.workspacedataservice.workspacemanager.WorkspaceManagerDao;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -37,6 +38,7 @@ import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMock
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.core.io.Resource;
+import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.TestPropertySource;
@@ -57,11 +59,13 @@ import org.springframework.test.context.TestPropertySource;
 @SpringBootTest
 @AutoConfigureMockMvc
 @TestPropertySource(properties = {"twds.write.batch.size=2"})
-class TdrManifestQuartzJobMultipleBatchTest extends TestBase {
+class TdrManifestQuartzJobMultipleBatchTest extends DataPlaneTestBase {
   @Autowired private RecordOrchestratorService recordOrchestratorService;
   @Autowired private ImportService importService;
   @Autowired private CollectionService collectionService;
   @Autowired private TdrTestSupport testSupport;
+  @Autowired private NamedParameterJdbcTemplate namedTemplate;
+  @Autowired private TwdsProperties twdsProperties;
 
   // Mock ImportValidator to allow importing test data from a file:// URL.
   @MockBean ImportValidator importValidator;
@@ -74,14 +78,14 @@ class TdrManifestQuartzJobMultipleBatchTest extends TestBase {
 
   @BeforeEach
   void beforeEach() {
-    collectionId = UUID.randomUUID();
-    collectionService.createCollection(
-        WorkspaceId.of(collectionId), CollectionId.of(collectionId), "v0.2");
+    CollectionServerModel collectionServerModel =
+        TestUtils.createCollection(collectionService, twdsProperties.workspaceId());
+    collectionId = collectionServerModel.getId();
   }
 
   @AfterEach
   void afterEach() {
-    collectionService.deleteCollection(collectionId, "v0.2");
+    TestUtils.cleanAllCollections(collectionService, namedTemplate);
   }
 
   // This test targets AJ-1909, which concerns a SQL exception thrown when importing, wherein

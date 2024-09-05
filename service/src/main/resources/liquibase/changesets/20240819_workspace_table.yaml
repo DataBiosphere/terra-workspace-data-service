@@ -1,0 +1,20 @@
+databaseChangeLog:
+  - changeSet:
+      id: 20240819_workspace_table
+      author: davidan
+      changes:
+        # create the 'workspace' table
+        - createTable:
+            schemaName: sys_wds
+            tableName: workspace
+            columns:
+              - column:
+                  name: workspace_id
+                  type: uuid
+                  constraints:
+                    primaryKey: true
+              - column:
+                  name: data_table_type
+                  type: varchar(16)
+                  constraints:
+                    nullable: false

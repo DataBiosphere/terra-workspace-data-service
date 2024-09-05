@@ -49,10 +49,7 @@ import org.springframework.test.web.servlet.MvcResult;
 @ActiveProfiles(profiles = {"mock-sam"})
 @DirtiesContext
 @TestPropertySource(
-    properties = {
-      "twds.tenancy.enforce-collections-match-workspace-id=true",
-      "twds.instance.workspace-id=45f90f59-f83d-453f-961a-480ec740df9f"
-    })
+    properties = {"twds.instance.workspace-id=45f90f59-f83d-453f-961a-480ec740df9f"})
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class CollectionControllerMockMvcSingleTenantTest extends MockMvcTestBase {
 

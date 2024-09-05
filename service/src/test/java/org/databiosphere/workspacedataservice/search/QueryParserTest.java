@@ -3,15 +3,20 @@ package org.databiosphere.workspacedataservice.search;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
+import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Stream;
 import org.databiosphere.workspacedataservice.service.model.DataTypeMapping;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.EnumSource;
 import org.junit.jupiter.params.provider.MethodSource;
 
 class QueryParserTest {
+
+  // ========== STRING and array thereof
 
   private static Stream<Arguments> stringTerms() {
     return Stream.of(
@@ -34,10 +39,22 @@ class QueryParserTest {
   @ParameterizedTest(name = "Valid query `column1:{0}`")
   @MethodSource("stringTerms")
   void parseSingleStringColumnTerm(String queryTerm, String expectedResult) {
+    scalarStringTestImpl(queryTerm, expectedResult, DataTypeMapping.STRING);
+  }
+
+  // test expected parsing for a single array-of-string column and its filter term
+  @ParameterizedTest(name = "Valid query `column1:{0}`")
+  @MethodSource("stringTerms")
+  void parseSingleArrayOfStringColumnTerm(String queryTerm, String expectedResult) {
+    arrayStringTestImpl(queryTerm, expectedResult, DataTypeMapping.ARRAY_OF_STRING);
+  }
+
+  // helper for testing scalar strings; reused for scalar files
+  private void scalarStringTestImpl(
+      String queryTerm, String expectedResult, DataTypeMapping dataType) {
     String query = "column1:" + queryTerm;
 
-    WhereClausePart actual =
-        new QueryParser(Map.of("column1", DataTypeMapping.STRING)).parse(query);
+    WhereClausePart actual = new QueryParser(Map.of("column1", dataType)).parse(query);
 
     WhereClausePart expected =
         new WhereClausePart(
@@ -47,14 +64,12 @@ class QueryParserTest {
     assertEquals(expected, actual);
   }
 
-  // test expected parsing for a single array-of-string column and its filter term
-  @ParameterizedTest(name = "Valid query `column1:{0}`")
-  @MethodSource("stringTerms")
-  void parseSingleArrayOfStringColumnTerm(String queryTerm, String expectedResult) {
+  // helper for testing array of strings; reused for array of files
+  private void arrayStringTestImpl(
+      String queryTerm, String expectedResult, DataTypeMapping dataType) {
     String query = "column1:" + queryTerm;
 
-    WhereClausePart actual =
-        new QueryParser(Map.of("column1", DataTypeMapping.ARRAY_OF_STRING)).parse(query);
+    WhereClausePart actual = new QueryParser(Map.of("column1", dataType)).parse(query);
 
     WhereClausePart expected =
         new WhereClausePart(
@@ -63,6 +78,110 @@ class QueryParserTest {
 
     assertEquals(expected, actual);
   }
+
+  // ========== FILE and array thereof
+  private static Stream<Arguments> fileTerms() {
+    return Stream.of(
+        Arguments.of(
+            "\"https://lz1a2b345c67def8a91234bc.blob.core.windows.net/sc-7ad51c5d-eb4c-4685-bffe-62b861f7753f/file.bam\"",
+            "https://lz1a2b345c67def8a91234bc.blob.core.windows.net/sc-7ad51c5d-eb4c-4685-bffe-62b861f7753f/file.bam"),
+        Arguments.of(
+            "\"drs://example.org/dg.4503/cc32d93d-a73c-4d2c-a061-26c0410e74fa\"",
+            "drs://example.org/dg.4503/cc32d93d-a73c-4d2c-a061-26c0410e74fa"),
+        Arguments.of(
+            "\"https://teststorageaccount.blob.core.windows.net/testcontainer/file\"",
+            "https://teststorageaccount.blob.core.windows.net/testcontainer/file"));
+  }
+
+  // test expected parsing for a single string column and its filter term
+  @ParameterizedTest(name = "Valid query `column1:{0}`")
+  @MethodSource("fileTerms")
+  void parseSingleFileColumnTerm(String queryTerm, String expectedResult) {
+    scalarStringTestImpl(queryTerm, expectedResult, DataTypeMapping.FILE);
+  }
+
+  // test expected parsing for a single array-of-string column and its filter term
+  @ParameterizedTest(name = "Valid query `column1:{0}`")
+  @MethodSource("fileTerms")
+  void parseSingleArrayOfFileColumnTerm(String queryTerm, String expectedResult) {
+    arrayStringTestImpl(queryTerm, expectedResult, DataTypeMapping.ARRAY_OF_FILE);
+  }
+
+  // ========== RELATION and array thereof
+  private static Stream<Arguments> relationTerms() {
+    return Stream.of(
+        Arguments.of("one", "one"),
+        Arguments.of("\"terra-wds://target/one\"", "terra-wds://target/one"),
+        Arguments.of("two", "two"),
+        Arguments.of("\"terra-wds://target/two\"", "terra-wds://target/two"));
+  }
+
+  // test expected parsing for a single string column and its filter term
+  @ParameterizedTest(name = "Valid query `column1:{0}`")
+  @MethodSource("relationTerms")
+  void parseSingleRelationColumnTerm(String queryTerm, String expectedResult) {
+    scalarStringTestImpl(queryTerm, expectedResult, DataTypeMapping.RELATION);
+  }
+
+  // test expected parsing for a single string column and its filter term
+  @ParameterizedTest(name = "Valid query `column1:{0}`")
+  @MethodSource("relationTerms")
+  void parseSingleArrayOfRelationColumnTerm(String queryTerm, String expectedResult) {
+    String query = "column1:" + queryTerm;
+
+    WhereClausePart actual =
+        new QueryParser(Map.of("column1", DataTypeMapping.ARRAY_OF_RELATION)).parse(query);
+
+    WhereClausePart expected =
+        new WhereClausePart(
+            List.of(
+                ":filterquery0 IN (select LOWER(split_part(unnest, '/', 3)) from unnest(\"column1\"))"),
+            Map.of("filterquery0", expectedResult.toLowerCase()));
+
+    assertEquals(expected, actual);
+  }
+
+  // ========== JSON and array thereof
+  private static Stream<Arguments> jsonTerms() {
+    return Stream.of(
+        Arguments.of("\"\\{\\\"foo\\\":1\\}\"", "{\"foo\":1}"),
+        Arguments.of("\"\\{\\\"foo\\\":12, \\\"bar\\\":34\\}\"", "{\"foo\":12, \"bar\":34}"));
+  }
+
+  // test expected parsing for a single json column and its filter term
+  @ParameterizedTest(name = "Valid query `column1:{0}`")
+  @MethodSource("jsonTerms")
+  void parseSingleJsonColumnTerm(String queryTerm, String expectedResult) {
+    String query = "column1:" + queryTerm;
+
+    WhereClausePart actual = new QueryParser(Map.of("column1", DataTypeMapping.JSON)).parse(query);
+
+    WhereClausePart expected =
+        new WhereClausePart(
+            List.of("\"column1\" = :filterquery0::jsonb"),
+            Map.of("filterquery0", expectedResult.toLowerCase()));
+
+    assertEquals(expected, actual);
+  }
+
+  // test expected parsing for a single array-of-json column and its filter term
+  @ParameterizedTest(name = "Valid query `column1:{0}`")
+  @MethodSource("jsonTerms")
+  void parseSingleArrayOfJsonColumnTerm(String queryTerm, String expectedResult) {
+    String query = "column1:" + queryTerm;
+
+    WhereClausePart actual =
+        new QueryParser(Map.of("column1", DataTypeMapping.ARRAY_OF_JSON)).parse(query);
+
+    WhereClausePart expected =
+        new WhereClausePart(
+            List.of(":filterquery0::jsonb = ANY(\"column1\")"),
+            Map.of("filterquery0", expectedResult));
+
+    assertEquals(expected, actual);
+  }
+
+  // ========== NUMBER and array thereof
 
   private static Stream<Arguments> numberTerms() {
     return Stream.of(
@@ -103,6 +222,144 @@ class QueryParserTest {
     WhereClausePart expected =
         new WhereClausePart(
             List.of(":filterquery0 = ANY(\"column1\")"), Map.of("filterquery0", expectedResult));
+
+    assertEquals(expected, actual);
+  }
+
+  // ========== BOOLEAN and array thereof
+
+  private static Stream<Arguments> booleanTerms() {
+    return Stream.of(
+        Arguments.of("true", true),
+        Arguments.of("True", true),
+        Arguments.of("TRUE", true),
+        Arguments.of("false", false),
+        Arguments.of("False", false),
+        Arguments.of("FALSE", false));
+  }
+
+  // test expected parsing for a single boolean column and its filter term
+  @ParameterizedTest(name = "Valid query `column1:{0}`")
+  @MethodSource("booleanTerms")
+  void parseSingleBooleanColumnTerm(String queryTerm, boolean expectedResult) {
+    String query = "column1:" + queryTerm;
+
+    WhereClausePart actual =
+        new QueryParser(Map.of("column1", DataTypeMapping.BOOLEAN)).parse(query);
+
+    WhereClausePart expected =
+        new WhereClausePart(
+            List.of("\"column1\" = :filterquery0"), Map.of("filterquery0", expectedResult));
+
+    assertEquals(expected, actual);
+  }
+
+  // test expected parsing for a single array-of-boolean column and its filter term
+  @ParameterizedTest(name = "Valid query `column1:{0}`")
+  @MethodSource("booleanTerms")
+  void parseSingleArrayOfBooleanColumnTerm(String queryTerm, boolean expectedResult) {
+    String query = "column1:" + queryTerm;
+
+    WhereClausePart actual =
+        new QueryParser(Map.of("column1", DataTypeMapping.ARRAY_OF_BOOLEAN)).parse(query);
+
+    WhereClausePart expected =
+        new WhereClausePart(
+            List.of(":filterquery0 = ANY(\"column1\")"), Map.of("filterquery0", expectedResult));
+
+    assertEquals(expected, actual);
+  }
+
+  // ========== DATE and array thereof
+
+  private static Stream<Arguments> dateTerms() {
+    return Stream.of(
+        Arguments.of("1979-06-25", LocalDate.of(1979, 6, 25)),
+        Arguments.of("1981-02-12", LocalDate.of(1981, 2, 12)));
+  }
+
+  // test expected parsing for a single date column and its filter term
+  @ParameterizedTest(name = "Valid query `column1:{0}`")
+  @MethodSource("dateTerms")
+  void parseSingleDateColumnTerm(String queryTerm, LocalDate expectedResult) {
+    String query = "column1:" + queryTerm;
+
+    WhereClausePart actual = new QueryParser(Map.of("column1", DataTypeMapping.DATE)).parse(query);
+
+    WhereClausePart expected =
+        new WhereClausePart(
+            List.of("\"column1\" = :filterquery0"), Map.of("filterquery0", expectedResult));
+
+    assertEquals(expected, actual);
+  }
+
+  // test expected parsing for a single array-of-date column and its filter term
+  @ParameterizedTest(name = "Valid query `column1:{0}`")
+  @MethodSource("dateTerms")
+  void parseSingleArrayOfDateColumnTerm(String queryTerm, LocalDate expectedResult) {
+    String query = "column1:" + queryTerm;
+
+    WhereClausePart actual =
+        new QueryParser(Map.of("column1", DataTypeMapping.ARRAY_OF_DATE)).parse(query);
+
+    WhereClausePart expected =
+        new WhereClausePart(
+            List.of(":filterquery0 = ANY(\"column1\")"), Map.of("filterquery0", expectedResult));
+
+    assertEquals(expected, actual);
+  }
+
+  // ========== DATETIME and array thereof
+
+  private static Stream<Arguments> datetimeTerms() {
+    return Stream.of(
+        Arguments.of("\"2024-08-13T19:00:00\"", LocalDateTime.of(2024, 8, 13, 19, 0)),
+        Arguments.of("\"2024-08-08T14:00:00\"", LocalDateTime.of(2024, 8, 8, 14, 0)));
+  }
+
+  // test expected parsing for a single datetime column and its filter term
+  @ParameterizedTest(name = "Valid query `column1:{0}`")
+  @MethodSource("datetimeTerms")
+  void parseSingleDatetimeColumnTerm(String queryTerm, LocalDateTime expectedResult) {
+    String query = "column1:" + queryTerm;
+
+    WhereClausePart actual =
+        new QueryParser(Map.of("column1", DataTypeMapping.DATE_TIME)).parse(query);
+
+    WhereClausePart expected =
+        new WhereClausePart(
+            List.of("\"column1\" = :filterquery0"), Map.of("filterquery0", expectedResult));
+
+    assertEquals(expected, actual);
+  }
+
+  // test expected parsing for a single array-of-datetime column and its filter term
+  @ParameterizedTest(name = "Valid query `column1:{0}`")
+  @MethodSource("datetimeTerms")
+  void parseSingleArrayOfDatetimeColumnTerm(String queryTerm, LocalDateTime expectedResult) {
+    String query = "column1:" + queryTerm;
+
+    WhereClausePart actual =
+        new QueryParser(Map.of("column1", DataTypeMapping.ARRAY_OF_DATE_TIME)).parse(query);
+
+    WhereClausePart expected =
+        new WhereClausePart(
+            List.of(":filterquery0 = ANY(\"column1\")"), Map.of("filterquery0", expectedResult));
+
+    assertEquals(expected, actual);
+  }
+
+  // ========== NULL, EMPTY_ARRAY
+  @ParameterizedTest(name = "Query on `{0}` column")
+  @EnumSource(
+      value = DataTypeMapping.class,
+      names = {"NULL", "EMPTY_ARRAY"})
+  void nullAndEmptyArrayColumns(DataTypeMapping dataType) {
+    String query = "column1:whatever";
+
+    WhereClausePart actual = new QueryParser(Map.of("column1", dataType)).parse(query);
+
+    WhereClausePart expected = new WhereClausePart(List.of("false"), Map.of());
 
     assertEquals(expected, actual);
   }

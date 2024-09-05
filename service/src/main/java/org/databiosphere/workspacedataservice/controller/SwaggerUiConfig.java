@@ -11,9 +11,9 @@ import org.springframework.core.io.Resource;
 import org.springframework.util.StreamUtils;
 
 /**
- * Reads either swagger-ui-control-plane.html or swagger-ui-data-plane.html, depending on the
- * profile with which this deployment was started, and caches the contents of those HTML files into
- * a String bean.
+ * Reads either swagger-ui-control-plane[-preview].html or swagger-ui-control-plane.html or
+ * swagger-ui-data-plane.html, depending on the profile and preview flag with which this deployment
+ * was started, and caches the contents of those HTML files into a String bean.
  *
  * @see org.databiosphere.workspacedataservice.controller.SwaggerUiController
  */
@@ -23,10 +23,16 @@ public class SwaggerUiConfig {
   @ControlPlane
   @Bean(name = "swaggerHtml")
   public String controlPlaneSwaggerHtml(
+      @Value("${controlPlanePreview:off}") String controlPlanePreview,
+      @Value("classpath:swagger-ui-control-plane-preview.html")
+          Resource swaggerUiControlPlanePreviewResource,
       @Value("classpath:swagger-ui-control-plane.html") Resource swaggerUiControlPlaneResource)
       throws IOException {
-    return StreamUtils.copyToString(
-        swaggerUiControlPlaneResource.getInputStream(), StandardCharsets.UTF_8);
+    Resource resourceToLoad =
+        "on".equals(controlPlanePreview)
+            ? swaggerUiControlPlanePreviewResource
+            : swaggerUiControlPlaneResource;
+    return StreamUtils.copyToString(resourceToLoad.getInputStream(), StandardCharsets.UTF_8);
   }
 
   @DataPlane

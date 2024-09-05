@@ -1,19 +1,20 @@
 package org.databiosphere.workspacedataservice.controller;
 
-import static java.util.UUID.randomUUID;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import jakarta.annotation.Nullable;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
-import org.databiosphere.workspacedataservice.dao.CollectionDao;
-import org.databiosphere.workspacedataservice.dao.RecordDao;
+import org.apache.commons.lang3.RandomStringUtils;
+import org.databiosphere.workspacedataservice.TestUtils;
+import org.databiosphere.workspacedataservice.config.TwdsProperties;
+import org.databiosphere.workspacedataservice.service.CollectionService;
 import org.databiosphere.workspacedataservice.service.RecordOrchestratorService;
-import org.databiosphere.workspacedataservice.shared.model.CollectionId;
 import org.databiosphere.workspacedataservice.shared.model.RecordAttributes;
 import org.databiosphere.workspacedataservice.shared.model.RecordQueryResponse;
 import org.databiosphere.workspacedataservice.shared.model.RecordRequest;
@@ -25,6 +26,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
+import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MvcResult;
 
@@ -32,16 +34,16 @@ import org.springframework.test.web.servlet.MvcResult;
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class RecordControllerSearchFilterTest extends MockMvcTestBase {
 
-  private static final UUID COLLECTION_UUID = randomUUID();
-  private static final CollectionId COLLECTION_ID = CollectionId.of(COLLECTION_UUID);
+  @Nullable private UUID collectionId;
 
   private static final String VERSION = "v0.2";
   private static final RecordType RECTYPE = RecordType.valueOf("mytype");
 
-  @Autowired RecordDao recordDao;
-  @Autowired CollectionDao collectionDao;
+  @Autowired CollectionService collectionService;
+  @Autowired NamedParameterJdbcTemplate namedTemplate;
   @Autowired RecordOrchestratorService recordOrchestratorService;
   @Autowired ObjectMapper mapper;
+  @Autowired TwdsProperties twdsProperties;
 
   // all tests in this class use the same set of data; all tests in this class are read-only.
   // as setup, insert 20 records with ids "000" through "019". Each record has a "sortByMe"
@@ -49,14 +51,17 @@ class RecordControllerSearchFilterTest extends MockMvcTestBase {
   @BeforeAll
   void beforeAll() {
     // create collection
-    collectionDao.createSchema(COLLECTION_ID);
+    collectionId =
+        collectionService
+            .save(twdsProperties.workspaceId(), RandomStringUtils.randomAlphabetic(16), "desc")
+            .getId();
     // insert 20 records into the collection
     for (int i = 0; i < 20; i++) {
       // for easy sorting:
       String leadingZeroes = String.format("%03d", i);
 
       recordOrchestratorService.upsertSingleRecord(
-          COLLECTION_UUID,
+          collectionId,
           VERSION,
           RECTYPE,
           leadingZeroes,
@@ -67,7 +72,7 @@ class RecordControllerSearchFilterTest extends MockMvcTestBase {
 
   @AfterAll
   void deleteAllInstances() {
-    collectionDao.dropSchema(COLLECTION_ID);
+    TestUtils.cleanAllCollections(collectionService, namedTemplate);
   }
 
   @Test
@@ -197,7 +202,7 @@ class RecordControllerSearchFilterTest extends MockMvcTestBase {
               .perform(
                   post(
                           "/{instanceId}/search/{version}/{recordType}",
-                          COLLECTION_UUID,
+                          collectionId,
                           VERSION,
                           RECTYPE)
                       .contentType(MediaType.APPLICATION_JSON)

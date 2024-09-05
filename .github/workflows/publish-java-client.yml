@@ -8,10 +8,7 @@ on:
         required: true
 
 jobs:
-  jakarta_matrix:
-    strategy:
-      matrix:
-        jakarta: [ true, false ]
+  build_publish_client:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -30,7 +27,7 @@ jobs:
         run: ./gradlew --build-cache build -x test
 
       - name: Publish API client to Artifactory
-        run: ./gradlew --build-cache :client:artifactoryPublish -Pjakarta=${{matrix.jakarta}}
+        run: ./gradlew --build-cache :client:artifactoryPublish
         env:
           ARTIFACTORY_USERNAME: ${{ secrets.ARTIFACTORY_USERNAME }}
           ARTIFACTORY_PASSWORD: ${{ secrets.ARTIFACTORY_PASSWORD }}

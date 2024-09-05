@@ -31,7 +31,7 @@ public class HttpSamClientFactory implements SamClientFactory {
     // https://youtrack.jetbrains.com/issue/KTIJ-26434
     this.commonHttpClient =
         new ApiClient().getHttpClient().newBuilder().protocols(List.of(Protocol.HTTP_1_1)).build();
-    // TODO: add tracing interceptor for distributed tracing to Sam.
+    // TODO AJ-1114: add tracing interceptor for distributed tracing to Sam.
     // this requires we import terra-common-lib
   }
 

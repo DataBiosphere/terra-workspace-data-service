@@ -4,7 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
-import org.databiosphere.workspacedataservice.common.TestBase;
+import org.databiosphere.workspacedataservice.common.DataPlaneTestBase;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.availability.ApplicationAvailability;
@@ -19,7 +19,7 @@ import org.springframework.test.web.servlet.ResultActions;
 
 @AutoConfigureMockMvc
 @SpringBootTest
-class AvailabilityTest extends TestBase {
+class AvailabilityTest extends DataPlaneTestBase {
 
   @Autowired private MockMvc mvc;
   @Autowired private ApplicationContext context;

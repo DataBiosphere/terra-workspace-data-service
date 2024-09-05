@@ -21,8 +21,14 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Stream;
-import org.databiosphere.workspacedataservice.common.TestBase;
+import org.apache.commons.lang3.RandomStringUtils;
+import org.databiosphere.workspacedataservice.TestUtils;
+import org.databiosphere.workspacedataservice.common.DataPlaneTestBase;
+import org.databiosphere.workspacedataservice.config.TwdsProperties;
 import org.databiosphere.workspacedataservice.dao.RecordDao;
+import org.databiosphere.workspacedataservice.generated.CollectionRequestServerModel;
+import org.databiosphere.workspacedataservice.generated.CollectionServerModel;
+import org.databiosphere.workspacedataservice.service.CollectionService;
 import org.databiosphere.workspacedataservice.service.model.DataTypeMapping;
 import org.databiosphere.workspacedataservice.shared.model.BatchResponse;
 import org.databiosphere.workspacedataservice.shared.model.RecordAttributes;
@@ -49,6 +55,7 @@ import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.ActiveProfiles;
@@ -57,11 +64,12 @@ import org.springframework.test.context.ActiveProfiles;
 @ActiveProfiles(profiles = "mock-sam")
 @DirtiesContext
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
-class TsvDownloadTest extends TestBase {
+class TsvDownloadTest extends DataPlaneTestBase {
 
   @Autowired private TestRestTemplate restTemplate;
 
   @Autowired private RecordController recordController;
+  @Autowired private CollectionController collectionController;
   @Autowired private RecordDao recordDao;
   @Autowired private ObjectMapper mapper;
   private String version;
@@ -69,16 +77,26 @@ class TsvDownloadTest extends TestBase {
 
   @Autowired private ObjectReader tsvReader;
 
+  @Autowired TwdsProperties twdsProperties;
+
+  @Autowired CollectionService collectionService;
+  @Autowired NamedParameterJdbcTemplate namedTemplate;
+
   @BeforeEach
   void init() {
     version = "v0.2";
-    collectionId = UUID.randomUUID();
-    recordController.createInstance(collectionId, version);
+    CollectionRequestServerModel collectionRequestServerModel = new CollectionRequestServerModel();
+    collectionRequestServerModel.setName(RandomStringUtils.randomAlphabetic(16));
+    collectionRequestServerModel.setDescription("description");
+    ResponseEntity<CollectionServerModel> createdCollection =
+        collectionController.createCollectionV1(
+            twdsProperties.workspaceId().id(), collectionRequestServerModel);
+    collectionId = Objects.requireNonNull(createdCollection.getBody()).getId();
   }
 
   @AfterEach
   void tearDown() {
-    recordController.deleteInstance(collectionId, version);
+    TestUtils.cleanAllCollections(collectionService, namedTemplate);
   }
 
   @ParameterizedTest(name = "PK name {0} should be honored")

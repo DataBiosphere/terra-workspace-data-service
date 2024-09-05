@@ -19,8 +19,11 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Collectors;
-import org.databiosphere.workspacedataservice.common.TestBase;
+import org.databiosphere.workspacedataservice.TestUtils;
+import org.databiosphere.workspacedataservice.common.DataPlaneTestBase;
+import org.databiosphere.workspacedataservice.config.TwdsProperties;
 import org.databiosphere.workspacedataservice.dataimport.ImportValidator;
+import org.databiosphere.workspacedataservice.generated.CollectionServerModel;
 import org.databiosphere.workspacedataservice.generated.ImportRequestServerModel;
 import org.databiosphere.workspacedataservice.service.CollectionService;
 import org.databiosphere.workspacedataservice.service.ImportService;
@@ -43,6 +46,7 @@ import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMock
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.core.io.Resource;
+import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.ActiveProfiles;
 
@@ -60,11 +64,13 @@ import org.springframework.test.context.ActiveProfiles;
 @DirtiesContext
 @SpringBootTest
 @AutoConfigureMockMvc
-class TdrManifestQuartzJobE2ETest extends TestBase {
+class TdrManifestQuartzJobE2ETest extends DataPlaneTestBase {
   @Autowired private RecordOrchestratorService recordOrchestratorService;
   @Autowired private ImportService importService;
   @Autowired private CollectionService collectionService;
   @Autowired private TdrTestSupport testSupport;
+  @Autowired private NamedParameterJdbcTemplate namedTemplate;
+  @Autowired private TwdsProperties twdsProperties;
 
   // Mock ImportValidator to allow importing test data from a file:// URL.
   @MockBean ImportValidator importValidator;
@@ -80,13 +86,14 @@ class TdrManifestQuartzJobE2ETest extends TestBase {
 
   @BeforeEach
   void beforeEach() {
-    collectionId = UUID.randomUUID();
-    collectionService.createCollection(collectionId, "v0.2");
+    CollectionServerModel collectionServerModel =
+        TestUtils.createCollection(collectionService, twdsProperties.workspaceId());
+    collectionId = collectionServerModel.getId();
   }
 
   @AfterEach
   void afterEach() {
-    collectionService.deleteCollection(collectionId, "v0.2");
+    TestUtils.cleanAllCollections(collectionService, namedTemplate);
   }
 
   @Test

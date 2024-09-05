@@ -5,9 +5,6 @@ import java.io.InputStream;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
-import org.databiosphere.workspacedataservice.annotations.DeploymentMode.DataPlane;
-import org.databiosphere.workspacedataservice.generated.CollectionServerModel;
-import org.databiosphere.workspacedataservice.service.CollectionService;
 import org.databiosphere.workspacedataservice.service.PermissionService;
 import org.databiosphere.workspacedataservice.service.RecordOrchestratorService;
 import org.databiosphere.workspacedataservice.service.model.AttributeSchema;
@@ -21,6 +18,7 @@ import org.databiosphere.workspacedataservice.shared.model.RecordResponse;
 import org.databiosphere.workspacedataservice.shared.model.RecordType;
 import org.databiosphere.workspacedataservice.shared.model.SearchRequest;
 import org.databiosphere.workspacedataservice.shared.model.TsvUploadResponse;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -39,19 +37,15 @@ import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.server.ResponseStatusException;
 import org.springframework.web.servlet.mvc.method.annotation.StreamingResponseBody;
 
-@DataPlane
+@ConditionalOnProperty(name = "controlPlanePreview", havingValue = "on")
 @RestController
 public class RecordController {
 
-  private final CollectionService collectionService;
   private final RecordOrchestratorService recordOrchestratorService;
   private final PermissionService permissionService;
 
   public RecordController(
-      CollectionService collectionService,
-      RecordOrchestratorService recordOrchestratorService,
-      PermissionService permissionService) {
-    this.collectionService = collectionService;
+      RecordOrchestratorService recordOrchestratorService, PermissionService permissionService) {
     this.recordOrchestratorService = recordOrchestratorService;
     this.permissionService = permissionService;
   }
@@ -134,42 +128,6 @@ public class RecordController {
     permissionService.requireWritePermission(CollectionId.of(instanceId));
     return recordOrchestratorService.upsertSingleRecord(
         instanceId, version, recordType, recordId, primaryKey, recordRequest);
-  }
-
-  /**
-   * @deprecated Use {@link CollectionController#listCollectionsV1(UUID)} instead.
-   */
-  @Deprecated(forRemoval = true, since = "v0.14.0")
-  @GetMapping("/instances/{version}")
-  public ResponseEntity<List<UUID>> listInstances(@PathVariable("version") String version) {
-    permissionService.requireReadPermissionSingleTenant();
-    List<UUID> schemaList = collectionService.listCollections(version);
-    return new ResponseEntity<>(schemaList, HttpStatus.OK);
-  }
-
-  /**
-   * @deprecated Use {@link CollectionController#createCollectionV1(UUID, CollectionServerModel)}
-   *     instead.
-   */
-  @Deprecated(forRemoval = true, since = "v0.14.0")
-  @PostMapping("/instances/{version}/{instanceId}")
-  public ResponseEntity<String> createInstance(
-      @PathVariable("instanceId") UUID instanceId, @PathVariable("version") String version) {
-    permissionService.requireWritePermissionSingleTenant();
-    collectionService.createCollection(instanceId, version);
-    return new ResponseEntity<>(HttpStatus.CREATED);
-  }
-
-  /**
-   * @deprecated Use {@link CollectionController#deleteCollectionV1(UUID, UUID)} instead.
-   */
-  @Deprecated(forRemoval = true, since = "v0.14.0")
-  @DeleteMapping("/instances/{version}/{instanceId}")
-  public ResponseEntity<String> deleteInstance(
-      @PathVariable("instanceId") UUID instanceId, @PathVariable("version") String version) {
-    permissionService.requireWritePermissionSingleTenant();
-    collectionService.deleteCollection(instanceId, version);
-    return new ResponseEntity<>(HttpStatus.OK);
   }
 
   @DeleteMapping("/{instanceId}/records/{version}/{recordType}/{recordId}")

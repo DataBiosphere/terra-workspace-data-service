@@ -11,11 +11,14 @@ import org.broadinstitute.dsde.workbench.client.sam.ApiException;
 import org.broadinstitute.dsde.workbench.client.sam.api.ResourcesApi;
 import org.broadinstitute.dsde.workbench.client.sam.api.UsersApi;
 import org.broadinstitute.dsde.workbench.client.sam.model.UserStatusInfo;
-import org.databiosphere.workspacedataservice.common.TestBase;
+import org.databiosphere.workspacedataservice.TestUtils;
+import org.databiosphere.workspacedataservice.common.ControlPlaneTestBase;
+import org.databiosphere.workspacedataservice.generated.CollectionServerModel;
 import org.databiosphere.workspacedataservice.sam.BearerTokenFilter;
 import org.databiosphere.workspacedataservice.sam.SamClientFactory;
 import org.databiosphere.workspacedataservice.service.CollectionService;
 import org.databiosphere.workspacedataservice.shared.model.BearerToken;
+import org.databiosphere.workspacedataservice.shared.model.WorkspaceId;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -34,7 +37,7 @@ import org.springframework.web.context.request.RequestContextHolder;
 @SpringBootTest
 @AutoConfigureMockMvc
 @ExtendWith(OutputCaptureExtension.class)
-class ActivityEventBuilderTest extends TestBase {
+class ActivityEventBuilderTest extends ControlPlaneTestBase {
 
   @Autowired CollectionService collectionService;
 
@@ -57,8 +60,6 @@ class ActivityEventBuilderTest extends TestBase {
     when(mockUsersApi.getUserStatusInfo()).thenReturn(userStatusInfo);
     when(mockResourcesApi.resourcePermissionV2(any(), any(), any())).thenReturn(true);
 
-    UUID collectionId = UUID.randomUUID();
-
     // ensure we have a token in the current request; else we'll get "anonymous" for our user
     RequestAttributes currentAttributes = RequestContextHolder.currentRequestAttributes();
     currentAttributes.setAttribute(
@@ -66,7 +67,9 @@ class ActivityEventBuilderTest extends TestBase {
     RequestContextHolder.setRequestAttributes(currentAttributes);
 
     // create a collection; this will trigger logging
-    collectionService.createCollection(collectionId, "v0.2");
+    CollectionServerModel collectionServerModel =
+        TestUtils.createCollection(collectionService, WorkspaceId.of(UUID.randomUUID()));
+    UUID collectionId = collectionServerModel.getId();
 
     // did we log the
     assertThat(output.getOut())

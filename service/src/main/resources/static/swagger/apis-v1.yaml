@@ -22,6 +22,8 @@ tags:
     description: Job APIs
   - name: Collection
     description: Collection APIs
+  - name: Workspace
+    description: Workspace APIs
   - name: Capabilities
     description: Describes the features of WDS
 
@@ -219,6 +221,35 @@ paths:
           description: Collection has been deleted.
 
   ##############################
+  # Workspace APIs
+  ##############################
+  /workspaces/v1/{workspaceId}:
+    post:
+      summary: Initialize WDS for a given workspace.
+      operationId: initWorkspaceV1
+      description: |
+        when the `clone` key is present in the request body, this API will clone all collections
+        from sourceWorkspaceId into this workspace
+      tags:
+        - Workspace
+      parameters:
+        - $ref: '#/components/parameters/workspaceIdPathParam'
+      requestBody:
+        description: Initialization parameters
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/WorkspaceInit'
+      responses:
+        202:
+          description: Initialization request accepted.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericJob'
+
+  ##############################
   # Capabilities APIs
   ##############################
   /capabilities/v1:
@@ -344,7 +375,7 @@ components:
           format: uuid
         jobType:
           type: string
-          enum: [ DATA_IMPORT, UNKNOWN ]
+          enum: [ DATA_IMPORT, WORKSPACE_INIT, UNKNOWN ]
         instanceId:
           type: string
           format: uuid
@@ -359,3 +390,21 @@ components:
           format: date-time
         errorMessage:
           type: string
+    WorkspaceInit:
+      type: object
+      properties:
+        clone:
+          $ref: '#/components/schemas/WorkspaceInitClone'
+      additionalProperties: false
+    WorkspaceInitClone:
+      type: object
+      description: when present, will clone all collections from sourceWorkspaceId into this workspace
+      properties:
+        sourceWorkspaceId:
+          type: string
+          format: uuid
+          description: id of the workspace being cloned
+      required:
+        - sourceWorkspaceId
+      additionalProperties: false
+

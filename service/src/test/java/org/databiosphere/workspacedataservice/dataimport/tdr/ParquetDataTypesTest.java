@@ -25,7 +25,7 @@ import org.apache.hadoop.fs.Path;
 import org.apache.parquet.hadoop.ParquetReader;
 import org.apache.parquet.hadoop.util.HadoopInputFile;
 import org.apache.parquet.io.InputFile;
-import org.databiosphere.workspacedataservice.common.TestBase;
+import org.databiosphere.workspacedataservice.common.DataPlaneTestBase;
 import org.databiosphere.workspacedataservice.recordsource.RecordSource;
 import org.databiosphere.workspacedataservice.service.model.TdrManifestImportTable;
 import org.databiosphere.workspacedataservice.shared.model.Record;
@@ -40,7 +40,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.core.io.Resource;
 
 @SpringBootTest
-class ParquetDataTypesTest extends TestBase {
+class ParquetDataTypesTest extends DataPlaneTestBase {
   private final Logger logger = LoggerFactory.getLogger(getClass());
 
   @Autowired ObjectMapper mapper;

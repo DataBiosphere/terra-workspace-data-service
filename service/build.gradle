@@ -8,7 +8,7 @@ plugins {
     id 'org.openapi.generator'
     id 'com.diffplug.spotless'
     id 'jacoco'
-    id "au.com.dius.pact" version "4.6.11"
+    id "au.com.dius.pact" version "4.6.14"
     id 'jvm-test-suite'
 }
 
@@ -36,10 +36,9 @@ jib {
 }
 
 ext {
-    parquet_mr_version = "1.14.1"
+    parquet_mr_version = "1.14.2"
     hadoop_version = "3.4.0"
-    prometheus_rsocket_version = "1.5.3"
-    spring_cloud_gcp_version = "5.5.0"
+    spring_cloud_gcp_version = "5.6.0"
 }
 
 dependencies {
@@ -49,8 +48,8 @@ dependencies {
     // Azure libraries
     // do not upgrade app insights past 3.5.1 until AJ-1897 is resolved
     implementation 'com.microsoft.azure:applicationinsights-runtime-attach:3.5.3'
-    implementation 'com.azure:azure-storage-blob:12.27.0'
-    implementation 'com.azure:azure-identity-extensions:1.1.18' // postgres password plugin
+    implementation 'com.azure:azure-storage-blob:12.27.1'
+    implementation 'com.azure:azure-identity-extensions:1.1.19' // postgres password plugin
 
     implementation 'org.springframework.boot:spring-boot-starter'
     implementation 'org.springframework.boot:spring-boot-starter-jdbc'
@@ -62,14 +61,13 @@ dependencies {
     implementation 'org.springframework.boot:spring-boot-starter-data-jdbc'
     implementation 'org.springframework.boot:spring-boot-starter-validation'
     implementation 'io.micrometer:micrometer-registry-prometheus'
-    implementation "io.micrometer.prometheus:prometheus-rsocket-spring:$prometheus_rsocket_version"
     implementation 'org.springframework.integration:spring-integration-jdbc'
     implementation 'org.aspectj:aspectjweaver' // required by spring-retry, not used directly
-    implementation 'com.google.guava:guava:33.2.1-jre'
+    implementation 'com.google.guava:guava:33.3.0-jre'
     implementation 'org.postgresql:postgresql'
     implementation 'org.webjars:webjars-locator-core' // versioned by spring dependency management
     implementation 'com.fasterxml.jackson.dataformat:jackson-dataformat-csv'
-    implementation 'io.sentry:sentry-logback:7.13.0'
+    implementation 'io.sentry:sentry-logback:7.14.0'
     implementation 'net.logstash.logback:logstash-logback-encoder:8.0'
     implementation 'org.codehaus.janino:janino'
     implementation 'org.liquibase:liquibase-core'
@@ -82,7 +80,7 @@ dependencies {
 
     // required by openapi-generated models and api interfaces
     implementation 'jakarta.validation:jakarta.validation-api'
-    implementation 'io.swagger.core.v3:swagger-annotations:2.2.22'
+    implementation 'io.swagger.core.v3:swagger-annotations:2.2.23'
 
     // Terra libraries
     implementation group: 'org.broadinstitute.dsde.workbench', name: 'sam-client_2.13', version: '0.1-752b4f3'
@@ -90,7 +88,7 @@ dependencies {
     implementation 'com.squareup.okhttp3:okhttp' // required by Sam client
     implementation "bio.terra:datarepo-client:2.13.0-SNAPSHOT"
     implementation "bio.terra:workspace-manager-client:0.254.983-SNAPSHOT"
-    implementation "bio.terra:java-pfb-library:0.49.0"
+    implementation "bio.terra:java-pfb-library:0.53.0"
     implementation project(path: ':client')
 
     // Parquet, used for TDR snapshot import
@@ -134,19 +132,20 @@ dependencies {
     testImplementation 'org.springframework.boot:spring-boot-starter-test'
     testImplementation 'org.junit.jupiter:junit-jupiter'
     testImplementation project(':client')
-    testImplementation 'au.com.dius.pact.provider:spring:4.6.11'
-    testImplementation 'au.com.dius.pact.consumer:junit5:4.6.11'
+    testImplementation 'au.com.dius.pact.provider:spring:4.6.14'
+    testImplementation 'au.com.dius.pact.consumer:junit5:4.6.14'
     testImplementation 'org.junit-pioneer:junit-pioneer:2.2.0'
+    testImplementation 'org.awaitility:awaitility'
 
     // google bucket mock
-    testImplementation 'com.google.cloud:google-cloud-nio:0.127.20'
+    testImplementation 'com.google.cloud:google-cloud-nio:0.127.22'
 
     constraints {
         implementation('org.json:json:20240303') {
             because("CVE-2022-45688")
         }
         // commons-compress required by org.apache.avro:avro:1.11.3, required by java-pfb-library:0.14.0
-        implementation('org.apache.commons:commons-compress:1.26.2') {
+        implementation('org.apache.commons:commons-compress:1.27.1') {
             because("CVE-2023-42503")
         }
         implementation('org.apache.commons:commons-configuration2:2.11.0') {
@@ -224,7 +223,7 @@ sonar {
         property "sonar.organization", "broad-databiosphere"
         property "sonar.host.url", "https://sonarcloud.io"
         // exclude generated files from Sonar scans
-        property "sonar.exclusions", "service/src/main/java/org/databiosphere/workspacedataservice/generated/**/*"
+        property "sonar.exclusions", "**/generated/*"
     }
 }
 
@@ -274,30 +273,4 @@ tasks.register("cwdsPactTests", Test) {
 tasks.register("pactTests") {
     dependsOn "wdsPactTests"
     dependsOn "cwdsPactTests"
-}
-
-testing {
-    suites {
-        integrationTest(JvmTestSuite) {
-            dependencies {
-                implementation project(':service')
-                implementation project(':client')
-                implementation 'org.springframework.boot:spring-boot-starter-test'
-                implementation 'org.springframework.boot:spring-boot-starter-jdbc'
-                implementation 'org.liquibase:liquibase-core'
-                implementation "org.glassfish.jersey.core:jersey-client"
-                implementation "org.glassfish.jersey.core:jersey-common"
-                implementation "org.glassfish.jersey.inject:jersey-hk2"
-            }
-        }
-    }
-}
-
-tasks.named('integrationTest') {
-    testLogging {
-        events = ["passed", "failed", "skipped", "started"]
-        exceptionFormat = "full"
-        // should command-line test output show stdout/stderr?
-        showStandardStreams = false
-    }
 }

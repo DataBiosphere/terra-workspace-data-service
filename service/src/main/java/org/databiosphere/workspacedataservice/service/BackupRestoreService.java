@@ -1,5 +1,6 @@
 package org.databiosphere.workspacedataservice.service;
 
+import static org.databiosphere.workspacedataservice.service.CollectionService.NAME_DEFAULT;
 import static org.databiosphere.workspacedataservice.service.RecordUtils.validateVersion;
 
 import com.azure.identity.extensions.jdbc.postgresql.AzurePostgresqlAuthenticationPlugin;
@@ -11,10 +12,10 @@ import java.util.*;
 import org.apache.commons.lang3.StringUtils;
 import org.databiosphere.workspacedataservice.activitylog.ActivityLogger;
 import org.databiosphere.workspacedataservice.annotations.DeploymentMode.DataPlane;
-import org.databiosphere.workspacedataservice.annotations.SingleTenant;
+import org.databiosphere.workspacedataservice.config.TwdsProperties;
 import org.databiosphere.workspacedataservice.dao.BackupRestoreDao;
 import org.databiosphere.workspacedataservice.dao.CloneDao;
-import org.databiosphere.workspacedataservice.dao.CollectionDao;
+import org.databiosphere.workspacedataservice.generated.CollectionServerModel;
 import org.databiosphere.workspacedataservice.process.LocalProcessLauncher;
 import org.databiosphere.workspacedataservice.service.model.exception.LaunchProcessException;
 import org.databiosphere.workspacedataservice.service.model.exception.MissingObjectException;
@@ -40,13 +41,14 @@ import org.springframework.stereotype.Service;
 @Service
 @DataPlane
 public class BackupRestoreService {
+  private final ActivityLogger activityLogger;
+  private final BackUpFileStorage storage;
   private final BackupRestoreDao<BackupResponse> backupDao;
   private final BackupRestoreDao<RestoreResponse> restoreDao;
   private final CloneDao cloneDao;
-  private final BackUpFileStorage storage;
-  private final CollectionDao collectionDao;
+  private final CollectionService collectionService;
   private final NamedParameterJdbcTemplate namedTemplate;
-  private final ActivityLogger activityLogger;
+  private final TwdsProperties twdsProperties;
   private final WorkspaceId workspaceId;
 
   private static final Logger LOGGER = LoggerFactory.getLogger(BackupRestoreService.class);
@@ -79,21 +81,23 @@ public class BackupRestoreService {
   private boolean useAzureIdentity;
 
   public BackupRestoreService(
+      ActivityLogger activityLogger,
+      BackUpFileStorage storage,
       BackupRestoreDao<BackupResponse> backupDao,
       BackupRestoreDao<RestoreResponse> restoreDao,
-      CollectionDao collectionDao,
-      BackUpFileStorage backUpFileStorage,
       CloneDao cloneDao,
+      CollectionService collectionService,
       NamedParameterJdbcTemplate namedTemplate,
-      ActivityLogger activityLogger,
-      @SingleTenant WorkspaceId workspaceId) {
+      TwdsProperties twdsProperties,
+      WorkspaceId workspaceId) {
+    this.activityLogger = activityLogger;
+    this.storage = storage;
     this.backupDao = backupDao;
     this.restoreDao = restoreDao;
-    this.collectionDao = collectionDao;
     this.cloneDao = cloneDao;
-    this.storage = backUpFileStorage;
+    this.collectionService = collectionService;
     this.namedTemplate = namedTemplate;
-    this.activityLogger = activityLogger;
+    this.twdsProperties = twdsProperties;
     this.workspaceId = workspaceId;
   }
 
@@ -196,14 +200,15 @@ public class BackupRestoreService {
       }
 
       /* TODO: insert rows in sys_wds.collection for all schemas we just inserted.
-         The following call to alterSchema only handles the default collection;
-         if the source had any additional collections, they will not be handled correctly.
-         If we insert rows here, we don't need the additional insert check in alterSchema.
+          The following SQL only handles the default collection; if the source had any additional
+          collections, they will not be handled correctly.
       */
 
-      // rename workspace schema from source to dest
-      collectionDao.alterSchema(
-          CollectionId.fromString(sourceWorkspaceId), CollectionId.of(workspaceId.id()));
+      // "adopt" the restored collection into its desired state
+      adoptCollection(
+          workspaceId,
+          CollectionId.fromString(sourceWorkspaceId),
+          CollectionId.of(workspaceId.id()));
 
       activityLogger.saveEventForCurrentUser(
           user -> user.restored().backup().withId(backupFileName));
@@ -229,6 +234,41 @@ public class BackupRestoreService {
       }
     }
     return restoreDao.getStatus(trackingId);
+  }
+
+  /**
+   * "Adopts" a collection which has been restored from backup. This method will: <br>
+   * 1. Rename the Postgres schema from its restored name to its desired name <br>
+   * 2. Insert a row into sys_wds.collection for the desired id
+   *
+   * @param parentWorkspaceId the workspace containing the restored collection
+   * @param oldSchemaName the collection id to which the backup was restored
+   * @param newSchemaName the desired collection id which should be used instead
+   */
+  @SuppressWarnings("squid:S2077")
+  private void adoptCollection(
+      WorkspaceId parentWorkspaceId, CollectionId oldSchemaName, CollectionId newSchemaName) {
+    // rename the pg schema from old to new
+    // S2077: the strings used here are already validated as uuids so they are safe
+    namedTemplate
+        .getJdbcTemplate()
+        .update("alter schema \"%s\" rename to \"%s\";".formatted(oldSchemaName, newSchemaName));
+
+    // ensure new exists in sys_wds.collection. After
+    // restoring from a pg_dump, the row doesn't exist yet
+    // Note: this is the only insert into sys_wds.collection that exists outside
+    // CollectionRepository/CollectionService.
+    namedTemplate.update(
+        "insert into sys_wds.collection(id, workspace_id, name, description) values (:id, :workspaceId, :name, :description)",
+        Map.of(
+            "id",
+            newSchemaName.id(),
+            "workspaceId",
+            parentWorkspaceId.id(),
+            "name",
+            NAME_DEFAULT,
+            "description",
+            NAME_DEFAULT));
   }
 
   private void logSearchPath(String logPrefix) {
@@ -257,8 +297,9 @@ public class BackupRestoreService {
       command.put(pgDumpPath, null);
       command.put("-b", null);
       // Grab all workspace collections/schemas in wds
-      for (CollectionId id : collectionDao.listCollectionSchemas()) {
-        command.put("-n", id.toString());
+      for (CollectionServerModel collection :
+          collectionService.list(twdsProperties.workspaceId())) {
+        command.put("-n", collection.getId().toString());
       }
     } else {
       command.put(psqlPath, null);

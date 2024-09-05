@@ -54,17 +54,6 @@ management:
       export:
         enabled: true
 
-  # Note: this will probably get re-nested under `prometheus` if prometheus-rsocket-proxy is upgraded to support
-  # spring-boot 3+
-  metrics.export.prometheus.rsocket:
-    # TODO(AJ-1342): disabled by default, enable once prod readiness is approved
-    enabled: ${PROMETHEUS_RSOCKET_PROXY_ENABLED:false}
-    host: ${PROMETHEUS_RSOCKET_PROXY_HOST:}
-    port: 7001
-    max-retries: 1000 # default is Long.MAX_VALUE
-    first-backoff: 10s
-    max-backoff: 10m
-
 info:
   app:
     chart-version: ${HELM_CHART:unknown}
@@ -149,7 +138,6 @@ twds:
     require-env-workspace: true
     enforce-collections-match-workspace-id: true
   data-import:
-    batch-write-record-sink: "wds"
     allowed-hosts:
       - anvil\.gi\.ucsc\.edu
       - .*\.singlecell\.gi\.ucsc\.edu,

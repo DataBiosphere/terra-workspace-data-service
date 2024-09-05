@@ -11,12 +11,15 @@ import java.util.List;
 import java.util.UUID;
 import java.util.stream.Stream;
 import org.apache.commons.io.FileUtils;
+import org.apache.commons.lang3.RandomStringUtils;
+import org.databiosphere.workspacedata.api.CollectionApi;
 import org.databiosphere.workspacedata.api.GeneralWdsInformationApi;
-import org.databiosphere.workspacedata.api.InstancesApi;
 import org.databiosphere.workspacedata.api.RecordsApi;
 import org.databiosphere.workspacedata.api.SchemaApi;
 import org.databiosphere.workspacedata.client.ApiClient;
 import org.databiosphere.workspacedata.client.ApiException;
+import org.databiosphere.workspacedata.model.Collection;
+import org.databiosphere.workspacedata.model.CollectionRequest;
 import org.databiosphere.workspacedata.model.RecordAttributes;
 import org.databiosphere.workspacedata.model.RecordQueryResponse;
 import org.databiosphere.workspacedata.model.RecordRequest;
@@ -26,15 +29,19 @@ import org.databiosphere.workspacedata.model.SearchFilter;
 import org.databiosphere.workspacedata.model.SearchRequest;
 import org.databiosphere.workspacedata.model.StatusResponse;
 import org.databiosphere.workspacedata.model.TsvUploadResponse;
-import org.databiosphere.workspacedataservice.common.TestBase;
+import org.databiosphere.workspacedataservice.common.DataPlaneTestBase;
+import org.databiosphere.workspacedataservice.config.TwdsProperties;
+import org.databiosphere.workspacedataservice.service.CollectionService;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.web.server.LocalServerPort;
+import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.lang.Nullable;
 import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.ActiveProfiles;
@@ -42,24 +49,31 @@ import org.springframework.test.context.ActiveProfiles;
 @ActiveProfiles(profiles = "mock-sam")
 @DirtiesContext
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
-class GeneratedClientTests extends TestBase {
+class GeneratedClientTests extends DataPlaneTestBase {
 
   private ApiClient apiClient;
   @LocalServerPort int port;
 
-  private final UUID collectionId = UUID.randomUUID();
+  @Autowired TwdsProperties twdsProperties;
+  private UUID collectionId;
   private final String version = "v0.2";
+
+  @Autowired CollectionService collectionService;
+  @Autowired NamedParameterJdbcTemplate namedTemplate;
 
   @BeforeEach
   void init() throws ApiException {
     apiClient = new ApiClient();
     apiClient.setBasePath("http://localhost:" + port);
-    createNewCollection(collectionId);
+    CollectionRequest collectionRequest = new CollectionRequest();
+    collectionRequest.setName(RandomStringUtils.randomAlphabetic(16));
+    collectionRequest.setDescription("description");
+    collectionId = createNewCollection(collectionRequest, twdsProperties.workspaceId().id());
   }
 
   @AfterEach
-  void afterEach() throws ApiException {
-    deleteCollection(collectionId);
+  void afterEach() {
+    TestUtils.cleanAllCollections(collectionService, namedTemplate);
   }
 
   @Test
@@ -301,13 +315,10 @@ class GeneratedClientTests extends TestBase {
     assertThat(recordAttributes).containsEntry("greeting", "hello").containsEntry("double", -2.287);
   }
 
-  private void createNewCollection(UUID collectionId) throws ApiException {
-    InstancesApi instancesApi = new InstancesApi(apiClient);
-    instancesApi.createWDSInstance(collectionId.toString(), version);
-  }
-
-  private void deleteCollection(UUID collection) throws ApiException {
-    InstancesApi instancesApi = new InstancesApi(apiClient);
-    instancesApi.deleteWDSInstance(collection.toString(), version);
+  private UUID createNewCollection(CollectionRequest collectionRequest, UUID workspaceId)
+      throws ApiException {
+    CollectionApi collectionApi = new CollectionApi(apiClient);
+    Collection createdCollection = collectionApi.createCollectionV1(collectionRequest, workspaceId);
+    return createdCollection.getId();
   }
 }

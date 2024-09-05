@@ -3,3 +3,6 @@ datarepourl: https://jade.datarepo-dev.broadinstitute.org/
 workspacemanagerurl: https://workspace.dsde-dev.broadinstitute.org/
 leoUrl: https://leonardo.dsde-dev.broadinstitute.org/
 rawlsUrl: https://rawls.dsde-dev.broadinstitute.org/
+
+# Enable preview of control plane apis
+controlPlanePreview: "on"

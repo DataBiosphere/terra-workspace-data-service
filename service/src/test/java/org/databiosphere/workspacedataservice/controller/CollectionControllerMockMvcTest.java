@@ -57,6 +57,8 @@ import org.springframework.web.bind.MethodArgumentNotValidException;
 
 @ActiveProfiles(profiles = {"mock-sam"})
 @DirtiesContext
+// this class explicitly tests multi-tenancy, so it ensures that
+// `enforce-collections-match-workspace-id` is turned off
 @TestPropertySource(properties = {"twds.tenancy.enforce-collections-match-workspace-id=false"})
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class CollectionControllerMockMvcTest extends MockMvcTestBase {

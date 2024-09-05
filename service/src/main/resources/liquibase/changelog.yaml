@@ -38,3 +38,6 @@ databaseChangeLog:
   - include:
       file: changesets/20240214_rename_instance_to_collection.yaml
       relativeToChangelogFile: true
+  - include:
+      file: changesets/20240819_workspace_table.yaml
+      relativeToChangelogFile: true

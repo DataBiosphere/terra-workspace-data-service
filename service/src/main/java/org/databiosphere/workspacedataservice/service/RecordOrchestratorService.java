@@ -4,8 +4,13 @@ import static org.databiosphere.workspacedataservice.service.RecordUtils.validat
 import static org.databiosphere.workspacedataservice.service.model.ReservedNames.RECORD_ID;
 
 import bio.terra.common.db.ReadTransaction;
+import io.micrometer.common.KeyValue;
+import io.micrometer.common.KeyValues;
+import io.micrometer.observation.Observation;
+import io.micrometer.observation.ObservationRegistry;
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -59,10 +64,9 @@ public class RecordOrchestratorService { // TODO give me a better name
   private final RecordSinkFactory recordSinkFactory;
   private final BatchWriteService batchWriteService;
   private final RecordService recordService;
-  private final CollectionService collectionService;
   private final ActivityLogger activityLogger;
-
   private final TsvSupport tsvSupport;
+  private final ObservationRegistry observations;
 
   public RecordOrchestratorService(
       RecordDao recordDao,
@@ -70,17 +74,17 @@ public class RecordOrchestratorService { // TODO give me a better name
       RecordSinkFactory recordSinkFactory,
       BatchWriteService batchWriteService,
       RecordService recordService,
-      CollectionService collectionService,
       ActivityLogger activityLogger,
-      TsvSupport tsvSupport) {
+      TsvSupport tsvSupport,
+      ObservationRegistry observations) {
     this.recordDao = recordDao;
     this.recordSourceFactory = recordSourceFactory;
     this.recordSinkFactory = recordSinkFactory;
     this.batchWriteService = batchWriteService;
     this.recordService = recordService;
-    this.collectionService = collectionService;
     this.activityLogger = activityLogger;
     this.tsvSupport = tsvSupport;
+    this.observations = observations;
   }
 
   public RecordResponse updateSingleRecord(
@@ -89,7 +93,7 @@ public class RecordOrchestratorService { // TODO give me a better name
       RecordType recordType,
       String recordId,
       RecordRequest recordRequest) {
-    validateCollectionAndVersion(collectionId, version);
+    validateVersion(version);
     checkRecordTypeExists(collectionId, recordType);
     RecordResponse response =
         recordService.updateSingleRecord(collectionId, recordType, recordId, recordRequest);
@@ -98,16 +102,10 @@ public class RecordOrchestratorService { // TODO give me a better name
     return response;
   }
 
-  public void validateCollectionAndVersion(UUID collectionId, String version) {
-    validateVersion(version);
-    collectionService.validateCollection(collectionId);
-  }
-
   @ReadTransaction
   public RecordResponse getSingleRecord(
       UUID collectionId, String version, RecordType recordType, String recordId) {
     validateVersion(version);
-    collectionService.validateCollection(collectionId);
     checkRecordTypeExists(collectionId, recordType);
     Record result =
         recordDao
@@ -124,7 +122,7 @@ public class RecordOrchestratorService { // TODO give me a better name
       Optional<String> primaryKey,
       MultipartFile records)
       throws IOException, DataImportException {
-    validateCollectionAndVersion(collectionId, version);
+    validateVersion(version);
     if (recordDao.recordTypeExists(collectionId, recordType)) {
       primaryKey =
           Optional.of(recordService.validatePrimaryKey(collectionId, recordType, primaryKey));
@@ -153,7 +151,6 @@ public class RecordOrchestratorService { // TODO give me a better name
   public StreamingResponseBody streamAllEntities(
       UUID collectionId, String version, RecordType recordType) {
     validateVersion(version);
-    collectionService.validateCollection(collectionId);
     checkRecordTypeExists(collectionId, recordType);
     List<String> headers = recordDao.getAllAttributeNames(collectionId, recordType);
 
@@ -176,7 +173,6 @@ public class RecordOrchestratorService { // TODO give me a better name
       // SearchRequest isn't required in the controller, so it can be null here
       @Nullable SearchRequest searchRequest) {
     validateVersion(version);
-    collectionService.validateCollection(collectionId);
     checkRecordTypeExists(collectionId, recordType);
     if (null == searchRequest) {
       searchRequest = new SearchRequest();
@@ -190,6 +186,7 @@ public class RecordOrchestratorService { // TODO give me a better name
               + MAX_RECORDS
               + ", and offset must be positive.");
     }
+
     // retrieve schema to use in validations
     Map<String, DataTypeMapping> schema =
         recordDao.getExistingTableSchema(collectionId, recordType);
@@ -204,6 +201,10 @@ public class RecordOrchestratorService { // TODO give me a better name
       return new RecordQueryResponse(searchRequest, Collections.emptyList(), totalRecords);
     }
 
+    Observation observation =
+        Observation.start("wds.queryForRecords", observations)
+            .lowCardinalityKeyValues(generateSearchFilterObservationKeyValues(searchRequest));
+
     LOGGER.info("queryForEntities: {}", recordType.getName());
     List<Record> records =
         recordDao.queryForRecords(
@@ -214,11 +215,33 @@ public class RecordOrchestratorService { // TODO give me a better name
             searchRequest.getSortAttribute(),
             searchRequest.getFilter(),
             collectionId);
+
     List<RecordResponse> recordList =
         records.stream()
             .map(r -> new RecordResponse(r.getId(), r.getRecordType(), r.getAttributes()))
             .toList();
+
+    observation.stop();
     return new RecordQueryResponse(searchRequest, recordList, totalRecords);
+  }
+
+  private KeyValues generateSearchFilterObservationKeyValues(SearchRequest searchRequest) {
+    List<KeyValue> kvs = new ArrayList<>();
+
+    searchRequest
+        .getFilter()
+        .ifPresent(
+            filter -> {
+              // check for non-empty ids
+              if (filter.ids().isPresent() && !filter.ids().get().isEmpty()) {
+                kvs.add(KeyValue.of("queryForRecords.includesFilterById", "true"));
+              }
+              // check for non-blank query
+              if (filter.query().isPresent() && !filter.query().get().isBlank()) {
+                kvs.add(KeyValue.of("queryForRecords.includesFilterByQuery", "true"));
+              }
+            });
+    return KeyValues.of(kvs);
   }
 
   public ResponseEntity<RecordResponse> upsertSingleRecord(
@@ -228,7 +251,7 @@ public class RecordOrchestratorService { // TODO give me a better name
       String recordId,
       Optional<String> primaryKey,
       RecordRequest recordRequest) {
-    validateCollectionAndVersion(collectionId, version);
+    validateVersion(version);
     ResponseEntity<RecordResponse> response =
         recordService.upsertSingleRecord(
             collectionId, recordType, recordId, primaryKey, recordRequest);
@@ -245,7 +268,7 @@ public class RecordOrchestratorService { // TODO give me a better name
 
   public boolean deleteSingleRecord(
       UUID collectionId, String version, RecordType recordType, String recordId) {
-    validateCollectionAndVersion(collectionId, version);
+    validateVersion(version);
     checkRecordTypeExists(collectionId, recordType);
     boolean response = recordService.deleteSingleRecord(collectionId, recordType, recordId);
     activityLogger.saveEventForCurrentUser(
@@ -254,7 +277,7 @@ public class RecordOrchestratorService { // TODO give me a better name
   }
 
   public void deleteRecordType(UUID collectionId, String version, RecordType recordType) {
-    validateCollectionAndVersion(collectionId, version);
+    validateVersion(version);
     checkRecordTypeExists(collectionId, recordType);
     recordService.deleteRecordType(collectionId, recordType);
     activityLogger.saveEventForCurrentUser(
@@ -267,7 +290,7 @@ public class RecordOrchestratorService { // TODO give me a better name
       RecordType recordType,
       String attribute,
       String newAttributeName) {
-    validateCollectionAndVersion(collectionId, version);
+    validateVersion(version);
     checkRecordTypeExists(collectionId, recordType);
     validateRenameAttribute(collectionId, recordType, attribute, newAttributeName);
     recordService.renameAttribute(collectionId, recordType, attribute, newAttributeName);
@@ -300,7 +323,7 @@ public class RecordOrchestratorService { // TODO give me a better name
       RecordType recordType,
       String attribute,
       String newDataType) {
-    validateCollectionAndVersion(collectionId, version);
+    validateVersion(version);
     checkRecordTypeExists(collectionId, recordType);
     RecordTypeSchema schema = getSchemaDescription(collectionId, recordType);
     if (schema.isPrimaryKey(attribute)) {
@@ -328,7 +351,7 @@ public class RecordOrchestratorService { // TODO give me a better name
 
   public void deleteAttribute(
       UUID collectionId, String version, RecordType recordType, String attribute) {
-    validateCollectionAndVersion(collectionId, version);
+    validateVersion(version);
     checkRecordTypeExists(collectionId, recordType);
     validateDeleteAttribute(collectionId, recordType, attribute);
     recordService.deleteAttribute(collectionId, recordType, attribute);
@@ -351,7 +374,6 @@ public class RecordOrchestratorService { // TODO give me a better name
   public RecordTypeSchema describeRecordType(
       UUID collectionId, String version, RecordType recordType) {
     validateVersion(version);
-    collectionService.validateCollection(collectionId);
     checkRecordTypeExists(collectionId, recordType);
     return getSchemaDescription(collectionId, recordType);
   }
@@ -359,7 +381,6 @@ public class RecordOrchestratorService { // TODO give me a better name
   @ReadTransaction
   public List<RecordTypeSchema> describeAllRecordTypes(UUID collectionId, String version) {
     validateVersion(version);
-    collectionService.validateCollection(collectionId);
     List<RecordType> allRecordTypes = recordDao.getAllRecordTypes(collectionId);
     return allRecordTypes.stream()
         .map(recordType -> getSchemaDescription(collectionId, recordType))
@@ -373,7 +394,7 @@ public class RecordOrchestratorService { // TODO give me a better name
       Optional<String> primaryKey,
       InputStream is)
       throws DataImportException {
-    validateCollectionAndVersion(collectionId, version);
+    validateVersion(version);
     if (recordDao.recordTypeExists(collectionId, recordType)) {
       recordService.validatePrimaryKey(collectionId, recordType, primaryKey);
     }

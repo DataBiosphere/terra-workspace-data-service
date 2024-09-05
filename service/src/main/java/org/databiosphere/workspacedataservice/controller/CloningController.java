@@ -4,6 +4,7 @@ import static org.databiosphere.workspacedataservice.service.RecordUtils.validat
 
 import java.util.UUID;
 import org.databiosphere.workspacedataservice.annotations.DeploymentMode.DataPlane;
+import org.databiosphere.workspacedataservice.config.TwdsProperties;
 import org.databiosphere.workspacedataservice.service.BackupRestoreService;
 import org.databiosphere.workspacedataservice.service.PermissionService;
 import org.databiosphere.workspacedataservice.shared.model.BackupResponse;
@@ -25,18 +26,22 @@ public class CloningController {
 
   private final BackupRestoreService backupRestoreService;
   private final PermissionService permissionService;
+  private final TwdsProperties twdsProperties;
 
   public CloningController(
-      BackupRestoreService backupRestoreService, PermissionService permissionService) {
+      BackupRestoreService backupRestoreService,
+      PermissionService permissionService,
+      TwdsProperties twdsProperties) {
     this.backupRestoreService = backupRestoreService;
     this.permissionService = permissionService;
+    this.twdsProperties = twdsProperties;
   }
 
   @PostMapping("/backup/{version}")
   public ResponseEntity<Job<JobInput, BackupResponse>> createBackup(
       @PathVariable("version") String version,
       @RequestBody BackupRestoreRequest BackupRestoreRequest) {
-    permissionService.requireReadPermissionSingleTenant();
+    permissionService.requireReadPermission(twdsProperties.workspaceId());
     UUID trackingId = UUID.randomUUID();
     // TODO: make async
     Job<JobInput, BackupResponse> backupJob =
@@ -48,7 +53,7 @@ public class CloningController {
   public ResponseEntity<Job<JobInput, BackupResponse>> getBackupStatus(
       @PathVariable("version") String version, @PathVariable("trackingId") UUID trackingId) {
     validateVersion(version);
-    permissionService.requireReadPermissionSingleTenant();
+    permissionService.requireReadPermission(twdsProperties.workspaceId());
     var response = backupRestoreService.checkBackupStatus(trackingId);
     return new ResponseEntity<>(response, HttpStatus.OK);
   }
@@ -57,7 +62,7 @@ public class CloningController {
   public ResponseEntity<Job<JobInput, CloneResponse>> getCloningStatus(
       @PathVariable("version") String version) {
     validateVersion(version);
-    permissionService.requireReadPermissionSingleTenant();
+    permissionService.requireReadPermission(twdsProperties.workspaceId());
     var response = backupRestoreService.checkCloneStatus();
     var status = (response == null) ? HttpStatus.NOT_FOUND : HttpStatus.OK;
     return new ResponseEntity<>(response, status);

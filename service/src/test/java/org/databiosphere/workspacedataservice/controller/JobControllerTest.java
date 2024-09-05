@@ -20,13 +20,14 @@ import java.util.Map;
 import java.util.UUID;
 import org.databiosphere.workspacedata.model.ErrorResponse;
 import org.databiosphere.workspacedata.model.ImportRequest.TypeEnum;
-import org.databiosphere.workspacedataservice.common.TestBase;
-import org.databiosphere.workspacedataservice.dao.CollectionDao;
+import org.databiosphere.workspacedataservice.common.DataPlaneTestBase;
+import org.databiosphere.workspacedataservice.config.TwdsProperties;
 import org.databiosphere.workspacedataservice.dao.JobDao;
 import org.databiosphere.workspacedataservice.dataimport.ImportJobInput;
 import org.databiosphere.workspacedataservice.dataimport.pfb.PfbImportOptions;
 import org.databiosphere.workspacedataservice.dataimport.pfb.PfbJobInput;
 import org.databiosphere.workspacedataservice.generated.GenericJobServerModel;
+import org.databiosphere.workspacedataservice.service.CollectionService;
 import org.databiosphere.workspacedataservice.shared.model.CollectionId;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
@@ -52,13 +53,14 @@ import org.springframework.test.context.ActiveProfiles;
 @DirtiesContext
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
-class JobControllerTest extends TestBase {
+class JobControllerTest extends DataPlaneTestBase {
   private static final String TEST_IMPORT_URI = "http://some/uri";
 
   @Autowired private NamedParameterJdbcTemplate namedTemplate;
   @Autowired private TestRestTemplate restTemplate;
   @Autowired private JobDao jobDao;
-  @MockBean private CollectionDao collectionDao;
+  @Autowired private TwdsProperties twdsProperties;
+  @MockBean private CollectionService collectionService;
 
   private final CollectionId collectionId = CollectionId.of(randomUUID());
   private UUID jobId;
@@ -88,7 +90,7 @@ class JobControllerTest extends TestBase {
   @ParameterizedTest(name = "Return all jobs with a querystring of {0}")
   @ValueSource(strings = {"", "?someOtherParam=whatever", "?statuses="})
   void instanceJobsReturnAll(String queryString) {
-    when(collectionDao.collectionSchemaExists(collectionId)).thenReturn(true);
+    when(collectionService.getWorkspaceId(collectionId)).thenReturn(twdsProperties.workspaceId());
     HttpHeaders headers = new HttpHeaders();
     ResponseEntity<List<GenericJobServerModel>> result =
         restTemplate.exchange(
@@ -113,7 +115,7 @@ class JobControllerTest extends TestBase {
 
   @Test
   void instanceJobsWithMultipleStatuses() {
-    when(collectionDao.collectionSchemaExists(collectionId)).thenReturn(true);
+    when(collectionService.getWorkspaceId(collectionId)).thenReturn(twdsProperties.workspaceId());
     assertDoesNotThrow(() -> jobDao.updateStatus(jobId, StatusEnum.CANCELLED));
     HttpHeaders headers = new HttpHeaders();
     ResponseEntity<List<GenericJobServerModel>> result =
@@ -135,7 +137,9 @@ class JobControllerTest extends TestBase {
 
   @Test
   void instanceJobsWithMultipleDelimitedStatuses() {
-    when(collectionDao.collectionSchemaExists(collectionId)).thenReturn(true);
+
+    when(collectionService.getWorkspaceId(collectionId)).thenReturn(twdsProperties.workspaceId());
+
     assertDoesNotThrow(() -> jobDao.updateStatus(jobId, StatusEnum.CANCELLED));
     HttpHeaders headers = new HttpHeaders();
     ResponseEntity<List<GenericJobServerModel>> result =
@@ -158,7 +162,7 @@ class JobControllerTest extends TestBase {
   @ParameterizedTest(name = "Return Bad Request with ?statuses={0}")
   @ValueSource(strings = {"xasdaf", "QUEUED,bad,RUNNING"})
   void instanceJobsWithEmpStatuses(String statusValues) {
-    when(collectionDao.collectionSchemaExists(collectionId)).thenReturn(true);
+    when(collectionService.exists(collectionId)).thenReturn(true);
     HttpHeaders headers = new HttpHeaders();
     ResponseEntity<ErrorResponse> result =
         restTemplate.exchange(

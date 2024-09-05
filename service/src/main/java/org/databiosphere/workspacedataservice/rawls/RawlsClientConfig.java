@@ -1,7 +1,5 @@
 package org.databiosphere.workspacedataservice.rawls;
 
-import static org.databiosphere.workspacedataservice.annotations.DeploymentMode.*;
-
 import io.micrometer.observation.ObservationRegistry;
 import java.net.MalformedURLException;
 import java.net.URL;
@@ -14,21 +12,18 @@ import org.springframework.web.client.support.RestClientAdapter;
 import org.springframework.web.service.invoker.HttpServiceProxyFactory;
 
 @Configuration
-@ControlPlane
 public class RawlsClientConfig {
 
   @Value("${rawlsurl:}")
   private String rawlsUrl;
 
   @Bean
-  @ControlPlane
   public RawlsClient rawlsClient(RawlsApi rawlsApi, RestClientRetry restClientRetry) {
     return new RawlsClient(rawlsApi, restClientRetry);
   }
 
   // RestClient-enabled proxy for the Rawls API
   @Bean
-  @ControlPlane
   public RawlsApi rawlsApi(RestClient restClient) {
     HttpServiceProxyFactory httpServiceProxyFactory =
         HttpServiceProxyFactory.builderFor(RestClientAdapter.create(restClient)).build();
@@ -39,7 +34,6 @@ public class RawlsClientConfig {
   // fluent RestClient, initialized with Rawls' base url, auth from TokenContextUtil, and the
   // current observationRegistry for Prometheus metrics
   @Bean
-  @ControlPlane
   public RestClient rawlsRestClient(ObservationRegistry observationRegistry)
       throws MalformedURLException {
 

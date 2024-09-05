@@ -1,14 +1,15 @@
 package org.databiosphere.workspacedataservice.controller;
 
-import static java.util.UUID.randomUUID;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import java.net.URI;
-import org.databiosphere.workspacedataservice.dao.CollectionDao;
+import org.databiosphere.workspacedataservice.config.TwdsProperties;
+import org.databiosphere.workspacedataservice.generated.CollectionServerModel;
 import org.databiosphere.workspacedataservice.generated.GenericJobServerModel;
 import org.databiosphere.workspacedataservice.generated.ImportRequestServerModel;
+import org.databiosphere.workspacedataservice.service.CollectionService;
 import org.databiosphere.workspacedataservice.shared.model.CollectionId;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -21,12 +22,14 @@ import org.springframework.test.web.servlet.MvcResult;
 @DirtiesContext
 class ImportControllerMockMvcTest extends MockMvcTestBase {
 
-  @Autowired private CollectionDao collectionDao;
+  @Autowired private CollectionService collectionService;
+  @Autowired private TwdsProperties twdsProperties;
 
   @Test
   void smokeTestCreateImport() throws Exception {
-    CollectionId collectionId = CollectionId.of(randomUUID());
-    collectionDao.createSchema(collectionId);
+    CollectionServerModel collection =
+        collectionService.save(twdsProperties.workspaceId(), "name", "description");
+    CollectionId collectionId = CollectionId.of(collection.getId());
     ImportRequestServerModel importRequest =
         new ImportRequestServerModel(
             ImportRequestServerModel.TypeEnum.PFB,

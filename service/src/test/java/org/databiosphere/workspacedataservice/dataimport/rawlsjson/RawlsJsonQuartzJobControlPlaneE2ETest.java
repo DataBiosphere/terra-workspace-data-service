@@ -6,6 +6,7 @@ import static org.databiosphere.workspacedataservice.dataimport.rawlsjson.RawlsJ
 import static org.databiosphere.workspacedataservice.dataimport.rawlsjson.RawlsJsonTestSupport.stubJobContext;
 import static org.databiosphere.workspacedataservice.generated.ImportRequestServerModel.TypeEnum.RAWLSJSON;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 import com.google.cloud.storage.Blob;
 import com.google.common.collect.ImmutableMap;
@@ -13,12 +14,16 @@ import java.net.URI;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import org.databiosphere.workspacedataservice.common.ControlPlaneTestBase;
 import org.databiosphere.workspacedataservice.dataimport.ImportValidator;
 import org.databiosphere.workspacedataservice.generated.ImportRequestServerModel;
 import org.databiosphere.workspacedataservice.pubsub.PubSub;
 import org.databiosphere.workspacedataservice.sam.MockSamUsersApi;
 import org.databiosphere.workspacedataservice.service.ImportService;
+import org.databiosphere.workspacedataservice.shared.model.WorkspaceId;
 import org.databiosphere.workspacedataservice.storage.GcsStorage;
+import org.databiosphere.workspacedataservice.workspace.DataTableTypeInspector;
+import org.databiosphere.workspacedataservice.workspace.WorkspaceDataTableType;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -34,30 +39,24 @@ import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.boot.test.mock.mockito.SpyBean;
 import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.ActiveProfiles;
-import org.springframework.test.context.TestPropertySource;
 
 /**
  * Tests for RAWLSJSON import that execute "end-to-end" - which for this format is relatively
  * simple, merely moving the import file from the given URI to an expected location without any
  * reprocessing and communicating that the new location to Rawls via pubsub.
  */
-@ActiveProfiles(profiles = {"mock-sam", "noop-scheduler-dao", "control-plane"})
+@ActiveProfiles(profiles = {"mock-sam", "noop-scheduler-dao"})
 @DirtiesContext
 @SpringBootTest
-@TestPropertySource(
-    properties = {
-      // turn off pubsub autoconfiguration for tests
-      "spring.cloud.gcp.pubsub.enabled=false",
-      // Rawls url must be valid, else context initialization (Spring startup) will fail
-      "rawlsUrl=https://localhost/",
-    })
 @AutoConfigureMockMvc
-class RawlsJsonQuartzJobControlPlaneE2ETest {
-  @Autowired private RawlsJsonTestSupport testSupport;
+class RawlsJsonQuartzJobControlPlaneE2ETest extends ControlPlaneTestBase {
   @Autowired private ImportService importService;
+  @Autowired private RawlsJsonTestSupport testSupport;
   @SpyBean private PubSub pubSub;
+
   // Mock ImportValidator to allow importing test data from a file:// URL.
   @MockBean ImportValidator importValidator;
+  @MockBean DataTableTypeInspector dataTableTypeInspector;
 
   @Autowired
   @Qualifier("mockGcsStorage")
@@ -67,10 +66,17 @@ class RawlsJsonQuartzJobControlPlaneE2ETest {
   @Captor private ArgumentCaptor<Map<String, String>> pubSubMessageCaptor;
 
   private UUID collectionId;
+  private WorkspaceId workspaceId;
 
   @BeforeEach
   void setup() {
     collectionId = UUID.randomUUID();
+    workspaceId = WorkspaceId.of(collectionId);
+
+    // do not create a collection; we want to test virtual collections here.
+    // mock out the DataTableTypeInspector to show that this workspace is Rawls-powered.
+    when(dataTableTypeInspector.getWorkspaceDataTableType(workspaceId))
+        .thenReturn(WorkspaceDataTableType.RAWLS);
   }
 
   @AfterEach
@@ -102,7 +108,7 @@ class RawlsJsonQuartzJobControlPlaneE2ETest {
 
   private ImmutableMap<String, String> expectedPubSubMessageFor(UUID jobId, boolean isUpsert) {
     return new ImmutableMap.Builder<String, String>()
-        .put("workspaceId", collectionId.toString())
+        .put("workspaceId", workspaceId.toString())
         .put("userEmail", MockSamUsersApi.MOCK_USER_EMAIL)
         .put("jobId", jobId.toString())
         .put("upsertFile", storage.getBucketName() + "/" + rawlsJsonBlobName(jobId))

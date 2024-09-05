@@ -58,9 +58,7 @@ public class ImportService {
 
   public GenericJobServerModel createImport(
       UUID collectionId, ImportRequestServerModel importRequest) {
-    // validate collection exists
-    collectionService.validateCollection(collectionId);
-
+    // validate
     WorkspaceId workspaceId = collectionService.getWorkspaceId(CollectionId.of(collectionId));
     importValidator.validateImport(importRequest, workspaceId);
 

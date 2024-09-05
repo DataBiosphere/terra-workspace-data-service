@@ -43,6 +43,7 @@ import java.util.regex.Pattern;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 import org.databiosphere.workspacedataservice.annotations.WithTestObservationRegistry;
+import org.databiosphere.workspacedataservice.common.ControlPlaneTestBase;
 import org.databiosphere.workspacedataservice.dataimport.ImportValidator;
 import org.databiosphere.workspacedataservice.pubsub.PubSub;
 import org.databiosphere.workspacedataservice.rawls.RawlsClient;
@@ -55,10 +56,13 @@ import org.databiosphere.workspacedataservice.recordsink.RawlsModel.EntityRefere
 import org.databiosphere.workspacedataservice.recordsink.RawlsModel.RemoveAttribute;
 import org.databiosphere.workspacedataservice.sam.MockSamUsersApi;
 import org.databiosphere.workspacedataservice.sam.SamDao;
-import org.databiosphere.workspacedataservice.service.CollectionService;
+import org.databiosphere.workspacedataservice.service.WorkspaceService;
 import org.databiosphere.workspacedataservice.shared.model.BearerToken;
 import org.databiosphere.workspacedataservice.shared.model.RecordType;
+import org.databiosphere.workspacedataservice.shared.model.WorkspaceId;
 import org.databiosphere.workspacedataservice.storage.GcsStorage;
+import org.databiosphere.workspacedataservice.workspace.DataTableTypeInspector;
+import org.databiosphere.workspacedataservice.workspace.WorkspaceDataTableType;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Tag;
@@ -86,22 +90,14 @@ import org.springframework.util.StreamUtils;
  * parsing the PFB, and generating the JSON that gets stored in a bucket and communicated to Rawls
  * via pubsub.
  */
-@ActiveProfiles(profiles = {"mock-sam", "noop-scheduler-dao", "control-plane"})
+@ActiveProfiles(profiles = {"mock-sam", "noop-scheduler-dao"})
 @DirtiesContext
 @SpringBootTest
-@TestPropertySource(
-    properties = {
-      // turn off pubsub autoconfiguration for tests
-      "spring.cloud.gcp.pubsub.enabled=false",
-      // Rawls url must be valid, else context initialization (Spring startup) will fail
-      "rawlsUrl=https://localhost/",
-      "management.prometheus.metrics.export.enabled=true"
-    })
+@TestPropertySource(properties = {"management.prometheus.metrics.export.enabled=true"})
 @WithTestObservationRegistry
 @AutoConfigureMockMvc
-class PfbQuartzJobControlPlaneE2ETest {
+class PfbQuartzJobControlPlaneE2ETest extends ControlPlaneTestBase {
   @Autowired ObjectMapper mapper;
-  @Autowired CollectionService collectionService;
   @Autowired PfbTestSupport testSupport;
   @Autowired MockMvc mockMvc;
 
@@ -114,6 +110,8 @@ class PfbQuartzJobControlPlaneE2ETest {
   // Mock ImportValidator to allow importing test data from a file:// URL.
   @MockBean ImportValidator importValidator;
   @MockBean RawlsClient rawlsClient;
+  @MockBean WorkspaceService workspaceService;
+  @MockBean DataTableTypeInspector dataTableTypeInspector;
 
   /** ArgumentCaptor for the message passed to {@link PubSub#publishSync(Map)}. */
   @Captor private ArgumentCaptor<Map<String, String>> pubSubMessageCaptor;
@@ -142,9 +140,18 @@ class PfbQuartzJobControlPlaneE2ETest {
   void setup() {
     collectionId = UUID.randomUUID();
 
+    // do not create a collection; we want to test virtual collections here.
+    // mock out the DataTableTypeInspector to show that this workspace is Rawls-powered.
+    when(dataTableTypeInspector.getWorkspaceDataTableType(WorkspaceId.of(collectionId)))
+        .thenReturn(WorkspaceDataTableType.RAWLS);
+
     // stub out rawls to report no snapshots already linked to this workspace
     when(rawlsClient.enumerateDataRepoSnapshotReferences(any(), anyInt(), anyInt()))
         .thenReturn(new SnapshotListResponse(Collections.emptyList()));
+
+    // stub out WorkspaceService to say this is an EntityService workspace
+    when(workspaceService.getDataTableType(WorkspaceId.of(collectionId)))
+        .thenReturn(WorkspaceDataTableType.RAWLS);
   }
 
   @AfterEach

@@ -1,24 +1,25 @@
 package org.databiosphere.workspacedataservice.tsv;
 
-import static java.util.UUID.randomUUID;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
+import jakarta.annotation.Nullable;
 import java.io.IOException;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
-import org.databiosphere.workspacedataservice.common.TestBase;
-import org.databiosphere.workspacedataservice.dao.CollectionDao;
-import org.databiosphere.workspacedataservice.dao.RecordDao;
+import org.databiosphere.workspacedataservice.TestUtils;
+import org.databiosphere.workspacedataservice.common.DataPlaneTestBase;
+import org.databiosphere.workspacedataservice.config.TwdsProperties;
 import org.databiosphere.workspacedataservice.recordsink.RecordSink;
 import org.databiosphere.workspacedataservice.recordsink.RecordSinkFactory;
 import org.databiosphere.workspacedataservice.recordsource.RecordSourceFactory;
 import org.databiosphere.workspacedataservice.recordsource.TsvRecordSource;
 import org.databiosphere.workspacedataservice.service.BatchWriteService;
+import org.databiosphere.workspacedataservice.service.CollectionService;
 import org.databiosphere.workspacedataservice.service.DataTypeInferer;
 import org.databiosphere.workspacedataservice.service.RecordOrchestratorService;
 import org.databiosphere.workspacedataservice.service.RecordService;
@@ -36,6 +37,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.SpyBean;
 import org.springframework.http.MediaType;
+import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.TestPropertySource;
@@ -43,31 +45,29 @@ import org.springframework.test.context.TestPropertySource;
 @DirtiesContext
 @SpringBootTest
 @TestPropertySource(properties = {"twds.write.batch.size=2"})
-class TsvBatchTypeDetectionTest extends TestBase {
+class TsvBatchTypeDetectionTest extends DataPlaneTestBase {
 
   @Autowired private RecordSourceFactory recordSourceFactory;
   @Autowired private RecordSinkFactory recordSinkFactory;
   @Autowired private BatchWriteService batchWriteService;
   @Autowired private RecordOrchestratorService recordOrchestratorService;
-  @Autowired private CollectionDao collectionDao;
-  @Autowired RecordDao recordDao;
+  @Autowired private CollectionService collectionService;
+  @Autowired private NamedParameterJdbcTemplate namedTemplate;
+  @Autowired TwdsProperties twdsProperties;
   @SpyBean DataTypeInferer inferer;
   @SpyBean RecordService recordService;
 
-  private static final UUID COLLECTION_UUID = randomUUID();
-  private static final CollectionId COLLECTION_ID = CollectionId.of(COLLECTION_UUID);
+  @Nullable private UUID collectionId;
   private static final RecordType THING_TYPE = RecordType.valueOf("thing");
 
   @BeforeEach
   void setUp() {
-    if (!collectionDao.collectionSchemaExists(COLLECTION_ID)) {
-      collectionDao.createSchema(COLLECTION_ID);
-    }
+    collectionId = collectionService.save(twdsProperties.workspaceId(), "name", "desc").getId();
   }
 
   @AfterEach
   void tearDown() {
-    collectionDao.dropSchema(COLLECTION_ID);
+    TestUtils.cleanAllCollections(collectionService, namedTemplate);
   }
 
   // when batchWriteTsvStream is called with a single specified RecordType, we should not fail if
@@ -99,20 +99,20 @@ id\tmyColumn
         recordSourceFactory.forTsv(file.getInputStream(), THING_TYPE, Optional.of(primaryKey));
     // batchWrite will fail if we are not correctly re-detecting datatypes in later batches
     // (note this is a try-with-resources; an exception from batchWrite() will still fail the test)
-    try (RecordSink recordSink = recordSinkFactory.buildRecordSink(COLLECTION_ID)) {
+    try (RecordSink recordSink = recordSinkFactory.buildRecordSink(CollectionId.of(collectionId))) {
       batchWriteService.batchWrite(recordSource, recordSink, THING_TYPE, primaryKey);
     }
 
     // we should write three batches
     verify(recordService, times(3))
-        .batchUpsert(eq(COLLECTION_UUID), eq(THING_TYPE), any(), any(), eq(primaryKey));
+        .batchUpsert(eq(collectionId), eq(THING_TYPE), any(), any(), eq(primaryKey));
 
     // and we should have inferred the schema three times as well
     verify(inferer, times(3)).inferTypes(ArgumentMatchers.<List<Record>>any());
 
     // retrieve the final record schema
     RecordTypeSchema actualRecordSchema =
-        recordOrchestratorService.describeRecordType(COLLECTION_UUID, "v0.2", THING_TYPE);
+        recordOrchestratorService.describeRecordType(collectionId, "v0.2", THING_TYPE);
     AttributeSchema actual = actualRecordSchema.getAttributeSchema("myColumn");
 
     // "myColumn" should be a string, reflecting the change we saw in the second batch

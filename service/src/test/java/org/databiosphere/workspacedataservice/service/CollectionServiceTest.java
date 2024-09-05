@@ -1,74 +1,73 @@
 package org.databiosphere.workspacedataservice.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.databiosphere.workspacedataservice.service.RecordUtils.VERSION;
-import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
-import java.util.List;
 import java.util.UUID;
-import org.databiosphere.workspacedataservice.common.TestBase;
-import org.databiosphere.workspacedataservice.dao.CollectionDao;
-import org.databiosphere.workspacedataservice.service.model.exception.MissingObjectException;
+import org.databiosphere.workspacedataservice.TestUtils;
+import org.databiosphere.workspacedataservice.common.ControlPlaneTestBase;
+import org.databiosphere.workspacedataservice.shared.model.CollectionId;
+import org.databiosphere.workspacedataservice.shared.model.WorkspaceId;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.test.annotation.DirtiesContext;
-import org.springframework.test.context.ActiveProfiles;
 
-@ActiveProfiles(profiles = {"mock-collection-dao"})
 @DirtiesContext
 @SpringBootTest
-class CollectionServiceTest extends TestBase {
+class CollectionServiceTest extends ControlPlaneTestBase {
 
   @Autowired private CollectionService collectionService;
-  @Autowired private CollectionDao collectionDao;
-
-  private static final UUID COLLECTION = UUID.fromString("111e9999-e89b-12d3-a456-426614174000");
+  @Autowired private NamedParameterJdbcTemplate namedTemplate;
 
   @BeforeEach
   @AfterEach
   void dropCollectionSchemas() {
     // Delete all collections
-    collectionDao
-        .listCollectionSchemas()
-        .forEach(collection -> collectionDao.dropSchema(collection));
+    TestUtils.cleanAllCollections(collectionService, namedTemplate);
   }
 
   @Test
-  void testCreateAndValidateCollection() {
-    collectionService.createCollection(COLLECTION, VERSION);
-    collectionService.validateCollection(COLLECTION);
+  void testCreateDefaultIsIdempotent() {
+    WorkspaceId workspaceId = WorkspaceId.of(UUID.randomUUID());
+    CollectionId collectionId = CollectionId.of(workspaceId.id());
 
-    UUID invalidCollection = UUID.fromString("000e4444-e22b-22d1-a333-426614174000");
-    assertThrows(
-        MissingObjectException.class,
-        () -> collectionService.validateCollection(invalidCollection),
-        "validateCollection should have thrown an error");
+    // at the start of the test, we expect the default collection does not exist
+    assertThat(collectionService.find(workspaceId, collectionId)).isEmpty();
+    assertThat(collectionService.list(workspaceId)).isEmpty();
+
+    // issue the call to create the default collection a few times; this call should be idempotent
+    for (int i = 0; i < 5; i++) {
+      collectionService.createDefaultCollection(workspaceId);
+      assertThat(collectionService.find(workspaceId, collectionId)).isPresent();
+      assertThat(collectionService.list(workspaceId)).hasSize(1);
+    }
   }
 
   @Test
-  void listCollections() {
-    collectionService.createCollection(COLLECTION, VERSION);
+  void testFindAndCreateDefault() {
 
-    UUID secondCollectionId = UUID.fromString("999e1111-e89b-12d3-a456-426614174000");
-    collectionService.createCollection(secondCollectionId, VERSION);
+    WorkspaceId workspaceId = WorkspaceId.of(UUID.randomUUID());
+    CollectionId collectionId = CollectionId.of(workspaceId.id());
 
-    List<UUID> collections = collectionService.listCollections(VERSION);
+    // find should be empty to start
+    assertThat(collectionService.find(workspaceId, collectionId)).isEmpty();
 
-    assertThat(collections).hasSize(2).contains(COLLECTION).contains(secondCollectionId);
-  }
+    // create default collection
+    collectionService.createDefaultCollection(workspaceId);
 
-  @Test
-  void deleteCollection() {
-    collectionService.createCollection(COLLECTION, VERSION);
-    collectionService.validateCollection(COLLECTION);
+    // find should be present after we create the collection
+    var found = collectionService.find(workspaceId, collectionId);
+    assertThat(found).isPresent();
+    assertEquals(collectionId.id(), found.get().getId());
 
-    collectionService.deleteCollection(COLLECTION, VERSION);
-    assertThrows(
-        MissingObjectException.class,
-        () -> collectionService.validateCollection(COLLECTION),
-        "validateCollection should have thrown an error");
+    // delete collection once more
+    collectionService.delete(workspaceId, collectionId);
+
+    // find should be empty again
+    assertThat(collectionService.find(workspaceId, collectionId)).isEmpty();
   }
 }

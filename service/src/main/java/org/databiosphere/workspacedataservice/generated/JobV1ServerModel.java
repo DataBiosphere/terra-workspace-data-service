@@ -24,7 +24,7 @@ import jakarta.annotation.Generated;
  */
 
 @JsonTypeName("JobV1")
-@Generated(value = "org.openapitools.codegen.languages.SpringCodegen", comments = "Generator version: 7.7.0")
+@Generated(value = "org.openapitools.codegen.languages.SpringCodegen", comments = "Generator version: 7.8.0")
 public class JobV1ServerModel {
 
   private UUID jobId;
@@ -34,6 +34,8 @@ public class JobV1ServerModel {
    */
   public enum JobTypeEnum {
     DATA_IMPORT("DATA_IMPORT"),
+    
+    WORKSPACE_INIT("WORKSPACE_INIT"),
     
     UNKNOWN("UNKNOWN");
 

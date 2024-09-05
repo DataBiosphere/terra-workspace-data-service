@@ -8,9 +8,9 @@ import java.util.concurrent.locks.Lock;
 import org.apache.commons.lang3.StringUtils;
 import org.databiosphere.workspacedataservice.annotations.SingleTenant;
 import org.databiosphere.workspacedataservice.dao.CloneDao;
-import org.databiosphere.workspacedataservice.dao.CollectionDao;
 import org.databiosphere.workspacedataservice.leonardo.LeonardoDao;
 import org.databiosphere.workspacedataservice.service.BackupRestoreService;
+import org.databiosphere.workspacedataservice.service.CollectionService;
 import org.databiosphere.workspacedataservice.service.model.exception.CloningException;
 import org.databiosphere.workspacedataservice.service.model.exception.RestException;
 import org.databiosphere.workspacedataservice.shared.model.CloneResponse;
@@ -33,7 +33,7 @@ import org.springframework.lang.Nullable;
 
 public class CollectionInitializerBean {
 
-  private final CollectionDao collectionDao;
+  private final CollectionService collectionService;
   private final LeonardoDao leoDao;
   private final WorkspaceDataServiceDao wdsDao;
   private final CloneDao cloneDao;
@@ -52,14 +52,14 @@ public class CollectionInitializerBean {
    * Constructor. Called by {@link CollectionInitializerConfig}.
    *
    * @see CollectionInitializerConfig
-   * @param collectionDao CollectionDao
+   * @param collectionService CollectionService
    * @param leoDao LeonardoDao
    * @param wdsDao WorkspaceDataServiceDao
    * @param cloneDao CloneDao
    * @param restoreService BackupRestoreService
    */
   public CollectionInitializerBean(
-      CollectionDao collectionDao,
+      CollectionService collectionService,
       LeonardoDao leoDao,
       WorkspaceDataServiceDao wdsDao,
       CloneDao cloneDao,
@@ -68,7 +68,7 @@ public class CollectionInitializerBean {
       @SingleTenant WorkspaceId workspaceId,
       @Nullable String sourceWorkspaceIdString,
       String startupToken) {
-    this.collectionDao = collectionDao;
+    this.collectionService = collectionService;
     this.leoDao = leoDao;
     this.wdsDao = wdsDao;
     this.cloneDao = cloneDao;
@@ -138,7 +138,7 @@ public class CollectionInitializerBean {
       // If there's a clone entry and a default schema there's nothing for us to do here.
       if (cloneDao.cloneExistsForWorkspace(sourceWorkspaceId)) {
         boolean collectionSchemaExists =
-            collectionDao.collectionSchemaExists(CollectionId.of(workspaceId.id()));
+            collectionService.exists(CollectionId.of(workspaceId.id()));
         LOGGER.info(
             "Previous clone entry found. Collection schema exists: {}.", collectionSchemaExists);
         return collectionSchemaExists;
@@ -286,16 +286,8 @@ public class CollectionInitializerBean {
   */
   private void initializeDefaultCollection() {
     try {
-      CollectionId collectionId = CollectionId.of(workspaceId.id());
-
-      if (!collectionDao.collectionSchemaExists(collectionId)) {
-        collectionDao.createSchema(collectionId);
-        LOGGER.info("Creating default schema id succeeded for workspaceId {}.", workspaceId);
-      } else {
-        LOGGER.debug(
-            "Default schema for workspaceId {} already exists; skipping creation.", workspaceId);
-      }
-
+      collectionService.createDefaultCollection(workspaceId);
+      LOGGER.info("Creating default schema id succeeded for workspaceId {}.", workspaceId);
     } catch (IllegalArgumentException e) {
       LOGGER.warn(
           "Workspace id {} could not be parsed, a default schema won't be created.", workspaceId);
