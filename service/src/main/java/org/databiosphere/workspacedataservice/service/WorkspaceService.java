@@ -1,6 +1,5 @@
 package org.databiosphere.workspacedataservice.service;
 
-import java.util.Optional;
 import org.databiosphere.workspacedataservice.dao.JobDao;
 import org.databiosphere.workspacedataservice.dao.WorkspaceRepository;
 import org.databiosphere.workspacedataservice.generated.GenericJobServerModel;
@@ -16,7 +15,6 @@ import org.databiosphere.workspacedataservice.workspace.DataTableTypeInspector;
 import org.databiosphere.workspacedataservice.workspace.WorkspaceDataTableType;
 import org.databiosphere.workspacedataservice.workspace.WorkspaceInitJobInput;
 import org.databiosphere.workspacedataservice.workspace.WorkspaceInitJobResult;
-import org.databiosphere.workspacedataservice.workspace.WorkspaceRecord;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
@@ -68,7 +66,7 @@ public class WorkspaceService {
         WorkspaceInitJobInput.from(workspaceId, workspaceInitServerModel);
 
     // Save the workspace record to the database
-    initSystemWorkspace(workspaceId);
+    workspaceRepository.saveWorkspaceRecord(workspaceId, WorkspaceDataTableType.WDS);
 
     // branch for clones vs. non-clones
     if (jobInput.sourceWorkspaceId() != null) {
@@ -129,21 +127,5 @@ public class WorkspaceService {
   private GenericJobServerModel initClone(WorkspaceInitJobInput jobInput) {
     // TODO AJ-1952: implement cloning
     throw new RuntimeException("not implemented");
-  }
-
-  /**
-   * Initialize the workspace record in the database (sys_wds.workspace) if it does not exist.
-   *
-   * @param workspaceId the workspace to initialize
-   */
-  public void initSystemWorkspace(WorkspaceId workspaceId) {
-    Optional<WorkspaceRecord> maybeWorkspaceRecord = workspaceRepository.findById(workspaceId);
-    if (maybeWorkspaceRecord.isEmpty()) {
-      WorkspaceDataTableType dataTableType =
-          dataTableTypeInspector.getWorkspaceDataTableType(workspaceId);
-      WorkspaceRecord newWorkspaceRecord =
-          new WorkspaceRecord(workspaceId, dataTableType, /* newFlag= */ true);
-      workspaceRepository.save(newWorkspaceRecord);
-    }
   }
 }
