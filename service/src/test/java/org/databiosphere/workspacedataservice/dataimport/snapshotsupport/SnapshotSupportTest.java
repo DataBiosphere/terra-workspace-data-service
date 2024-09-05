@@ -21,7 +21,7 @@ import java.util.UUID;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 import org.apache.commons.lang3.RandomStringUtils;
-import org.databiosphere.workspacedataservice.common.DataPlaneTestBase;
+import org.databiosphere.workspacedataservice.common.ControlPlaneTestBase;
 import org.databiosphere.workspacedataservice.shared.model.RecordType;
 import org.databiosphere.workspacedataservice.workspacemanager.WorkspaceManagerDao;
 import org.junit.jupiter.api.Test;
@@ -30,7 +30,7 @@ import org.springframework.test.annotation.DirtiesContext;
 
 @DirtiesContext
 @SpringBootTest
-class SnapshotSupportTest extends DataPlaneTestBase {
+class SnapshotSupportTest extends ControlPlaneTestBase {
 
   @Test
   void safeGetSnapshotId() {
