@@ -16,6 +16,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import java.time.OffsetDateTime;
 import java.util.UUID;
 import java.util.stream.Stream;
+import org.databiosphere.workspacedataservice.common.DataPlaneTestBase;
 import org.databiosphere.workspacedataservice.config.TwdsProperties;
 import org.databiosphere.workspacedataservice.dao.RecordDao;
 import org.databiosphere.workspacedataservice.generated.GenericJobServerModel;
@@ -37,25 +38,22 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.MediaType;
 import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder;
 
-/**
- * This test extends MockMvcTestBase but overrides its control-plane profile to use the data-plane
- * profile instead. Because this test explicitly contains single-tenant assertions, it must run in
- * the data plane.
- */
 @DirtiesContext
 @SpringBootTest
-@ActiveProfiles(
-    value = {"mock-backup-dao", "mock-restore-dao", "mock-clone-dao", "data-plane"},
-    inheritProfiles = false)
-class AllControllersPermissionsTest extends MockMvcTestBase {
+@AutoConfigureMockMvc
+@ActiveProfiles({"mock-backup-dao", "mock-restore-dao", "mock-clone-dao"})
+class AllControllersPermissionsTest extends DataPlaneTestBase {
+  @Autowired private MockMvc mockMvc;
   @Autowired PermissionService permissionService;
   @MockBean SamAuthorizationDaoFactory samAuthorizationDaoFactory;
   @MockBean CollectionService collectionService;
