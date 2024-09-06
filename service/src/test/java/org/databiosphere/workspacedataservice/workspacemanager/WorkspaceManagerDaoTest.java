@@ -23,8 +23,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 import org.apache.commons.lang3.RandomStringUtils;
-import org.databiosphere.workspacedataservice.annotations.SingleTenant;
-import org.databiosphere.workspacedataservice.common.DataPlaneTestBase;
+import org.databiosphere.workspacedataservice.common.ControlPlaneTestBase;
 import org.databiosphere.workspacedataservice.shared.model.WorkspaceId;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -39,13 +38,13 @@ import org.springframework.test.annotation.DirtiesContext;
 
 @SpringBootTest
 @DirtiesContext
-class WorkspaceManagerDaoTest extends DataPlaneTestBase {
+class WorkspaceManagerDaoTest extends ControlPlaneTestBase {
 
   @Autowired WorkspaceManagerDao workspaceManagerDao;
 
   @MockBean WorkspaceManagerClientFactory mockWorkspaceManagerClientFactory;
 
-  @Autowired @SingleTenant WorkspaceId workspaceId;
+  private WorkspaceId workspaceId;
 
   final ReferencedGcpResourceApi mockReferencedGcpResourceApi =
       Mockito.mock(ReferencedGcpResourceApi.class);
@@ -55,6 +54,8 @@ class WorkspaceManagerDaoTest extends DataPlaneTestBase {
 
   @BeforeEach
   void setUp() {
+    workspaceId = WorkspaceId.of(randomUUID());
+
     given(mockWorkspaceManagerClientFactory.getReferencedGcpResourceApi(nullable(String.class)))
         .willReturn(mockReferencedGcpResourceApi);
     given(mockWorkspaceManagerClientFactory.getResourceApi(nullable(String.class)))

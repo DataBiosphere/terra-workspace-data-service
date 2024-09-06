@@ -25,23 +25,20 @@ import org.apache.hadoop.fs.Path;
 import org.apache.parquet.hadoop.ParquetReader;
 import org.apache.parquet.hadoop.util.HadoopInputFile;
 import org.apache.parquet.io.InputFile;
-import org.databiosphere.workspacedataservice.common.DataPlaneTestBase;
+import org.databiosphere.workspacedataservice.common.ControlPlaneTestBase;
 import org.databiosphere.workspacedataservice.recordsource.RecordSource;
 import org.databiosphere.workspacedataservice.service.model.TdrManifestImportTable;
 import org.databiosphere.workspacedataservice.shared.model.Record;
 import org.databiosphere.workspacedataservice.shared.model.RecordAttributes;
 import org.databiosphere.workspacedataservice.shared.model.RecordType;
 import org.junit.jupiter.api.Test;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.core.io.Resource;
 
 @SpringBootTest
-class ParquetDataTypesTest extends DataPlaneTestBase {
-  private final Logger logger = LoggerFactory.getLogger(getClass());
+class ParquetDataTypesTest extends ControlPlaneTestBase {
 
   @Autowired ObjectMapper mapper;
 
