@@ -21,9 +21,10 @@ import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 import org.databiosphere.workspacedataservice.TestUtils;
-import org.databiosphere.workspacedataservice.config.TwdsProperties;
 import org.databiosphere.workspacedataservice.dao.TestDao;
+import org.databiosphere.workspacedataservice.dao.WorkspaceRepository;
 import org.databiosphere.workspacedataservice.generated.CollectionServerModel;
+import org.databiosphere.workspacedataservice.service.CollectionService;
 import org.databiosphere.workspacedataservice.service.RelationUtils;
 import org.databiosphere.workspacedataservice.service.model.AttributeSchema;
 import org.databiosphere.workspacedataservice.service.model.DataTypeMapping;
@@ -40,6 +41,9 @@ import org.databiosphere.workspacedataservice.shared.model.RecordQueryResponse;
 import org.databiosphere.workspacedataservice.shared.model.RecordRequest;
 import org.databiosphere.workspacedataservice.shared.model.RecordResponse;
 import org.databiosphere.workspacedataservice.shared.model.RecordType;
+import org.databiosphere.workspacedataservice.shared.model.WorkspaceId;
+import org.databiosphere.workspacedataservice.workspace.WorkspaceDataTableType;
+import org.databiosphere.workspacedataservice.workspace.WorkspaceRecord;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -50,10 +54,10 @@ import org.junit.jupiter.params.provider.MethodSource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.MediaType;
+import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MvcResult;
-import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 
 @ActiveProfiles(profiles = "mock-sam")
@@ -61,15 +65,24 @@ import org.springframework.web.method.annotation.MethodArgumentTypeMismatchExcep
 class RecordControllerMockMvcTest extends MockMvcTestBase {
 
   private UUID instanceId;
+  private WorkspaceId workspaceId;
 
   private static final String versionId = "v0.2";
 
-  @Autowired private TwdsProperties twdsProperties;
+  @Autowired CollectionService collectionService;
+  @Autowired NamedParameterJdbcTemplate namedTemplate;
+  @Autowired WorkspaceRepository workspaceRepository;
 
   @Autowired TestDao testDao;
 
   @BeforeEach
   void setUp() throws Exception {
+    workspaceId = WorkspaceId.of(UUID.randomUUID());
+
+    // create the workspace record
+    workspaceRepository.save(
+        new WorkspaceRecord(workspaceId, WorkspaceDataTableType.WDS, /* newFlag= */ true));
+
     CollectionId collectionId = CollectionId.of(UUID.randomUUID());
     String name = "test-name";
     String description = "test-description";
@@ -82,7 +95,7 @@ class RecordControllerMockMvcTest extends MockMvcTestBase {
     MvcResult mvcResult =
         mockMvc
             .perform(
-                post("/collections/v1/{workspaceId}", twdsProperties.workspaceId().id())
+                post("/collections/v1/{workspaceId}", workspaceId)
                     .content(objectMapper.writeValueAsString(collectionServerModel))
                     .contentType(MediaType.APPLICATION_JSON))
             .andExpect(status().isCreated())
@@ -94,18 +107,8 @@ class RecordControllerMockMvcTest extends MockMvcTestBase {
 
   @AfterEach
   void tearDown() {
-    try {
-      mockMvc
-          .perform(
-              delete(
-                      "/collections/v1/{workspaceId}/{instanceid}",
-                      twdsProperties.workspaceId().id(),
-                      instanceId)
-                  .content(""))
-          .andExpect(status().isOk());
-    } catch (Throwable t) {
-      // noop - if we fail to delete the instance, don't fail the test
-    }
+    TestUtils.cleanAllCollections(collectionService, namedTemplate);
+    TestUtils.cleanAllWorkspaces(namedTemplate);
   }
 
   @Test
@@ -168,7 +171,6 @@ class RecordControllerMockMvcTest extends MockMvcTestBase {
   }
 
   @Test
-  @Transactional
   void deleteInstanceContainingData() throws Exception {
     RecordAttributes attributes = new RecordAttributes(Map.of("foo", "bar", "num", 123));
     // create "to" record, which will be the target of a relation
@@ -198,16 +200,11 @@ class RecordControllerMockMvcTest extends MockMvcTestBase {
         .andExpect(status().isCreated());
     // delete existing collection should 204
     mockMvc
-        .perform(
-            delete(
-                "/collections/v1/{workspaceId}/{instanceId}",
-                twdsProperties.workspaceId().id(),
-                instanceId))
+        .perform(delete("/collections/v1/{workspaceId}/{instanceId}", workspaceId, instanceId))
         .andExpect(status().isNoContent());
   }
 
   @Test
-  @Transactional
   void tsvWithNoRowsShouldReturn400() throws Exception {
     MockMultipartFile file =
         new MockMultipartFile(
@@ -225,7 +222,6 @@ class RecordControllerMockMvcTest extends MockMvcTestBase {
   }
 
   @Test
-  @Transactional
   void storeLargeIntegerValue() throws Exception {
     String bigIntValue = "11111111111111111111111111111111";
     String bigFloatValue = "11111111111111111111111111111111.2222222222";
@@ -262,7 +258,6 @@ class RecordControllerMockMvcTest extends MockMvcTestBase {
   }
 
   @Test
-  @Transactional
   void writeAndReadJson() throws Exception {
     String rt = "jsonb-type";
     RecordAttributes attributes =
@@ -301,7 +296,6 @@ class RecordControllerMockMvcTest extends MockMvcTestBase {
   }
 
   @Test
-  @Transactional
   void writeAndReadAllDataTypesJson() throws Exception {
     // Create target records - note that getAllTypesAttributesForJson expects relations to be
     // "target-record"
@@ -337,7 +331,6 @@ class RecordControllerMockMvcTest extends MockMvcTestBase {
   }
 
   @Test
-  @Transactional
   void writeAndReadAllDataTypesTsv() throws Exception {
     // Create target records - note that getAllTypesAttributesForTsv expects relations to be
     // "target-record"
@@ -384,7 +377,6 @@ class RecordControllerMockMvcTest extends MockMvcTestBase {
   }
 
   @Test
-  @Transactional
   void tsvWithMissingRowIdentifierColumn() throws Exception {
     MockMultipartFile file =
         new MockMultipartFile(
@@ -472,7 +464,6 @@ class RecordControllerMockMvcTest extends MockMvcTestBase {
   }
 
   @Test
-  @Transactional
   void tsvWithEmptyStringIdentifier() throws Exception {
     MockMultipartFile file =
         new MockMultipartFile(
@@ -493,7 +484,6 @@ class RecordControllerMockMvcTest extends MockMvcTestBase {
   }
 
   @Test
-  @Transactional
   void tsvWithDuplicateRowIdsInSameBatch() throws Exception {
     MockMultipartFile file =
         new MockMultipartFile(
@@ -527,7 +517,6 @@ class RecordControllerMockMvcTest extends MockMvcTestBase {
   }
 
   @Test
-  @Transactional
   void tsvWithDuplicateColumnNames() throws Exception {
     MockMultipartFile file =
         new MockMultipartFile(
@@ -557,7 +546,6 @@ class RecordControllerMockMvcTest extends MockMvcTestBase {
   }
 
   @Test
-  @Transactional
   void tsvWithTrailingTabs() throws Exception {
     MockMultipartFile file =
         new MockMultipartFile(
@@ -587,7 +575,6 @@ class RecordControllerMockMvcTest extends MockMvcTestBase {
   }
 
   @Test
-  @Transactional
   void tsvWithBlankHeader() throws Exception {
     MockMultipartFile file =
         new MockMultipartFile(
@@ -617,7 +604,6 @@ class RecordControllerMockMvcTest extends MockMvcTestBase {
   }
 
   @Test
-  @Transactional
   void tsvWithNullHeader() throws Exception {
     MockMultipartFile file =
         new MockMultipartFile(
@@ -645,7 +631,6 @@ class RecordControllerMockMvcTest extends MockMvcTestBase {
   }
 
   @Test
-  @Transactional
   void tsvWithDuplicateRowIdsInDifferentBatches(@Value("${twds.write.batch.size}") int batchSize)
       throws Exception {
     StringBuilder tsvContent = new StringBuilder("idcol\tcol1\n");
@@ -677,7 +662,6 @@ class RecordControllerMockMvcTest extends MockMvcTestBase {
   }
 
   @Test
-  @Transactional
   void tsvWithSpecifiedRowIdentifierColumn() throws Exception {
     MockMultipartFile file =
         new MockMultipartFile(
@@ -727,7 +711,6 @@ class RecordControllerMockMvcTest extends MockMvcTestBase {
   }
 
   @Test
-  @Transactional
   void simpleTsvUploadWithBatchingShouldSucceed(@Value("${twds.write.batch.size}") int batchSize)
       throws Exception {
     StringBuilder tsvContent = new StringBuilder("sys_name\tcol1\n");
@@ -750,7 +733,6 @@ class RecordControllerMockMvcTest extends MockMvcTestBase {
   }
 
   @Test
-  @Transactional
   void tsvUploadWithRelationsShouldSucceed() throws Exception {
     RecordType refType = RecordType.valueOf("refType");
     createSomeRecords(refType, 3);
@@ -803,7 +785,6 @@ class RecordControllerMockMvcTest extends MockMvcTestBase {
   }
 
   @Test
-  @Transactional
   void nullAndNonNullArraysShouldChooseProperType() throws Exception {
     StringBuilder tsvContent = new StringBuilder("sys_name\tarray\n");
     // empty string/nulls
@@ -866,7 +847,6 @@ class RecordControllerMockMvcTest extends MockMvcTestBase {
   }
 
   @Test
-  @Transactional
   void scalarFollowedByArray() throws Exception {
     String type = "scalar-followed-by-array";
     String id = "my-id";
@@ -930,7 +910,6 @@ class RecordControllerMockMvcTest extends MockMvcTestBase {
   }
 
   @Test
-  @Transactional
   void tsvWithMissingRelationShouldFail() throws Exception {
     MockMultipartFile file =
         new MockMultipartFile(
@@ -954,7 +933,6 @@ class RecordControllerMockMvcTest extends MockMvcTestBase {
   }
 
   @Test
-  @Transactional
   void tsvUploadUsesFirstColumnAsPrimaryKey() throws Exception {
     MockMultipartFile file =
         new MockMultipartFile(
@@ -978,7 +956,6 @@ class RecordControllerMockMvcTest extends MockMvcTestBase {
   }
 
   @Test
-  @Transactional
   void tsvUploadUsesSpecifiedColumnAsPrimaryKey() throws Exception {
     String pk = "embedded characters";
     MockMultipartFile file =
@@ -1003,7 +980,6 @@ class RecordControllerMockMvcTest extends MockMvcTestBase {
   }
 
   @Test
-  @Transactional
   void uploadTsvAndVerifySchema() throws Exception {
     MockMultipartFile file =
         new MockMultipartFile(
@@ -1075,7 +1051,6 @@ class RecordControllerMockMvcTest extends MockMvcTestBase {
   }
 
   @Test
-  @Transactional
   void tryDeletingMissingRecordType() throws Exception {
     mockMvc
         .perform(
@@ -1089,7 +1064,6 @@ class RecordControllerMockMvcTest extends MockMvcTestBase {
   }
 
   @Test
-  @Transactional
   void tryFetchingMissingRecordType() throws Exception {
     mockMvc
         .perform(
@@ -1103,7 +1077,6 @@ class RecordControllerMockMvcTest extends MockMvcTestBase {
   }
 
   @Test
-  @Transactional
   void tryFetchingMissingRecord() throws Exception {
     RecordType recordType1 = RecordType.valueOf("recordType1");
     createSomeRecords(recordType1, 1);
@@ -1119,7 +1092,6 @@ class RecordControllerMockMvcTest extends MockMvcTestBase {
   }
 
   @Test
-  @Transactional
   void tryCreatingIllegallyNamedRecordType() throws Exception {
     String recordType = "sys_my_type";
     RecordAttributes attributes = RecordAttributes.empty();
@@ -1141,7 +1113,6 @@ class RecordControllerMockMvcTest extends MockMvcTestBase {
   }
 
   @Test
-  @Transactional
   void updateWithIllegalAttributeName() throws Exception {
     RecordType recordType1 = RecordType.valueOf("illegalName");
     createSomeRecords(recordType1, 1);
@@ -1163,7 +1134,6 @@ class RecordControllerMockMvcTest extends MockMvcTestBase {
   }
 
   @Test
-  @Transactional
   void putNewRecord() throws Exception {
     String newRecordType = "newRecordType";
     RecordAttributes attributes = new RecordAttributes(Map.of("foo", "bar", "num", 123));
@@ -1209,7 +1179,6 @@ class RecordControllerMockMvcTest extends MockMvcTestBase {
   }
 
   @Test
-  @Transactional
   void ensurePutShowsNewlyNullFields() throws Exception {
     RecordType recordType1 = RecordType.valueOf("recordType1");
     createSomeRecords(recordType1, 1);
@@ -1231,7 +1200,6 @@ class RecordControllerMockMvcTest extends MockMvcTestBase {
   }
 
   @Test
-  @Transactional
   void ensurePatchShowsAllFields() throws Exception {
     RecordType recordType1 = RecordType.valueOf("recordType1");
     createSomeRecords(recordType1, 1);
@@ -1252,7 +1220,6 @@ class RecordControllerMockMvcTest extends MockMvcTestBase {
   }
 
   @Test
-  @Transactional
   void createAndRetrieveRecord() throws Exception {
     RecordType recordType = RecordType.valueOf("samples");
     createSomeRecords(recordType, 1);
@@ -1278,7 +1245,6 @@ class RecordControllerMockMvcTest extends MockMvcTestBase {
   }
 
   @Test
-  @Transactional
   void createRecordWithReferences() throws Exception {
     RecordType referencedType = RecordType.valueOf("ref_participants");
     RecordType referringType = RecordType.valueOf("ref_samples");
@@ -1302,7 +1268,6 @@ class RecordControllerMockMvcTest extends MockMvcTestBase {
   }
 
   @Test
-  @Transactional
   void createRecordWithReferenceArray() throws Exception {
     RecordType referencedType = RecordType.valueOf("ref_participants");
     RecordType referringType = RecordType.valueOf("ref_samples");
@@ -1329,7 +1294,6 @@ class RecordControllerMockMvcTest extends MockMvcTestBase {
   }
 
   @Test
-  @Transactional
   void addReferenceArrayColumnToExistingType() throws Exception {
     RecordType referencedType = RecordType.valueOf("ref_participants");
     RecordType referringType = RecordType.valueOf("ref_samples");
@@ -1367,7 +1331,6 @@ class RecordControllerMockMvcTest extends MockMvcTestBase {
   }
 
   @Test
-  @Transactional
   void createRecordWithReferenceArrayMissingTable() throws Exception {
     RecordType referencedType = RecordType.valueOf("ref_participants");
     RecordType referringType = RecordType.valueOf("ref_samples");
@@ -1394,7 +1357,6 @@ class RecordControllerMockMvcTest extends MockMvcTestBase {
   }
 
   @Test
-  @Transactional
   void createRecordWithReferenceArrayMissingRecord() throws Exception {
     RecordType referencedType = RecordType.valueOf("ref_participants");
     RecordType referringType = RecordType.valueOf("ref_samples");
@@ -1421,7 +1383,6 @@ class RecordControllerMockMvcTest extends MockMvcTestBase {
   }
 
   @Test
-  @Transactional
   void createRecordWithMixedReferenceArray() throws Exception {
     RecordType referencedType = RecordType.valueOf("ref_participants");
     RecordType referringType = RecordType.valueOf("ref_samples");
@@ -1451,7 +1412,6 @@ class RecordControllerMockMvcTest extends MockMvcTestBase {
   }
 
   @Test
-  @Transactional
   void referencingMissingTableFails() throws Exception {
     RecordType referencedType = RecordType.valueOf("missing");
     RecordType referringType = RecordType.valueOf("ref_samples-2");
@@ -1476,7 +1436,6 @@ class RecordControllerMockMvcTest extends MockMvcTestBase {
   }
 
   @Test
-  @Transactional
   void referencingMissingRecordFails() throws Exception {
     RecordType referencedType = RecordType.valueOf("ref_participants-2");
     RecordType referringType = RecordType.valueOf("ref_samples-3");
@@ -1502,7 +1461,6 @@ class RecordControllerMockMvcTest extends MockMvcTestBase {
   }
 
   @Test
-  @Transactional
   void expandColumnDefForNewData() throws Exception {
     RecordType recordType = RecordType.valueOf("to-alter");
     createSomeRecords(recordType, 1);
@@ -1524,7 +1482,6 @@ class RecordControllerMockMvcTest extends MockMvcTestBase {
   }
 
   @Test
-  @Transactional
   void patchMissingRecord() throws Exception {
     RecordType recordType = RecordType.valueOf("to-patch");
     createSomeRecords(recordType, 1);
@@ -1545,7 +1502,6 @@ class RecordControllerMockMvcTest extends MockMvcTestBase {
   }
 
   @Test
-  @Transactional
   void putRecordWithMissingTableReference() throws Exception {
     String recordType = "record-type-missing-table-ref";
     String recordId = "record_0";
@@ -1570,7 +1526,6 @@ class RecordControllerMockMvcTest extends MockMvcTestBase {
   }
 
   @Test
-  @Transactional
   void putRecordWithMismatchedReference() throws Exception {
     RecordType referencedType = RecordType.valueOf("referenced_Type");
     RecordType referringType = RecordType.valueOf("referring_Type");
@@ -1613,7 +1568,6 @@ class RecordControllerMockMvcTest extends MockMvcTestBase {
   }
 
   @Test
-  @Transactional
   void tryToAssignReferenceToNonRefColumn() throws Exception {
     RecordType recordType = RecordType.valueOf("ref-alter");
     createSomeRecords(recordType, 1);
@@ -1642,7 +1596,6 @@ class RecordControllerMockMvcTest extends MockMvcTestBase {
   }
 
   @Test
-  @Transactional
   void deleteRecord() throws Exception {
     RecordType recordType = RecordType.valueOf("samples");
     createSomeRecords(recordType, 1);
@@ -1667,7 +1620,6 @@ class RecordControllerMockMvcTest extends MockMvcTestBase {
   }
 
   @Test
-  @Transactional
   void deleteMissingRecord() throws Exception {
     RecordType recordType = RecordType.valueOf("samples");
     createSomeRecords(recordType, 1);
@@ -1683,7 +1635,6 @@ class RecordControllerMockMvcTest extends MockMvcTestBase {
   }
 
   @Test
-  @Transactional
   void deleteReferencedRecord() throws Exception {
     RecordType referencedType = RecordType.valueOf("ref_participants");
     RecordType referringType = RecordType.valueOf("ref_samples");
@@ -1716,7 +1667,6 @@ class RecordControllerMockMvcTest extends MockMvcTestBase {
   }
 
   @Test
-  @Transactional
   void deleteRecordWithRelationArray() throws Exception {
     RecordType referencedType = RecordType.valueOf("ref_participants");
     RecordType referringType = RecordType.valueOf("ref_samples");
@@ -1762,7 +1712,6 @@ class RecordControllerMockMvcTest extends MockMvcTestBase {
   }
 
   @Test
-  @Transactional
   void deleteRecordType() throws Exception {
     String recordType = "recordType";
     createSomeRecords(recordType, 3);
@@ -1775,7 +1724,6 @@ class RecordControllerMockMvcTest extends MockMvcTestBase {
   }
 
   @Test
-  @Transactional
   void deleteNonExistentRecordType() throws Exception {
     String recordType = "recordType";
     mockMvc
@@ -1785,7 +1733,6 @@ class RecordControllerMockMvcTest extends MockMvcTestBase {
   }
 
   @Test
-  @Transactional
   void deleteReferencedRecordType() throws Exception {
     RecordType referencedType = RecordType.valueOf("ref_participants");
     RecordType referringType = RecordType.valueOf("ref_samples");
@@ -1818,7 +1765,6 @@ class RecordControllerMockMvcTest extends MockMvcTestBase {
   }
 
   @Test
-  @Transactional
   void deleteRecordTypeWithRelationArray() throws Exception {
     RecordType referencedType = RecordType.valueOf("ref_participants");
     RecordType referringType = RecordType.valueOf("ref_samples");
@@ -1852,7 +1798,6 @@ class RecordControllerMockMvcTest extends MockMvcTestBase {
   }
 
   @Test
-  @Transactional
   void deleteReferencedRecordTypeWithNoRecords() throws Exception {
     RecordType referencedType = RecordType.valueOf("ref_participants");
     RecordType referringType = RecordType.valueOf("ref_samples");
@@ -1898,7 +1843,6 @@ class RecordControllerMockMvcTest extends MockMvcTestBase {
   }
 
   @Test
-  @Transactional
   void updateAttributeNoUpdate() throws Exception {
     String recordType = "recordType";
     createSomeRecords(recordType, 3);
@@ -1917,7 +1861,6 @@ class RecordControllerMockMvcTest extends MockMvcTestBase {
   }
 
   @Test
-  @Transactional
   void renameAttribute() throws Exception {
     String recordType = "recordType";
     createSomeRecords(recordType, 3);
@@ -1955,7 +1898,6 @@ class RecordControllerMockMvcTest extends MockMvcTestBase {
   }
 
   @Test
-  @Transactional
   void renameNonExistentAttribute() throws Exception {
     String recordType = "recordType";
     createSomeRecords(recordType, 3);
@@ -1974,7 +1916,6 @@ class RecordControllerMockMvcTest extends MockMvcTestBase {
   }
 
   @Test
-  @Transactional
   void renamePrimaryKeyAttribute() throws Exception {
     String recordType = "recordType";
     createSomeRecords(recordType, 3);
@@ -1995,7 +1936,6 @@ class RecordControllerMockMvcTest extends MockMvcTestBase {
   }
 
   @Test
-  @Transactional
   void renameAttributeConflict() throws Exception {
     String recordType = "recordType";
     createSomeRecords(recordType, 3);
@@ -2017,7 +1957,6 @@ class RecordControllerMockMvcTest extends MockMvcTestBase {
   }
 
   @Test
-  @Transactional
   void updateAttributeDataType() throws Exception {
     // Arrange
     String recordType = "recordType";
@@ -2066,7 +2005,6 @@ class RecordControllerMockMvcTest extends MockMvcTestBase {
   }
 
   @Test
-  @Transactional
   void updateAttributeDataTypePrimaryKey() throws Exception {
     String recordType = "recordType";
     createSomeRecords(recordType, 3);
@@ -2087,7 +2025,6 @@ class RecordControllerMockMvcTest extends MockMvcTestBase {
   }
 
   @Test
-  @Transactional
   void updateAttributeDataTypeInvalidDataType() throws Exception {
     String recordType = "recordType";
     createSomeRecords(recordType, 3);
@@ -2108,7 +2045,6 @@ class RecordControllerMockMvcTest extends MockMvcTestBase {
   }
 
   @Test
-  @Transactional
   void deleteAttribute() throws Exception {
     String recordType = "recordType";
     createSomeRecords(recordType, 3);
@@ -2130,7 +2066,6 @@ class RecordControllerMockMvcTest extends MockMvcTestBase {
   }
 
   @Test
-  @Transactional
   void deleteNonExistentAttribute() throws Exception {
     String recordType = "recordType";
     createSomeRecords(recordType, 3);
@@ -2146,7 +2081,6 @@ class RecordControllerMockMvcTest extends MockMvcTestBase {
   }
 
   @Test
-  @Transactional
   void deletePrimaryKeyAttribute() throws Exception {
     String recordType = "recordType";
     createSomeRecords(recordType, 3);
@@ -2165,7 +2099,6 @@ class RecordControllerMockMvcTest extends MockMvcTestBase {
   }
 
   @Test
-  @Transactional
   void describeType() throws Exception {
     RecordType type = RecordType.valueOf("recordType");
 
@@ -2231,7 +2164,6 @@ class RecordControllerMockMvcTest extends MockMvcTestBase {
   }
 
   @Test
-  @Transactional
   void incompatibleArrayWritesShouldChangeToStringArray() throws Exception {
     String recordType = "test-type";
     List<Record> someRecords = createSomeRecords(recordType, 1);
@@ -2262,7 +2194,6 @@ class RecordControllerMockMvcTest extends MockMvcTestBase {
   }
 
   @Test
-  @Transactional
   void describeNonexistentType() throws Exception {
     mockMvc
         .perform(get("/{instanceId}/types/{v}/{type}", instanceId, versionId, "noType"))
@@ -2270,7 +2201,6 @@ class RecordControllerMockMvcTest extends MockMvcTestBase {
   }
 
   @Test
-  @Transactional
   void describeAllTypes() throws Exception {
     RecordType type1 = RecordType.valueOf("firstType");
     createSomeRecords(type1, 1, instanceId);
@@ -2315,14 +2245,6 @@ class RecordControllerMockMvcTest extends MockMvcTestBase {
     assertEquals(expectedSchemas, actual);
   }
 
-  @Test
-  @Transactional
-  void describeAllTypesNoInstance() throws Exception {
-    mockMvc
-        .perform(get("/{instanceId}/types/{v}", UUID.randomUUID(), versionId))
-        .andExpect(status().isNotFound());
-  }
-
   private List<Record> createSomeRecords(String recordType, int numRecords) throws Exception {
     return createSomeRecords(RecordType.valueOf(recordType), numRecords, instanceId);
   }
@@ -2355,7 +2277,6 @@ class RecordControllerMockMvcTest extends MockMvcTestBase {
   }
 
   @Test
-  @Transactional
   void batchWriteInsertShouldSucceed() throws Exception {
     String recordId = "foo";
     String newBatchRecordType = "new-record-type";
@@ -2407,7 +2328,6 @@ class RecordControllerMockMvcTest extends MockMvcTestBase {
   }
 
   @Test
-  @Transactional
   void batchWriteInsertShouldSucceedIfMultipleBatches(
       @Value("${twds.write.batch.size}") int batchSize) throws Exception {
     int totalRecords = Math.round(batchSize * 1.5f);
@@ -2432,7 +2352,6 @@ class RecordControllerMockMvcTest extends MockMvcTestBase {
   }
 
   @Test
-  @Transactional
   void batchWriteWithRelationsShouldSucceed() throws Exception {
     RecordType referenced = RecordType.valueOf("referenced");
     createSomeRecords(referenced, 4);
@@ -2483,7 +2402,6 @@ class RecordControllerMockMvcTest extends MockMvcTestBase {
   }
 
   @Test
-  @Transactional
   void batchInsertShouldFailWithInvalidRelation() throws Exception {
     RecordType recordType = RecordType.valueOf("relationBatchInsert");
     List<BatchOperation> batchOperations =
@@ -2517,7 +2435,6 @@ class RecordControllerMockMvcTest extends MockMvcTestBase {
   }
 
   @Test
-  @Transactional
   void batchInsertShouldFailWithInvalidRelationExistingRecordType() throws Exception {
     RecordType recordType = RecordType.valueOf("relationBatchInsert");
     createSomeRecords(recordType, 2);
@@ -2552,7 +2469,6 @@ class RecordControllerMockMvcTest extends MockMvcTestBase {
   }
 
   @Test
-  @Transactional
   void mixOfUpsertAndDeleteShouldSucceed() throws Exception {
     RecordType recordType = RecordType.valueOf("forBatch");
     List<Record> records = createSomeRecords(recordType, 2);
@@ -2592,7 +2508,6 @@ class RecordControllerMockMvcTest extends MockMvcTestBase {
   }
 
   @Test
-  @Transactional
   void dateAttributeShouldBeHumanReadable() throws Exception {
     // N.B. This test does not assert that the date attribute is saved as a date in
     // Postgres;
@@ -2647,7 +2562,6 @@ class RecordControllerMockMvcTest extends MockMvcTestBase {
   }
 
   @Test
-  @Transactional
   void datetimeAttributeShouldBeHumanReadable() throws Exception {
     // N.B. This test does not assert that the datetime attribute is saved as a
     // timestamp in Postgres;
@@ -2703,7 +2617,6 @@ class RecordControllerMockMvcTest extends MockMvcTestBase {
   }
 
   @Test
-  @Transactional
   void testUpdateRecordWithRelationArray() throws Exception {
     // add some records to be relations
     RecordType recordType = RecordType.valueOf("referencedRecords");
@@ -2859,7 +2772,6 @@ class RecordControllerMockMvcTest extends MockMvcTestBase {
   }
 
   @Test
-  @Transactional
   void testUpdateRelationArrayWithMismatchedType() throws Exception {
     // add some records to be relations
     RecordType recordType = RecordType.valueOf("referencedRecords");
@@ -3004,7 +2916,6 @@ class RecordControllerMockMvcTest extends MockMvcTestBase {
 
   @ParameterizedTest
   @MethodSource("jsonValues")
-  @Transactional
   void createRecordWithJsonAttributes(Object inputValue, Object expectedValue) throws Exception {
     RecordType recordType = RecordType.valueOf("test-type");
     String recordId = "recordId";
@@ -3069,7 +2980,6 @@ class RecordControllerMockMvcTest extends MockMvcTestBase {
   }
 
   @Test
-  @Transactional
   void jsonArrayElementsMustBeObjectsOrBeEncodedAsStrings() throws Exception {
     List<Object> mixedTypeList = List.of(Map.of("value", "foo"), Map.of("value", "bar"), "baz");
 
