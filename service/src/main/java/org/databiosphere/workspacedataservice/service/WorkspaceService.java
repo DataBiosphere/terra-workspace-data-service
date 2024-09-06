@@ -1,5 +1,6 @@
 package org.databiosphere.workspacedataservice.service;
 
+import java.util.Objects;
 import org.databiosphere.workspacedataservice.dao.JobDao;
 import org.databiosphere.workspacedataservice.generated.GenericJobServerModel;
 import org.databiosphere.workspacedataservice.generated.WorkspaceInitServerModel;
@@ -25,14 +26,17 @@ public class WorkspaceService {
   private final JobDao jobDao;
   private final CollectionService collectionService;
   private final DataTableTypeInspector dataTableTypeInspector;
+  private final CloningService cloningService;
 
   public WorkspaceService(
       JobDao jobDao,
       CollectionService collectionService,
-      DataTableTypeInspector dataTableTypeInspector) {
+      DataTableTypeInspector dataTableTypeInspector,
+      CloningService cloningService) {
     this.jobDao = jobDao;
     this.collectionService = collectionService;
     this.dataTableTypeInspector = dataTableTypeInspector;
+    this.cloningService = cloningService;
   }
 
   public WorkspaceDataTableType getDataTableType(WorkspaceId workspaceId) {
@@ -118,7 +122,40 @@ public class WorkspaceService {
    * @return reference to the initialization job
    */
   private GenericJobServerModel initClone(WorkspaceInitJobInput jobInput) {
-    // TODO AJ-1952: implement cloning
-    throw new RuntimeException("not implemented");
+    // by the time this method is called, we have already checked for nulls, but re-check
+    // for safety and to prevent future errors
+    WorkspaceId sourceWorkspaceId = Objects.requireNonNull(jobInput.sourceWorkspaceId());
+    WorkspaceId targetWorkspaceId = Objects.requireNonNull(jobInput.workspaceId());
+
+    // create a job to represent this initialization.
+    WorkspaceInitJobInput workspaceInitJobInput =
+        new WorkspaceInitJobInput(targetWorkspaceId, null);
+    Job<JobInput, JobResult> job =
+        Job.newJob(
+            CollectionId.of(targetWorkspaceId.id()), JobType.WORKSPACE_INIT, workspaceInitJobInput);
+
+    /* TODO AJ-1401: this job result is not persisted to the database. If a user looks up this job later, we won't
+        return the result. We need to implement AJ-1401 before we can actually persist and job results. For now,
+        we return the result in the call to the init-workspace API only.
+    */
+
+    // persist the job to WDS's db
+    GenericJobServerModel createdJob = jobDao.createJob(job);
+    // immediately mark the job as successful
+    jobDao.succeeded(job.getJobId());
+
+    // TODO AJ-1952: what should the clone operation return?
+    DefaultCollectionCreationResult defaultCollectionCreationResult =
+        cloningService.clone(sourceWorkspaceId, targetWorkspaceId);
+
+    WorkspaceInitJobResult jobResult =
+        new WorkspaceInitJobResult(
+            /* defaultCollectionCreated= */ defaultCollectionCreationResult.created(),
+            /* isClone= */ true);
+
+    createdJob.setResult(jobResult);
+
+    // return the successful job
+    return createdJob;
   }
 }
