@@ -48,7 +48,7 @@ public interface RecordApi {
      * Deletes records by record ID, using collection ID. To delete by workspace ID and collection name instead, see deleteRecordsByWorkspaceV1 
      *
      * @param collectionId Collection id (required)
-     * @param type Record type (required)
+     * @param recordType Record type (required)
      * @param deleteRecordsRequestServerModel Record deletion specification (required)
      * @return Deletion successful (status code 200)
      */
@@ -75,7 +75,7 @@ public interface RecordApi {
     
     default ResponseEntity<DeleteRecordsResponseServerModel> deleteRecordsByCollectionV1(
         @Parameter(name = "collectionId", description = "Collection id", required = true, in = ParameterIn.PATH) @PathVariable("collectionId") UUID collectionId,
-        @Parameter(name = "type", description = "Record type", required = true, in = ParameterIn.PATH) @PathVariable("type") String type,
+        @Parameter(name = "recordType", description = "Record type", required = true, in = ParameterIn.PATH) @PathVariable("recordType") String recordType,
         @Parameter(name = "DeleteRecordsRequestServerModel", description = "Record deletion specification", required = true) @Valid @RequestBody DeleteRecordsRequestServerModel deleteRecordsRequestServerModel
     ) {
         return new ResponseEntity<>(HttpStatus.NOT_IMPLEMENTED);
@@ -89,7 +89,7 @@ public interface RecordApi {
      *
      * @param workspaceId Workspace id (required)
      * @param collectionName Collection name (required)
-     * @param type Record type (required)
+     * @param recordType Record type (required)
      * @param deleteRecordsRequestServerModel Record deletion specification (required)
      * @return Deletion successful (status code 200)
      */
@@ -117,7 +117,7 @@ public interface RecordApi {
     default ResponseEntity<DeleteRecordsResponseServerModel> deleteRecordsByWorkspaceV1(
         @Parameter(name = "workspaceId", description = "Workspace id", required = true, in = ParameterIn.PATH) @PathVariable("workspaceId") UUID workspaceId,
         @Parameter(name = "collectionName", description = "Collection name", required = true, in = ParameterIn.PATH) @PathVariable("collectionName") String collectionName,
-        @Parameter(name = "type", description = "Record type", required = true, in = ParameterIn.PATH) @PathVariable("type") String type,
+        @Parameter(name = "recordType", description = "Record type", required = true, in = ParameterIn.PATH) @PathVariable("recordType") String recordType,
         @Parameter(name = "DeleteRecordsRequestServerModel", description = "Record deletion specification", required = true) @Valid @RequestBody DeleteRecordsRequestServerModel deleteRecordsRequestServerModel
     ) {
         return new ResponseEntity<>(HttpStatus.NOT_IMPLEMENTED);

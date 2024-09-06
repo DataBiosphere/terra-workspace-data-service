@@ -5,9 +5,6 @@ import java.util.Objects;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonTypeName;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
 import org.openapitools.jackson.nullable.JsonNullable;
 import java.time.OffsetDateTime;
 import jakarta.validation.Valid;
@@ -27,35 +24,26 @@ import jakarta.annotation.Generated;
 @Generated(value = "org.openapitools.codegen.languages.SpringCodegen", comments = "Generator version: 7.8.0")
 public class DeleteRecordsResponseServerModel {
 
-  @Valid
-  private List<String> deletedRecords = new ArrayList<>();
+  private Integer count;
 
-  public DeleteRecordsResponseServerModel deletedRecords(List<String> deletedRecords) {
-    this.deletedRecords = deletedRecords;
-    return this;
-  }
-
-  public DeleteRecordsResponseServerModel addDeletedRecordsItem(String deletedRecordsItem) {
-    if (this.deletedRecords == null) {
-      this.deletedRecords = new ArrayList<>();
-    }
-    this.deletedRecords.add(deletedRecordsItem);
+  public DeleteRecordsResponseServerModel count(Integer count) {
+    this.count = count;
     return this;
   }
 
   /**
-   * an array of record IDs that have been deleted
-   * @return deletedRecords
+   * the number of records deleted
+   * @return count
    */
   
-  @Schema(name = "deletedRecords", description = "an array of record IDs that have been deleted", requiredMode = Schema.RequiredMode.NOT_REQUIRED)
-  @JsonProperty("deletedRecords")
-  public List<String> getDeletedRecords() {
-    return deletedRecords;
+  @Schema(name = "count", description = "the number of records deleted", requiredMode = Schema.RequiredMode.NOT_REQUIRED)
+  @JsonProperty("count")
+  public Integer getCount() {
+    return count;
   }
 
-  public void setDeletedRecords(List<String> deletedRecords) {
-    this.deletedRecords = deletedRecords;
+  public void setCount(Integer count) {
+    this.count = count;
   }
 
   @Override
@@ -67,19 +55,19 @@ public class DeleteRecordsResponseServerModel {
       return false;
     }
     DeleteRecordsResponseServerModel deleteRecordsResponse = (DeleteRecordsResponseServerModel) o;
-    return Objects.equals(this.deletedRecords, deleteRecordsResponse.deletedRecords);
+    return Objects.equals(this.count, deleteRecordsResponse.count);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(deletedRecords);
+    return Objects.hash(count);
   }
 
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
     sb.append("class DeleteRecordsResponseServerModel {\n");
-    sb.append("    deletedRecords: ").append(toIndentedString(deletedRecords)).append("\n");
+    sb.append("    count: ").append(toIndentedString(count)).append("\n");
     sb.append("}");
     return sb.toString();
   }

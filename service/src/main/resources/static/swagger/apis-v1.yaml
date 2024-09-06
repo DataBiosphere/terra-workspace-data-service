@@ -372,7 +372,7 @@ components:
         type: string
         default: default
     recordTypePathParam:
-      name: type
+      name: recordType
       in: path
       description: Record type
       required: true
@@ -504,11 +504,9 @@ components:
       type: object
       description: a required deletion specification
       properties:
-        deletedRecords:
-          type: array
-          description: an array of record IDs that have been deleted
-          items:
-            type: string
+        count:
+          type: integer
+          description: the number of records deleted
       additionalProperties: false
 
 

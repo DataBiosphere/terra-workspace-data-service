@@ -2,7 +2,6 @@ package org.databiosphere.workspacedataservice.controller;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -296,22 +295,23 @@ public class RecordController implements RecordApi {
           "delete_all cannot be set to true if record_ids or excluded_record_ids are nonempty");
     }
 
-    List<String> deletedRecordIds;
+    int deletionCount;
     if (hasRecordIds) {
-      deletedRecordIds =
+      deletionCount =
           recordOrchestratorService.deleteRecords(
               collectionId, recordType, deleteRecordsRequestServerModel.getRecordIds());
     } else if (hasExcludedRecordIds) {
-      deletedRecordIds =
+      System.out.println("hasExcludedRecordIds: " + hasExcludedRecordIds);
+      deletionCount =
           recordOrchestratorService.deleteAllRecords(
               collectionId, recordType, deleteRecordsRequestServerModel.getExcludedRecordIds());
     } else if (deleteAll) {
-      deletedRecordIds = recordOrchestratorService.deleteAllRecords(collectionId, recordType);
+      deletionCount = recordOrchestratorService.deleteAllRecords(collectionId, recordType);
     } else {
-      deletedRecordIds = Collections.emptyList();
+      deletionCount = 0;
     }
 
-    response.setDeletedRecords(deletedRecordIds);
+    response.setCount(deletionCount);
 
     return new ResponseEntity<>(response, HttpStatus.OK);
   }

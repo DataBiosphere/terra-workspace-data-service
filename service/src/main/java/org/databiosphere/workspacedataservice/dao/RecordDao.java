@@ -83,6 +83,7 @@ public class RecordDao {
 
   private static final String COLLECTION_ID = "collectionId";
   private static final String RECORD_ID_PARAM = "recordId";
+  private static final String RECORD_IDS_PARAM = "recordIds";
   private final NamedParameterJdbcTemplate namedTemplate;
 
   private final DataSource mainDb;
@@ -550,24 +551,49 @@ public class RecordDao {
     }
   }
 
-  public boolean deleteRecords(UUID collectionId, RecordType recordType, List<String> recordIds) {
+  public int deleteRecords(UUID collectionId, RecordType recordType, List<String> recordIds) {
     String recordTypePrimaryKey = primaryKeyDao.getPrimaryKeyColumn(recordType, collectionId);
-    //    try {
-    //      return namedTemplate.update(
-    //              "delete from "
-    //                  + getQualifiedTableName(recordType, collectionId)
-    //                  + " where "
-    //                  + quote(recordTypePrimaryKey)
-    //                  + " = :recordId",
-    //              new MapSqlParameterSource(RECORD_ID_PARAM, recordId))
-    //          == 1;
-    //    } catch (DataIntegrityViolationException e) {
-    //      if (e.getRootCause() instanceof SQLException sqlEx) {
-    //        checkForTableRelation(sqlEx);
-    //      }
-    //      throw e;
-    //    }
-    return true;
+    try {
+      return namedTemplate.update(
+          "delete from "
+              + getQualifiedTableName(recordType, collectionId)
+              + " where "
+              + quote(recordTypePrimaryKey)
+              + " in (:recordIds)",
+          new MapSqlParameterSource(RECORD_IDS_PARAM, recordIds));
+    } catch (DataIntegrityViolationException e) {
+      if (e.getRootCause() instanceof SQLException sqlEx) {
+        checkForTableRelation(sqlEx);
+      }
+      throw e;
+    }
+  }
+
+  public int deleteAllRecords(
+      UUID collectionId, RecordType recordType, List<String> excludedRecordIds) {
+    String recordTypePrimaryKey = primaryKeyDao.getPrimaryKeyColumn(recordType, collectionId);
+
+    try {
+      if (excludedRecordIds.isEmpty()) {
+        return namedTemplate.update(
+            "delete from " + getQualifiedTableName(recordType, collectionId),
+            new MapSqlParameterSource());
+      } else {
+        return namedTemplate.update(
+            "delete from "
+                + getQualifiedTableName(recordType, collectionId)
+                + " where "
+                + quote(recordTypePrimaryKey)
+                + "not in (:recordIds)",
+            new MapSqlParameterSource(RECORD_IDS_PARAM, excludedRecordIds));
+      }
+
+    } catch (DataIntegrityViolationException e) {
+      if (e.getRootCause() instanceof SQLException sqlEx) {
+        checkForTableRelation(sqlEx);
+      }
+      throw e;
+    }
   }
 
   public void addForeignKeyForReference(

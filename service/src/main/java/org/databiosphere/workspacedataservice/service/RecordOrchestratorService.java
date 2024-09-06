@@ -55,7 +55,10 @@ import org.springframework.web.servlet.mvc.method.annotation.StreamingResponseBo
 
 @Service
 public class RecordOrchestratorService { // TODO give me a better name
-
+  /*
+  This class (RecordOrchestratorService) is distinct from RecordService in order to make it possible
+  to invoke transactions in RecordService from within this class.
+   */
   private static final Logger LOGGER = LoggerFactory.getLogger(RecordOrchestratorService.class);
   private static final int MAX_RECORDS = 1_000;
 
@@ -284,20 +287,17 @@ public class RecordOrchestratorService { // TODO give me a better name
         user -> user.deleted().table().ofQuantity(1).withRecordType(recordType));
   }
 
-  public List<String> deleteRecords(
-      UUID collectionId, RecordType recordType, List<String> recordIds) {
-
-    return List.of("dummyRecordId");
+  public int deleteRecords(UUID collectionId, RecordType recordType, List<String> recordIds) {
+    return recordDao.deleteRecords(collectionId, recordType, recordIds);
   }
 
-  public List<String> deleteAllRecords(UUID collectionId, RecordType recordType) {
+  public int deleteAllRecords(UUID collectionId, RecordType recordType) {
     return deleteAllRecords(collectionId, recordType, Collections.emptyList());
   }
 
-  public List<String> deleteAllRecords(
+  public int deleteAllRecords(
       UUID collectionId, RecordType recordType, List<String> excludedRecordIds) {
-    recordService.deleteAllRecords(collectionId, recordType, excludedRecordIds);
-    return List.of("dummyRecordId");
+    return recordDao.deleteAllRecords(collectionId, recordType, excludedRecordIds);
   }
 
   public void renameAttribute(
