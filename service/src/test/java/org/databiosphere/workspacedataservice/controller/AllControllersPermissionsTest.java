@@ -45,9 +45,16 @@ import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder;
 
+/**
+ * This test extends MockMvcTestBase but overrides its control-plane profile to use the data-plane
+ * profile instead. Because this test explicitly contains single-tenant assertions, it must run in
+ * the data plane.
+ */
 @DirtiesContext
 @SpringBootTest
-@ActiveProfiles({"mock-backup-dao", "mock-restore-dao", "mock-clone-dao"})
+@ActiveProfiles(
+    value = {"mock-backup-dao", "mock-restore-dao", "mock-clone-dao", "data-plane"},
+    inheritProfiles = false)
 class AllControllersPermissionsTest extends MockMvcTestBase {
   @Autowired PermissionService permissionService;
   @MockBean SamAuthorizationDaoFactory samAuthorizationDaoFactory;
