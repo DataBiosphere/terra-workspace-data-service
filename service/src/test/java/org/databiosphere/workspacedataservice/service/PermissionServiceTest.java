@@ -8,7 +8,7 @@ import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.when;
 
 import java.util.UUID;
-import org.databiosphere.workspacedataservice.common.DataPlaneTestBase;
+import org.databiosphere.workspacedataservice.common.ControlPlaneTestBase;
 import org.databiosphere.workspacedataservice.sam.MockSamAuthorizationDao;
 import org.databiosphere.workspacedataservice.sam.SamAuthorizationDao;
 import org.databiosphere.workspacedataservice.sam.SamAuthorizationDaoFactory;
@@ -29,7 +29,7 @@ import org.springframework.test.annotation.DirtiesContext;
 
 @DirtiesContext
 @SpringBootTest
-class PermissionServiceTest extends DataPlaneTestBase {
+class PermissionServiceTest extends ControlPlaneTestBase {
   @Autowired PermissionService permissionService;
   @MockBean SamAuthorizationDaoFactory samAuthorizationDaoFactory;
   @MockBean CollectionService collectionService;

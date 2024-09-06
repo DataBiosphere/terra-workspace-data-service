@@ -1,6 +1,7 @@
 package org.databiosphere.workspacedataservice.service;
 
 import org.databiosphere.workspacedataservice.dao.JobDao;
+import org.databiosphere.workspacedataservice.dao.WorkspaceRepository;
 import org.databiosphere.workspacedataservice.generated.GenericJobServerModel;
 import org.databiosphere.workspacedataservice.generated.WorkspaceInitServerModel;
 import org.databiosphere.workspacedataservice.shared.model.CollectionId;
@@ -25,14 +26,17 @@ public class WorkspaceService {
   private final JobDao jobDao;
   private final CollectionService collectionService;
   private final DataTableTypeInspector dataTableTypeInspector;
+  private final WorkspaceRepository workspaceRepository;
 
   public WorkspaceService(
       JobDao jobDao,
       CollectionService collectionService,
-      DataTableTypeInspector dataTableTypeInspector) {
+      DataTableTypeInspector dataTableTypeInspector,
+      WorkspaceRepository workspaceRepository) {
     this.jobDao = jobDao;
     this.collectionService = collectionService;
     this.dataTableTypeInspector = dataTableTypeInspector;
+    this.workspaceRepository = workspaceRepository;
   }
 
   public WorkspaceDataTableType getDataTableType(WorkspaceId workspaceId) {
@@ -60,6 +64,9 @@ public class WorkspaceService {
     // translate the input arguments to JobInput format
     WorkspaceInitJobInput jobInput =
         WorkspaceInitJobInput.from(workspaceId, workspaceInitServerModel);
+
+    // Save the workspace record to the database
+    workspaceRepository.saveWorkspaceRecord(workspaceId, WorkspaceDataTableType.WDS);
 
     // branch for clones vs. non-clones
     if (jobInput.sourceWorkspaceId() != null) {

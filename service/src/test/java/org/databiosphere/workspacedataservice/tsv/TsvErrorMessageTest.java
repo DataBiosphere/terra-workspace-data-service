@@ -8,13 +8,16 @@ import java.io.InputStream;
 import java.util.Optional;
 import java.util.UUID;
 import org.databiosphere.workspacedataservice.TestUtils;
-import org.databiosphere.workspacedataservice.common.DataPlaneTestBase;
-import org.databiosphere.workspacedataservice.config.TwdsProperties;
+import org.databiosphere.workspacedataservice.common.ControlPlaneTestBase;
+import org.databiosphere.workspacedataservice.dao.WorkspaceRepository;
 import org.databiosphere.workspacedataservice.generated.CollectionServerModel;
 import org.databiosphere.workspacedataservice.service.CollectionService;
 import org.databiosphere.workspacedataservice.service.RecordOrchestratorService;
 import org.databiosphere.workspacedataservice.service.model.exception.InvalidTsvException;
 import org.databiosphere.workspacedataservice.shared.model.RecordType;
+import org.databiosphere.workspacedataservice.shared.model.WorkspaceId;
+import org.databiosphere.workspacedataservice.workspace.WorkspaceDataTableType;
+import org.databiosphere.workspacedataservice.workspace.WorkspaceRecord;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.TestInstance;
@@ -30,12 +33,12 @@ import org.springframework.test.annotation.DirtiesContext;
 @SpringBootTest
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 @DirtiesContext
-class TsvErrorMessageTest extends DataPlaneTestBase {
+class TsvErrorMessageTest extends ControlPlaneTestBase {
 
   @Autowired CollectionService collectionService;
   @Autowired RecordOrchestratorService recordOrchestratorService;
   @Autowired NamedParameterJdbcTemplate namedTemplate;
-  @Autowired TwdsProperties twdsProperties;
+  @Autowired private WorkspaceRepository workspaceRepository;
 
   private UUID collectionId;
 
@@ -43,14 +46,20 @@ class TsvErrorMessageTest extends DataPlaneTestBase {
 
   @BeforeEach
   void setUp() {
+    WorkspaceId workspaceId = WorkspaceId.of(UUID.randomUUID());
+
+    // create the workspace record
+    workspaceRepository.save(
+        new WorkspaceRecord(workspaceId, WorkspaceDataTableType.WDS, /* newFlag= */ true));
     CollectionServerModel collectionServerModel =
-        TestUtils.createCollection(collectionService, twdsProperties.workspaceId());
+        TestUtils.createCollection(collectionService, workspaceId);
     collectionId = collectionServerModel.getId();
   }
 
   @AfterEach
   void tearDown() {
     TestUtils.cleanAllCollections(collectionService, namedTemplate);
+    TestUtils.cleanAllWorkspaces(namedTemplate);
   }
 
   @ParameterizedTest(name = "The malformed TSV file '{0}' should throw a helpful error")

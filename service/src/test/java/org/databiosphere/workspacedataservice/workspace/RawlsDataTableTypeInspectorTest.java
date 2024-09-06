@@ -111,7 +111,7 @@ class RawlsDataTableTypeInspectorTest {
     verify(mockRawlsClient, never()).getWorkspaceDetails(any());
 
     // and we should not have tried to (re-)persist the data to the local db
-    verify(mockWorkspaceRepository, never()).save(any());
+    verify(mockWorkspaceRepository, never()).saveWorkspaceRecord(any(), any());
   }
 
   @Test
@@ -145,7 +145,6 @@ class RawlsDataTableTypeInspectorTest {
     verify(mockRawlsClient, times(1)).getWorkspaceDetails(workspaceId.id());
 
     // and we should have saved the result to the local repository
-    WorkspaceRecord expectedSave = new WorkspaceRecord(workspaceId, WDS, true);
-    verify(mockWorkspaceRepository, times(1)).save(expectedSave);
+    verify(mockWorkspaceRepository, times(1)).saveWorkspaceRecord(workspaceId, WDS);
   }
 }
