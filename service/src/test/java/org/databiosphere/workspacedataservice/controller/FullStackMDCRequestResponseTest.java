@@ -7,7 +7,7 @@ import static org.junit.jupiter.api.Assertions.*;
 import java.util.List;
 import java.util.UUID;
 import org.apache.commons.lang3.RandomStringUtils;
-import org.databiosphere.workspacedataservice.common.DataPlaneTestBase;
+import org.databiosphere.workspacedataservice.common.ControlPlaneTestBase;
 import org.databiosphere.workspacedataservice.service.MDCServletRequestListener;
 import org.hamcrest.CoreMatchers;
 import org.junit.jupiter.api.Test;
@@ -26,7 +26,7 @@ import org.springframework.test.annotation.DirtiesContext;
 @SpringBootTest(
     webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT,
     properties = {"spring.main.allow-bean-definition-overriding=true"})
-class FullStackMDCRequestResponseTest extends DataPlaneTestBase {
+class FullStackMDCRequestResponseTest extends ControlPlaneTestBase {
 
   // hmmmmm https://github.com/gradle/gradle/issues/5975
 
