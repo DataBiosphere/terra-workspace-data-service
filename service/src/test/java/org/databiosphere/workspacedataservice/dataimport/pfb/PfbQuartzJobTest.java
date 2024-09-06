@@ -54,6 +54,10 @@ import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.core.io.Resource;
 import org.springframework.test.annotation.DirtiesContext;
 
+/**
+ * This test explicitly asserts on and mock calls to WSM as part of PFB import; it is explicitly a
+ * test of data-plane behavior.
+ */
 @DirtiesContext
 @SpringBootTest
 class PfbQuartzJobTest extends DataPlaneTestBase {
