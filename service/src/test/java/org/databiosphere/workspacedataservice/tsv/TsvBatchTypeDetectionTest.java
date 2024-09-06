@@ -12,8 +12,8 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 import org.databiosphere.workspacedataservice.TestUtils;
-import org.databiosphere.workspacedataservice.common.DataPlaneTestBase;
-import org.databiosphere.workspacedataservice.config.TwdsProperties;
+import org.databiosphere.workspacedataservice.common.ControlPlaneTestBase;
+import org.databiosphere.workspacedataservice.dao.WorkspaceRepository;
 import org.databiosphere.workspacedataservice.recordsink.RecordSink;
 import org.databiosphere.workspacedataservice.recordsink.RecordSinkFactory;
 import org.databiosphere.workspacedataservice.recordsource.RecordSourceFactory;
@@ -29,6 +29,9 @@ import org.databiosphere.workspacedataservice.service.model.RecordTypeSchema;
 import org.databiosphere.workspacedataservice.shared.model.CollectionId;
 import org.databiosphere.workspacedataservice.shared.model.Record;
 import org.databiosphere.workspacedataservice.shared.model.RecordType;
+import org.databiosphere.workspacedataservice.shared.model.WorkspaceId;
+import org.databiosphere.workspacedataservice.workspace.WorkspaceDataTableType;
+import org.databiosphere.workspacedataservice.workspace.WorkspaceRecord;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -45,7 +48,7 @@ import org.springframework.test.context.TestPropertySource;
 @DirtiesContext
 @SpringBootTest
 @TestPropertySource(properties = {"twds.write.batch.size=2"})
-class TsvBatchTypeDetectionTest extends DataPlaneTestBase {
+class TsvBatchTypeDetectionTest extends ControlPlaneTestBase {
 
   @Autowired private RecordSourceFactory recordSourceFactory;
   @Autowired private RecordSinkFactory recordSinkFactory;
@@ -53,7 +56,7 @@ class TsvBatchTypeDetectionTest extends DataPlaneTestBase {
   @Autowired private RecordOrchestratorService recordOrchestratorService;
   @Autowired private CollectionService collectionService;
   @Autowired private NamedParameterJdbcTemplate namedTemplate;
-  @Autowired TwdsProperties twdsProperties;
+  @Autowired private WorkspaceRepository workspaceRepository;
   @SpyBean DataTypeInferer inferer;
   @SpyBean RecordService recordService;
 
@@ -62,12 +65,18 @@ class TsvBatchTypeDetectionTest extends DataPlaneTestBase {
 
   @BeforeEach
   void setUp() {
-    collectionId = collectionService.save(twdsProperties.workspaceId(), "name", "desc").getId();
+    WorkspaceId workspaceId = WorkspaceId.of(UUID.randomUUID());
+
+    // create the workspace record
+    workspaceRepository.save(
+        new WorkspaceRecord(workspaceId, WorkspaceDataTableType.WDS, /* newFlag= */ true));
+    collectionId = collectionService.save(workspaceId, "name", "desc").getId();
   }
 
   @AfterEach
   void tearDown() {
     TestUtils.cleanAllCollections(collectionService, namedTemplate);
+    TestUtils.cleanAllWorkspaces(namedTemplate);
   }
 
   // when batchWriteTsvStream is called with a single specified RecordType, we should not fail if
