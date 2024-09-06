@@ -14,10 +14,8 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
-import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.transaction.annotation.Transactional;
 
-@DirtiesContext
 @SpringBootTest
 class WorkspaceRepositoryTest extends ControlPlaneTestBase {
   @Autowired private WorkspaceRepository workspaceRepository;
