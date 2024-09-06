@@ -254,51 +254,7 @@ public class RecordController implements RecordApi {
       UUID collectionId,
       String recordType,
       DeleteRecordsRequestServerModel deleteRecordsRequestServerModel) {
-    return deleteRecords(
+    return recordOrchestratorService.deleteRecords(
         collectionId, RecordType.valueOf(recordType), deleteRecordsRequestServerModel);
-  }
-
-  private ResponseEntity<DeleteRecordsResponseServerModel> deleteRecords(
-      UUID collectionId,
-      RecordType recordType,
-      DeleteRecordsRequestServerModel deleteRecordsRequestServerModel) {
-
-    DeleteRecordsResponseServerModel response = new DeleteRecordsResponseServerModel();
-
-    Boolean hasRecordIds = !deleteRecordsRequestServerModel.getRecordIds().isEmpty();
-    Boolean hasExcludedRecordIds =
-        !deleteRecordsRequestServerModel.getExcludedRecordIds().isEmpty();
-
-    if (hasRecordIds && hasExcludedRecordIds) {
-      throw new ResponseStatusException(
-          HttpStatus.BAD_REQUEST, "record_ids and excluded_record_ids are mutually exclusive");
-    }
-
-    Boolean deleteAll = deleteRecordsRequestServerModel.getDeleteAll();
-    if (deleteAll && (hasRecordIds || hasExcludedRecordIds)) {
-      throw new ResponseStatusException(
-          HttpStatus.BAD_REQUEST,
-          "delete_all cannot be set to true if record_ids or excluded_record_ids are nonempty");
-    }
-
-    int deletionCount;
-    if (hasRecordIds) {
-      deletionCount =
-          recordOrchestratorService.deleteRecords(
-              collectionId, recordType, deleteRecordsRequestServerModel.getRecordIds());
-    } else if (hasExcludedRecordIds) {
-      System.out.println("hasExcludedRecordIds: " + hasExcludedRecordIds);
-      deletionCount =
-          recordOrchestratorService.deleteAllRecords(
-              collectionId, recordType, deleteRecordsRequestServerModel.getExcludedRecordIds());
-    } else if (deleteAll) {
-      deletionCount = recordOrchestratorService.deleteAllRecords(collectionId, recordType);
-    } else {
-      deletionCount = 0;
-    }
-
-    response.setCount(deletionCount);
-
-    return new ResponseEntity<>(response, HttpStatus.OK);
   }
 }

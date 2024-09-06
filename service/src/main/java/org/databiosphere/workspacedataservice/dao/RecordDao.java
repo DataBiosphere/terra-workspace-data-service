@@ -551,6 +551,7 @@ public class RecordDao {
     }
   }
 
+  @SuppressWarnings("squid:S2077")
   public int deleteRecords(UUID collectionId, RecordType recordType, List<String> recordIds) {
     String recordTypePrimaryKey = primaryKeyDao.getPrimaryKeyColumn(recordType, collectionId);
     try {
@@ -569,6 +570,7 @@ public class RecordDao {
     }
   }
 
+  @SuppressWarnings("squid:S2077")
   public int deleteAllRecords(
       UUID collectionId, RecordType recordType, List<String> excludedRecordIds) {
     String recordTypePrimaryKey = primaryKeyDao.getPrimaryKeyColumn(recordType, collectionId);

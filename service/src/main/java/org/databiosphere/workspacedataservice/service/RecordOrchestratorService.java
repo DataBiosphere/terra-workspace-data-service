@@ -20,6 +20,8 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.databiosphere.workspacedataservice.activitylog.ActivityLogger;
 import org.databiosphere.workspacedataservice.dao.RecordDao;
+import org.databiosphere.workspacedataservice.generated.DeleteRecordsRequestServerModel;
+import org.databiosphere.workspacedataservice.generated.DeleteRecordsResponseServerModel;
 import org.databiosphere.workspacedataservice.recordsink.RecordSink;
 import org.databiosphere.workspacedataservice.recordsink.RecordSinkFactory;
 import org.databiosphere.workspacedataservice.recordsource.PrimaryKeyResolver;
@@ -287,17 +289,47 @@ public class RecordOrchestratorService { // TODO give me a better name
         user -> user.deleted().table().ofQuantity(1).withRecordType(recordType));
   }
 
-  public int deleteRecords(UUID collectionId, RecordType recordType, List<String> recordIds) {
-    return recordDao.deleteRecords(collectionId, recordType, recordIds);
-  }
+  public ResponseEntity<DeleteRecordsResponseServerModel> deleteRecords(
+      UUID collectionId,
+      RecordType recordType,
+      DeleteRecordsRequestServerModel deleteRecordsRequestServerModel) {
 
-  public int deleteAllRecords(UUID collectionId, RecordType recordType) {
-    return deleteAllRecords(collectionId, recordType, Collections.emptyList());
-  }
+    DeleteRecordsResponseServerModel response = new DeleteRecordsResponseServerModel();
 
-  public int deleteAllRecords(
-      UUID collectionId, RecordType recordType, List<String> excludedRecordIds) {
-    return recordDao.deleteAllRecords(collectionId, recordType, excludedRecordIds);
+    Boolean hasRecordIds = !deleteRecordsRequestServerModel.getRecordIds().isEmpty();
+    Boolean hasExcludedRecordIds =
+        !deleteRecordsRequestServerModel.getExcludedRecordIds().isEmpty();
+
+    if (hasRecordIds && hasExcludedRecordIds) {
+      throw new ResponseStatusException(
+          HttpStatus.BAD_REQUEST, "record_ids and excluded_record_ids are mutually exclusive");
+    }
+
+    Boolean deleteAll = deleteRecordsRequestServerModel.getDeleteAll();
+    if (deleteAll && (hasRecordIds || hasExcludedRecordIds)) {
+      throw new ResponseStatusException(
+          HttpStatus.BAD_REQUEST,
+          "delete_all cannot be set to true if record_ids or excluded_record_ids are nonempty");
+    }
+
+    int deletionCount;
+    if (hasRecordIds) {
+      deletionCount =
+          recordDao.deleteRecords(
+              collectionId, recordType, deleteRecordsRequestServerModel.getRecordIds());
+    } else if (hasExcludedRecordIds) {
+      deletionCount =
+          recordDao.deleteAllRecords(
+              collectionId, recordType, deleteRecordsRequestServerModel.getExcludedRecordIds());
+    } else if (deleteAll) {
+      deletionCount = recordDao.deleteAllRecords(collectionId, recordType, Collections.emptyList());
+    } else {
+      deletionCount = 0;
+    }
+
+    response.setCount(deletionCount);
+
+    return new ResponseEntity<>(response, HttpStatus.OK);
   }
 
   public void renameAttribute(
