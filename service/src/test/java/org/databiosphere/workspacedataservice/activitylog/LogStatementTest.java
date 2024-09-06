@@ -13,7 +13,6 @@ import java.util.Optional;
 import java.util.UUID;
 import org.databiosphere.workspacedataservice.TestUtils;
 import org.databiosphere.workspacedataservice.common.ControlPlaneTestBase;
-import org.databiosphere.workspacedataservice.datarepo.DataRepoClientFactory;
 import org.databiosphere.workspacedataservice.generated.CollectionRequestServerModel;
 import org.databiosphere.workspacedataservice.generated.CollectionServerModel;
 import org.databiosphere.workspacedataservice.service.CollectionService;
@@ -62,7 +61,6 @@ class LogStatementTest extends ControlPlaneTestBase {
       Mockito.mock(ReferencedGcpResourceApi.class);
 
   // mocking for data repo
-  @MockBean DataRepoClientFactory mockDataRepoClientFactory;
   final RepositoryApi mockRepositoryApi = Mockito.mock(RepositoryApi.class);
 
   @MockBean DataTableTypeInspector dataTableTypeInspector;
