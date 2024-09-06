@@ -8,7 +8,6 @@ import java.util.UUID;
 import org.databiosphere.workspacedataservice.generated.DeleteRecordsRequestServerModel;
 import org.databiosphere.workspacedataservice.generated.DeleteRecordsResponseServerModel;
 import org.databiosphere.workspacedataservice.generated.RecordApi;
-import org.databiosphere.workspacedataservice.service.CollectionService;
 import org.databiosphere.workspacedataservice.service.PermissionService;
 import org.databiosphere.workspacedataservice.service.RecordOrchestratorService;
 import org.databiosphere.workspacedataservice.service.model.AttributeSchema;
@@ -47,15 +46,11 @@ public class RecordController implements RecordApi {
 
   private final RecordOrchestratorService recordOrchestratorService;
   private final PermissionService permissionService;
-  private final CollectionService collectionService;
 
   public RecordController(
-      RecordOrchestratorService recordOrchestratorService,
-      PermissionService permissionService,
-      CollectionService collectionService) {
+      RecordOrchestratorService recordOrchestratorService, PermissionService permissionService) {
     this.recordOrchestratorService = recordOrchestratorService;
     this.permissionService = permissionService;
-    this.collectionService = collectionService;
   }
 
   @PatchMapping("/{instanceId}/records/{version}/{recordType}/{recordId}")

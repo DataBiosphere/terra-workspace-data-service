@@ -306,7 +306,7 @@ public class RecordOrchestratorService { // TODO give me a better name
     }
 
     Boolean deleteAll = deleteRecordsRequestServerModel.getDeleteAll();
-    if (deleteAll && (hasRecordIds || hasExcludedRecordIds)) {
+    if (Boolean.TRUE.equals(deleteAll) && (hasRecordIds || hasExcludedRecordIds)) {
       throw new ResponseStatusException(
           HttpStatus.BAD_REQUEST,
           "delete_all cannot be set to true if record_ids or excluded_record_ids are nonempty");

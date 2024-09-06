@@ -504,7 +504,7 @@ public class RecordDao {
             + " where "
             + quote(getFromColumnName(fromType))
             + "in (:recordIds)",
-        new MapSqlParameterSource("recordIds", recordIds));
+        new MapSqlParameterSource(RECORD_IDS_PARAM, recordIds));
   }
 
   public void batchUpsert(
