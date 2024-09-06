@@ -1,6 +1,7 @@
 package org.databiosphere.workspacedataservice.search;
 
 import static org.databiosphere.workspacedataservice.dao.SqlUtils.quote;
+import static org.databiosphere.workspacedataservice.service.model.DataTypeMapping.*;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
@@ -13,6 +14,8 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.lucene.queryparser.flexible.core.QueryNodeParseException;
 import org.apache.lucene.queryparser.flexible.core.nodes.FieldQueryNode;
@@ -23,6 +26,7 @@ import org.databiosphere.workspacedataservice.service.model.DataTypeMapping;
 public class QueryParser {
 
   public static final String DEFAULT_ALL_COLUMNS_NAME = "sys_all_columns";
+  private static final String TSVECTOR_CONFIG = "english";
 
   private final Map<String, DataTypeMapping> schema;
 
@@ -55,6 +59,14 @@ public class QueryParser {
 
       validateColumnName(column);
 
+      // bind parameter names have syntax limitations, so we use artificial ones below
+      var paramName = "filterquery0";
+
+      // is this a full-table search?
+      if (DEFAULT_ALL_COLUMNS_NAME.equals(column)) {
+        return buildFullTableSearch(schema, value, paramName);
+      }
+
       // determine the datatype of the column on which we are filtering.
       var datatype = schema.get(column);
 
@@ -62,9 +74,6 @@ public class QueryParser {
       // so we need to support a list of clause fragments.
       List<String> clauses = new ArrayList<>();
       Map<String, Object> values = new HashMap<>();
-
-      // bind parameter names have syntax limitations, so we use artificial ones below
-      var paramName = "filterquery0";
 
       // based on the datatype of the column, build relevant SQL
       switch (datatype) {
@@ -228,15 +237,81 @@ public class QueryParser {
   private void validateColumnName(String columnName) {
     // The Lucene query parser requires a default column name to parse a query. If the end user
     // has not specified a column, the query parser will use the default column name. In our case,
-    // if we see the default column name we consider it an error - as of this writing, we require
-    // the end user to specify a column name.
+    // if we see the default column name we consider this to be a full-table search. No further
+    // validation is needed.
     if (DEFAULT_ALL_COLUMNS_NAME.equals(columnName)) {
-      throw new InvalidQueryException("Query must specify a column name");
+      return;
     }
     // does this column exist in the record type?
     if (!schema.containsKey(columnName)) {
       throw new InvalidQueryException(
           "Column specified in query does not exist in this record type");
     }
+  }
+
+  // TODO: this implementation is expected to be slow in the presence of large tables. It rebuilds
+  //  the search indexes for EVERY query, just-in-time. Ideally we'd build those indexes when data
+  //  is written and reuse them at runtime.
+  private WhereClausePart buildFullTableSearch(
+      Map<String, DataTypeMapping> schema, String value, String paramName) {
+    // SQL to cast each column to text and wrap in coalesce
+    // Stream<String> columns = schema.keySet().stream().map("coalesce(\"%s\"::text,
+    // '')"::formatted);
+
+    // TODO: mapping from (String, DataTypeMapping) to a "tsvector..." should be a standalone,
+    //  unit-testable method
+    Stream<String> columns =
+        schema.entrySet().stream()
+            .map(
+                (entry) -> {
+                  String colName = entry.getKey();
+                  DataTypeMapping dataType = entry.getValue();
+                  return switch (dataType) {
+                    case NULL, EMPTY_ARRAY -> "";
+
+                    case STRING, RELATION, FILE -> "to_tsvector('%s', coalesce(%s, ''))"
+                        .formatted(TSVECTOR_CONFIG, colName);
+                    case NUMBER,
+                        BOOLEAN,
+                        DATE,
+                        DATE_TIME -> "to_tsvector('%s', coalesce(%s::text, ''))"
+                        .formatted(TSVECTOR_CONFIG, colName);
+                    case JSON -> "jsonb_to_tsvector('%s', coalesce(%s, '{}'::jsonb), '\"all\"')"
+                        .formatted(TSVECTOR_CONFIG, colName);
+
+                    case ARRAY_OF_STRING,
+                        ARRAY_OF_RELATION,
+                        ARRAY_OF_FILE -> "array_to_tsvector(coalesce(%s, '{}'))".formatted(colName);
+                    case ARRAY_OF_NUMBER,
+                        ARRAY_OF_BOOLEAN,
+                        ARRAY_OF_DATE,
+                        ARRAY_OF_DATE_TIME -> "array_to_tsvector(coalesce(%s, '{}')::text[])"
+                        .formatted(colName);
+                    case ARRAY_OF_JSON -> "";
+                      //                        "plainto_tsquery('english', 'bar') @@ ANY(\n" +
+                      //    "\tselect jsonb_to_tsvector('english', coalesce(unnest, '{}'::jsonb),
+                      // '\"all\"') from unnest(arrj))";
+                      //                    select * from "b95017ef-d0c9-4baf-9a1b-a9e692c37bce".js
+                      // where plainto_tsquery('english', 'bar') @@ ANY(select
+                      // jsonb_to_tsvector('english', coalesce(unnest, '{}'::jsonb), '"all"')
+                      //                    from (select unnest(arrj) from
+                      // "b95017ef-d0c9-4baf-9a1b-a9e692c37bce".js) as subq);
+                      // https://stackoverflow.com/questions/8584119/how-to-apply-a-function-to-each-element-of-an-array-column-in-postgres
+                      // "array_to_tsvector(coalesce(%s, '{}'::jsonb[]))".formatted(colName);
+                      // TODO: how to handle?
+                  };
+                });
+
+    // SQL to concatenate all columns, skipping any empty strings (which denote a column we couldn't
+    // turn into a search vector)
+    String concatenated = columns.filter(x -> !"".equals(x)).collect(Collectors.joining(" || "));
+
+    // final SQL part, including bind parameter
+    String sql =
+        "(%s) @@ plainto_tsquery('%s', :%s)".formatted(concatenated, TSVECTOR_CONFIG, paramName);
+
+    // TODO: look at phraseto_tsquery, websearch_to_tsquery, etc.
+
+    return new WhereClausePart(List.of(sql), Map.of(paramName, value));
   }
 }
