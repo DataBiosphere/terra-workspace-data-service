@@ -5,7 +5,6 @@ import java.io.InputStream;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
-import org.databiosphere.workspacedataservice.generated.CollectionServerModel;
 import org.databiosphere.workspacedataservice.generated.DeleteRecordsRequestServerModel;
 import org.databiosphere.workspacedataservice.generated.DeleteRecordsResponseServerModel;
 import org.databiosphere.workspacedataservice.generated.RecordApi;
@@ -23,7 +22,6 @@ import org.databiosphere.workspacedataservice.shared.model.RecordResponse;
 import org.databiosphere.workspacedataservice.shared.model.RecordType;
 import org.databiosphere.workspacedataservice.shared.model.SearchRequest;
 import org.databiosphere.workspacedataservice.shared.model.TsvUploadResponse;
-import org.databiosphere.workspacedataservice.shared.model.WorkspaceId;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
@@ -249,18 +247,6 @@ public class RecordController implements RecordApi {
     int recordsModified =
         recordOrchestratorService.streamingWrite(instanceId, version, recordType, primaryKey, is);
     return new ResponseEntity<>(new BatchResponse(recordsModified, "Huzzah"), HttpStatus.OK);
-  }
-
-  @Override
-  public ResponseEntity<DeleteRecordsResponseServerModel> deleteRecordsByWorkspaceV1(
-      UUID workspaceId,
-      String collectionName,
-      String recordType,
-      DeleteRecordsRequestServerModel deleteRecordsRequestServerModel) {
-    CollectionServerModel collection =
-        collectionService.get(WorkspaceId.of(workspaceId), collectionName);
-    return deleteRecords(
-        collection.getId(), RecordType.valueOf(recordType), deleteRecordsRequestServerModel);
   }
 
   @Override

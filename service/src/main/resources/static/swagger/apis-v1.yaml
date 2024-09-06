@@ -254,34 +254,6 @@ paths:
   ##############################
   # Records APIs
   ##############################
-  /records/v1/{workspaceId}/{collectionName}/{recordType}/delete:
-    post:
-      summary: Bulk delete records
-      operationId: deleteRecordsByWorkspaceV1
-      description: |
-        Deletes records by record ID, using workspace ID and collection name.
-        To delete by collection ID instead, see deleteRecordsByCollectionV1
-      tags:
-        - Record
-      parameters:
-        - $ref: '#/components/parameters/workspaceIdPathParam'
-        - $ref: '#/components/parameters/collectionNamePathParam'
-        - $ref: '#/components/parameters/recordTypePathParam'
-      requestBody:
-        description: Record deletion specification
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/DeleteRecordsRequest'
-      responses:
-        200:
-          description: Deletion successful
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/DeleteRecordsResponse'
-
   /records/v1/{collectionId}/{recordType}/delete:
     post:
       summary: Bulk delete records
@@ -363,14 +335,6 @@ components:
       schema:
         type: string
         format: uuid
-    collectionNamePathParam:
-      name: collectionName
-      in: path
-      description: Collection name
-      required: true
-      schema:
-        type: string
-        default: default
     recordTypePathParam:
       name: recordType
       in: path

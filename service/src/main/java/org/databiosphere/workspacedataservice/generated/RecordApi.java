@@ -82,46 +82,4 @@ public interface RecordApi {
 
     }
 
-
-    /**
-     * POST /records/v1/{workspaceId}/{collectionName}/{recordType}/delete : Bulk delete records
-     * Deletes records by record ID, using workspace ID and collection name. To delete by collection ID instead, see deleteRecordsByCollectionV1 
-     *
-     * @param workspaceId Workspace id (required)
-     * @param collectionName Collection name (required)
-     * @param recordType Record type (required)
-     * @param deleteRecordsRequestServerModel Record deletion specification (required)
-     * @return Deletion successful (status code 200)
-     */
-    @Operation(
-        operationId = "deleteRecordsByWorkspaceV1",
-        summary = "Bulk delete records",
-        description = "Deletes records by record ID, using workspace ID and collection name. To delete by collection ID instead, see deleteRecordsByCollectionV1 ",
-        tags = { "Record" },
-        responses = {
-            @ApiResponse(responseCode = "200", description = "Deletion successful", content = {
-                @Content(mediaType = "application/json", schema = @Schema(implementation = DeleteRecordsResponseServerModel.class))
-            })
-        },
-        security = {
-            @SecurityRequirement(name = "bearerAuth")
-        }
-    )
-    @RequestMapping(
-        method = RequestMethod.POST,
-        value = "/records/v1/{workspaceId}/{collectionName}/{recordType}/delete",
-        produces = { "application/json" },
-        consumes = { "application/json" }
-    )
-    
-    default ResponseEntity<DeleteRecordsResponseServerModel> deleteRecordsByWorkspaceV1(
-        @Parameter(name = "workspaceId", description = "Workspace id", required = true, in = ParameterIn.PATH) @PathVariable("workspaceId") UUID workspaceId,
-        @Parameter(name = "collectionName", description = "Collection name", required = true, in = ParameterIn.PATH) @PathVariable("collectionName") String collectionName,
-        @Parameter(name = "recordType", description = "Record type", required = true, in = ParameterIn.PATH) @PathVariable("recordType") String recordType,
-        @Parameter(name = "DeleteRecordsRequestServerModel", description = "Record deletion specification", required = true) @Valid @RequestBody DeleteRecordsRequestServerModel deleteRecordsRequestServerModel
-    ) {
-        return new ResponseEntity<>(HttpStatus.NOT_IMPLEMENTED);
-
-    }
-
 }
