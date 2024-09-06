@@ -21,7 +21,7 @@ public class ErrorThrowingListener extends BaseErrorListener {
       String msg,
       org.antlr.v4.runtime.RecognitionException e) {
     var errorMsg =
-        "Error while parsing expression. Offending symbol is on line %s at position %d. Error: $s"
+        "Error while parsing expression. Offending symbol is on line %s at position %d. Error: %s"
             .formatted(line, charPositionInLine, msg);
     throw new ExpressionParsingException(errorMsg, new ParseCancellationException(errorMsg, e));
   }

@@ -1,8 +1,12 @@
 package org.databiosphere.workspacedataservice.expressions;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
 import java.util.function.Function;
@@ -15,6 +19,7 @@ import org.databiosphere.workspacedataservice.dao.RecordDao;
 import org.databiosphere.workspacedataservice.expressions.parser.antlr.TerraExpressionLexer;
 import org.databiosphere.workspacedataservice.expressions.parser.antlr.TerraExpressionParser;
 import org.databiosphere.workspacedataservice.service.model.Relation;
+import org.databiosphere.workspacedataservice.shared.model.Record;
 import org.databiosphere.workspacedataservice.shared.model.RecordType;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -23,16 +28,138 @@ import org.springframework.web.server.ResponseStatusException;
 @Service
 public class ExpressionService {
   private final RecordDao recordDao;
+  private final ObjectMapper objectMapper;
+  private final AttributeLookupVisitor attributeLookupVisitor = new AttributeLookupVisitor();
 
-  public ExpressionService(RecordDao recordDao) {
+  public ExpressionService(RecordDao recordDao, ObjectMapper objectMapper) {
     this.recordDao = recordDao;
+    this.objectMapper = objectMapper;
   }
 
+  public Map<String, JsonNode> evaluateExpressions(
+      UUID collectionId,
+      RecordType recordType,
+      String recordId,
+      Map<String, String> expressionsByName) {
+    var attributeLookups =
+        expressionsByName.values().stream()
+            .map(this::extractRecordAttributeLookups)
+            .flatMap(Set::stream)
+            .collect(Collectors.toSet());
+    var expressionQueries =
+        determineExpressionQueries(collectionId, recordType, attributeLookups, 0).toList();
+    var resultsByQuery =
+        executeExpressionQueries(collectionId, recordType, recordId, expressionQueries);
+    return substituteResultsInExpressions(expressionsByName, resultsByQuery, recordType);
+  }
+
+  private Map<ExpressionQueryInfo, List<Record>> executeExpressionQueries(
+      UUID collectionId,
+      RecordType recordType,
+      String recordId,
+      List<ExpressionQueryInfo> expressionQueries) {
+    return expressionQueries.stream()
+        .map(
+            expressionQueryInfo ->
+                Map.entry(
+                    expressionQueryInfo,
+                    recordDao.queryRelatedRecords(
+                        collectionId, recordType, recordId, expressionQueryInfo.relations())))
+        .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
+  }
+
+  Map<String, JsonNode> substituteResultsInExpressions(
+      Map<String, String> expressionsByName,
+      Map<ExpressionQueryInfo, List<Record>> resultsByQuery,
+      RecordType recordType) {
+    var expressionValueSubstitutionVisitor =
+        new ExpressionValueSubstitutionVisitor(
+            getExpressionResultLookupMap(resultsByQuery, recordType), objectMapper);
+    return expressionsByName.entrySet().stream()
+        .map(
+            expressionEntry -> {
+              var parser = getParser(expressionEntry.getValue());
+              var parsedTree = parser.root();
+              return Map.entry(
+                  expressionEntry.getKey(), expressionValueSubstitutionVisitor.visit(parsedTree));
+            })
+        .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
+  }
+
+  Map<String, JsonNode> getExpressionResultLookupMap(
+      Map<ExpressionQueryInfo, List<Record>> resultsByQuery, RecordType recordType) {
+    return resultsByQuery.entrySet().stream()
+        .flatMap(
+            queryInfoAndResult ->
+                queryInfoAndResult.getKey().attributeLookups().stream()
+                    .map(
+                        lookup -> {
+                          var attributeValues =
+                              queryInfoAndResult.getValue().stream()
+                                  .map(
+                                      record ->
+                                          lookupAttributeValue(
+                                              recordType, queryInfoAndResult, lookup, record))
+                                  .filter(Objects::nonNull)
+                                  .map(this::toJsonNode)
+                                  .toList();
+                          if (queryInfoAndResult.getKey().isArray()) {
+                            return Map.entry(
+                                lookup.lookupText(),
+                                objectMapper.createArrayNode().addAll(attributeValues));
+                          } else if (attributeValues.size() > 1) {
+                            throw new ResponseStatusException(
+                                HttpStatus.BAD_REQUEST,
+                                "Expected a single value for attribute %s but got %s"
+                                    .formatted(lookup.attribute(), attributeValues));
+                          } else if (attributeValues.isEmpty()) {
+                            return Map.entry(lookup.lookupText(), objectMapper.nullNode());
+                          } else {
+                            return Map.entry(lookup.lookupText(), attributeValues.get(0));
+                          }
+                        }))
+        .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
+  }
+
+  private Object lookupAttributeValue(
+      RecordType recordType,
+      Map.Entry<ExpressionQueryInfo, List<Record>> queryInfoAndResult,
+      AttributeLookup lookup,
+      Record record) {
+    return lookup.attribute().equalsIgnoreCase(getIdName(recordType, queryInfoAndResult))
+        ? record.getId()
+        : record.getAttributeValue(lookup.attribute());
+  }
+
+  private String getIdName(
+      RecordType recordType, Map.Entry<ExpressionQueryInfo, List<Record>> queryInfoAndResult) {
+    var relations = queryInfoAndResult.getKey().relations();
+    return (relations.isEmpty()
+            ? recordType.getName()
+            : relations.get(relations.size() - 1).relationRecordType().getName())
+        + "_id";
+  }
+
+  private JsonNode toJsonNode(Object attributeValue) {
+    if (attributeValue == null) {
+      return objectMapper.nullNode();
+    } else if (attributeValue instanceof JsonNode) {
+      return (JsonNode) attributeValue;
+    } else {
+      return objectMapper.valueToTree(attributeValue);
+    }
+  }
+
+  /**
+   * Extracts all attribute lookups from an expression. An expressions may have multiple lookups.
+   *
+   * @param expression
+   * @return
+   */
   Set<AttributeLookup> extractRecordAttributeLookups(String expression) {
     var parser = getParser(expression);
     var parsedTree = parser.root();
-    var visitor = new AttributeLookupVisitor();
-    return visitor.visit(parsedTree);
+    return attributeLookupVisitor.visit(parsedTree);
   }
 
   /**
@@ -59,6 +186,9 @@ public class ExpressionService {
     var relationColsMap =
         recordDao.getRelationCols(collectionId, recordType).stream()
             .collect(Collectors.toMap(Relation::relationColName, Function.identity()));
+    var arrayRelationColsMap =
+        recordDao.getRelationArrayCols(collectionId, recordType).stream()
+            .collect(Collectors.toMap(Relation::relationColName, Function.identity()));
 
     // group all lookups that have the same relation at relationLevel together
     // this grouping makes sure that subsequent recursive calls to this function have the
@@ -70,6 +200,7 @@ public class ExpressionService {
 
     var missingRelations = new HashSet<>(nextLookupByRelation.keySet());
     missingRelations.removeAll(relationColsMap.keySet());
+    missingRelations.removeAll(arrayRelationColsMap.keySet());
     if (!missingRelations.isEmpty()) {
       var badExpressions =
           attributeLookups.stream()
@@ -87,16 +218,19 @@ public class ExpressionService {
     var nextExpressionQueries =
         nextLookupByRelation.entrySet().stream()
             .flatMap(
-                relationAndLookup ->
-                    determineExpressionQueries(
-                            collectionId,
-                            relationColsMap.get(relationAndLookup.getKey()).relationRecordType(),
-                            relationAndLookup.getValue(),
-                            relationLevel + 1)
-                        .map(
-                            queryInfo ->
-                                queryInfo.prependRelation(
-                                    relationColsMap.get(relationAndLookup.getKey()))));
+                relationAndLookup -> {
+                  boolean isArray = arrayRelationColsMap.containsKey(relationAndLookup.getKey());
+                  Relation relation =
+                      isArray
+                          ? arrayRelationColsMap.get(relationAndLookup.getKey())
+                          : relationColsMap.get(relationAndLookup.getKey());
+                  return determineExpressionQueries(
+                          collectionId,
+                          relation.relationRecordType(),
+                          relationAndLookup.getValue(),
+                          relationLevel + 1)
+                      .map(queryInfo -> queryInfo.prependRelation(relation, isArray));
+                });
 
     var currentLookups =
         attributeLookups.stream()
@@ -109,7 +243,8 @@ public class ExpressionService {
     return currentLookups.isEmpty()
         ? nextExpressionQueries
         : Stream.concat(
-            Stream.of(new ExpressionQueryInfo(List.of(), currentLookups)), nextExpressionQueries);
+            Stream.of(new ExpressionQueryInfo(List.of(), currentLookups, false)),
+            nextExpressionQueries);
   }
 
   private TerraExpressionParser getParser(String expression) {
