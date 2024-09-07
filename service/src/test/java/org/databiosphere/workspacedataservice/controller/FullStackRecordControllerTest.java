@@ -6,6 +6,7 @@ import static org.databiosphere.workspacedataservice.TestUtils.generateRandomAtt
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.mockito.Mockito.when;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -22,9 +23,11 @@ import java.util.UUID;
 import java.util.function.Supplier;
 import org.databiosphere.workspacedata.model.ErrorResponse;
 import org.databiosphere.workspacedataservice.TestUtils;
-import org.databiosphere.workspacedataservice.common.DataPlaneTestBase;
-import org.databiosphere.workspacedataservice.config.TwdsProperties;
+import org.databiosphere.workspacedataservice.common.ControlPlaneTestBase;
+import org.databiosphere.workspacedataservice.dao.WorkspaceRepository;
+import org.databiosphere.workspacedataservice.dataimport.protecteddatasupport.RawlsProtectedDataSupport;
 import org.databiosphere.workspacedataservice.generated.CollectionRequestServerModel;
+import org.databiosphere.workspacedataservice.service.CollectionService;
 import org.databiosphere.workspacedataservice.service.RelationUtils;
 import org.databiosphere.workspacedataservice.shared.model.BatchOperation;
 import org.databiosphere.workspacedataservice.shared.model.OperationType;
@@ -36,11 +39,15 @@ import org.databiosphere.workspacedataservice.shared.model.RecordResponse;
 import org.databiosphere.workspacedataservice.shared.model.RecordType;
 import org.databiosphere.workspacedataservice.shared.model.SearchRequest;
 import org.databiosphere.workspacedataservice.shared.model.SortDirection;
+import org.databiosphere.workspacedataservice.shared.model.WorkspaceId;
+import org.databiosphere.workspacedataservice.workspace.WorkspaceDataTableType;
+import org.databiosphere.workspacedataservice.workspace.WorkspaceRecord;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.boot.test.web.client.TestRestTemplate;
 import org.springframework.context.annotation.Import;
 import org.springframework.http.HttpEntity;
@@ -49,9 +56,9 @@ import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.ActiveProfiles;
-import org.springframework.transaction.annotation.Transactional;
 
 /**
  * This test spins up a web server and the full Spring Boot web stack. It was necessary to add it in
@@ -65,17 +72,33 @@ import org.springframework.transaction.annotation.Transactional;
     webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT,
     properties = {"spring.main.allow-bean-definition-overriding=true"})
 @Import(SmallBatchWriteTestConfig.class)
-class FullStackRecordControllerTest extends DataPlaneTestBase {
+class FullStackRecordControllerTest extends ControlPlaneTestBase {
+  @Autowired private CollectionService collectionService;
+  @Autowired private NamedParameterJdbcTemplate namedTemplate;
   @Autowired private TestRestTemplate restTemplate;
+  @Autowired private WorkspaceRepository workspaceRepository;
+
+  @MockBean RawlsProtectedDataSupport rawlsProtectedDataSupport;
+
   private HttpHeaders headers;
   private UUID instanceId;
   private static final String versionId = "v0.2";
   @Autowired private ObjectMapper mapper;
 
-  @Autowired private TwdsProperties twdsProperties;
-
   @BeforeEach
   void setUp() throws JsonProcessingException {
+    WorkspaceId workspaceId = WorkspaceId.of(UUID.randomUUID());
+
+    // create the workspace record
+    workspaceRepository.save(
+        new WorkspaceRecord(workspaceId, WorkspaceDataTableType.WDS, /* newFlag= */ true));
+
+    assertThat(workspaceRepository.existsById(workspaceId)).isTrue();
+
+    // RawlsProtectedDataSupport makes calls to Rawls; mock it to avoid the Rawls call
+    when(rawlsProtectedDataSupport.workspaceSupportsProtectedDataPolicy(workspaceId))
+        .thenReturn(false);
+
     String name = "test-name";
     String description = "test-description";
 
@@ -93,7 +116,7 @@ class FullStackRecordControllerTest extends DataPlaneTestBase {
             new HttpEntity<>(
                 objectMapper.writeValueAsString(collectionRequestServerModel), headers),
             String.class,
-            twdsProperties.workspaceId().id());
+            workspaceId);
     assertEquals(HttpStatus.CREATED, response.getStatusCode());
 
     instanceId =
@@ -102,19 +125,11 @@ class FullStackRecordControllerTest extends DataPlaneTestBase {
 
   @AfterEach
   void tearDown() {
-    ResponseEntity<String> response =
-        restTemplate.exchange(
-            "/collections/v1/{workspaceId}/{instanceid}",
-            HttpMethod.DELETE,
-            new HttpEntity<>("", headers),
-            String.class,
-            twdsProperties.workspaceId().id(),
-            instanceId);
-    assertEquals(HttpStatus.NO_CONTENT, response.getStatusCode());
+    TestUtils.cleanAllCollections(collectionService, namedTemplate);
+    TestUtils.cleanAllWorkspaces(namedTemplate);
   }
 
   @Test
-  @Transactional
   void testBadRecordTypeNames() throws JsonProcessingException {
     HttpEntity<String> requestEntity =
         new HttpEntity<>(
@@ -140,7 +155,6 @@ class FullStackRecordControllerTest extends DataPlaneTestBase {
   }
 
   @Test
-  @Transactional
   void testQuerySuccess() throws Exception {
     RecordType recordType = RecordType.valueOf("for_query");
     List<String> names =
@@ -175,7 +189,6 @@ class FullStackRecordControllerTest extends DataPlaneTestBase {
   }
 
   @Test
-  @Transactional
   void testSortedQuerySuccess() throws Exception {
     RecordType recordType = RecordType.valueOf("sorted_query");
     createSpecificRecords(recordType, 8);
@@ -216,7 +229,6 @@ class FullStackRecordControllerTest extends DataPlaneTestBase {
   }
 
   @Test
-  @Transactional
   void testQueryFailures() throws Exception {
     RecordType recordType = RecordType.valueOf("for_query");
     int limit = 5;
@@ -279,7 +291,6 @@ class FullStackRecordControllerTest extends DataPlaneTestBase {
   }
 
   @Test
-  @Transactional
   void testBadAttributeNames() throws JsonProcessingException {
     List<String> badNames =
         List.of("create table buttheads(id int)", "samples\n11", "##magic beans!");
@@ -307,7 +318,6 @@ class FullStackRecordControllerTest extends DataPlaneTestBase {
   }
 
   @Test
-  @Transactional
   void missingReferencedRecordTypeShouldFail() throws JsonProcessingException {
     RecordAttributes attrs = RecordAttributes.empty();
     attrs.putAttribute(
@@ -337,7 +347,6 @@ class FullStackRecordControllerTest extends DataPlaneTestBase {
   }
 
   @Test
-  @Transactional
   void referencingMissingRecordShouldFail() throws Exception {
     RecordAttributes attrs = RecordAttributes.empty();
     RecordType referencedRecordType = RecordType.valueOf("referenced-type");
@@ -364,7 +373,6 @@ class FullStackRecordControllerTest extends DataPlaneTestBase {
   }
 
   @Test
-  @Transactional
   void retrievingMissingEntityShouldFail() throws Exception {
     createSomeRecords(RecordType.valueOf("samples"), 1);
     HttpEntity<String> requestEntity = new HttpEntity<>(headers);
@@ -453,7 +461,6 @@ class FullStackRecordControllerTest extends DataPlaneTestBase {
   }
 
   @Test
-  @Transactional
   void dataTypeMismatchShouldNotFailBatchWrite() throws Exception {
     RecordType recordType = RecordType.valueOf("bw-test");
     List<Record> someRecords = createSomeRecords(recordType, 2);
@@ -483,7 +490,6 @@ class FullStackRecordControllerTest extends DataPlaneTestBase {
   }
 
   @Test
-  @Transactional
   void batchDeletingReferencedRecordsShouldFail() throws Exception {
     RecordType referencedRT = RecordType.valueOf("batch-delete-test-referenced");
     List<Record> someRecords = createSomeRecords(referencedRT, 2);
@@ -511,6 +517,7 @@ class FullStackRecordControllerTest extends DataPlaneTestBase {
         List.of(
             new BatchOperation(someRecords.get(1), OperationType.DELETE),
             new BatchOperation(someRecords.get(0), OperationType.DELETE));
+
     ResponseEntity<ErrorResponse> error =
         restTemplate.exchange(
             "/{instanceid}/batch/{v}/{type}",
@@ -538,7 +545,6 @@ class FullStackRecordControllerTest extends DataPlaneTestBase {
   }
 
   @Test
-  @Transactional
   void batchDeleteShouldFailWhenRecordIsNotFound() throws Exception {
     RecordType recordType = RecordType.valueOf("forBatchDelete");
     createSomeRecords(recordType, 3);

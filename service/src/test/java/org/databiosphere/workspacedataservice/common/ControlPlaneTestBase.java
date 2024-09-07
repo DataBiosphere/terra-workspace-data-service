@@ -23,6 +23,8 @@ import org.springframework.test.context.TestPropertySource;
 @ActiveProfiles({"control-plane"})
 @TestPropertySource(
     properties = {
+      // enable all controllers
+      "controlPlanePreview=on",
       // turn off pubsub autoconfiguration for tests
       "spring.cloud.gcp.pubsub.enabled=false",
       // aggressive retry settings so unit tests don't run too long

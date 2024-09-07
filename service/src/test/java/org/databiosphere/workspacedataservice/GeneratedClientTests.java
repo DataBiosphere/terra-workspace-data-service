@@ -29,9 +29,12 @@ import org.databiosphere.workspacedata.model.SearchFilter;
 import org.databiosphere.workspacedata.model.SearchRequest;
 import org.databiosphere.workspacedata.model.StatusResponse;
 import org.databiosphere.workspacedata.model.TsvUploadResponse;
-import org.databiosphere.workspacedataservice.common.DataPlaneTestBase;
-import org.databiosphere.workspacedataservice.config.TwdsProperties;
+import org.databiosphere.workspacedataservice.common.ControlPlaneTestBase;
+import org.databiosphere.workspacedataservice.dao.WorkspaceRepository;
 import org.databiosphere.workspacedataservice.service.CollectionService;
+import org.databiosphere.workspacedataservice.shared.model.WorkspaceId;
+import org.databiosphere.workspacedataservice.workspace.WorkspaceDataTableType;
+import org.databiosphere.workspacedataservice.workspace.WorkspaceRecord;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -49,31 +52,38 @@ import org.springframework.test.context.ActiveProfiles;
 @ActiveProfiles(profiles = "mock-sam")
 @DirtiesContext
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
-class GeneratedClientTests extends DataPlaneTestBase {
+class GeneratedClientTests extends ControlPlaneTestBase {
 
   private ApiClient apiClient;
   @LocalServerPort int port;
 
-  @Autowired TwdsProperties twdsProperties;
   private UUID collectionId;
   private final String version = "v0.2";
 
   @Autowired CollectionService collectionService;
   @Autowired NamedParameterJdbcTemplate namedTemplate;
+  @Autowired WorkspaceRepository workspaceRepository;
 
   @BeforeEach
   void init() throws ApiException {
+    WorkspaceId workspaceId = WorkspaceId.of(UUID.randomUUID());
+
+    // create the workspace record
+    workspaceRepository.save(
+        new WorkspaceRecord(workspaceId, WorkspaceDataTableType.WDS, /* newFlag= */ true));
+
     apiClient = new ApiClient();
     apiClient.setBasePath("http://localhost:" + port);
     CollectionRequest collectionRequest = new CollectionRequest();
     collectionRequest.setName(RandomStringUtils.randomAlphabetic(16));
     collectionRequest.setDescription("description");
-    collectionId = createNewCollection(collectionRequest, twdsProperties.workspaceId().id());
+    collectionId = createNewCollection(collectionRequest, workspaceId.id());
   }
 
   @AfterEach
   void afterEach() {
     TestUtils.cleanAllCollections(collectionService, namedTemplate);
+    TestUtils.cleanAllWorkspaces(namedTemplate);
   }
 
   @Test

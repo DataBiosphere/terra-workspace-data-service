@@ -13,13 +13,17 @@ import java.util.concurrent.CompletableFuture;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 import org.databiosphere.workspacedataservice.TestUtils;
-import org.databiosphere.workspacedataservice.common.DataPlaneTestBase;
-import org.databiosphere.workspacedataservice.config.TwdsProperties;
+import org.databiosphere.workspacedataservice.common.ControlPlaneTestBase;
+import org.databiosphere.workspacedataservice.dao.WorkspaceRepository;
 import org.databiosphere.workspacedataservice.generated.CollectionRequestServerModel;
+import org.databiosphere.workspacedataservice.service.CollectionService;
 import org.databiosphere.workspacedataservice.shared.model.RecordAttributes;
 import org.databiosphere.workspacedataservice.shared.model.RecordRequest;
 import org.databiosphere.workspacedataservice.shared.model.RecordResponse;
 import org.databiosphere.workspacedataservice.shared.model.RecordType;
+import org.databiosphere.workspacedataservice.shared.model.WorkspaceId;
+import org.databiosphere.workspacedataservice.workspace.WorkspaceDataTableType;
+import org.databiosphere.workspacedataservice.workspace.WorkspaceRecord;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -32,14 +36,20 @@ import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.ActiveProfiles;
 
 @ActiveProfiles(profiles = "mock-sam")
 @DirtiesContext
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
-class ConcurrentDataTypeChangesTest extends DataPlaneTestBase {
+class ConcurrentDataTypeChangesTest extends ControlPlaneTestBase {
+
+  @Autowired private CollectionService collectionService;
+  @Autowired private NamedParameterJdbcTemplate namedTemplate;
   @Autowired private TestRestTemplate restTemplate;
+  @Autowired private WorkspaceRepository workspaceRepository;
+
   private HttpHeaders headers;
   private UUID instanceId;
 
@@ -47,10 +57,14 @@ class ConcurrentDataTypeChangesTest extends DataPlaneTestBase {
   private static final RecordType recordType = RecordType.valueOf("concurrency");
   private static final String versionId = "v0.2";
 
-  @Autowired private TwdsProperties twdsProperties;
-
   @BeforeEach
   void setUp() throws JsonProcessingException {
+    WorkspaceId workspaceId = WorkspaceId.of(UUID.randomUUID());
+
+    // create the workspace record
+    workspaceRepository.save(
+        new WorkspaceRecord(workspaceId, WorkspaceDataTableType.WDS, /* newFlag= */ true));
+
     String name = "test-name";
     String description = "test-description";
 
@@ -68,7 +82,7 @@ class ConcurrentDataTypeChangesTest extends DataPlaneTestBase {
             new HttpEntity<>(
                 objectMapper.writeValueAsString(collectionRequestServerModel), headers),
             String.class,
-            twdsProperties.workspaceId().id());
+            workspaceId);
     assertEquals(HttpStatus.CREATED, response.getStatusCode());
 
     instanceId =
@@ -77,15 +91,8 @@ class ConcurrentDataTypeChangesTest extends DataPlaneTestBase {
 
   @AfterEach
   void tearDown() {
-    ResponseEntity<String> response =
-        restTemplate.exchange(
-            "/collections/v1/{workspaceId}/{instanceid}",
-            HttpMethod.DELETE,
-            new HttpEntity<>("", headers),
-            String.class,
-            twdsProperties.workspaceId().id(),
-            instanceId);
-    assertEquals(HttpStatus.NO_CONTENT, response.getStatusCode());
+    TestUtils.cleanAllCollections(collectionService, namedTemplate);
+    TestUtils.cleanAllWorkspaces(namedTemplate);
   }
 
   @Test
@@ -154,7 +161,7 @@ class ConcurrentDataTypeChangesTest extends DataPlaneTestBase {
     attrs.put("sys_name", recordId);
     RecordAttributes expected = new RecordAttributes(attrs);
 
-    RecordAttributes actual = finalResponse.getBody().recordAttributes();
+    RecordAttributes actual = Objects.requireNonNull(finalResponse.getBody()).recordAttributes();
 
     assertEquals(
         expected.attributeSet().size(),

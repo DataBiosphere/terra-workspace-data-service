@@ -59,6 +59,7 @@ import org.springframework.test.context.TestPropertySource;
 @SpringBootTest
 @AutoConfigureMockMvc
 @TestPropertySource(properties = {"twds.write.batch.size=2"})
+// TODO AJ-2004: move to the control-plane profile once AJ-2004 is resolved
 class TdrManifestQuartzJobMultipleBatchTest extends DataPlaneTestBase {
   @Autowired private RecordOrchestratorService recordOrchestratorService;
   @Autowired private ImportService importService;

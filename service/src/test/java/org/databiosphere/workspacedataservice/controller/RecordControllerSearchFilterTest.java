@@ -12,7 +12,7 @@ import java.util.Optional;
 import java.util.UUID;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.databiosphere.workspacedataservice.TestUtils;
-import org.databiosphere.workspacedataservice.config.TwdsProperties;
+import org.databiosphere.workspacedataservice.dao.WorkspaceRepository;
 import org.databiosphere.workspacedataservice.service.CollectionService;
 import org.databiosphere.workspacedataservice.service.RecordOrchestratorService;
 import org.databiosphere.workspacedataservice.shared.model.RecordAttributes;
@@ -20,6 +20,9 @@ import org.databiosphere.workspacedataservice.shared.model.RecordQueryResponse;
 import org.databiosphere.workspacedataservice.shared.model.RecordRequest;
 import org.databiosphere.workspacedataservice.shared.model.RecordResponse;
 import org.databiosphere.workspacedataservice.shared.model.RecordType;
+import org.databiosphere.workspacedataservice.shared.model.WorkspaceId;
+import org.databiosphere.workspacedataservice.workspace.WorkspaceDataTableType;
+import org.databiosphere.workspacedataservice.workspace.WorkspaceRecord;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
@@ -43,18 +46,22 @@ class RecordControllerSearchFilterTest extends MockMvcTestBase {
   @Autowired NamedParameterJdbcTemplate namedTemplate;
   @Autowired RecordOrchestratorService recordOrchestratorService;
   @Autowired ObjectMapper mapper;
-  @Autowired TwdsProperties twdsProperties;
+  @Autowired WorkspaceRepository workspaceRepository;
 
   // all tests in this class use the same set of data; all tests in this class are read-only.
   // as setup, insert 20 records with ids "000" through "019". Each record has a "sortByMe"
   // attribute using the same "000"-"019" value to ensure deterministic sorting.
   @BeforeAll
   void beforeAll() {
+    WorkspaceId workspaceId = WorkspaceId.of(UUID.randomUUID());
+
+    // create the workspace record
+    workspaceRepository.save(
+        new WorkspaceRecord(workspaceId, WorkspaceDataTableType.WDS, /* newFlag= */ true));
+
     // create collection
     collectionId =
-        collectionService
-            .save(twdsProperties.workspaceId(), RandomStringUtils.randomAlphabetic(16), "desc")
-            .getId();
+        collectionService.save(workspaceId, RandomStringUtils.randomAlphabetic(16), "desc").getId();
     // insert 20 records into the collection
     for (int i = 0; i < 20; i++) {
       // for easy sorting:
@@ -73,6 +80,7 @@ class RecordControllerSearchFilterTest extends MockMvcTestBase {
   @AfterAll
   void deleteAllInstances() {
     TestUtils.cleanAllCollections(collectionService, namedTemplate);
+    TestUtils.cleanAllWorkspaces(namedTemplate);
   }
 
   @Test
