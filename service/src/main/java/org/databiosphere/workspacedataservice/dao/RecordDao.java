@@ -52,6 +52,7 @@ import org.databiosphere.workspacedataservice.service.model.exception.InvalidRel
 import org.databiosphere.workspacedataservice.service.model.exception.MissingObjectException;
 import org.databiosphere.workspacedataservice.service.model.exception.SerializationException;
 import org.databiosphere.workspacedataservice.shared.model.AttributeComparator;
+import org.databiosphere.workspacedataservice.shared.model.CollectionId;
 import org.databiosphere.workspacedataservice.shared.model.Record;
 import org.databiosphere.workspacedataservice.shared.model.RecordAttributes;
 import org.databiosphere.workspacedataservice.shared.model.RecordColumn;
@@ -572,18 +573,18 @@ public class RecordDao {
 
   @SuppressWarnings("squid:S2077")
   public int deleteAllRecords(
-      UUID collectionId, RecordType recordType, List<String> excludedRecordIds) {
-    String recordTypePrimaryKey = primaryKeyDao.getPrimaryKeyColumn(recordType, collectionId);
+      CollectionId collectionId, RecordType recordType, List<String> excludedRecordIds) {
+    String recordTypePrimaryKey = primaryKeyDao.getPrimaryKeyColumn(recordType, collectionId.id());
 
     try {
       if (excludedRecordIds.isEmpty()) {
         return namedTemplate.update(
-            "delete from " + getQualifiedTableName(recordType, collectionId),
+            "delete from " + getQualifiedTableName(recordType, collectionId.id()),
             new MapSqlParameterSource());
       } else {
         return namedTemplate.update(
             "delete from "
-                + getQualifiedTableName(recordType, collectionId)
+                + getQualifiedTableName(recordType, collectionId.id())
                 + " where "
                 + quote(recordTypePrimaryKey)
                 + "not in (:recordIds)",

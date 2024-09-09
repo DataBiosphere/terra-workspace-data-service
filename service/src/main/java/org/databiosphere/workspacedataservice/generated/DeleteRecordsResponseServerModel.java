@@ -16,10 +16,10 @@ import java.util.*;
 import jakarta.annotation.Generated;
 
 /**
- * a required deletion specification
+ * a response body for a bulk record deletion request
  */
 
-@Schema(name = "DeleteRecordsResponse", description = "a required deletion specification")
+@Schema(name = "DeleteRecordsResponse", description = "a response body for a bulk record deletion request")
 @JsonTypeName("DeleteRecordsResponse")
 @Generated(value = "org.openapitools.codegen.languages.SpringCodegen", comments = "Generator version: 7.8.0")
 public class DeleteRecordsResponseServerModel {

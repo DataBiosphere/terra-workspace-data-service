@@ -28,6 +28,7 @@ import org.databiosphere.workspacedataservice.service.model.Relation;
 import org.databiosphere.workspacedataservice.service.model.RelationCollection;
 import org.databiosphere.workspacedataservice.service.model.RelationValue;
 import org.databiosphere.workspacedataservice.service.model.exception.InvalidRelationException;
+import org.databiosphere.workspacedataservice.shared.model.CollectionId;
 import org.databiosphere.workspacedataservice.shared.model.Record;
 import org.databiosphere.workspacedataservice.shared.model.RecordAttributes;
 import org.databiosphere.workspacedataservice.shared.model.RecordType;
@@ -421,7 +422,8 @@ class RecordDaoTest extends ControlPlaneTestBase {
     recordDao.batchUpsert(
         collectionUuid, recordType, List.of(testRecordA, testRecordB, testRecordC), emptyMap());
 
-    recordDao.deleteAllRecords(collectionUuid, recordType, Collections.emptyList());
+    recordDao.deleteAllRecords(
+        CollectionId.of(collectionUuid), recordType, Collections.emptyList());
 
     List<Record> queryRes =
         recordDao.queryForRecords(recordType, 10, 0, "ASC", null, Optional.empty(), collectionUuid);
@@ -445,7 +447,9 @@ class RecordDaoTest extends ControlPlaneTestBase {
         emptyMap());
 
     recordDao.deleteAllRecords(
-        collectionUuid, recordType, List.of(testRecordB.getId(), testRecordD.getId()));
+        CollectionId.of(collectionUuid),
+        recordType,
+        List.of(testRecordB.getId(), testRecordD.getId()));
 
     List<Record> queryRes =
         recordDao.queryForRecords(recordType, 10, 0, "ASC", null, Optional.empty(), collectionUuid);

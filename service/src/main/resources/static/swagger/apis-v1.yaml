@@ -342,6 +342,7 @@ components:
       required: true
       schema:
         type: string
+        pattern: '[a-zA-Z0-9-_]{1,128}'
 
   schemas:
     Capabilities:
@@ -466,7 +467,7 @@ components:
           default: false
     DeleteRecordsResponse:
       type: object
-      description: a required deletion specification
+      description: a response body for a bulk record deletion request
       properties:
         count:
           type: integer

@@ -290,14 +290,14 @@ public class RecordOrchestratorService { // TODO give me a better name
   }
 
   public ResponseEntity<DeleteRecordsResponseServerModel> deleteRecords(
-      UUID collectionId,
+      CollectionId collectionId,
       RecordType recordType,
       DeleteRecordsRequestServerModel deleteRecordsRequestServerModel) {
 
     DeleteRecordsResponseServerModel response = new DeleteRecordsResponseServerModel();
 
-    Boolean hasRecordIds = !deleteRecordsRequestServerModel.getRecordIds().isEmpty();
-    Boolean hasExcludedRecordIds =
+    boolean hasRecordIds = !deleteRecordsRequestServerModel.getRecordIds().isEmpty();
+    boolean hasExcludedRecordIds =
         !deleteRecordsRequestServerModel.getExcludedRecordIds().isEmpty();
 
     if (hasRecordIds && hasExcludedRecordIds) {
@@ -305,8 +305,8 @@ public class RecordOrchestratorService { // TODO give me a better name
           HttpStatus.BAD_REQUEST, "record_ids and excluded_record_ids are mutually exclusive");
     }
 
-    Boolean deleteAll = deleteRecordsRequestServerModel.getDeleteAll();
-    if (Boolean.TRUE.equals(deleteAll) && (hasRecordIds || hasExcludedRecordIds)) {
+    boolean deleteAll = deleteRecordsRequestServerModel.getDeleteAll();
+    if (deleteAll && (hasRecordIds || hasExcludedRecordIds)) {
       throw new ResponseStatusException(
           HttpStatus.BAD_REQUEST,
           "delete_all cannot be set to true if record_ids or excluded_record_ids are nonempty");
@@ -316,7 +316,7 @@ public class RecordOrchestratorService { // TODO give me a better name
     if (hasRecordIds) {
       deletionCount =
           recordDao.deleteRecords(
-              collectionId, recordType, deleteRecordsRequestServerModel.getRecordIds());
+              collectionId.id(), recordType, deleteRecordsRequestServerModel.getRecordIds());
     } else if (hasExcludedRecordIds) {
       deletionCount =
           recordDao.deleteAllRecords(
@@ -324,7 +324,9 @@ public class RecordOrchestratorService { // TODO give me a better name
     } else if (deleteAll) {
       deletionCount = recordDao.deleteAllRecords(collectionId, recordType, Collections.emptyList());
     } else {
-      deletionCount = 0;
+      throw new ResponseStatusException(
+          HttpStatus.BAD_REQUEST,
+          "No records were specified for deletion. Set delete_all=true, or specify record IDs in one of (record_ids, excluded_record_ids).");
     }
 
     response.setCount(deletionCount);

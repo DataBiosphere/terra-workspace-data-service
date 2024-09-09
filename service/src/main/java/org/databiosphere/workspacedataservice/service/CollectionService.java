@@ -243,26 +243,6 @@ public class CollectionService {
   }
 
   /**
-   * Retrieve a single collection by its workspaceId and collectionId, or empty Optional if not
-   * found.
-   *
-   * @param workspaceId the workspace containing the collection to be retrieved
-   * @param collectionName id of the collection to be retrieved
-   * @return the collection, or empty Optional if not found
-   */
-  public Optional<CollectionServerModel> find(WorkspaceId workspaceId, String collectionName) {
-    return collectionRepository
-        .find(workspaceId, collectionName)
-        .map(
-            coll -> {
-              CollectionServerModel serverModel =
-                  new CollectionServerModel(coll.name(), coll.description());
-              serverModel.id(coll.collectionId().id());
-              return serverModel;
-            });
-  }
-
-  /**
    * Retrieve a single collection by its workspaceId and collectionId. Throws MissingObjectException
    * if not found.
    *
@@ -272,19 +252,6 @@ public class CollectionService {
    */
   public CollectionServerModel get(WorkspaceId workspaceId, CollectionId collectionId) {
     Optional<CollectionServerModel> found = find(workspaceId, collectionId);
-    return found.orElseThrow(() -> new MissingObjectException(COLLECTION));
-  }
-
-  /**
-   * Retrieve a single collection by its workspaceId and collectionName. Throws
-   * MissingObjectException if not found.
-   *
-   * @param workspaceId the workspace containing the collection to be retrieved
-   * @param collectionName name of the collection to be retrieved
-   * @return the collection
-   */
-  public CollectionServerModel get(WorkspaceId workspaceId, String collectionName) {
-    Optional<CollectionServerModel> found = find(workspaceId, collectionName);
     return found.orElseThrow(() -> new MissingObjectException(COLLECTION));
   }
 

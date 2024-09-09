@@ -32,6 +32,8 @@ public class RecordV1Controller implements RecordApi {
       DeleteRecordsRequestServerModel deleteRecordsRequestServerModel) {
     permissionService.requireWritePermission(CollectionId.of(collectionId));
     return recordOrchestratorService.deleteRecords(
-        collectionId, RecordType.valueOf(recordType), deleteRecordsRequestServerModel);
+        CollectionId.of(collectionId),
+        RecordType.valueOf(recordType),
+        deleteRecordsRequestServerModel);
   }
 }
