@@ -5,9 +5,6 @@ import java.io.InputStream;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
-import org.databiosphere.workspacedataservice.generated.DeleteRecordsRequestServerModel;
-import org.databiosphere.workspacedataservice.generated.DeleteRecordsResponseServerModel;
-import org.databiosphere.workspacedataservice.generated.RecordApi;
 import org.databiosphere.workspacedataservice.service.PermissionService;
 import org.databiosphere.workspacedataservice.service.RecordOrchestratorService;
 import org.databiosphere.workspacedataservice.service.model.AttributeSchema;
@@ -42,7 +39,7 @@ import org.springframework.web.servlet.mvc.method.annotation.StreamingResponseBo
 
 @ConditionalOnProperty(name = "controlPlanePreview", havingValue = "on")
 @RestController
-public class RecordController implements RecordApi {
+public class RecordController {
 
   private final RecordOrchestratorService recordOrchestratorService;
   private final PermissionService permissionService;
@@ -242,14 +239,5 @@ public class RecordController implements RecordApi {
     int recordsModified =
         recordOrchestratorService.streamingWrite(instanceId, version, recordType, primaryKey, is);
     return new ResponseEntity<>(new BatchResponse(recordsModified, "Huzzah"), HttpStatus.OK);
-  }
-
-  @Override
-  public ResponseEntity<DeleteRecordsResponseServerModel> deleteRecordsByCollectionV1(
-      UUID collectionId,
-      String recordType,
-      DeleteRecordsRequestServerModel deleteRecordsRequestServerModel) {
-    return recordOrchestratorService.deleteRecords(
-        collectionId, RecordType.valueOf(recordType), deleteRecordsRequestServerModel);
   }
 }

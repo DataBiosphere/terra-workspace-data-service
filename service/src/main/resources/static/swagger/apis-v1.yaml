@@ -257,7 +257,7 @@ paths:
   /records/v1/{collectionId}/{recordType}/delete:
     post:
       summary: Bulk delete records
-      operationId: deleteRecordsByCollectionV1
+      operationId: deleteRecords
       description: |
         Deletes records by record ID, using collection ID.
         To delete by workspace ID and collection name instead, see deleteRecordsByWorkspaceV1

@@ -53,7 +53,7 @@ public interface RecordApi {
      * @return Deletion successful (status code 200)
      */
     @Operation(
-        operationId = "deleteRecordsByCollectionV1",
+        operationId = "deleteRecords",
         summary = "Bulk delete records",
         description = "Deletes records by record ID, using collection ID. To delete by workspace ID and collection name instead, see deleteRecordsByWorkspaceV1 ",
         tags = { "Record" },
@@ -73,7 +73,7 @@ public interface RecordApi {
         consumes = { "application/json" }
     )
     
-    default ResponseEntity<DeleteRecordsResponseServerModel> deleteRecordsByCollectionV1(
+    default ResponseEntity<DeleteRecordsResponseServerModel> deleteRecords(
         @Parameter(name = "collectionId", description = "Collection id", required = true, in = ParameterIn.PATH) @PathVariable("collectionId") UUID collectionId,
         @Parameter(name = "recordType", description = "Record type", required = true, in = ParameterIn.PATH) @PathVariable("recordType") String recordType,
         @Parameter(name = "DeleteRecordsRequestServerModel", description = "Record deletion specification", required = true) @Valid @RequestBody DeleteRecordsRequestServerModel deleteRecordsRequestServerModel
