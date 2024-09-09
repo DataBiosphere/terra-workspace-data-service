@@ -4,6 +4,7 @@ import static org.databiosphere.workspacedataservice.service.RecordUtils.validat
 import static org.databiosphere.workspacedataservice.service.model.ReservedNames.RECORD_ID;
 
 import bio.terra.common.db.ReadTransaction;
+import bio.terra.common.db.WriteTransaction;
 import io.micrometer.common.KeyValue;
 import io.micrometer.common.KeyValues;
 import io.micrometer.observation.Observation;
@@ -289,6 +290,7 @@ public class RecordOrchestratorService { // TODO give me a better name
         user -> user.deleted().table().ofQuantity(1).withRecordType(recordType));
   }
 
+  @WriteTransaction
   public ResponseEntity<DeleteRecordsResponseServerModel> deleteRecords(
       CollectionId collectionId,
       RecordType recordType,
