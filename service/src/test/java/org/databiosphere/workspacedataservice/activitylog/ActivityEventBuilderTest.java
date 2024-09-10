@@ -12,13 +12,13 @@ import org.broadinstitute.dsde.workbench.client.sam.api.ResourcesApi;
 import org.broadinstitute.dsde.workbench.client.sam.api.UsersApi;
 import org.broadinstitute.dsde.workbench.client.sam.model.UserStatusInfo;
 import org.databiosphere.workspacedataservice.TestUtils;
-import org.databiosphere.workspacedataservice.common.TestBase;
-import org.databiosphere.workspacedataservice.config.TwdsProperties;
+import org.databiosphere.workspacedataservice.common.ControlPlaneTestBase;
 import org.databiosphere.workspacedataservice.generated.CollectionServerModel;
 import org.databiosphere.workspacedataservice.sam.BearerTokenFilter;
 import org.databiosphere.workspacedataservice.sam.SamClientFactory;
 import org.databiosphere.workspacedataservice.service.CollectionService;
 import org.databiosphere.workspacedataservice.shared.model.BearerToken;
+import org.databiosphere.workspacedataservice.shared.model.WorkspaceId;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -37,10 +37,9 @@ import org.springframework.web.context.request.RequestContextHolder;
 @SpringBootTest
 @AutoConfigureMockMvc
 @ExtendWith(OutputCaptureExtension.class)
-class ActivityEventBuilderTest extends TestBase {
+class ActivityEventBuilderTest extends ControlPlaneTestBase {
 
   @Autowired CollectionService collectionService;
-  @Autowired TwdsProperties twdsProperties;
 
   @MockBean SamClientFactory mockSamClientFactory;
 
@@ -69,7 +68,7 @@ class ActivityEventBuilderTest extends TestBase {
 
     // create a collection; this will trigger logging
     CollectionServerModel collectionServerModel =
-        TestUtils.createCollection(collectionService, twdsProperties.workspaceId());
+        TestUtils.createCollection(collectionService, WorkspaceId.of(UUID.randomUUID()));
     UUID collectionId = collectionServerModel.getId();
 
     // did we log the

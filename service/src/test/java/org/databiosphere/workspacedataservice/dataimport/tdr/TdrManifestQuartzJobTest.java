@@ -22,7 +22,6 @@ import bio.terra.datarepo.model.RelationshipModel;
 import bio.terra.datarepo.model.RelationshipTermModel;
 import bio.terra.datarepo.model.SnapshotExportResponseModel;
 import bio.terra.workspace.model.ResourceList;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import io.micrometer.core.instrument.DistributionSummary;
 import io.micrometer.core.instrument.MeterRegistry;
 import java.io.IOException;
@@ -42,12 +41,10 @@ import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.Path;
 import org.apache.parquet.hadoop.util.HadoopInputFile;
 import org.apache.parquet.io.InputFile;
-import org.databiosphere.workspacedataservice.activitylog.ActivityLogger;
+import org.databiosphere.workspacedataservice.common.ControlPlaneTestBase;
 import org.databiosphere.workspacedataservice.common.MockInstantSource;
 import org.databiosphere.workspacedataservice.common.MockInstantSourceConfig;
-import org.databiosphere.workspacedataservice.common.TestBase;
 import org.databiosphere.workspacedataservice.config.DataImportProperties;
-import org.databiosphere.workspacedataservice.dao.JobDao;
 import org.databiosphere.workspacedataservice.dao.RecordDao;
 import org.databiosphere.workspacedataservice.dataimport.FileDownloadHelper;
 import org.databiosphere.workspacedataservice.dataimport.ImportDetails;
@@ -56,7 +53,6 @@ import org.databiosphere.workspacedataservice.recordsink.RawlsAttributePrefixer.
 import org.databiosphere.workspacedataservice.recordsink.RecordSink;
 import org.databiosphere.workspacedataservice.recordsink.RecordSinkFactory;
 import org.databiosphere.workspacedataservice.recordsource.RecordSource.ImportMode;
-import org.databiosphere.workspacedataservice.retry.RestClientRetry;
 import org.databiosphere.workspacedataservice.sam.SamDao;
 import org.databiosphere.workspacedataservice.service.CollectionService;
 import org.databiosphere.workspacedataservice.service.RecordService;
@@ -67,6 +63,8 @@ import org.databiosphere.workspacedataservice.shared.model.Record;
 import org.databiosphere.workspacedataservice.shared.model.RecordAttributes;
 import org.databiosphere.workspacedataservice.shared.model.RecordType;
 import org.databiosphere.workspacedataservice.shared.model.WorkspaceId;
+import org.databiosphere.workspacedataservice.workspace.DataTableTypeInspector;
+import org.databiosphere.workspacedataservice.workspace.WorkspaceDataTableType;
 import org.databiosphere.workspacedataservice.workspacemanager.WorkspaceManagerDao;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Tag;
@@ -86,20 +84,17 @@ import org.springframework.test.annotation.DirtiesContext;
 @DirtiesContext
 @SpringBootTest
 @Import(MockInstantSourceConfig.class)
-class TdrManifestQuartzJobTest extends TestBase {
+class TdrManifestQuartzJobTest extends ControlPlaneTestBase {
 
-  @MockBean JobDao jobDao;
   @MockBean WorkspaceManagerDao wsmDao;
 
   @MockBean CollectionService collectionService;
-  @MockBean ActivityLogger activityLogger;
   @MockBean RecordService recordService;
   @MockBean RecordDao recordDao;
   @MockBean DataImportProperties dataImportProperties;
   @MockBean SamDao samDao;
+  @MockBean DataTableTypeInspector dataTableTypeInspector;
   @Autowired RecordSinkFactory recordSinkFactory;
-  @Autowired RestClientRetry restClientRetry;
-  @Autowired ObjectMapper objectMapper;
   @Autowired TdrTestSupport testSupport;
   @Autowired MockInstantSource mockInstantSource;
   @Autowired MeterRegistry meterRegistry;
@@ -136,6 +131,10 @@ class TdrManifestQuartzJobTest extends TestBase {
 
     when(recordDao.recordTypeExists(any(), any())).thenReturn(false);
     doNothing().when(recordDao).createRecordType(any(), any(), any(), any(), any());
+
+    // configure all workspaces to be WDS-powered
+    when(dataTableTypeInspector.getWorkspaceDataTableType(any()))
+        .thenReturn(WorkspaceDataTableType.WDS);
   }
 
   @Test

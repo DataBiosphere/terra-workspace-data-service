@@ -23,7 +23,12 @@ jobs:
   # Once it is merged, a new version of the Helm chart will automatically be published
   # and a PR to Leonardo opened to update the WDS chart version in Leonardo.
   # The Leonardo PR will also be automatically merged (if checks pass).
+  #
+  # 2024-08-29 David An: releases no longer automatically create terra-helmfile PRs, via the
+  # `if: false` clause below. To update data-plane/terra-helmfile, manually create a PR.
+  #
   create-terra-helmfile-pr:
+    if: false
     name: Create terra-helmfile PR for latest WDS version
     runs-on: ubuntu-latest
     steps:

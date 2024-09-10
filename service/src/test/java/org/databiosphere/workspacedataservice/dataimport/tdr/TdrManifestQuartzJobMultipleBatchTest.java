@@ -16,7 +16,7 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.stream.Collectors;
 import org.databiosphere.workspacedataservice.TestUtils;
-import org.databiosphere.workspacedataservice.common.TestBase;
+import org.databiosphere.workspacedataservice.common.DataPlaneTestBase;
 import org.databiosphere.workspacedataservice.config.TwdsProperties;
 import org.databiosphere.workspacedataservice.dataimport.ImportValidator;
 import org.databiosphere.workspacedataservice.generated.CollectionServerModel;
@@ -59,7 +59,8 @@ import org.springframework.test.context.TestPropertySource;
 @SpringBootTest
 @AutoConfigureMockMvc
 @TestPropertySource(properties = {"twds.write.batch.size=2"})
-class TdrManifestQuartzJobMultipleBatchTest extends TestBase {
+// TODO AJ-2004: move to the control-plane profile once AJ-2004 is resolved
+class TdrManifestQuartzJobMultipleBatchTest extends DataPlaneTestBase {
   @Autowired private RecordOrchestratorService recordOrchestratorService;
   @Autowired private ImportService importService;
   @Autowired private CollectionService collectionService;

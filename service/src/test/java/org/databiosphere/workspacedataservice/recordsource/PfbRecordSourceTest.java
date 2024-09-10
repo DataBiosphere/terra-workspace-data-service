@@ -15,7 +15,7 @@ import java.net.URL;
 import java.util.List;
 import org.apache.avro.file.DataFileStream;
 import org.apache.avro.generic.GenericRecord;
-import org.databiosphere.workspacedataservice.common.TestBase;
+import org.databiosphere.workspacedataservice.common.ControlPlaneTestBase;
 import org.databiosphere.workspacedataservice.recordsource.RecordSource.ImportMode;
 import org.databiosphere.workspacedataservice.recordsource.RecordSource.WriteStreamInfo;
 import org.databiosphere.workspacedataservice.shared.model.Record;
@@ -28,7 +28,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 
 @SpringBootTest
-class PfbRecordSourceTest extends TestBase {
+class PfbRecordSourceTest extends ControlPlaneTestBase {
   @Autowired private ObjectMapper objectMapper;
 
   // does PfbRecordSource properly know how to page through a DataFileStream<GenericRecord>?

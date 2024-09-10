@@ -5,7 +5,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import java.util.Optional;
 import org.databiosphere.workspacedataservice.annotations.DeploymentMode.ControlPlane;
 import org.databiosphere.workspacedataservice.annotations.DeploymentMode.DataPlane;
-import org.databiosphere.workspacedataservice.common.TestBase;
+import org.databiosphere.workspacedataservice.common.DataPlaneTestBase;
 import org.databiosphere.workspacedataservice.dataimport.protecteddatasupport.ProtectedDataSupport;
 import org.databiosphere.workspacedataservice.dataimport.protecteddatasupport.WsmProtectedDataSupport;
 import org.databiosphere.workspacedataservice.workspace.DataTableTypeInspector;
@@ -34,7 +34,7 @@ import org.springframework.web.bind.annotation.RestController;
       // turn off pubsub autoconfiguration for tests
       "spring.cloud.gcp.pubsub.enabled=false"
     })
-class AnnotatedApisTest extends TestBase {
+class AnnotatedApisTest extends DataPlaneTestBase {
 
   // Since we're running with both control-plane and data-plane profiles simultaneously, Spring
   // does not know what to do with beans which are satisfied by two different mutually exclusive

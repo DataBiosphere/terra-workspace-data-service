@@ -13,7 +13,7 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.stream.Stream;
 import org.apache.commons.lang3.RandomStringUtils;
-import org.databiosphere.workspacedataservice.common.TestBase;
+import org.databiosphere.workspacedataservice.common.ControlPlaneTestBase;
 import org.databiosphere.workspacedataservice.dataimport.pfb.PfbImportOptions;
 import org.databiosphere.workspacedataservice.dataimport.pfb.PfbJobInput;
 import org.databiosphere.workspacedataservice.dataimport.rawlsjson.RawlsJsonImportOptions;
@@ -29,7 +29,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 
 @SpringBootTest
-class ImportJobInputTest extends TestBase {
+class ImportJobInputTest extends ControlPlaneTestBase {
   @Autowired ObjectMapper objectMapper;
 
   @ParameterizedTest(name = "with type {0}")

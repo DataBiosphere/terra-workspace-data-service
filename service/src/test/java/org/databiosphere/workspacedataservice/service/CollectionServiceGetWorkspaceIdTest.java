@@ -9,6 +9,7 @@ import static org.mockito.Mockito.when;
 
 import java.util.UUID;
 import org.databiosphere.workspacedataservice.TestUtils;
+import org.databiosphere.workspacedataservice.common.ControlPlaneTestBase;
 import org.databiosphere.workspacedataservice.config.DataImportProperties;
 import org.databiosphere.workspacedataservice.config.TenancyProperties;
 import org.databiosphere.workspacedataservice.config.TwdsProperties;
@@ -31,22 +32,12 @@ import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.HttpStatus;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.test.annotation.DirtiesContext;
-import org.springframework.test.context.ActiveProfiles;
 
 /** Tests for CollectionService.getWorkspaceId() */
-@ActiveProfiles("control-plane")
 @DirtiesContext
-@SpringBootTest(
-    properties = { // turn off pubsub autoconfiguration for tests
-      "spring.cloud.gcp.pubsub.enabled=false",
-      // aggressive retry settings so unit tests don't run too long
-      "rest.retry.maxAttempts=2",
-      "rest.retry.backoff.delay=3",
-      // Rawls url must be valid, else context initialization (Spring startup) will fail
-      "rawlsUrl=https://localhost/"
-    })
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
-class CollectionServiceGetWorkspaceIdTest {
+@SpringBootTest
+class CollectionServiceGetWorkspaceIdTest extends ControlPlaneTestBase {
 
   @Autowired private CollectionService collectionService;
 

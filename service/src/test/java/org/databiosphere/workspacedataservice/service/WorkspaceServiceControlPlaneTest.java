@@ -6,6 +6,7 @@ import static org.mockito.Mockito.when;
 import java.util.List;
 import java.util.UUID;
 import java.util.stream.Stream;
+import org.databiosphere.workspacedataservice.common.ControlPlaneTestBase;
 import org.databiosphere.workspacedataservice.rawls.RawlsClient;
 import org.databiosphere.workspacedataservice.rawls.RawlsWorkspaceDetails;
 import org.databiosphere.workspacedataservice.shared.model.WorkspaceId;
@@ -17,20 +18,10 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.test.annotation.DirtiesContext;
-import org.springframework.test.context.ActiveProfiles;
-import org.springframework.test.context.TestPropertySource;
 
-@ActiveProfiles(profiles = {"control-plane"})
 @DirtiesContext
 @SpringBootTest
-@TestPropertySource(
-    properties = {
-      // turn off pubsub autoconfiguration for tests
-      "spring.cloud.gcp.pubsub.enabled=false",
-      // Rawls url must be valid, else context initialization (Spring startup) will fail
-      "rawlsUrl=https://localhost/"
-    })
-class WorkspaceServiceControlPlaneTest {
+class WorkspaceServiceControlPlaneTest extends ControlPlaneTestBase {
 
   @MockBean RawlsClient rawlsClient;
   @Autowired WorkspaceService workspaceService;

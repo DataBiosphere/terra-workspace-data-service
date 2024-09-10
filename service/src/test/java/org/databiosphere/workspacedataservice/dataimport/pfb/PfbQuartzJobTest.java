@@ -31,7 +31,7 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import org.databiosphere.workspacedataservice.activitylog.ActivityLogger;
-import org.databiosphere.workspacedataservice.common.TestBase;
+import org.databiosphere.workspacedataservice.common.DataPlaneTestBase;
 import org.databiosphere.workspacedataservice.dao.JobDao;
 import org.databiosphere.workspacedataservice.service.BatchWriteService;
 import org.databiosphere.workspacedataservice.service.CollectionService;
@@ -54,9 +54,13 @@ import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.core.io.Resource;
 import org.springframework.test.annotation.DirtiesContext;
 
+/**
+ * This test explicitly asserts on and mock calls to WSM as part of PFB import; it is explicitly a
+ * test of data-plane behavior.
+ */
 @DirtiesContext
 @SpringBootTest
-class PfbQuartzJobTest extends TestBase {
+class PfbQuartzJobTest extends DataPlaneTestBase {
   @MockBean JobDao jobDao;
   @MockBean WorkspaceManagerDao wsmDao;
   @MockBean BatchWriteService batchWriteService;

@@ -43,6 +43,7 @@ import java.util.regex.Pattern;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 import org.databiosphere.workspacedataservice.annotations.WithTestObservationRegistry;
+import org.databiosphere.workspacedataservice.common.ControlPlaneTestBase;
 import org.databiosphere.workspacedataservice.dataimport.ImportValidator;
 import org.databiosphere.workspacedataservice.pubsub.PubSub;
 import org.databiosphere.workspacedataservice.rawls.RawlsClient;
@@ -89,20 +90,13 @@ import org.springframework.util.StreamUtils;
  * parsing the PFB, and generating the JSON that gets stored in a bucket and communicated to Rawls
  * via pubsub.
  */
-@ActiveProfiles(profiles = {"mock-sam", "noop-scheduler-dao", "control-plane"})
+@ActiveProfiles(profiles = {"mock-sam", "noop-scheduler-dao"})
 @DirtiesContext
 @SpringBootTest
-@TestPropertySource(
-    properties = {
-      // turn off pubsub autoconfiguration for tests
-      "spring.cloud.gcp.pubsub.enabled=false",
-      // Rawls url must be valid, else context initialization (Spring startup) will fail
-      "rawlsUrl=https://localhost/",
-      "management.prometheus.metrics.export.enabled=true"
-    })
+@TestPropertySource(properties = {"management.prometheus.metrics.export.enabled=true"})
 @WithTestObservationRegistry
 @AutoConfigureMockMvc
-class PfbQuartzJobControlPlaneE2ETest {
+class PfbQuartzJobControlPlaneE2ETest extends ControlPlaneTestBase {
   @Autowired ObjectMapper mapper;
   @Autowired PfbTestSupport testSupport;
   @Autowired MockMvc mockMvc;

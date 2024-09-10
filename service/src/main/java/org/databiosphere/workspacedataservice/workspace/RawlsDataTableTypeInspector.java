@@ -44,9 +44,7 @@ public class RawlsDataTableTypeInspector implements DataTableTypeInspector {
         };
 
     // persist the Rawls result to the local db for future use
-    WorkspaceRecord newWorkspaceRecord =
-        new WorkspaceRecord(workspaceId, dataTableType, /* newFlag= */ true);
-    workspaceRepository.save(newWorkspaceRecord);
+    workspaceRepository.saveWorkspaceRecord(workspaceId, dataTableType);
 
     return dataTableType;
   }

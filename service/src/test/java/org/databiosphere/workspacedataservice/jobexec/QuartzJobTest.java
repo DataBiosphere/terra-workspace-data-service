@@ -28,7 +28,7 @@ import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.databiosphere.workspacedataservice.annotations.WithTestObservationRegistry;
-import org.databiosphere.workspacedataservice.common.TestBase;
+import org.databiosphere.workspacedataservice.common.ControlPlaneTestBase;
 import org.databiosphere.workspacedataservice.config.DataImportProperties;
 import org.databiosphere.workspacedataservice.dao.JobDao;
 import org.databiosphere.workspacedataservice.generated.GenericJobServerModel;
@@ -51,7 +51,7 @@ import org.springframework.test.annotation.DirtiesContext;
 @DirtiesContext
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 @WithTestObservationRegistry
-class QuartzJobTest extends TestBase {
+class QuartzJobTest extends ControlPlaneTestBase {
 
   @MockBean JobDao jobDao;
   @MockBean DataImportProperties dataImportProperties;

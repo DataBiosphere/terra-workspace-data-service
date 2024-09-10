@@ -6,9 +6,9 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.time.Duration;
 import java.util.UUID;
+import org.databiosphere.workspacedataservice.common.ControlPlaneTestBase;
 import org.databiosphere.workspacedataservice.common.MockInstantSource;
 import org.databiosphere.workspacedataservice.common.MockInstantSourceConfig;
-import org.databiosphere.workspacedataservice.common.TestBase;
 import org.databiosphere.workspacedataservice.dao.PostgresJobDao;
 import org.databiosphere.workspacedataservice.dataimport.ImportJobInput;
 import org.databiosphere.workspacedataservice.dataimport.pfb.PfbImportOptions;
@@ -27,7 +27,7 @@ import org.springframework.context.annotation.Import;
 
 @SpringBootTest
 @Import(MockInstantSourceConfig.class)
-class ImportJobUpdaterTest extends TestBase {
+class ImportJobUpdaterTest extends ControlPlaneTestBase {
 
   @Autowired PostgresJobDao jobDao;
   @Autowired MockInstantSource mockInstantSource;

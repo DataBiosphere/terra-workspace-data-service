@@ -9,7 +9,7 @@ import static org.mockito.Mockito.when;
 import java.net.URI;
 import java.util.UUID;
 import org.databiosphere.workspacedataservice.annotations.SingleTenant;
-import org.databiosphere.workspacedataservice.common.TestBase;
+import org.databiosphere.workspacedataservice.common.DataPlaneTestBase;
 import org.databiosphere.workspacedataservice.generated.ImportRequestServerModel;
 import org.databiosphere.workspacedataservice.service.model.exception.CollectionException;
 import org.databiosphere.workspacedataservice.service.model.exception.MissingObjectException;
@@ -28,10 +28,10 @@ import org.springframework.test.context.ActiveProfiles;
  *
  * @see ImportServiceTest
  */
-@ActiveProfiles({"data-plane", "noop-scheduler-dao", "mock-sam"})
+@ActiveProfiles({"noop-scheduler-dao", "mock-sam"})
 @DirtiesContext
 @SpringBootTest
-class ImportServiceDataPlaneTest extends TestBase {
+class ImportServiceDataPlaneTest extends DataPlaneTestBase {
   @Autowired ImportService importService;
   @Autowired @SingleTenant WorkspaceId workspaceId;
   @MockBean CollectionService collectionService;
@@ -84,7 +84,7 @@ class ImportServiceDataPlaneTest extends TestBase {
     // collection dao says the collection does not exist
     doThrow(new MissingObjectException("Collection"))
         .when(collectionService)
-        .validateCollection(collectionId.id());
+        .getWorkspaceId(collectionId);
 
     // ACT/ASSERT
     // extract the UUID here so the lambda below has only one invocation possibly throwing a runtime

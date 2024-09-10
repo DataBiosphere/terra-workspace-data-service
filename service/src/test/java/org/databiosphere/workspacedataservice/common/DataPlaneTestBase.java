@@ -28,7 +28,7 @@ import org.springframework.test.context.TestPropertySource;
     properties = {
       // data-plane mode requires a workspace-id to be set
       // example uuid from https://en.wikipedia.org/wiki/Universally_unique_identifier
-      "twds.instance.workspace-id=" + TestBase.HARDCODED_WORKSPACE_ID,
+      "twds.instance.workspace-id=" + DataPlaneTestBase.HARDCODED_WORKSPACE_ID,
       // turn off pubsub autoconfiguration for tests
       "spring.cloud.gcp.pubsub.enabled=false",
       // aggressive retry settings so unit tests don't run too long
@@ -38,6 +38,6 @@ import org.springframework.test.context.TestPropertySource;
       "rawlsUrl=https://localhost/"
     })
 @ExtendWith(ConfigurationExceptionDetector.class)
-public abstract class TestBase {
+public abstract class DataPlaneTestBase {
   public static final String HARDCODED_WORKSPACE_ID = "123e4567-e89b-12d3-a456-426614174000";
 }

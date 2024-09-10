@@ -7,7 +7,7 @@ import static org.databiosphere.workspacedataservice.shared.model.OperationType.
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.io.IOException;
 import java.util.List;
-import org.databiosphere.workspacedataservice.common.TestBase;
+import org.databiosphere.workspacedataservice.common.ControlPlaneTestBase;
 import org.databiosphere.workspacedataservice.recordsource.RecordSource.WriteStreamInfo;
 import org.databiosphere.workspacedataservice.shared.model.Record;
 import org.junit.jupiter.api.Test;
@@ -15,7 +15,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 
 @SpringBootTest
-class StreamingTest extends TestBase {
+class StreamingTest extends ControlPlaneTestBase {
 
   @Autowired private ObjectMapper objectMapper;
 

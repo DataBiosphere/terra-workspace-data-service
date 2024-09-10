@@ -20,8 +20,8 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.databiosphere.workspacedataservice.TestUtils;
 import org.databiosphere.workspacedataservice.annotations.WithTestObservationRegistry;
-import org.databiosphere.workspacedataservice.common.TestBase;
-import org.databiosphere.workspacedataservice.config.TwdsProperties;
+import org.databiosphere.workspacedataservice.common.ControlPlaneTestBase;
+import org.databiosphere.workspacedataservice.dao.WorkspaceRepository;
 import org.databiosphere.workspacedataservice.service.model.AttributeSchema;
 import org.databiosphere.workspacedataservice.service.model.DataTypeMapping;
 import org.databiosphere.workspacedataservice.service.model.RecordTypeSchema;
@@ -38,6 +38,9 @@ import org.databiosphere.workspacedataservice.shared.model.RecordType;
 import org.databiosphere.workspacedataservice.shared.model.SearchFilter;
 import org.databiosphere.workspacedataservice.shared.model.SearchRequest;
 import org.databiosphere.workspacedataservice.shared.model.SortDirection;
+import org.databiosphere.workspacedataservice.shared.model.WorkspaceId;
+import org.databiosphere.workspacedataservice.workspace.WorkspaceDataTableType;
+import org.databiosphere.workspacedataservice.workspace.WorkspaceRecord;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -54,13 +57,13 @@ import org.springframework.web.server.ResponseStatusException;
 
 @SpringBootTest
 @WithTestObservationRegistry
-class RecordOrchestratorServiceTest extends TestBase {
+class RecordOrchestratorServiceTest extends ControlPlaneTestBase {
 
   @Autowired private CollectionService collectionService;
   @Autowired private NamedParameterJdbcTemplate namedTemplate;
   @Autowired private RecordOrchestratorService recordOrchestratorService;
   @Autowired private TestObservationRegistry observations;
-  @Autowired private TwdsProperties twdsProperties;
+  @Autowired private WorkspaceRepository workspaceRepository;
 
   @Nullable private UUID collectionId;
   private static final RecordType TEST_TYPE = RecordType.valueOf("test");
@@ -72,12 +75,17 @@ class RecordOrchestratorServiceTest extends TestBase {
 
   @BeforeEach
   void setUp() {
-    collectionId = collectionService.save(twdsProperties.workspaceId(), "name", "desc").getId();
+    // save a WDS-powered workspace
+    WorkspaceId workspaceId = WorkspaceId.of(UUID.randomUUID());
+    workspaceRepository.save(
+        new WorkspaceRecord(workspaceId, WorkspaceDataTableType.WDS, /* newFlag= */ true));
+    collectionId = collectionService.save(workspaceId, "name", "desc").getId();
   }
 
   @AfterEach
   void tearDown() {
     TestUtils.cleanAllCollections(collectionService, namedTemplate);
+    TestUtils.cleanAllWorkspaces(namedTemplate);
   }
 
   @Test

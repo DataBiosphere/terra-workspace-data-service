@@ -20,8 +20,7 @@ import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 import org.databiosphere.workspacedataservice.TestUtils;
-import org.databiosphere.workspacedataservice.common.TestBase;
-import org.databiosphere.workspacedataservice.config.TwdsProperties;
+import org.databiosphere.workspacedataservice.common.ControlPlaneTestBase;
 import org.databiosphere.workspacedataservice.service.CollectionService;
 import org.databiosphere.workspacedataservice.service.RecordService;
 import org.databiosphere.workspacedataservice.service.RelationUtils;
@@ -34,6 +33,9 @@ import org.databiosphere.workspacedataservice.shared.model.Record;
 import org.databiosphere.workspacedataservice.shared.model.RecordAttributes;
 import org.databiosphere.workspacedataservice.shared.model.RecordRequest;
 import org.databiosphere.workspacedataservice.shared.model.RecordType;
+import org.databiosphere.workspacedataservice.shared.model.WorkspaceId;
+import org.databiosphere.workspacedataservice.workspace.WorkspaceDataTableType;
+import org.databiosphere.workspacedataservice.workspace.WorkspaceRecord;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -50,16 +52,17 @@ import org.springframework.web.server.ResponseStatusException;
 
 @SpringBootTest
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
-class RecordDaoTest extends TestBase {
+class RecordDaoTest extends ControlPlaneTestBase {
 
   private static final String PRIMARY_KEY = "row_id";
   @Autowired RecordDao recordDao;
   @Autowired RecordService recordService;
 
   @Autowired CollectionService collectionService;
-  @Autowired TwdsProperties twdsProperties;
+  @Autowired WorkspaceRepository workspaceRepository;
 
   UUID collectionUuid;
+  WorkspaceId workspaceId;
   RecordType recordType;
 
   @Autowired TestDao testDao;
@@ -69,8 +72,14 @@ class RecordDaoTest extends TestBase {
   @BeforeEach
   void setUp() {
     recordType = RecordType.valueOf("testRecordType");
+    workspaceId = WorkspaceId.of(UUID.randomUUID());
 
-    collectionUuid = collectionService.save(twdsProperties.workspaceId(), "name", "desc").getId();
+    // create the workspace record
+    workspaceRepository.save(
+        new WorkspaceRecord(workspaceId, WorkspaceDataTableType.WDS, /* newFlag= */ true));
+    // create the collection
+    collectionUuid = collectionService.save(workspaceId, "name", "desc").getId();
+    // create the record type
     recordDao.createRecordType(
         collectionUuid, emptyMap(), recordType, RelationCollection.empty(), PRIMARY_KEY);
   }
@@ -78,6 +87,7 @@ class RecordDaoTest extends TestBase {
   @AfterEach
   void tearDown() {
     TestUtils.cleanAllCollections(collectionService, namedTemplate);
+    TestUtils.cleanAllWorkspaces(namedTemplate);
   }
 
   @Test
