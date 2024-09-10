@@ -450,7 +450,13 @@ components:
       additionalProperties: false
     DeleteRecordsRequest:
       type: object
-      description: request body to delete records by ID
+      description: |
+       A request body to delete records in bulk. The caller must either:
+        (1) specify which records should be deleted using the `record_ids` field
+        *OR*
+        (2) set `delete_all=true`.
+        If `delete_all=true`, the caller may optionally specify a list of records
+        to be spared from deletion using the `excluded_record_ids` field.
       properties:
         record_ids:
           type: array
@@ -467,7 +473,9 @@ components:
           default: false
     DeleteRecordsResponse:
       type: object
-      description: a response body for a bulk record deletion request
+      description: |
+        A response body for a bulk record deletion request.
+        Contains a count of records deleted by the request.
       properties:
         count:
           type: integer

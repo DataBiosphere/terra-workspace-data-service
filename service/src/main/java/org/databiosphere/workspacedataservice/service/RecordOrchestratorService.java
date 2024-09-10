@@ -308,10 +308,14 @@ public class RecordOrchestratorService { // TODO give me a better name
     }
 
     boolean deleteAll = deleteRecordsRequestServerModel.getDeleteAll();
-    if (deleteAll && (hasRecordIds || hasExcludedRecordIds)) {
+    if (deleteAll && hasRecordIds) {
+      throw new ResponseStatusException(
+          HttpStatus.BAD_REQUEST, "delete_all cannot be set to true if record_ids is nonempty");
+    }
+    if (hasExcludedRecordIds && !deleteAll) {
       throw new ResponseStatusException(
           HttpStatus.BAD_REQUEST,
-          "delete_all cannot be set to true if record_ids or excluded_record_ids are nonempty");
+          "delete_all must be set to true if excluded_record_ids is nonempty");
     }
 
     int deletionCount;
@@ -319,7 +323,7 @@ public class RecordOrchestratorService { // TODO give me a better name
       deletionCount =
           recordDao.deleteRecords(
               collectionId.id(), recordType, deleteRecordsRequestServerModel.getRecordIds());
-    } else if (hasExcludedRecordIds) {
+    } else if (deleteAll && hasExcludedRecordIds) {
       deletionCount =
           recordDao.deleteAllRecords(
               collectionId, recordType, deleteRecordsRequestServerModel.getExcludedRecordIds());
@@ -328,7 +332,7 @@ public class RecordOrchestratorService { // TODO give me a better name
     } else {
       throw new ResponseStatusException(
           HttpStatus.BAD_REQUEST,
-          "No records were specified for deletion. Set delete_all=true, or specify record IDs in one of (record_ids, excluded_record_ids).");
+          "No records were specified for deletion. Set delete_all=true (and optionally use excluded_record_ids) or use record_ids to delete records.");
     }
 
     response.setCount(deletionCount);

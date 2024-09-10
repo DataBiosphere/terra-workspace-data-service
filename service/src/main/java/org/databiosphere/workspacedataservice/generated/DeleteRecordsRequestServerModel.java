@@ -19,10 +19,10 @@ import java.util.*;
 import jakarta.annotation.Generated;
 
 /**
- * request body to delete records by ID
+ * A request body to delete records in bulk. The caller must either:  (1) specify which records should be deleted using the &#x60;record_ids&#x60; field  *OR*  (2) set &#x60;delete_all&#x3D;true&#x60;.  If &#x60;delete_all&#x3D;true&#x60;, the caller may optionally specify a list of records  to be spared from deletion using the &#x60;excluded_record_ids&#x60; field. 
  */
 
-@Schema(name = "DeleteRecordsRequest", description = "request body to delete records by ID")
+@Schema(name = "DeleteRecordsRequest", description = "A request body to delete records in bulk. The caller must either:  (1) specify which records should be deleted using the `record_ids` field  *OR*  (2) set `delete_all=true`.  If `delete_all=true`, the caller may optionally specify a list of records  to be spared from deletion using the `excluded_record_ids` field. ")
 @JsonTypeName("DeleteRecordsRequest")
 @Generated(value = "org.openapitools.codegen.languages.SpringCodegen", comments = "Generator version: 7.8.0")
 public class DeleteRecordsRequestServerModel {
