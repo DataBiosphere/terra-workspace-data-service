@@ -9,6 +9,7 @@ import org.databiosphere.workspacedataservice.service.RecordOrchestratorService;
 import org.databiosphere.workspacedataservice.shared.model.CollectionId;
 import org.databiosphere.workspacedataservice.shared.model.RecordType;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -31,9 +32,13 @@ public class RecordV1Controller implements RecordApi {
       String recordType,
       DeleteRecordsRequestServerModel deleteRecordsRequestServerModel) {
     permissionService.requireWritePermission(CollectionId.of(collectionId));
-    return recordOrchestratorService.deleteRecords(
-        CollectionId.of(collectionId),
-        RecordType.valueOf(recordType),
-        deleteRecordsRequestServerModel);
+
+    DeleteRecordsResponseServerModel response =
+        recordOrchestratorService.deleteRecords(
+            CollectionId.of(collectionId),
+            RecordType.valueOf(recordType),
+            deleteRecordsRequestServerModel);
+
+    return new ResponseEntity<>(response, HttpStatus.OK);
   }
 }

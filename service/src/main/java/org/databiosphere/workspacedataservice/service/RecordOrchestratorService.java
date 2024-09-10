@@ -291,7 +291,7 @@ public class RecordOrchestratorService { // TODO give me a better name
   }
 
   @WriteTransaction
-  public ResponseEntity<DeleteRecordsResponseServerModel> deleteRecords(
+  public DeleteRecordsResponseServerModel deleteRecords(
       CollectionId collectionId,
       RecordType recordType,
       DeleteRecordsRequestServerModel deleteRecordsRequestServerModel) {
@@ -337,9 +337,9 @@ public class RecordOrchestratorService { // TODO give me a better name
 
     activityLogger.saveEventForCurrentUser(
         user -> user.deleted().record().withRecordType(recordType).ofQuantity(deletionCount));
-    response.setCount(deletionCount);
 
-    return new ResponseEntity<>(response, HttpStatus.OK);
+    response.setCount(deletionCount);
+    return response;
   }
 
   public void renameAttribute(
