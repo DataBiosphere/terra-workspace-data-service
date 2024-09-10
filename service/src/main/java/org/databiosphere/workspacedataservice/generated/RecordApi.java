@@ -75,7 +75,7 @@ public interface RecordApi {
     
     default ResponseEntity<DeleteRecordsResponseServerModel> deleteRecords(
         @Parameter(name = "collectionId", description = "Collection id", required = true, in = ParameterIn.PATH) @PathVariable("collectionId") UUID collectionId,
-        @Pattern(regexp = "[a-zA-Z0-9-_]{1,128}") @Parameter(name = "recordType", description = "Record type", required = true, in = ParameterIn.PATH) @PathVariable("recordType") String recordType,
+        @Pattern(regexp = "[a-zA-Z0-9-_]{1,63}") @Parameter(name = "recordType", description = "Record type", required = true, in = ParameterIn.PATH) @PathVariable("recordType") String recordType,
         @Parameter(name = "DeleteRecordsRequestServerModel", description = "Record deletion specification", required = true) @Valid @RequestBody DeleteRecordsRequestServerModel deleteRecordsRequestServerModel
     ) {
         return new ResponseEntity<>(HttpStatus.NOT_IMPLEMENTED);
