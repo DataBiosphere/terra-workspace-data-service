@@ -52,6 +52,7 @@ import org.databiosphere.workspacedataservice.service.model.exception.InvalidRel
 import org.databiosphere.workspacedataservice.service.model.exception.MissingObjectException;
 import org.databiosphere.workspacedataservice.service.model.exception.SerializationException;
 import org.databiosphere.workspacedataservice.shared.model.AttributeComparator;
+import org.databiosphere.workspacedataservice.shared.model.CollectionId;
 import org.databiosphere.workspacedataservice.shared.model.Record;
 import org.databiosphere.workspacedataservice.shared.model.RecordAttributes;
 import org.databiosphere.workspacedataservice.shared.model.RecordColumn;
@@ -83,6 +84,7 @@ public class RecordDao {
 
   private static final String COLLECTION_ID = "collectionId";
   private static final String RECORD_ID_PARAM = "recordId";
+  private static final String RECORD_IDS_PARAM = "recordIds";
   private final NamedParameterJdbcTemplate namedTemplate;
 
   private final DataSource mainDb;
@@ -503,7 +505,7 @@ public class RecordDao {
             + " where "
             + quote(getFromColumnName(fromType))
             + "in (:recordIds)",
-        new MapSqlParameterSource("recordIds", recordIds));
+        new MapSqlParameterSource(RECORD_IDS_PARAM, recordIds));
   }
 
   public void batchUpsert(
@@ -542,6 +544,53 @@ public class RecordDao {
                   + " = :recordId",
               new MapSqlParameterSource(RECORD_ID_PARAM, recordId))
           == 1;
+    } catch (DataIntegrityViolationException e) {
+      if (e.getRootCause() instanceof SQLException sqlEx) {
+        checkForTableRelation(sqlEx);
+      }
+      throw e;
+    }
+  }
+
+  @SuppressWarnings("squid:S2077")
+  public int deleteRecords(UUID collectionId, RecordType recordType, List<String> recordIds) {
+    String recordTypePrimaryKey = primaryKeyDao.getPrimaryKeyColumn(recordType, collectionId);
+    try {
+      return namedTemplate.update(
+          "delete from "
+              + getQualifiedTableName(recordType, collectionId)
+              + " where "
+              + quote(recordTypePrimaryKey)
+              + " in (:recordIds)",
+          new MapSqlParameterSource(RECORD_IDS_PARAM, recordIds));
+    } catch (DataIntegrityViolationException e) {
+      if (e.getRootCause() instanceof SQLException sqlEx) {
+        checkForTableRelation(sqlEx);
+      }
+      throw e;
+    }
+  }
+
+  @SuppressWarnings("squid:S2077")
+  public int deleteAllRecords(
+      CollectionId collectionId, RecordType recordType, List<String> excludedRecordIds) {
+    String recordTypePrimaryKey = primaryKeyDao.getPrimaryKeyColumn(recordType, collectionId.id());
+
+    try {
+      if (excludedRecordIds.isEmpty()) {
+        return namedTemplate.update(
+            "delete from " + getQualifiedTableName(recordType, collectionId.id()),
+            new MapSqlParameterSource());
+      } else {
+        return namedTemplate.update(
+            "delete from "
+                + getQualifiedTableName(recordType, collectionId.id())
+                + " where "
+                + quote(recordTypePrimaryKey)
+                + "not in (:recordIds)",
+            new MapSqlParameterSource(RECORD_IDS_PARAM, excludedRecordIds));
+      }
+
     } catch (DataIntegrityViolationException e) {
       if (e.getRootCause() instanceof SQLException sqlEx) {
         checkForTableRelation(sqlEx);

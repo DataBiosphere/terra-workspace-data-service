@@ -24,6 +24,8 @@ tags:
     description: Collection APIs
   - name: Workspace
     description: Workspace APIs
+  - name: Record
+    description: Record APIs
   - name: Capabilities
     description: Describes the features of WDS
 
@@ -250,6 +252,36 @@ paths:
                 $ref: '#/components/schemas/GenericJob'
 
   ##############################
+  # Records APIs
+  ##############################
+  /records/v1/{collectionId}/{recordType}/delete:
+    post:
+      summary: Bulk delete records
+      operationId: deleteRecords
+      description: |
+        Deletes records by record ID, using collection ID.
+      tags:
+        - Record
+      parameters:
+        - $ref: '#/components/parameters/collectionIdPathParam'
+        - $ref: '#/components/parameters/recordTypePathParam'
+      requestBody:
+        description: Record deletion specification
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DeleteRecordsRequest'
+      responses:
+        200:
+          description: Deletion successful
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DeleteRecordsResponse'
+
+
+  ##############################
   # Capabilities APIs
   ##############################
   /capabilities/v1:
@@ -302,6 +334,14 @@ components:
       schema:
         type: string
         format: uuid
+    recordTypePathParam:
+      name: recordType
+      in: path
+      description: Record type
+      required: true
+      schema:
+        type: string
+        pattern: '[a-zA-Z0-9-_]{1,63}'
 
   schemas:
     Capabilities:
@@ -407,4 +447,38 @@ components:
       required:
         - sourceWorkspaceId
       additionalProperties: false
+    DeleteRecordsRequest:
+      type: object
+      description: |
+       A request body to delete records in bulk. The caller must either:
+        (1) specify which records should be deleted using the `record_ids` field
+        *OR*
+        (2) set `delete_all=true`.
+        If `delete_all=true`, the caller may optionally specify a list of records
+        to be spared from deletion using the `excluded_record_ids` field.
+      properties:
+        record_ids:
+          type: array
+          description: an array of record IDs that should be deleted
+          items:
+            type: string
+        excluded_record_ids:
+          description: an array of record IDs that should NOT be deleted.
+          items:
+            type: string
+        delete_all:
+          type: boolean
+          description: if true, deletes all records
+          default: false
+    DeleteRecordsResponse:
+      type: object
+      description: |
+        A response body for a bulk record deletion request.
+        Contains a count of records deleted by the request.
+      properties:
+        count:
+          type: integer
+          description: the number of records deleted
+      additionalProperties: false
+
 
