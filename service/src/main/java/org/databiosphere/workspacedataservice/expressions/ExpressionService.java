@@ -1,5 +1,7 @@
 package org.databiosphere.workspacedataservice.expressions;
 
+import static org.databiosphere.workspacedataservice.service.RecordUtils.validateVersion;
+
 import bio.terra.common.db.ReadTransaction;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -22,7 +24,6 @@ import org.antlr.v4.runtime.CommonTokenStream;
 import org.databiosphere.workspacedataservice.dao.RecordDao;
 import org.databiosphere.workspacedataservice.expressions.parser.antlr.TerraExpressionLexer;
 import org.databiosphere.workspacedataservice.expressions.parser.antlr.TerraExpressionParser;
-import org.databiosphere.workspacedataservice.service.RecordOrchestratorService;
 import org.databiosphere.workspacedataservice.service.model.Relation;
 import org.databiosphere.workspacedataservice.shared.model.Record;
 import org.databiosphere.workspacedataservice.shared.model.RecordType;
@@ -35,15 +36,10 @@ public class ExpressionService {
   private final RecordDao recordDao;
   private final ObjectMapper objectMapper;
   private final AttributeLookupVisitor attributeLookupVisitor = new AttributeLookupVisitor();
-  private final RecordOrchestratorService recordOrchestratorService;
 
-  public ExpressionService(
-      RecordDao recordDao,
-      ObjectMapper objectMapper,
-      RecordOrchestratorService recordOrchestratorService) {
+  public ExpressionService(RecordDao recordDao, ObjectMapper objectMapper) {
     this.recordDao = recordDao;
     this.objectMapper = objectMapper;
-    this.recordOrchestratorService = recordOrchestratorService;
   }
 
   /**
@@ -70,7 +66,7 @@ public class ExpressionService {
       RecordType recordType,
       String recordId,
       Map<String, String> expressionsByName) {
-    recordOrchestratorService.validateCollectionAndVersion(collectionId, version);
+    validateVersion(version);
     var attributeLookups =
         expressionsByName.values().stream()
             .map(this::extractRecordAttributeLookups)
@@ -110,7 +106,7 @@ public class ExpressionService {
       Map<String, String> expressionsByName,
       int pageSize,
       int offset) {
-    recordOrchestratorService.validateCollectionAndVersion(collectionId, version);
+    validateVersion(version);
     var arrayRelations = getArrayRelations(collectionId, arrayRecordType, arrayRelationExpression);
     var queryRecordType = arrayRelations.get(arrayRelations.size() - 1).relationRecordType();
 

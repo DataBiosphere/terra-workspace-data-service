@@ -19,9 +19,10 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Stream;
 import org.databiosphere.workspacedataservice.TestUtils;
-import org.databiosphere.workspacedataservice.common.TestBase;
+import org.databiosphere.workspacedataservice.common.ControlPlaneTestBase;
 import org.databiosphere.workspacedataservice.config.TwdsProperties;
 import org.databiosphere.workspacedataservice.dao.RecordDao;
+import org.databiosphere.workspacedataservice.dao.WorkspaceRepository;
 import org.databiosphere.workspacedataservice.service.CollectionService;
 import org.databiosphere.workspacedataservice.service.RecordService;
 import org.databiosphere.workspacedataservice.service.RelationUtils;
@@ -32,6 +33,9 @@ import org.databiosphere.workspacedataservice.shared.model.Record;
 import org.databiosphere.workspacedataservice.shared.model.RecordAttributes;
 import org.databiosphere.workspacedataservice.shared.model.RecordRequest;
 import org.databiosphere.workspacedataservice.shared.model.RecordType;
+import org.databiosphere.workspacedataservice.shared.model.WorkspaceId;
+import org.databiosphere.workspacedataservice.workspace.WorkspaceDataTableType;
+import org.databiosphere.workspacedataservice.workspace.WorkspaceRecord;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -50,20 +54,26 @@ import org.springframework.web.server.ResponseStatusException;
 
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 @SpringBootTest
-public class ExpressionServiceTest extends TestBase {
+public class ExpressionServiceTest extends ControlPlaneTestBase {
   @Autowired private ExpressionService expressionService;
   @Autowired private RecordDao recordDao;
-  @Autowired CollectionService collectionService;
-  @Autowired TwdsProperties twdsProperties;
-  @Autowired NamedParameterJdbcTemplate namedTemplate;
-  @Autowired ObjectMapper objectMapper;
+  @Autowired private CollectionService collectionService;
+  @Autowired private NamedParameterJdbcTemplate namedTemplate;
+  @Autowired private ObjectMapper objectMapper;
   @Autowired private RecordService recordService;
+  @Autowired private WorkspaceRepository workspaceRepository;
 
   UUID collectionUuid;
 
   @BeforeEach
   void setUp() {
-    collectionUuid = collectionService.save(twdsProperties.workspaceId(), "name", "desc").getId();
+    var workspaceId = WorkspaceId.of(UUID.randomUUID());
+
+    // create the workspace record
+    workspaceRepository.save(
+        new WorkspaceRecord(workspaceId, WorkspaceDataTableType.WDS, /* newFlag= */ true));
+    // create the collection
+    collectionUuid = collectionService.save(workspaceId, "name", "desc").getId();
   }
 
   @AfterEach
