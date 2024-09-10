@@ -335,6 +335,8 @@ public class RecordOrchestratorService { // TODO give me a better name
           "No records were specified for deletion. Set delete_all=true (and optionally use excluded_record_ids) or use record_ids to delete records.");
     }
 
+    activityLogger.saveEventForCurrentUser(
+        user -> user.deleted().record().withRecordType(recordType).ofQuantity(deletionCount));
     response.setCount(deletionCount);
 
     return new ResponseEntity<>(response, HttpStatus.OK);
