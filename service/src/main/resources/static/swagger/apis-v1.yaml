@@ -260,7 +260,6 @@ paths:
       operationId: deleteRecords
       description: |
         Deletes records by record ID, using collection ID.
-        To delete by workspace ID and collection name instead, see deleteRecordsByWorkspaceV1
       tags:
         - Record
       parameters:
