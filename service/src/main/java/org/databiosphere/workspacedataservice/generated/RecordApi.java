@@ -45,7 +45,7 @@ public interface RecordApi {
 
     /**
      * POST /records/v1/{collectionId}/{recordType}/delete : Bulk delete records
-     * Deletes records by record ID, using collection ID. To delete by workspace ID and collection name instead, see deleteRecordsByWorkspaceV1 
+     * Deletes records by record ID, using collection ID. 
      *
      * @param collectionId Collection id (required)
      * @param recordType Record type (required)
@@ -55,7 +55,7 @@ public interface RecordApi {
     @Operation(
         operationId = "deleteRecords",
         summary = "Bulk delete records",
-        description = "Deletes records by record ID, using collection ID. To delete by workspace ID and collection name instead, see deleteRecordsByWorkspaceV1 ",
+        description = "Deletes records by record ID, using collection ID. ",
         tags = { "Record" },
         responses = {
             @ApiResponse(responseCode = "200", description = "Deletion successful", content = {

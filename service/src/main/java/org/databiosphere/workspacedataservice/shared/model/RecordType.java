@@ -42,9 +42,6 @@ public class RecordType {
     if (name.startsWith(RESERVED_NAME_PREFIX)) {
       throw new InvalidNameException(InvalidNameException.NameType.RECORD_TYPE);
     }
-    if (name.length() > 63) {
-      throw new InvalidNameException(InvalidNameException.NameType.RECORD_TYPE);
-    }
     SqlUtils.validateSqlString(name, InvalidNameException.NameType.RECORD_TYPE);
   }
 
