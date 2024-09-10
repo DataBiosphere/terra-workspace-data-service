@@ -13,13 +13,17 @@ import java.util.UUID;
 import java.util.stream.Stream;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.databiosphere.workspacedataservice.TestUtils;
-import org.databiosphere.workspacedataservice.common.DataPlaneTestBase;
-import org.databiosphere.workspacedataservice.config.TwdsProperties;
+import org.databiosphere.workspacedataservice.common.ControlPlaneTestBase;
 import org.databiosphere.workspacedataservice.dao.RecordDao;
+import org.databiosphere.workspacedataservice.dao.WorkspaceRepository;
 import org.databiosphere.workspacedataservice.generated.CollectionRequestServerModel;
+import org.databiosphere.workspacedataservice.service.CollectionService;
 import org.databiosphere.workspacedataservice.shared.model.Record;
 import org.databiosphere.workspacedataservice.shared.model.RecordType;
+import org.databiosphere.workspacedataservice.shared.model.WorkspaceId;
 import org.databiosphere.workspacedataservice.shared.model.attributes.JsonAttribute;
+import org.databiosphere.workspacedataservice.workspace.WorkspaceDataTableType;
+import org.databiosphere.workspacedataservice.workspace.WorkspaceRecord;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.TestInstance;
@@ -30,6 +34,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
+import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.ActiveProfiles;
@@ -42,19 +47,27 @@ import org.springframework.transaction.annotation.Transactional;
 @DirtiesContext
 @SpringBootTest
 @AutoConfigureMockMvc
-class TsvInputFormatsTest extends DataPlaneTestBase {
+class TsvInputFormatsTest extends ControlPlaneTestBase {
 
   @Autowired private MockMvc mockMvc;
   @Autowired RecordDao recordDao;
   @Autowired ObjectMapper mapper;
+  @Autowired private CollectionService collectionService;
+  @Autowired private NamedParameterJdbcTemplate namedTemplate;
+  @Autowired private WorkspaceRepository workspaceRepository;
 
   private UUID instanceId;
 
   private static final String versionId = "v0.2";
-  @Autowired private TwdsProperties twdsProperties;
 
   @BeforeEach
   void setUp() throws Exception {
+    WorkspaceId workspaceId = WorkspaceId.of(UUID.randomUUID());
+
+    // create the workspace record
+    workspaceRepository.save(
+        new WorkspaceRecord(workspaceId, WorkspaceDataTableType.WDS, /* newFlag= */ true));
+
     String name = "test-name";
     String description = "test-description";
 
@@ -66,7 +79,7 @@ class TsvInputFormatsTest extends DataPlaneTestBase {
     MvcResult mvcResult =
         mockMvc
             .perform(
-                post("/collections/v1/{workspaceId}", twdsProperties.workspaceId().id())
+                post("/collections/v1/{workspaceId}", workspaceId)
                     .content(objectMapper.writeValueAsString(collectionRequestServerModel))
                     .contentType(MediaType.APPLICATION_JSON))
             .andExpect(status().isCreated())
@@ -78,18 +91,8 @@ class TsvInputFormatsTest extends DataPlaneTestBase {
 
   @AfterEach
   void tearDown() {
-    try {
-      mockMvc
-          .perform(
-              delete(
-                      "/collections/v1/{workspaceId}/{instanceid}",
-                      twdsProperties.workspaceId().id(),
-                      instanceId)
-                  .content(""))
-          .andExpect(status().isOk());
-    } catch (Throwable t) {
-      // noop - if we fail to delete the instance, don't fail the test
-    }
+    TestUtils.cleanAllCollections(collectionService, namedTemplate);
+    TestUtils.cleanAllWorkspaces(namedTemplate);
   }
 
   private static BigDecimal[] toBigDecimals(int[] nums) {

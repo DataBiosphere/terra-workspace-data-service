@@ -17,6 +17,7 @@ import java.sql.SQLException;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import org.databiosphere.workspacedataservice.common.DataPlaneTestBase;
 import org.databiosphere.workspacedataservice.config.TwdsProperties;
 import org.databiosphere.workspacedataservice.generated.CollectionServerModel;
 import org.databiosphere.workspacedataservice.sam.MockSamAuthorizationDao;
@@ -32,6 +33,8 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
 import org.mockito.stubbing.OngoingStubbing;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
+import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.MediaType;
 import org.springframework.jdbc.core.RowMapper;
@@ -40,6 +43,7 @@ import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.TestPropertySource;
+import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 
 /**
@@ -51,10 +55,13 @@ import org.springframework.test.web.servlet.MvcResult;
 @TestPropertySource(
     properties = {"twds.instance.workspace-id=45f90f59-f83d-453f-961a-480ec740df9f"})
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
-class CollectionControllerMockMvcSingleTenantTest extends MockMvcTestBase {
+@AutoConfigureMockMvc
+@SpringBootTest
+class CollectionControllerMockMvcSingleTenantTest extends DataPlaneTestBase {
 
-  @Autowired private ObjectMapper objectMapper;
+  @Autowired private MockMvc mockMvc;
   @Autowired private NamedParameterJdbcTemplate namedTemplate;
+  @Autowired private ObjectMapper objectMapper;
   @Autowired private TwdsProperties twdsProperties;
 
   @MockBean SamAuthorizationDaoFactory samAuthorizationDaoFactory;
@@ -104,7 +111,7 @@ class CollectionControllerMockMvcSingleTenantTest extends MockMvcTestBase {
         mockMvc
             .perform(
                 post("/collections/v1/{workspaceId}", workspaceId)
-                    .content(toJson(collectionServerModel))
+                    .content(objectMapper.writeValueAsString(collectionServerModel))
                     .contentType(MediaType.APPLICATION_JSON))
             .andExpect(status().isCreated())
             .andReturn();
@@ -143,7 +150,7 @@ class CollectionControllerMockMvcSingleTenantTest extends MockMvcTestBase {
         mockMvc
             .perform(
                 post("/collections/v1/{workspaceId}", workspaceId)
-                    .content(toJson(collectionServerModel))
+                    .content(objectMapper.writeValueAsString(collectionServerModel))
                     .contentType(MediaType.APPLICATION_JSON))
             .andExpect(status().isBadRequest())
             .andReturn();

@@ -5,15 +5,22 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import java.net.URI;
-import org.databiosphere.workspacedataservice.config.TwdsProperties;
+import java.util.UUID;
+import org.databiosphere.workspacedataservice.TestUtils;
+import org.databiosphere.workspacedataservice.dao.WorkspaceRepository;
 import org.databiosphere.workspacedataservice.generated.CollectionServerModel;
 import org.databiosphere.workspacedataservice.generated.GenericJobServerModel;
 import org.databiosphere.workspacedataservice.generated.ImportRequestServerModel;
 import org.databiosphere.workspacedataservice.service.CollectionService;
 import org.databiosphere.workspacedataservice.shared.model.CollectionId;
+import org.databiosphere.workspacedataservice.shared.model.WorkspaceId;
+import org.databiosphere.workspacedataservice.workspace.WorkspaceDataTableType;
+import org.databiosphere.workspacedataservice.workspace.WorkspaceRecord;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
+import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MvcResult;
@@ -23,12 +30,23 @@ import org.springframework.test.web.servlet.MvcResult;
 class ImportControllerMockMvcTest extends MockMvcTestBase {
 
   @Autowired private CollectionService collectionService;
-  @Autowired private TwdsProperties twdsProperties;
+  @Autowired NamedParameterJdbcTemplate namedTemplate;
+  @Autowired WorkspaceRepository workspaceRepository;
+
+  @AfterEach
+  void afterEach() {
+    TestUtils.cleanAllCollections(collectionService, namedTemplate);
+    TestUtils.cleanAllWorkspaces(namedTemplate);
+  }
 
   @Test
   void smokeTestCreateImport() throws Exception {
-    CollectionServerModel collection =
-        collectionService.save(twdsProperties.workspaceId(), "name", "description");
+    WorkspaceId workspaceId = WorkspaceId.of(UUID.randomUUID());
+
+    // create the workspace record
+    workspaceRepository.save(
+        new WorkspaceRecord(workspaceId, WorkspaceDataTableType.WDS, /* newFlag= */ true));
+    CollectionServerModel collection = collectionService.save(workspaceId, "name", "description");
     CollectionId collectionId = CollectionId.of(collection.getId());
     ImportRequestServerModel importRequest =
         new ImportRequestServerModel(

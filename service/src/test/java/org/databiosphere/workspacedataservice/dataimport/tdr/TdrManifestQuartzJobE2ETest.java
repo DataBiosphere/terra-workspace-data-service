@@ -64,6 +64,7 @@ import org.springframework.test.context.ActiveProfiles;
 @DirtiesContext
 @SpringBootTest
 @AutoConfigureMockMvc
+// TODO AJ-2004: move to the control-plane profile once AJ-2004 is resolved
 class TdrManifestQuartzJobE2ETest extends DataPlaneTestBase {
   @Autowired private RecordOrchestratorService recordOrchestratorService;
   @Autowired private ImportService importService;

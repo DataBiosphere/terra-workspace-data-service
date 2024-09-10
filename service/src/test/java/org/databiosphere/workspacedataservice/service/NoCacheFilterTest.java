@@ -13,8 +13,7 @@ import java.util.UUID;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.apache.commons.text.StringSubstitutor;
 import org.databiosphere.workspacedataservice.TestUtils;
-import org.databiosphere.workspacedataservice.common.DataPlaneTestBase;
-import org.databiosphere.workspacedataservice.config.TwdsProperties;
+import org.databiosphere.workspacedataservice.common.ControlPlaneTestBase;
 import org.databiosphere.workspacedataservice.generated.CollectionRequestServerModel;
 import org.databiosphere.workspacedataservice.shared.model.RecordAttributes;
 import org.databiosphere.workspacedataservice.shared.model.RecordRequest;
@@ -35,8 +34,7 @@ import org.springframework.test.context.ActiveProfiles;
 @DirtiesContext
 @ActiveProfiles(profiles = "mock-sam")
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
-class NoCacheFilterTest extends DataPlaneTestBase {
-  @Autowired private TwdsProperties twdsProperties;
+class NoCacheFilterTest extends ControlPlaneTestBase {
 
   private static final String versionId = "v0.2";
 
@@ -127,7 +125,7 @@ class NoCacheFilterTest extends DataPlaneTestBase {
             new HttpEntity<>(
                 objectMapper.writeValueAsString(collectionRequestServerModel), headers),
             String.class,
-            twdsProperties.workspaceId().id());
+            UUID.randomUUID()); // random workspace id
     assertEquals(HttpStatus.CREATED, createInstanceResponse.getStatusCode());
 
     instanceId =
