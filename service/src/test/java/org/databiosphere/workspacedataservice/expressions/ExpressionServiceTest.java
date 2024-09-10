@@ -2,6 +2,7 @@ package org.databiosphere.workspacedataservice.expressions;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.databiosphere.workspacedataservice.service.RecordUtils.VERSION;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -22,6 +23,8 @@ import org.databiosphere.workspacedataservice.common.TestBase;
 import org.databiosphere.workspacedataservice.config.TwdsProperties;
 import org.databiosphere.workspacedataservice.dao.RecordDao;
 import org.databiosphere.workspacedataservice.service.CollectionService;
+import org.databiosphere.workspacedataservice.service.RecordService;
+import org.databiosphere.workspacedataservice.service.RelationUtils;
 import org.databiosphere.workspacedataservice.service.model.DataTypeMapping;
 import org.databiosphere.workspacedataservice.service.model.Relation;
 import org.databiosphere.workspacedataservice.service.model.RelationCollection;
@@ -54,6 +57,7 @@ public class ExpressionServiceTest extends TestBase {
   @Autowired TwdsProperties twdsProperties;
   @Autowired NamedParameterJdbcTemplate namedTemplate;
   @Autowired ObjectMapper objectMapper;
+  @Autowired private RecordService recordService;
 
   UUID collectionUuid;
 
@@ -80,6 +84,82 @@ public class ExpressionServiceTest extends TestBase {
                 new AttributeLookup(List.of("foo"), "attribute", "this.foo.attribute"),
                 new AttributeLookup(List.of("foo"), "attribute2", "this.foo.attribute2"),
                 new AttributeLookup(List.of(), "attribute", "this.attribute")));
+  }
+
+  @Test
+  void testGetArrayRelations() {
+    var grandChildType = RecordType.valueOf("grandChildType");
+    var childType = RecordType.valueOf("childType");
+    var parentType = RecordType.valueOf("parentType");
+
+    var grandRelation = new Relation("grand", grandChildType);
+    var sib1Relation = new Relation("sib1", childType);
+    var sib2Relation = new Relation("sib2", childType);
+
+    var pkAttr = "pk";
+
+    recordDao.createRecordType(
+        collectionUuid,
+        Map.of(pkAttr, DataTypeMapping.STRING),
+        grandChildType,
+        new RelationCollection(Set.of(), Set.of()),
+        pkAttr);
+    recordDao.createRecordType(
+        collectionUuid,
+        Map.of(grandRelation.relationColName(), DataTypeMapping.RELATION),
+        childType,
+        new RelationCollection(Set.of(), Set.of(grandRelation)),
+        pkAttr);
+    recordDao.createRecordType(
+        collectionUuid,
+        Map.of(
+            sib1Relation.relationColName(),
+            DataTypeMapping.RELATION,
+            sib2Relation.relationColName(),
+            DataTypeMapping.RELATION),
+        parentType,
+        new RelationCollection(Set.of(sib1Relation, sib2Relation), Set.of()),
+        pkAttr);
+
+    var results =
+        expressionService.getArrayRelations(collectionUuid, parentType, "this.sib2.grand");
+
+    assertThat(results).hasSameElementsAs(List.of(sib2Relation, grandRelation));
+  }
+
+  @Test
+  void testGetArrayRelationsMissingRelation() {
+    var childType = RecordType.valueOf("childType");
+    var parentType = RecordType.valueOf("parentType");
+
+    var sib1Relation = new Relation("sib1", childType);
+    var sib2Relation = new Relation("sib2", childType);
+
+    var pkAttr = "pk";
+
+    recordDao.createRecordType(
+        collectionUuid, Map.of(), childType, RelationCollection.empty(), pkAttr);
+    recordDao.createRecordType(
+        collectionUuid,
+        Map.of(
+            sib1Relation.relationColName(),
+            DataTypeMapping.RELATION,
+            sib2Relation.relationColName(),
+            DataTypeMapping.RELATION),
+        parentType,
+        new RelationCollection(Set.of(sib1Relation, sib2Relation), Set.of()),
+        pkAttr);
+
+    assertThatThrownBy(
+            () ->
+                expressionService.getArrayRelations(
+                    collectionUuid, parentType, "this.sib2.missing"))
+        .isInstanceOfSatisfying(
+            ResponseStatusException.class,
+            e -> {
+              assertThat(e.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
+              assertThat(e.getReason()).contains("missing");
+            });
   }
 
   /**
@@ -311,13 +391,22 @@ public class ExpressionServiceTest extends TestBase {
             Map.of(
                 new ExpressionQueryInfo(
                     List.of(),
-                    Set.of(new AttributeLookup(List.of(), "value", "this.value")),
+                    Set.of(
+                        new AttributeLookup(List.of(), "value", "this.value"),
+                        new AttributeLookup(List.of(), "recordtype_id", "this.recordtype_id")),
+                    recordValues.size() > 1),
+                records,
+                new ExpressionQueryInfo(
+                    List.of(),
+                    Set.of(new AttributeLookup(List.of(), "value", "this.that.value")),
                     recordValues.size() > 1),
                 records),
             recordType);
 
-    assertThat(result).hasSize(1);
+    assertThat(result).hasSize(3);
     assertThat(result.get("this.value").toString()).isEqualTo(expectedJson);
+    assertThat(result.get("this.that.value").toString()).isEqualTo(expectedJson);
+    assertThat(result).hasEntrySatisfying("this.recordtype_id", v -> assertThat(v).isNotNull());
   }
 
   @ParameterizedTest
@@ -397,9 +486,77 @@ public class ExpressionServiceTest extends TestBase {
     var expression = "this.recordType_id";
     var result =
         expressionService.evaluateExpressions(
-            collectionUuid, recordType, recordId, Map.of(expressionName, expression));
+            collectionUuid, VERSION, recordType, recordId, Map.of(expressionName, expression));
 
     assertThat(result).hasSize(1);
     assertThat(result.get(expressionName).toString()).isEqualTo("\"" + recordId + "\"");
+  }
+
+  @Test
+  @Transactional
+  void testEvaluateExpressionsWithRelationArray() {
+    var recordType = RecordType.valueOf("recordType");
+    var nestedRecordType = RecordType.valueOf("nestedRecordType");
+
+    var pkAttr = "pk";
+
+    recordDao.createRecordType(
+        collectionUuid,
+        Map.of(pkAttr, DataTypeMapping.STRING),
+        recordType,
+        new RelationCollection(Set.of(), Set.of()),
+        pkAttr);
+    recordDao.createRecordType(
+        collectionUuid,
+        Map.of(pkAttr, DataTypeMapping.STRING),
+        nestedRecordType,
+        new RelationCollection(Set.of(), Set.of()),
+        pkAttr);
+
+    var nestedRecords =
+        Stream.of(1, 2, 3)
+            .map(
+                i ->
+                    new Record(
+                        UUID.randomUUID().toString(),
+                        nestedRecordType,
+                        new RecordRequest(RecordAttributes.empty())))
+            .toList();
+    recordDao.batchUpsert(collectionUuid, nestedRecordType, nestedRecords, Map.of());
+
+    var recordId = UUID.randomUUID().toString();
+    var record = new Record(recordId, recordType, new RecordRequest(RecordAttributes.empty()));
+    recordDao.batchUpsert(collectionUuid, recordType, List.of(record), Map.of());
+    recordService.updateSingleRecord(
+        collectionUuid,
+        recordType,
+        record.getId(),
+        new RecordRequest(
+            new RecordAttributes(
+                Map.of(
+                    "arrayAttr",
+                    nestedRecords.stream()
+                        .map(r -> RelationUtils.createRelationString(nestedRecordType, r.getId()))
+                        .toList()))));
+
+    var expressionName = "test";
+    var expression = "this.%s_id".formatted(nestedRecordType.getName());
+    var result =
+        expressionService.evaluateExpressionsWithRelationArray(
+            collectionUuid,
+            VERSION,
+            recordType,
+            recordId,
+            "this.arrayAttr",
+            Map.of(expressionName, expression),
+            10,
+            0);
+
+    assertThat(result).hasSize(nestedRecords.size());
+    result.forEach(
+        (nestedRecordId, nestedResult) -> {
+          assertThat(nestedResult.get(expressionName).toString())
+              .isEqualTo("\"" + nestedRecordId + "\"");
+        });
   }
 }

@@ -5,6 +5,7 @@ import java.io.InputStream;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
+import org.databiosphere.workspacedataservice.expressions.ExpressionService;
 import org.databiosphere.workspacedataservice.service.PermissionService;
 import org.databiosphere.workspacedataservice.service.RecordOrchestratorService;
 import org.databiosphere.workspacedataservice.service.model.AttributeSchema;
@@ -12,6 +13,10 @@ import org.databiosphere.workspacedataservice.service.model.RecordTypeSchema;
 import org.databiosphere.workspacedataservice.service.model.exception.MissingObjectException;
 import org.databiosphere.workspacedataservice.shared.model.BatchResponse;
 import org.databiosphere.workspacedataservice.shared.model.CollectionId;
+import org.databiosphere.workspacedataservice.shared.model.EvaluateExpressionsRequest;
+import org.databiosphere.workspacedataservice.shared.model.EvaluateExpressionsResponse;
+import org.databiosphere.workspacedataservice.shared.model.EvaluateExpressionsWithArrayRequest;
+import org.databiosphere.workspacedataservice.shared.model.EvaluateExpressionsWithArrayResponse;
 import org.databiosphere.workspacedataservice.shared.model.RecordQueryResponse;
 import org.databiosphere.workspacedataservice.shared.model.RecordRequest;
 import org.databiosphere.workspacedataservice.shared.model.RecordResponse;
@@ -43,11 +48,15 @@ public class RecordController {
 
   private final RecordOrchestratorService recordOrchestratorService;
   private final PermissionService permissionService;
+  private final ExpressionService expressionService;
 
   public RecordController(
-      RecordOrchestratorService recordOrchestratorService, PermissionService permissionService) {
+      RecordOrchestratorService recordOrchestratorService,
+      PermissionService permissionService,
+      ExpressionService expressionService) {
     this.recordOrchestratorService = recordOrchestratorService;
     this.permissionService = permissionService;
+    this.expressionService = expressionService;
   }
 
   @PatchMapping("/{instanceId}/records/{version}/{recordType}/{recordId}")
@@ -115,6 +124,40 @@ public class RecordController {
     permissionService.requireReadPermission(CollectionId.of(instanceId));
     return recordOrchestratorService.queryForRecords(
         instanceId, recordType, version, searchRequest);
+  }
+
+  @PostMapping("/{instanceid}/search/{version}/{recordType}/{recordId}/evaluateExpressions")
+  public EvaluateExpressionsResponse evaluateExpressions(
+      @PathVariable("instanceid") UUID instanceId,
+      @PathVariable("recordType") RecordType recordType,
+      @PathVariable("version") String version,
+      @PathVariable("recordId") String recordId,
+      @RequestBody EvaluateExpressionsRequest request) {
+    permissionService.requireReadPermission(CollectionId.of(instanceId));
+    return EvaluateExpressionsResponse.of(
+        expressionService.evaluateExpressions(
+            instanceId, version, recordType, recordId, request.toMap()));
+  }
+
+  @PostMapping(
+      "/{instanceid}/search/{version}/{recordType}/{recordId}/evaluateExpressionsWithArray")
+  public EvaluateExpressionsWithArrayResponse evaluateExpressionsWithArray(
+      @PathVariable("instanceid") UUID instanceId,
+      @PathVariable("recordType") RecordType recordType,
+      @PathVariable("version") String version,
+      @PathVariable("recordId") String recordId,
+      @RequestBody EvaluateExpressionsWithArrayRequest request) {
+    permissionService.requireReadPermission(CollectionId.of(instanceId));
+    return EvaluateExpressionsWithArrayResponse.of(
+        expressionService.evaluateExpressionsWithRelationArray(
+            instanceId,
+            version,
+            recordType,
+            recordId,
+            request.arrayExpression(),
+            request.expressionsMap(),
+            request.pageSize(),
+            request.offset()));
   }
 
   @PutMapping("/{instanceId}/records/{version}/{recordType}/{recordId}")

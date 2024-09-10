@@ -1,8 +1,12 @@
 package org.databiosphere.workspacedataservice.expressions;
 
+import bio.terra.common.db.ReadTransaction;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.common.annotations.VisibleForTesting;
+import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -18,6 +22,7 @@ import org.antlr.v4.runtime.CommonTokenStream;
 import org.databiosphere.workspacedataservice.dao.RecordDao;
 import org.databiosphere.workspacedataservice.expressions.parser.antlr.TerraExpressionLexer;
 import org.databiosphere.workspacedataservice.expressions.parser.antlr.TerraExpressionParser;
+import org.databiosphere.workspacedataservice.service.RecordOrchestratorService;
 import org.databiosphere.workspacedataservice.service.model.Relation;
 import org.databiosphere.workspacedataservice.shared.model.Record;
 import org.databiosphere.workspacedataservice.shared.model.RecordType;
@@ -30,17 +35,42 @@ public class ExpressionService {
   private final RecordDao recordDao;
   private final ObjectMapper objectMapper;
   private final AttributeLookupVisitor attributeLookupVisitor = new AttributeLookupVisitor();
+  private final RecordOrchestratorService recordOrchestratorService;
 
-  public ExpressionService(RecordDao recordDao, ObjectMapper objectMapper) {
+  public ExpressionService(
+      RecordDao recordDao,
+      ObjectMapper objectMapper,
+      RecordOrchestratorService recordOrchestratorService) {
     this.recordDao = recordDao;
     this.objectMapper = objectMapper;
+    this.recordOrchestratorService = recordOrchestratorService;
   }
 
+  /**
+   * Evaluates a set of expressions on a record. The expressions are expected parsed by the
+   * ANTLR-generated parser and visitor classes. Examples of expressions include:
+   *
+   * <ul>
+   *   <li>this.attribute
+   *   <li>this.relation.attribute
+   *   <li>{"key": this.attribute, "key2": this.relation.attribute}
+   * </ul>
+   *
+   * @param collectionId The collection id
+   * @param version api version
+   * @param recordType The record type
+   * @param recordId The record id to evaluate the expressions on
+   * @param expressionsByName A map of expression names to expressions
+   * @return A map of expression names to the evaluated expressions
+   */
+  @ReadTransaction
   public Map<String, JsonNode> evaluateExpressions(
       UUID collectionId,
+      String version,
       RecordType recordType,
       String recordId,
       Map<String, String> expressionsByName) {
+    recordOrchestratorService.validateCollectionAndVersion(collectionId, version);
     var attributeLookups =
         expressionsByName.values().stream()
             .map(this::extractRecordAttributeLookups)
@@ -53,6 +83,153 @@ public class ExpressionService {
     return substituteResultsInExpressions(expressionsByName, resultsByQuery, recordType);
   }
 
+  /**
+   * Like evaluateExpressions but for an array of records instead of a single record. The array is
+   * specified by the arrayRecordType, arrayRecordId, and arrayRelationExpression. The
+   * arrayRelationExpression is a string that specifies the relations to follow to get to the array
+   * of records. An example of arrayRelationExpression is "this.relation1.relation2". At least one
+   * of the relations in the expression should be an array.
+   *
+   * @param collectionId The collection id
+   * @param version api version
+   * @param arrayRecordType The record type of the array of records
+   * @param arrayRecordId The record id of the array of records
+   * @param arrayRelationExpression The expression to get to the array of records
+   * @param expressionsByName A map of expression names to expressions
+   * @param pageSize The number of array records to evaluate expressions against
+   * @param offset The offset into the array of records
+   * @return A map of maps: array record id -> expression name -> evaluated expression
+   */
+  @ReadTransaction
+  public Map<String, Map<String, JsonNode>> evaluateExpressionsWithRelationArray(
+      UUID collectionId,
+      String version,
+      RecordType arrayRecordType,
+      String arrayRecordId,
+      String arrayRelationExpression,
+      Map<String, String> expressionsByName,
+      int pageSize,
+      int offset) {
+    recordOrchestratorService.validateCollectionAndVersion(collectionId, version);
+    var arrayRelations = getArrayRelations(collectionId, arrayRecordType, arrayRelationExpression);
+    var queryRecordType = arrayRelations.get(arrayRelations.size() - 1).relationRecordType();
+
+    var attributeLookups =
+        expressionsByName.values().stream()
+            .map(this::extractRecordAttributeLookups)
+            .flatMap(Set::stream)
+            .collect(Collectors.toSet());
+    var expressionQueries =
+        determineExpressionQueries(collectionId, queryRecordType, attributeLookups, 0).toList();
+    var resultsByQuery =
+        executeExpressionQueriesWithRelationArray(
+            collectionId,
+            arrayRecordType,
+            arrayRecordId,
+            arrayRelations,
+            expressionQueries,
+            pageSize,
+            offset);
+
+    // resultsByQuery is a map of maps of expression query info -> record id -> query result,
+    // but we need to flip the keys to get the results in the shape that we want
+    return transposeMapKeys(resultsByQuery).entrySet().stream()
+        .map(
+            entry ->
+                Map.entry(
+                    entry.getKey(),
+                    substituteResultsInExpressions(
+                        expressionsByName, entry.getValue(), queryRecordType)))
+        .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
+  }
+
+  /**
+   * Parse the arrayRelationExpression to get the relations to follow to get to the array of
+   * records.
+   */
+  @VisibleForTesting
+  List<Relation> getArrayRelations(
+      UUID collectionId, RecordType arrayRecordType, String arrayRelationExpression) {
+    var arrayRelationAttributeLookups = extractRecordAttributeLookups(arrayRelationExpression);
+    if (arrayRelationAttributeLookups.size() != 1) {
+      throw new ResponseStatusException(
+          HttpStatus.BAD_REQUEST,
+          "Expected a single expression in %s".formatted(arrayRelationExpression));
+    }
+    var arrayRelationLookup = arrayRelationAttributeLookups.iterator().next();
+    List<Relation> arrayRelations = new ArrayList<>();
+    // start with the record type of the array of records
+    var priorRecordType = arrayRecordType;
+    for (var relationName : arrayRelationLookup.relations()) {
+      var relation =
+          getRelation(collectionId, arrayRelationExpression, relationName, priorRecordType);
+
+      arrayRelations.add(relation);
+      // update the prior record type for the next relation
+      priorRecordType = relation.relationRecordType();
+    }
+    // for the array relation lookup, the attribute must be a relation too
+    arrayRelations.add(
+        getRelation(
+            collectionId,
+            arrayRelationExpression,
+            arrayRelationLookup.attribute(),
+            priorRecordType));
+    return arrayRelations;
+  }
+
+  /**
+   * Get the relation by name. If the relation is not found, throw an exception. Relation could be a
+   * scalar or array relation.
+   */
+  private Relation getRelation(
+      UUID collectionId,
+      String arrayRelationExpression,
+      String relationName,
+      RecordType priorRecordType) {
+    return Stream.concat(
+            recordDao.getRelationCols(collectionId, priorRecordType).stream(),
+            recordDao.getRelationArrayCols(collectionId, priorRecordType).stream())
+        .filter(r -> r.relationColName().equals(relationName))
+        .findFirst()
+        .orElseThrow(
+            () ->
+                new ResponseStatusException(
+                    HttpStatus.BAD_REQUEST,
+                    "The relation %s in expression %s does not exist"
+                        .formatted(relationName, arrayRelationExpression)));
+  }
+
+  /**
+   * Convert the resultsByQuery containing expression query info -> record id -> query result to
+   * results record id -> expression name -> query result. Thanks CoPilot.
+   */
+  private Map<String, Map<ExpressionQueryInfo, List<Record>>> transposeMapKeys(
+      Map<ExpressionQueryInfo, Map<String, List<Record>>> resultsByQuery) {
+    Map<String, Map<ExpressionQueryInfo, List<Record>>> resultsByArrayRecordId = new HashMap<>();
+
+    for (Map.Entry<ExpressionQueryInfo, Map<String, List<Record>>> outerEntry :
+        resultsByQuery.entrySet()) {
+      ExpressionQueryInfo outerKey = outerEntry.getKey();
+      Map<String, List<Record>> innerMap = outerEntry.getValue();
+
+      for (Map.Entry<String, List<Record>> innerEntry : innerMap.entrySet()) {
+        String innerKey = innerEntry.getKey();
+        List<Record> records = innerEntry.getValue();
+
+        resultsByArrayRecordId
+            .computeIfAbsent(innerKey, k -> new HashMap<>())
+            .put(outerKey, records);
+      }
+    }
+    return resultsByArrayRecordId;
+  }
+
+  /**
+   * Execute the expression queries on a single record.
+   *
+   * @return A map of expression query info -> query result
+   */
   private Map<ExpressionQueryInfo, List<Record>> executeExpressionQueries(
       UUID collectionId,
       RecordType recordType,
@@ -68,6 +245,42 @@ public class ExpressionService {
         .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
   }
 
+  /**
+   * Execute the expression queries on an array of records.
+   *
+   * @return A map of expression query info -> record id -> query result
+   */
+  private Map<ExpressionQueryInfo, Map<String, List<Record>>>
+      executeExpressionQueriesWithRelationArray(
+          UUID collectionId,
+          RecordType arrayRecordType,
+          String arrayRecordId,
+          List<Relation> arrayRelations,
+          List<ExpressionQueryInfo> expressionQueries,
+          int pageSize,
+          int offset) {
+    return expressionQueries.stream()
+        .map(
+            expressionQueryInfo ->
+                Map.entry(
+                    expressionQueryInfo,
+                    recordDao.queryRelatedRecords(
+                        collectionId,
+                        arrayRecordType,
+                        arrayRecordId,
+                        arrayRelations,
+                        expressionQueryInfo.relations(),
+                        pageSize,
+                        offset)))
+        .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
+  }
+
+  /**
+   * Substitute the results of the expression queries into the expressions.
+   *
+   * @return A map of expression name -> expression with lookups replaced by values
+   */
+  @VisibleForTesting
   Map<String, JsonNode> substituteResultsInExpressions(
       Map<String, String> expressionsByName,
       Map<ExpressionQueryInfo, List<Record>> resultsByQuery,
@@ -86,6 +299,26 @@ public class ExpressionService {
         .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
   }
 
+  /**
+   * Generate a map of lookup text -> expression result for each expression. The expression result
+   * is a JsonNode which can be a null node, a single value, or an array of values.
+   *
+   * <ul>
+   *   <li>null node when query info indicates that the results should not be an array AND
+   *       <ul>
+   *         <li>the results contain an empty list of records OR
+   *         <li>the attribute does not exist on any record
+   *       </ul>
+   *   <li>single value when query info indicates that results should not be an array AND the
+   *       results contain a single record with the attribute
+   *   <li>array of 0 or more elements when query info indicates that the attribute is an array
+   * </ul>
+   *
+   * @param resultsByQuery A map of expression query info -> query result. Each query info may
+   *     contain multiple attribute lookups and each lookup has its own text value which will be a
+   *     key in the result.
+   * @param recordType The record type the expressions were evaluated against
+   */
   Map<String, JsonNode> getExpressionResultLookupMap(
       Map<ExpressionQueryInfo, List<Record>> resultsByQuery, RecordType recordType) {
     return resultsByQuery.entrySet().stream()
@@ -99,7 +332,10 @@ public class ExpressionService {
                                   .map(
                                       record ->
                                           lookupAttributeValue(
-                                              recordType, queryInfoAndResult, lookup, record))
+                                              recordType,
+                                              lookup,
+                                              record,
+                                              queryInfoAndResult.getKey().relations()))
                                   .filter(Objects::nonNull)
                                   .map(this::toJsonNode)
                                   .toList();
@@ -121,19 +357,19 @@ public class ExpressionService {
         .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
   }
 
+  /**
+   * If the attribute is of the form [recordType]_id, return the record id. Otherwise, return the
+   * attribute value.
+   */
   private Object lookupAttributeValue(
-      RecordType recordType,
-      Map.Entry<ExpressionQueryInfo, List<Record>> queryInfoAndResult,
-      AttributeLookup lookup,
-      Record record) {
-    return lookup.attribute().equalsIgnoreCase(getIdName(recordType, queryInfoAndResult))
+      RecordType recordType, AttributeLookup lookup, Record record, List<Relation> relations) {
+    return lookup.attribute().equalsIgnoreCase(getIdName(recordType, relations))
         ? record.getId()
         : record.getAttributeValue(lookup.attribute());
   }
 
-  private String getIdName(
-      RecordType recordType, Map.Entry<ExpressionQueryInfo, List<Record>> queryInfoAndResult) {
-    var relations = queryInfoAndResult.getKey().relations();
+  /** Get the name of the id attribute for the record type in the form [recordType]_id. */
+  private String getIdName(RecordType recordType, List<Relation> relations) {
     return (relations.isEmpty()
             ? recordType.getName()
             : relations.get(relations.size() - 1).relationRecordType().getName())
@@ -152,10 +388,11 @@ public class ExpressionService {
 
   /**
    * Extracts all attribute lookups from an expression. An expressions may have multiple lookups.
-   *
-   * @param expression
-   * @return
+   * The expression this.relation.attribute has only one lookup, itself. The expression {"key":
+   * this.attribute, "key2": this.relation.attribute} has two lookups: this.attribute and
+   * this.relation.attribute.
    */
+  @VisibleForTesting
   Set<AttributeLookup> extractRecordAttributeLookups(String expression) {
     var parser = getParser(expression);
     var parsedTree = parser.root();
@@ -172,12 +409,15 @@ public class ExpressionService {
    * this method recursively for each grouping, prepending the relation to the resulting
    * ExpressionQueryInfo to build the relation chain.
    *
-   * @param collectionId
-   * @param recordType
-   * @param attributeLookups
-   * @param relationLevel
-   * @return
+   * @param collectionId The collection id
+   * @param recordType The record type of the current relationLevel
+   * @param attributeLookups The attribute lookups to process, all of which must have the same value
+   *     up to relationLevel
+   * @param relationLevel The current relation level starting with 0 and incrementing with each
+   *     recursive call
+   * @return A stream of ExpressionQueryInfo objects that represent the queries to execute
    */
+  @VisibleForTesting
   Stream<ExpressionQueryInfo> determineExpressionQueries(
       UUID collectionId,
       RecordType recordType,
