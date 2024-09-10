@@ -194,7 +194,7 @@ spotless {
     java {
         targetExclude "${layout.buildDirectory.asFile}/**"
         targetExclude "**/swagger-code/**"
-        targetExclude "**/generated/**"
+        targetExclude "**/generated*/**"
         googleJavaFormat('1.18.1')
         toggleOffOn() // allow spotless:off & spotless:on to protect code from formatting
     }
