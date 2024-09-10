@@ -19,5 +19,4 @@ spring:
 logging:
   pattern:
     correlation: "%X{requestId} "
-
-controlPlanePreview: "on"
+    
