@@ -387,7 +387,6 @@ class RecordDaoTest extends ControlPlaneTestBase {
   }
 
   @Test
-  @Transactional
   void testDeleteRecords() {
     String recordIdPrefix = "testRecord";
     Record testRecordA = new Record(recordIdPrefix + "A", recordType, RecordAttributes.empty());
@@ -432,7 +431,6 @@ class RecordDaoTest extends ControlPlaneTestBase {
   }
 
   @Test
-  @Transactional
   void testDeleteAllRecordsExcept() {
     String recordIdPrefix = "testRecord";
     Record testRecordA = new Record(recordIdPrefix + "A", recordType, RecordAttributes.empty());
