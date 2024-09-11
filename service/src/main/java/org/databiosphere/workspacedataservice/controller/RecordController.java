@@ -126,7 +126,7 @@ public class RecordController {
         instanceId, recordType, version, searchRequest);
   }
 
-  @PostMapping("/{instanceid}/search/{version}/{recordType}/{recordId}/evaluateExpressions")
+  @PostMapping("/{instanceid}/records/{version}/{recordType}/{recordId}/evaluateExpressions")
   public EvaluateExpressionsResponse evaluateExpressions(
       @PathVariable("instanceid") UUID instanceId,
       @PathVariable("recordType") RecordType recordType,
@@ -134,13 +134,13 @@ public class RecordController {
       @PathVariable("recordId") String recordId,
       @RequestBody EvaluateExpressionsRequest request) {
     permissionService.requireReadPermission(CollectionId.of(instanceId));
-    return EvaluateExpressionsResponse.of(
+    return new EvaluateExpressionsResponse(
         expressionService.evaluateExpressions(
             instanceId, version, recordType, recordId, request.toMap()));
   }
 
   @PostMapping(
-      "/{instanceid}/search/{version}/{recordType}/{recordId}/evaluateExpressionsWithArray")
+      "/{instanceid}/records/{version}/{recordType}/{recordId}/evaluateExpressionsWithArray")
   public EvaluateExpressionsWithArrayResponse evaluateExpressionsWithArray(
       @PathVariable("instanceid") UUID instanceId,
       @PathVariable("recordType") RecordType recordType,

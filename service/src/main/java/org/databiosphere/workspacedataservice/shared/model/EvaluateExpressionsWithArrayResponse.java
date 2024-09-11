@@ -13,14 +13,7 @@ public record EvaluateExpressionsWithArrayResponse(
             .map(
                 recordIdAndResults ->
                     new ExpressionEvaluationsForRecord(
-                        recordIdAndResults.getKey(),
-                        recordIdAndResults.getValue().entrySet().stream()
-                            .map(
-                                expressionNameAndValue ->
-                                    new ExpressionEvaluation(
-                                        expressionNameAndValue.getKey(),
-                                        expressionNameAndValue.getValue()))
-                            .toList()))
+                        recordIdAndResults.getKey(), recordIdAndResults.getValue()))
             .toList());
   }
 }

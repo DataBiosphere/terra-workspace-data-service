@@ -62,12 +62,12 @@ public class RecordControllerExpressionsTest extends MockMvcTestBase {
     when(expressionService.evaluateExpressions(
             collectionId, VERSION, RecordType.valueOf(recordType), recordId, expressionsByName))
         .thenReturn(expressionEvaluation);
-    var expectedResponse = EvaluateExpressionsResponse.of(expressionEvaluation);
+    var expectedResponse = new EvaluateExpressionsResponse(expressionEvaluation);
 
     mockMvc
         .perform(
             post(
-                    "/{instanceId}/search/{version}/{recordType}/{recordId}/evaluateExpressions",
+                    "/{instanceId}/records/{version}/{recordType}/{recordId}/evaluateExpressions",
                     collectionId,
                     VERSION,
                     recordType,
@@ -118,7 +118,7 @@ public class RecordControllerExpressionsTest extends MockMvcTestBase {
     mockMvc
         .perform(
             post(
-                    "/{instanceId}/search/{version}/{recordType}/{recordId}/evaluateExpressionsWithArray",
+                    "/{instanceId}/records/{version}/{recordType}/{recordId}/evaluateExpressionsWithArray",
                     collectionId,
                     VERSION,
                     recordType,

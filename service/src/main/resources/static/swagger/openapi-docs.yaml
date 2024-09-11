@@ -229,6 +229,74 @@ paths:
             'application/json':
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+  /{instanceid}/records/{v}/{type}/{id}/evaluateExpressions:
+    post:
+      summary: Evaluate expressions on a single record
+      description: |
+        Evaluate expressions on a single record. The expression "this.foo" will get the value of the
+        attribute "foo" in the record. The expression "this.relation.foo" will get the value of the attribute
+        "foo" from the related record specified by attribute "relation" in the record. The expression
+        "{'name': this.foo, 'num': this.bar }" will create a JSON object with key "name" and value
+        of the attribute "foo" and the key "num" and value of the attribute "bar.
+      operationId: evaluateExpressions
+      tags:
+        - Records
+      parameters:
+        - $ref: '#/components/parameters/instanceIdPathParam'
+        - $ref: '#/components/parameters/versionPathParam'
+        - $ref: '#/components/parameters/recordTypePathParam'
+        - $ref: '#/components/parameters/recordIdPathParam'
+      requestBody:
+        $ref: '#/components/requestBodies/EvaluateExpressionsRequestBody'
+      responses:
+        200:
+          $ref: '#/components/responses/EvaluateExpressionsResponseBody'
+        404:
+          description: Record not found
+          content:
+            'application/json':
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        400:
+          description: Bad request
+          content:
+            'application/json':
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /{instanceid}/records/{v}/{type}/{id}/evaluateExpressionsWithArray:
+    post:
+      summary: Evaluate expressions on array of records
+      description: |
+        Evaluate expressions on array of records. The expression "this.foo" will get the value of the
+        attribute "foo" in each record. The expression "this.relation.foo" will get the value of the attribute
+        "foo" from the related record specified by attribute "relation" in each record. The expression
+        "{'name': this.foo, 'num': this.bar }" will create a JSON object with key "name" and value
+        of the attribute "foo" and the key "num" and value of the attribute "bar.
+      operationId: evaluateExpressionsWithArray
+      tags:
+        - Records
+      parameters:
+        - $ref: '#/components/parameters/instanceIdPathParam'
+        - $ref: '#/components/parameters/versionPathParam'
+        - $ref: '#/components/parameters/recordTypePathParam'
+        - $ref: '#/components/parameters/recordIdPathParam'
+      requestBody:
+        $ref: '#/components/requestBodies/EvaluateExpressionsWithArrayRequestBody'
+      responses:
+        200:
+          $ref: '#/components/responses/EvaluateExpressionsWithArrayResponseBody'
+        404:
+          description: Record not found
+          content:
+            'application/json':
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        400:
+          description: Bad request
+          content:
+            'application/json':
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
   /{instanceid}/search/{v}/{type}:
     post:
       summary: Query records
@@ -584,6 +652,18 @@ components:
         default: v0.2
 
   responses:
+    EvaluateExpressionsResponseBody:
+      description: Results of evaluating expressions
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/EvaluateExpressionsResponse'
+    EvaluateExpressionsWithArrayResponseBody:
+      description: Results of evaluating expressions
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/EvaluateExpressionsWithArrayResponse'
     RecordResponseBody:
       description: A record
       content:
@@ -626,6 +706,20 @@ components:
             type: array
             items:
               $ref: '#/components/schemas/BatchOperation'
+    EvaluateExpressionsRequestBody:
+      description: Expressions to evaluate
+      required: true
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/EvaluateExpressionsRequest'
+    EvaluateExpressionsWithArrayRequestBody:
+      description: Expressions to evaluate
+      required: true
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/EvaluateExpressionsWithArrayRequest'
     RecordRequestBody:
       description: A record's attributes to upload
       required: true
@@ -813,6 +907,83 @@ components:
           type: string
           description: time of error
       description: ""
+    EvaluateExpressionsRequest:
+      type: object
+      required:
+        - expressions
+      properties:
+        expressions:
+          type: array
+          items:
+            type: string
+          description: |
+            List of expressions to evaluate. The expression "this.foo" will get the value of the
+            attribute "foo" in the record. The expression "this.relation.foo" will get the value of the attribute
+            "foo" from the related record specified by attribute "relation" in the record. The expression
+            "{'name': this.foo, 'num': this.bar }" will create a JSON object with key "name" and value
+            of the attribute "foo" and the key "num" and value of the attribute "bar.
+    EvaluateExpressionsResponse:
+      required:
+        - evaluations
+      properties:
+        evaluations:
+          type: object
+          additionalProperties: true
+          description: |
+            The key is the expression name and the value is the result of the expression.
+    EvaluateExpressionsWithArrayRequest:
+      type: object
+      required:
+        - arrayExpression
+        - expressions
+        - pageSize
+        - offset
+      properties:
+        expressions:
+          type: array
+          items:
+            type: string
+          description: |
+            List of expressions to evaluate. The expression "this.foo" will get the value of the
+            attribute "foo" in the record. The expression "this.relation.foo" will get the value of the attribute
+            "foo" from the related record specified by attribute "relation" in the record. The expression
+            "{'name': this.foo, 'num': this.bar }" will create a JSON object with key "name" and value
+            of the attribute "foo" and the key "num" and value of the attribute "bar.
+        arrayExpression:
+            type: string
+            description: |
+                Expression to evaluate that returns an array of record ids. The expression "this.relation" will get the value of the
+                attribute "relation" in the record. The expression "this.relation.foo" will get the value of the attribute
+                "foo" from the related record specified by attribute "relation" in the record.
+        pageSize:
+            type: integer
+            description: |
+                Number of records within the array to evaluate the expressions on.
+        offset:
+            type: integer
+            description: |
+                Number of records within the array to skip before returning the next page.
+    EvaluateExpressionsWithArrayResponse:
+      required:
+        - results
+      properties:
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/ExpressionEvaluationsForRecord'
+    ExpressionEvaluationsForRecord:
+      required:
+        - recordId
+        - evaluations
+      properties:
+        recordId:
+          type: string
+          description: Record id
+        evaluations:
+          type: object
+          additionalProperties: true
+          description: |
+              The key is the expression name and the value is the result of the expression.
     git:
       type: object
       properties:

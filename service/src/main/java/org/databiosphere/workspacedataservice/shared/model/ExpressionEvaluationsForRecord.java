@@ -1,6 +1,6 @@
 package org.databiosphere.workspacedataservice.shared.model;
 
-import java.util.Collection;
+import com.fasterxml.jackson.databind.JsonNode;
+import java.util.Map;
 
-public record ExpressionEvaluationsForRecord(
-    String recordId, Collection<ExpressionEvaluation> evaluations) {}
+public record ExpressionEvaluationsForRecord(String recordId, Map<String, JsonNode> evaluations) {}
