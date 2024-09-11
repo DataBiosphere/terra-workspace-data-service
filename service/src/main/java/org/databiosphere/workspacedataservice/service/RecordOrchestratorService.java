@@ -4,6 +4,7 @@ import static org.databiosphere.workspacedataservice.service.RecordUtils.validat
 import static org.databiosphere.workspacedataservice.service.model.ReservedNames.RECORD_ID;
 
 import bio.terra.common.db.ReadTransaction;
+import bio.terra.common.db.WriteTransaction;
 import io.micrometer.common.KeyValue;
 import io.micrometer.common.KeyValues;
 import io.micrometer.observation.Observation;
@@ -20,6 +21,8 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.databiosphere.workspacedataservice.activitylog.ActivityLogger;
 import org.databiosphere.workspacedataservice.dao.RecordDao;
+import org.databiosphere.workspacedataservice.generated.DeleteRecordsRequestServerModel;
+import org.databiosphere.workspacedataservice.generated.DeleteRecordsResponseServerModel;
 import org.databiosphere.workspacedataservice.recordsink.RecordSink;
 import org.databiosphere.workspacedataservice.recordsink.RecordSinkFactory;
 import org.databiosphere.workspacedataservice.recordsource.PrimaryKeyResolver;
@@ -55,7 +58,10 @@ import org.springframework.web.servlet.mvc.method.annotation.StreamingResponseBo
 
 @Service
 public class RecordOrchestratorService { // TODO give me a better name
-
+  /*
+  This class (RecordOrchestratorService) is distinct from RecordService in order to make it possible
+  to invoke transactions in RecordService from within this class.
+   */
   private static final Logger LOGGER = LoggerFactory.getLogger(RecordOrchestratorService.class);
   private static final int MAX_RECORDS = 1_000;
 
@@ -282,6 +288,58 @@ public class RecordOrchestratorService { // TODO give me a better name
     recordService.deleteRecordType(collectionId, recordType);
     activityLogger.saveEventForCurrentUser(
         user -> user.deleted().table().ofQuantity(1).withRecordType(recordType));
+  }
+
+  @WriteTransaction
+  public DeleteRecordsResponseServerModel deleteRecords(
+      CollectionId collectionId,
+      RecordType recordType,
+      DeleteRecordsRequestServerModel deleteRecordsRequestServerModel) {
+
+    DeleteRecordsResponseServerModel response = new DeleteRecordsResponseServerModel();
+
+    boolean hasRecordIds = !deleteRecordsRequestServerModel.getRecordIds().isEmpty();
+    boolean hasExcludedRecordIds =
+        !deleteRecordsRequestServerModel.getExcludedRecordIds().isEmpty();
+
+    if (hasRecordIds && hasExcludedRecordIds) {
+      throw new ResponseStatusException(
+          HttpStatus.BAD_REQUEST, "record_ids and excluded_record_ids are mutually exclusive");
+    }
+
+    boolean deleteAll = deleteRecordsRequestServerModel.getDeleteAll();
+    if (deleteAll && hasRecordIds) {
+      throw new ResponseStatusException(
+          HttpStatus.BAD_REQUEST, "delete_all cannot be set to true if record_ids is nonempty");
+    }
+    if (hasExcludedRecordIds && !deleteAll) {
+      throw new ResponseStatusException(
+          HttpStatus.BAD_REQUEST,
+          "delete_all must be set to true if excluded_record_ids is nonempty");
+    }
+
+    int deletionCount;
+    if (hasRecordIds) {
+      deletionCount =
+          recordDao.deleteRecords(
+              collectionId.id(), recordType, deleteRecordsRequestServerModel.getRecordIds());
+    } else if (deleteAll && hasExcludedRecordIds) {
+      deletionCount =
+          recordDao.deleteAllRecords(
+              collectionId, recordType, deleteRecordsRequestServerModel.getExcludedRecordIds());
+    } else if (deleteAll) {
+      deletionCount = recordDao.deleteAllRecords(collectionId, recordType, Collections.emptyList());
+    } else {
+      throw new ResponseStatusException(
+          HttpStatus.BAD_REQUEST,
+          "No records were specified for deletion. Set delete_all=true (and optionally use excluded_record_ids) or use record_ids to delete records.");
+    }
+
+    activityLogger.saveEventForCurrentUser(
+        user -> user.deleted().record().withRecordType(recordType).ofQuantity(deletionCount));
+
+    response.setCount(deletionCount);
+    return response;
   }
 
   public void renameAttribute(

@@ -29,6 +29,7 @@ import org.databiosphere.workspacedataservice.service.model.Relation;
 import org.databiosphere.workspacedataservice.service.model.RelationCollection;
 import org.databiosphere.workspacedataservice.service.model.RelationValue;
 import org.databiosphere.workspacedataservice.service.model.exception.InvalidRelationException;
+import org.databiosphere.workspacedataservice.shared.model.CollectionId;
 import org.databiosphere.workspacedataservice.shared.model.Record;
 import org.databiosphere.workspacedataservice.shared.model.RecordAttributes;
 import org.databiosphere.workspacedataservice.shared.model.RecordRequest;
@@ -386,6 +387,77 @@ class RecordDaoTest extends ControlPlaneTestBase {
     // make sure record not fetched
     Optional<Record> none = recordDao.getSingleRecord(collectionUuid, recordType, "testRecord");
     assertEquals(Optional.empty(), none, "Deleted record should not be found");
+  }
+
+  @Test
+  void testDeleteRecords() {
+    String recordIdPrefix = "testRecord";
+    Record testRecordA = new Record(recordIdPrefix + "A", recordType, RecordAttributes.empty());
+    Record testRecordB = new Record(recordIdPrefix + "B", recordType, RecordAttributes.empty());
+    Record testRecordC = new Record(recordIdPrefix + "C", recordType, RecordAttributes.empty());
+    recordDao.batchUpsert(
+        collectionUuid, recordType, List.of(testRecordA, testRecordB, testRecordC), emptyMap());
+
+    recordDao.deleteRecords(collectionUuid, recordType, List.of(testRecordB.getId()));
+
+    // make sure record not fetched
+    Optional<Record> none =
+        recordDao.getSingleRecord(collectionUuid, recordType, testRecordB.getId());
+    assertEquals(Optional.empty(), none, "Deleted record should not be found");
+
+    // make sure other records are fetched
+    Optional<Record> verifiedRecordA =
+        recordDao.getSingleRecord(collectionUuid, recordType, testRecordA.getId());
+    assert (verifiedRecordA.isPresent());
+    Optional<Record> verifiedRecordC =
+        recordDao.getSingleRecord(collectionUuid, recordType, testRecordC.getId());
+    assert (verifiedRecordC.isPresent());
+  }
+
+  @Test
+  @Transactional
+  void testDeleteAllRecords() {
+    String recordIdPrefix = "testRecord";
+    Record testRecordA = new Record(recordIdPrefix + "A", recordType, RecordAttributes.empty());
+    Record testRecordB = new Record(recordIdPrefix + "B", recordType, RecordAttributes.empty());
+    Record testRecordC = new Record(recordIdPrefix + "C", recordType, RecordAttributes.empty());
+    recordDao.batchUpsert(
+        collectionUuid, recordType, List.of(testRecordA, testRecordB, testRecordC), emptyMap());
+
+    recordDao.deleteAllRecords(
+        CollectionId.of(collectionUuid), recordType, Collections.emptyList());
+
+    List<Record> queryRes =
+        recordDao.queryForRecords(recordType, 10, 0, "ASC", null, Optional.empty(), collectionUuid);
+
+    assertEquals(0, queryRes.size());
+  }
+
+  @Test
+  void testDeleteAllRecordsExcept() {
+    String recordIdPrefix = "testRecord";
+    Record testRecordA = new Record(recordIdPrefix + "A", recordType, RecordAttributes.empty());
+    Record testRecordB = new Record(recordIdPrefix + "B", recordType, RecordAttributes.empty());
+    Record testRecordC = new Record(recordIdPrefix + "C", recordType, RecordAttributes.empty());
+    Record testRecordD = new Record(recordIdPrefix + "D", recordType, RecordAttributes.empty());
+    Record testRecordE = new Record(recordIdPrefix + "E", recordType, RecordAttributes.empty());
+    recordDao.batchUpsert(
+        collectionUuid,
+        recordType,
+        List.of(testRecordA, testRecordB, testRecordC, testRecordD, testRecordE),
+        emptyMap());
+
+    recordDao.deleteAllRecords(
+        CollectionId.of(collectionUuid),
+        recordType,
+        List.of(testRecordB.getId(), testRecordD.getId()));
+
+    List<Record> queryRes =
+        recordDao.queryForRecords(recordType, 10, 0, "ASC", null, Optional.empty(), collectionUuid);
+
+    assertEquals(2, queryRes.size());
+    assertTrue(queryRes.contains(testRecordB));
+    assertTrue(queryRes.contains(testRecordD));
   }
 
   @Test
