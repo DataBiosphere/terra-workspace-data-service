@@ -148,16 +148,15 @@ public class RecordController {
       @PathVariable("recordId") String recordId,
       @RequestBody EvaluateExpressionsWithArrayRequest request) {
     permissionService.requireReadPermission(CollectionId.of(instanceId));
-    return EvaluateExpressionsWithArrayResponse.of(
-        expressionService.evaluateExpressionsWithRelationArray(
-            instanceId,
-            version,
-            recordType,
-            recordId,
-            request.arrayExpression(),
-            request.expressionsMap(),
-            request.pageSize(),
-            request.offset()));
+    return expressionService.evaluateExpressionsWithRelationArray(
+        instanceId,
+        version,
+        recordType,
+        recordId,
+        request.arrayExpression(),
+        request.expressionsMap(),
+        request.pageSize(),
+        request.offset());
   }
 
   @PutMapping("/{instanceId}/records/{version}/{recordType}/{recordId}")

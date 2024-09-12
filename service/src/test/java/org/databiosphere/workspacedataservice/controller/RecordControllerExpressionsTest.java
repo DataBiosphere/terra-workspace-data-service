@@ -103,6 +103,7 @@ public class RecordControllerExpressionsTest extends MockMvcTestBase {
 
     doNothing().when(permissionService).requireReadPermission(CollectionId.of(collectionId));
     var expressionEvaluation = Map.of("recordId", Map.of(expressionName, value));
+    var expectedResponse = EvaluateExpressionsWithArrayResponse.of(expressionEvaluation, false);
     when(expressionService.evaluateExpressionsWithRelationArray(
             collectionId,
             VERSION,
@@ -112,8 +113,7 @@ public class RecordControllerExpressionsTest extends MockMvcTestBase {
             expressionsByName,
             pageSize,
             offset))
-        .thenReturn(expressionEvaluation);
-    var expectedResponse = EvaluateExpressionsWithArrayResponse.of(expressionEvaluation);
+        .thenReturn(expectedResponse);
 
     mockMvc
         .perform(

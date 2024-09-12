@@ -1495,7 +1495,7 @@ class RecordDaoTest extends ControlPlaneTestBase {
    * against
    */
   @Test
-  void testQueryRelatedRecordsWitArrayRecord() {
+  void testQueryRelatedRecordsWithArrayRecord() {
     var arrayRecordType = RecordType.valueOf("arrayRecordType");
     recordDao.createRecordType(
         collectionUuid, emptyMap(), arrayRecordType, RelationCollection.empty(), PRIMARY_KEY);
@@ -1540,7 +1540,7 @@ class RecordDaoTest extends ControlPlaneTestBase {
     assertThat(arrayRelations).hasSize(1);
 
     var results =
-        recordDao.queryRelatedRecords(
+        recordDao.queryRelatedRecordsWithArray(
             collectionUuid, arrayRecordType, arrayRecord.getId(), arrayRelations, relations, 10, 0);
 
     assertEquals(
@@ -1554,7 +1554,7 @@ class RecordDaoTest extends ControlPlaneTestBase {
     // Test pagination
     for (int page = 0; page < 2; page++) {
       var pagedResults =
-          recordDao.queryRelatedRecords(
+          recordDao.queryRelatedRecordsWithArray(
               collectionUuid,
               arrayRecordType,
               arrayRecord.getId(),

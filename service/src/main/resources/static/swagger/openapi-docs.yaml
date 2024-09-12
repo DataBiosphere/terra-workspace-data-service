@@ -973,11 +973,16 @@ components:
     EvaluateExpressionsWithArrayResponse:
       required:
         - results
+        - hasNext
       properties:
         results:
           type: array
           items:
             $ref: '#/components/schemas/ExpressionEvaluationsForRecord'
+        hasNext:
+          type: boolean
+          description: |
+              Indicates if there are more records to evaluate expressions on.
     ExpressionEvaluationsForRecord:
       required:
         - recordId

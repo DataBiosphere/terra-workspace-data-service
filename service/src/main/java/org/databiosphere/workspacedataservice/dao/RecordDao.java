@@ -22,6 +22,7 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -300,7 +301,23 @@ public class RecordDao {
         new RecordRowMapper(recordType, objectMapper, collectionId));
   }
 
-  public Map<String, List<Record>> queryRelatedRecords(
+  /**
+   * This performs 2 different relation traversals: 1. From the record specified by arrayRecordType
+   * and arrayRecordId traverse the array relation to get the related records 2. For each related
+   * record from step 1, traverse the relations to get the related records and return them as a map
+   * keyed by the record id from step 1
+   *
+   * @param collectionId The collection id
+   * @param arrayRecordType The record type of the record to start the traversal from
+   * @param arrayRecordId The record id of the record to start the traversal from
+   * @param arrayRelations The array relations to traverse
+   * @param relations The relations to traverse
+   * @param pageSize The page size
+   * @param offset The offset
+   * @return A map of related records keyed by the record id from the array relations. A
+   *     LinkedHashMap is used to maintain the order of the records.
+   */
+  public LinkedHashMap<String, List<Record>> queryRelatedRecordsWithArray(
       UUID collectionId,
       RecordType arrayRecordType,
       String arrayRecordId,
@@ -370,9 +387,20 @@ public class RecordDao {
             Collectors.toMap(
                 Map.Entry::getKey,
                 e -> List.of(e.getValue()),
-                (x, y) -> Stream.concat(x.stream(), y.stream()).toList()));
+                (x, y) -> Stream.concat(x.stream(), y.stream()).toList(),
+                LinkedHashMap::new));
   }
 
+  /**
+   * Query for records related to the record specified by rootRecordType and rootRecordId by
+   * traversing the relations specified in the relations list.
+   *
+   * @param collectionId The collection id
+   * @param rootRecordType The record type of the record to start the traversal from
+   * @param rootRecordId The record id of the record to start the traversal from
+   * @param relations The relations to traverse
+   * @return A list of related records
+   */
   public List<Record> queryRelatedRecords(
       UUID collectionId, RecordType rootRecordType, String rootRecordId, List<Relation> relations) {
 
@@ -398,11 +426,7 @@ public class RecordDao {
                 "joinClause",
                 buildJoinClauseForRelations(collectionId, rootRecordType, relations))),
         new MapSqlParameterSource(RECORD_ID_PARAM, rootRecordId),
-        new RecordRowMapper(
-            queryRecordType,
-            objectMapper,
-            collectionId,
-            Map.of("sys_root", DataTypeMapping.STRING)));
+        new RecordRowMapper(queryRecordType, objectMapper, collectionId));
   }
 
   private String buildJoinClauseForRelations(

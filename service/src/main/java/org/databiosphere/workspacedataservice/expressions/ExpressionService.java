@@ -10,6 +10,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -25,6 +26,7 @@ import org.databiosphere.workspacedataservice.dao.RecordDao;
 import org.databiosphere.workspacedataservice.expressions.parser.antlr.TerraExpressionLexer;
 import org.databiosphere.workspacedataservice.expressions.parser.antlr.TerraExpressionParser;
 import org.databiosphere.workspacedataservice.service.model.Relation;
+import org.databiosphere.workspacedataservice.shared.model.EvaluateExpressionsWithArrayResponse;
 import org.databiosphere.workspacedataservice.shared.model.Record;
 import org.databiosphere.workspacedataservice.shared.model.RecordType;
 import org.springframework.http.HttpStatus;
@@ -97,7 +99,7 @@ public class ExpressionService {
    * @return A map of maps: array record id -> expression name -> evaluated expression
    */
   @ReadTransaction
-  public Map<String, Map<String, JsonNode>> evaluateExpressionsWithRelationArray(
+  public EvaluateExpressionsWithArrayResponse evaluateExpressionsWithRelationArray(
       UUID collectionId,
       String version,
       RecordType arrayRecordType,
@@ -124,19 +126,46 @@ public class ExpressionService {
             arrayRecordId,
             arrayRelations,
             expressionQueries,
-            pageSize,
+            // plus one to see if there are more records
+            pageSize + 1,
             offset);
+    // the query results may have an extra record to see if there are more records
+    // if there are more records, remove the extra record
+    var hasNext =
+        resultsByQuery.values().stream().map(LinkedHashMap::size).anyMatch(s -> s > pageSize);
+    if (hasNext) {
+      removeExtraRecords(pageSize, resultsByQuery);
+    }
 
     // resultsByQuery is a map of maps of expression query info -> record id -> query result,
     // but we need to flip the keys to get the results in the shape that we want
-    return transposeMapKeys(resultsByQuery).entrySet().stream()
-        .map(
-            entry ->
-                Map.entry(
-                    entry.getKey(),
-                    substituteResultsInExpressions(
-                        expressionsByName, entry.getValue(), queryRecordType)))
-        .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
+    return EvaluateExpressionsWithArrayResponse.of(
+        transposeMapKeys(resultsByQuery).entrySet().stream()
+            .map(
+                entry ->
+                    Map.entry(
+                        entry.getKey(),
+                        substituteResultsInExpressions(
+                            expressionsByName, entry.getValue(), queryRecordType)))
+            .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue)),
+        hasNext);
+  }
+
+  /**
+   * For each result, remove the extra record if there are more records than the page size. This
+   * works because the LinkedHashMap maintains insertion order.
+   */
+  private static void removeExtraRecords(
+      int pageSize, Map<ExpressionQueryInfo, LinkedHashMap<String, List<Record>>> resultsByQuery) {
+    resultsByQuery
+        .values()
+        .forEach(
+            m -> {
+              var keyArray = m.keySet().toArray(new String[0]);
+              if (keyArray.length > pageSize) {
+                m.remove(keyArray[pageSize]);
+              }
+            });
   }
 
   /**
@@ -201,10 +230,10 @@ public class ExpressionService {
    * results record id -> expression name -> query result. Thanks CoPilot.
    */
   private Map<String, Map<ExpressionQueryInfo, List<Record>>> transposeMapKeys(
-      Map<ExpressionQueryInfo, Map<String, List<Record>>> resultsByQuery) {
+      Map<ExpressionQueryInfo, LinkedHashMap<String, List<Record>>> resultsByQuery) {
     Map<String, Map<ExpressionQueryInfo, List<Record>>> resultsByArrayRecordId = new HashMap<>();
 
-    for (Map.Entry<ExpressionQueryInfo, Map<String, List<Record>>> outerEntry :
+    for (Map.Entry<ExpressionQueryInfo, LinkedHashMap<String, List<Record>>> outerEntry :
         resultsByQuery.entrySet()) {
       ExpressionQueryInfo outerKey = outerEntry.getKey();
       Map<String, List<Record>> innerMap = outerEntry.getValue();
@@ -246,7 +275,7 @@ public class ExpressionService {
    *
    * @return A map of expression query info -> record id -> query result
    */
-  private Map<ExpressionQueryInfo, Map<String, List<Record>>>
+  private Map<ExpressionQueryInfo, LinkedHashMap<String, List<Record>>>
       executeExpressionQueriesWithRelationArray(
           UUID collectionId,
           RecordType arrayRecordType,
@@ -260,7 +289,7 @@ public class ExpressionService {
             expressionQueryInfo ->
                 Map.entry(
                     expressionQueryInfo,
-                    recordDao.queryRelatedRecords(
+                    recordDao.queryRelatedRecordsWithArray(
                         collectionId,
                         arrayRecordType,
                         arrayRecordId,

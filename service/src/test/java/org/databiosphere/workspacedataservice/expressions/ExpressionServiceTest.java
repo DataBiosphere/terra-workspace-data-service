@@ -523,7 +523,7 @@ public class ExpressionServiceTest extends ControlPlaneTestBase {
         pkAttr);
 
     var nestedRecords =
-        Stream.of(1, 2, 3)
+        Stream.of(1, 2, 3, 4, 5)
             .map(
                 i ->
                     new Record(
@@ -550,22 +550,27 @@ public class ExpressionServiceTest extends ControlPlaneTestBase {
 
     var expressionName = "test";
     var expression = "this.%s_id".formatted(nestedRecordType.getName());
-    var result =
-        expressionService.evaluateExpressionsWithRelationArray(
-            collectionUuid,
-            VERSION,
-            recordType,
-            recordId,
-            "this.arrayAttr",
-            Map.of(expressionName, expression),
-            10,
-            0);
+    for (int pageSize = 1; pageSize <= nestedRecords.size() + 1; pageSize++) {
+      var result =
+          expressionService.evaluateExpressionsWithRelationArray(
+              collectionUuid,
+              VERSION,
+              recordType,
+              recordId,
+              "this.arrayAttr",
+              Map.of(expressionName, expression),
+              pageSize,
+              0);
 
-    assertThat(result).hasSize(nestedRecords.size());
-    result.forEach(
-        (nestedRecordId, nestedResult) -> {
-          assertThat(nestedResult.get(expressionName).toString())
-              .isEqualTo("\"" + nestedRecordId + "\"");
-        });
+      assertThat(result.hasNext()).isEqualTo(pageSize < nestedRecords.size());
+      assertThat(result.results()).hasSize(Math.min(pageSize, nestedRecords.size()));
+      result
+          .results()
+          .forEach(
+              nestedResult -> {
+                assertThat(nestedResult.evaluations().get(expressionName).toString())
+                    .isEqualTo("\"" + nestedResult.recordId() + "\"");
+              });
+    }
   }
 }
