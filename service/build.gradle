@@ -91,7 +91,7 @@ dependencies {
     implementation 'com.squareup.okhttp3:okhttp' // required by Sam client
     implementation "bio.terra:datarepo-client:2.13.0-SNAPSHOT"
     implementation "bio.terra:workspace-manager-client:0.254.983-SNAPSHOT"
-    implementation "bio.terra:java-pfb-library:0.53.0"
+    implementation "bio.terra:java-pfb-library:0.54.0"
     implementation project(path: ':client')
 
     // Parquet, used for TDR snapshot import
