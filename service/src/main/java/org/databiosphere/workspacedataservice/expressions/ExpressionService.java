@@ -1,7 +1,5 @@
 package org.databiosphere.workspacedataservice.expressions;
 
-import static org.databiosphere.workspacedataservice.service.RecordUtils.validateVersion;
-
 import bio.terra.common.db.ReadTransaction;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -25,8 +23,10 @@ import org.antlr.v4.runtime.CommonTokenStream;
 import org.databiosphere.workspacedataservice.dao.RecordDao;
 import org.databiosphere.workspacedataservice.expressions.parser.antlr.TerraExpressionLexer;
 import org.databiosphere.workspacedataservice.expressions.parser.antlr.TerraExpressionParser;
+import org.databiosphere.workspacedataservice.generated.EvaluateExpressionsResponseServerModel;
+import org.databiosphere.workspacedataservice.generated.EvaluateExpressionsWithArrayResponseServerModel;
+import org.databiosphere.workspacedataservice.generated.ExpressionEvaluationsForRecordServerModel;
 import org.databiosphere.workspacedataservice.service.model.Relation;
-import org.databiosphere.workspacedataservice.shared.model.EvaluateExpressionsWithArrayResponse;
 import org.databiosphere.workspacedataservice.shared.model.Record;
 import org.databiosphere.workspacedataservice.shared.model.RecordType;
 import org.springframework.http.HttpStatus;
@@ -55,20 +55,17 @@ public class ExpressionService {
    * </ul>
    *
    * @param collectionId The collection id
-   * @param version api version
    * @param recordType The record type
    * @param recordId The record id to evaluate the expressions on
    * @param expressionsByName A map of expression names to expressions
    * @return A map of expression names to the evaluated expressions
    */
   @ReadTransaction
-  public Map<String, JsonNode> evaluateExpressions(
+  public EvaluateExpressionsResponseServerModel evaluateExpressions(
       UUID collectionId,
-      String version,
       RecordType recordType,
       String recordId,
       Map<String, String> expressionsByName) {
-    validateVersion(version);
     var attributeLookups =
         expressionsByName.values().stream()
             .map(this::extractRecordAttributeLookups)
@@ -78,7 +75,8 @@ public class ExpressionService {
         determineExpressionQueries(collectionId, recordType, attributeLookups, 0).toList();
     var resultsByQuery =
         executeExpressionQueries(collectionId, recordType, recordId, expressionQueries);
-    return substituteResultsInExpressions(expressionsByName, resultsByQuery, recordType);
+    return new EvaluateExpressionsResponseServerModel()
+        .evaluations(substituteResultsInExpressions(expressionsByName, resultsByQuery, recordType));
   }
 
   /**
@@ -89,7 +87,6 @@ public class ExpressionService {
    * of the relations in the expression should be an array.
    *
    * @param collectionId The collection id
-   * @param version api version
    * @param arrayRecordType The record type of the array of records
    * @param arrayRecordId The record id of the array of records
    * @param arrayRelationExpression The expression to get to the array of records
@@ -99,16 +96,14 @@ public class ExpressionService {
    * @return A map of maps: array record id -> expression name -> evaluated expression
    */
   @ReadTransaction
-  public EvaluateExpressionsWithArrayResponse evaluateExpressionsWithRelationArray(
+  public EvaluateExpressionsWithArrayResponseServerModel evaluateExpressionsWithRelationArray(
       UUID collectionId,
-      String version,
       RecordType arrayRecordType,
       String arrayRecordId,
       String arrayRelationExpression,
       Map<String, String> expressionsByName,
       int pageSize,
       int offset) {
-    validateVersion(version);
     var arrayRelations = getArrayRelations(collectionId, arrayRecordType, arrayRelationExpression);
     var queryRecordType = arrayRelations.get(arrayRelations.size() - 1).relationRecordType();
 
@@ -139,16 +134,18 @@ public class ExpressionService {
 
     // resultsByQuery is a map of maps of expression query info -> record id -> query result,
     // but we need to flip the keys to get the results in the shape that we want
-    return EvaluateExpressionsWithArrayResponse.of(
-        transposeMapKeys(resultsByQuery).entrySet().stream()
-            .map(
-                entry ->
-                    Map.entry(
-                        entry.getKey(),
-                        substituteResultsInExpressions(
-                            expressionsByName, entry.getValue(), queryRecordType)))
-            .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue)),
-        hasNext);
+    return new EvaluateExpressionsWithArrayResponseServerModel()
+        .hasNext(hasNext)
+        .results(
+            transposeMapKeys(resultsByQuery).entrySet().stream()
+                .map(
+                    entry ->
+                        new ExpressionEvaluationsForRecordServerModel()
+                            .recordId(entry.getKey())
+                            .evaluations(
+                                substituteResultsInExpressions(
+                                    expressionsByName, entry.getValue(), queryRecordType)))
+                .toList());
   }
 
   /**
@@ -306,7 +303,7 @@ public class ExpressionService {
    * @return A map of expression name -> expression with lookups replaced by values
    */
   @VisibleForTesting
-  Map<String, JsonNode> substituteResultsInExpressions(
+  Map<String, Object> substituteResultsInExpressions(
       Map<String, String> expressionsByName,
       Map<ExpressionQueryInfo, List<Record>> resultsByQuery,
       RecordType recordType) {

@@ -279,7 +279,66 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/DeleteRecordsResponse'
-
+  /records/v1/{collectionId}/{recordType}/{recordId}/evaluateExpressions:
+    post:
+      summary: Evaluate expressions on a single record
+      description: |
+        Evaluate expressions on a single record. The expression "this.foo" will get the value of the
+        attribute "foo" in the record. The expression "this.relation.foo" will get the value of the attribute
+        "foo" from the related record specified by attribute "relation" in the record. The expression
+        "{'name': this.foo, 'num': this.bar }" will create a JSON object with key "name" and value
+        of the attribute "foo" and the key "num" and value of the attribute "bar.
+      operationId: evaluateExpressions
+      tags:
+        - Record
+      parameters:
+        - $ref: '#/components/parameters/collectionIdPathParam'
+        - $ref: '#/components/parameters/recordTypePathParam'
+        - $ref: '#/components/parameters/recordIdPathParam'
+      requestBody:
+        description: Expressions to evaluate
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/EvaluateExpressionsRequest'
+      responses:
+        200:
+          description: Results of evaluating expressions
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EvaluateExpressionsResponse'
+  /records/v1/{collectionId}/{recordType}/{recordId}/evaluateExpressionsWithArray:
+    post:
+      summary: Evaluate expressions on array of records
+      description: |
+        Evaluate expressions on array of records. The expression "this.foo" will get the value of the
+        attribute "foo" in each record. The expression "this.relation.foo" will get the value of the attribute
+        "foo" from the related record specified by attribute "relation" in each record. The expression
+        "{'name': this.foo, 'num': this.bar }" will create a JSON object with key "name" and value
+        of the attribute "foo" and the key "num" and value of the attribute "bar.
+      operationId: evaluateExpressionsWithArray
+      tags:
+        - Record
+      parameters:
+        - $ref: '#/components/parameters/collectionIdPathParam'
+        - $ref: '#/components/parameters/recordTypePathParam'
+        - $ref: '#/components/parameters/recordIdPathParam'
+      requestBody:
+        description: Expressions to evaluate
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/EvaluateExpressionsWithArrayRequest'
+      responses:
+        200:
+          description: Results of evaluating expressions
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EvaluateExpressionsWithArrayResponse'
 
   ##############################
   # Capabilities APIs
@@ -334,6 +393,13 @@ components:
       schema:
         type: string
         format: uuid
+    recordIdPathParam:
+      name: recordId
+      in: path
+      description: Record id
+      required: true
+      schema:
+        type: string
     recordTypePathParam:
       name: recordType
       in: path
@@ -385,6 +451,88 @@ components:
       example:
         name: my-collection-name
         description: This is a human-readable description for the collection.
+    EvaluateExpressionsRequest:
+      type: object
+      required:
+        - expressions
+      properties:
+        expressions:
+          type: array
+          items:
+            $ref: '#/components/schemas/NamedExpression'
+          description: |
+            List of expressions to evaluate. The expression "this.foo" will get the value of the
+            attribute "foo" in the record. The expression "this.relation.foo" will get the value of the attribute
+            "foo" from the related record specified by attribute "relation" in the record. The expression
+            "{'name': this.foo, 'num': this.bar }" will create a JSON object with key "name" and value
+            of the attribute "foo" and the key "num" and value of the attribute "bar.
+    EvaluateExpressionsResponse:
+      required:
+        - evaluations
+      properties:
+        evaluations:
+          type: object
+          additionalProperties: true
+          description: |
+            The key is the expression name and the value is the result of the expression.
+    EvaluateExpressionsWithArrayRequest:
+      type: object
+      required:
+        - arrayExpression
+        - expressions
+        - pageSize
+        - offset
+      properties:
+        expressions:
+          type: array
+          items:
+            $ref: '#/components/schemas/NamedExpression'
+          description: |
+            List of expressions to evaluate. The expression "this.foo" will get the value of the
+            attribute "foo" in the record. The expression "this.relation.foo" will get the value of the attribute
+            "foo" from the related record specified by attribute "relation" in the record. The expression
+            "{'name': this.foo, 'num': this.bar }" will create a JSON object with key "name" and value
+            of the attribute "foo" and the key "num" and value of the attribute "bar.
+        arrayExpression:
+          type: string
+          description: |
+            Expression to evaluate that returns an array of record ids. The expression "this.relation" will get the value of the
+            attribute "relation" in the record. The expression "this.relation.foo" will get the value of the attribute
+            "foo" from the related record specified by attribute "relation" in the record.
+        pageSize:
+          type: integer
+          description: |
+            Number of records within the array to evaluate the expressions on.
+        offset:
+          type: integer
+          description: |
+            Number of records within the array to skip before returning the next page.
+    EvaluateExpressionsWithArrayResponse:
+      required:
+        - results
+        - hasNext
+      properties:
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/ExpressionEvaluationsForRecord'
+        hasNext:
+          type: boolean
+          description: |
+            Indicates if there are more records to evaluate expressions on.
+    ExpressionEvaluationsForRecord:
+      required:
+        - recordId
+        - evaluations
+      properties:
+        recordId:
+          type: string
+          description: Record id
+        evaluations:
+          type: object
+          additionalProperties: true
+          description: |
+            The key is the expression name and the value is the result of the expression.
     GenericJob:
       x-all-of-name: GenericJob
       description: |
@@ -429,6 +577,13 @@ components:
           type: string
           format: date-time
         errorMessage:
+          type: string
+    NamedExpression:
+      type: object
+      properties:
+        name:
+          type: string
+        expression:
           type: string
     WorkspaceInit:
       type: object

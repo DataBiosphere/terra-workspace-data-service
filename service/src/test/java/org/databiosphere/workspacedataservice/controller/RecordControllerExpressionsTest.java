@@ -1,6 +1,5 @@
 package org.databiosphere.workspacedataservice.controller;
 
-import static org.databiosphere.workspacedataservice.service.RecordUtils.VERSION;
 import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -11,17 +10,19 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.IntNode;
 import com.fasterxml.jackson.databind.node.TextNode;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.stream.Stream;
 import org.databiosphere.workspacedataservice.expressions.ExpressionService;
+import org.databiosphere.workspacedataservice.generated.EvaluateExpressionsRequestServerModel;
+import org.databiosphere.workspacedataservice.generated.EvaluateExpressionsResponseServerModel;
+import org.databiosphere.workspacedataservice.generated.EvaluateExpressionsWithArrayRequestServerModel;
+import org.databiosphere.workspacedataservice.generated.EvaluateExpressionsWithArrayResponseServerModel;
+import org.databiosphere.workspacedataservice.generated.ExpressionEvaluationsForRecordServerModel;
+import org.databiosphere.workspacedataservice.generated.NamedExpressionServerModel;
 import org.databiosphere.workspacedataservice.service.PermissionService;
 import org.databiosphere.workspacedataservice.shared.model.CollectionId;
-import org.databiosphere.workspacedataservice.shared.model.EvaluateExpressionsRequest;
-import org.databiosphere.workspacedataservice.shared.model.EvaluateExpressionsResponse;
-import org.databiosphere.workspacedataservice.shared.model.EvaluateExpressionsWithArrayRequest;
-import org.databiosphere.workspacedataservice.shared.model.EvaluateExpressionsWithArrayResponse;
-import org.databiosphere.workspacedataservice.shared.model.NamedExpression;
 import org.databiosphere.workspacedataservice.shared.model.RecordType;
 import org.junit.jupiter.api.TestInstance;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -49,34 +50,38 @@ public class RecordControllerExpressionsTest extends MockMvcTestBase {
     var expressionName = "expr_name";
     var expressionsByName = Map.of(expressionName, "this.attribute");
     var request =
-        new EvaluateExpressionsRequest(
-            expressionsByName.entrySet().stream()
-                .map(e -> new NamedExpression(e.getKey(), e.getValue()))
-                .toList());
+        new EvaluateExpressionsRequestServerModel()
+            .expressions(
+                expressionsByName.entrySet().stream()
+                    .map(
+                        e ->
+                            new NamedExpressionServerModel()
+                                .name(e.getKey())
+                                .expression(e.getValue()))
+                    .toList());
     var collectionId = UUID.randomUUID();
     var recordType = "recordType";
     var recordId = UUID.randomUUID().toString();
 
     doNothing().when(permissionService).requireReadPermission(CollectionId.of(collectionId));
-    var expressionEvaluation = Map.of(expressionName, value);
+    var expressionEvaluation =
+        new EvaluateExpressionsResponseServerModel(Map.of(expressionName, value));
     when(expressionService.evaluateExpressions(
-            collectionId, VERSION, RecordType.valueOf(recordType), recordId, expressionsByName))
+            collectionId, RecordType.valueOf(recordType), recordId, expressionsByName))
         .thenReturn(expressionEvaluation);
-    var expectedResponse = new EvaluateExpressionsResponse(expressionEvaluation);
 
     mockMvc
         .perform(
             post(
-                    "/{instanceId}/records/{version}/{recordType}/{recordId}/evaluateExpressions",
+                    "/records/v1/{collectionId}/{recordType}/{recordId}/evaluateExpressions",
                     collectionId,
-                    VERSION,
                     recordType,
                     recordId)
                 .content(toJson(request))
                 .contentType(MediaType.APPLICATION_JSON))
         .andExpect(status().isOk())
         .andExpect(content().contentType(MediaType.APPLICATION_JSON))
-        .andExpect(content().json(toJson(expectedResponse)));
+        .andExpect(content().json(toJson(expressionEvaluation)));
 
     verify(permissionService).requireReadPermission(CollectionId.of(collectionId));
   }
@@ -90,23 +95,25 @@ public class RecordControllerExpressionsTest extends MockMvcTestBase {
     var pageSize = 10;
     var offset = 0;
     var request =
-        new EvaluateExpressionsWithArrayRequest(
-            relationExpression,
+        new EvaluateExpressionsWithArrayRequestServerModel(
             expressionsByName.entrySet().stream()
-                .map(e -> new NamedExpression(e.getKey(), e.getValue()))
+                .map(
+                    e -> new NamedExpressionServerModel().name(e.getKey()).expression(e.getValue()))
                 .toList(),
-            offset,
-            pageSize);
+            relationExpression,
+            pageSize,
+            offset);
     var collectionId = UUID.randomUUID();
     var recordType = "recordType";
     var recordId = UUID.randomUUID().toString();
 
     doNothing().when(permissionService).requireReadPermission(CollectionId.of(collectionId));
-    var expressionEvaluation = Map.of("recordId", Map.of(expressionName, value));
-    var expectedResponse = EvaluateExpressionsWithArrayResponse.of(expressionEvaluation, false);
+    var expressionEvaluation =
+        new ExpressionEvaluationsForRecordServerModel("recordId", Map.of(expressionName, value));
+    var expectedResponse =
+        new EvaluateExpressionsWithArrayResponseServerModel(List.of(expressionEvaluation), false);
     when(expressionService.evaluateExpressionsWithRelationArray(
             collectionId,
-            VERSION,
             RecordType.valueOf(recordType),
             recordId,
             relationExpression,
@@ -118,9 +125,8 @@ public class RecordControllerExpressionsTest extends MockMvcTestBase {
     mockMvc
         .perform(
             post(
-                    "/{instanceId}/records/{version}/{recordType}/{recordId}/evaluateExpressionsWithArray",
+                    "/records/v1/{collectionId}/{recordType}/{recordId}/evaluateExpressionsWithArray",
                     collectionId,
-                    VERSION,
                     recordType,
                     recordId)
                 .content(toJson(request))

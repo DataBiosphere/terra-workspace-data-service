@@ -2,7 +2,6 @@ package org.databiosphere.workspacedataservice.expressions;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.databiosphere.workspacedataservice.service.RecordUtils.VERSION;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -495,10 +494,11 @@ public class ExpressionServiceTest extends ControlPlaneTestBase {
     var expression = "this.recordType_id";
     var result =
         expressionService.evaluateExpressions(
-            collectionUuid, VERSION, recordType, recordId, Map.of(expressionName, expression));
+            collectionUuid, recordType, recordId, Map.of(expressionName, expression));
 
-    assertThat(result).hasSize(1);
-    assertThat(result.get(expressionName).toString()).isEqualTo("\"" + recordId + "\"");
+    assertThat(result.getEvaluations()).hasSize(1);
+    assertThat(result.getEvaluations().get(expressionName).toString())
+        .isEqualTo("\"" + recordId + "\"");
   }
 
   @Test
@@ -554,7 +554,6 @@ public class ExpressionServiceTest extends ControlPlaneTestBase {
       var result =
           expressionService.evaluateExpressionsWithRelationArray(
               collectionUuid,
-              VERSION,
               recordType,
               recordId,
               "this.arrayAttr",
@@ -562,14 +561,14 @@ public class ExpressionServiceTest extends ControlPlaneTestBase {
               pageSize,
               0);
 
-      assertThat(result.hasNext()).isEqualTo(pageSize < nestedRecords.size());
-      assertThat(result.results()).hasSize(Math.min(pageSize, nestedRecords.size()));
+      assertThat(result.getHasNext()).isEqualTo(pageSize < nestedRecords.size());
+      assertThat(result.getResults()).hasSize(Math.min(pageSize, nestedRecords.size()));
       result
-          .results()
+          .getResults()
           .forEach(
               nestedResult -> {
-                assertThat(nestedResult.evaluations().get(expressionName).toString())
-                    .isEqualTo("\"" + nestedResult.recordId() + "\"");
+                assertThat(nestedResult.getEvaluations().get(expressionName).toString())
+                    .isEqualTo("\"" + nestedResult.getRecordId() + "\"");
               });
     }
   }

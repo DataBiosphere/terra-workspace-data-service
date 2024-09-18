@@ -13,10 +13,6 @@ import org.databiosphere.workspacedataservice.service.model.RecordTypeSchema;
 import org.databiosphere.workspacedataservice.service.model.exception.MissingObjectException;
 import org.databiosphere.workspacedataservice.shared.model.BatchResponse;
 import org.databiosphere.workspacedataservice.shared.model.CollectionId;
-import org.databiosphere.workspacedataservice.shared.model.EvaluateExpressionsRequest;
-import org.databiosphere.workspacedataservice.shared.model.EvaluateExpressionsResponse;
-import org.databiosphere.workspacedataservice.shared.model.EvaluateExpressionsWithArrayRequest;
-import org.databiosphere.workspacedataservice.shared.model.EvaluateExpressionsWithArrayResponse;
 import org.databiosphere.workspacedataservice.shared.model.RecordQueryResponse;
 import org.databiosphere.workspacedataservice.shared.model.RecordRequest;
 import org.databiosphere.workspacedataservice.shared.model.RecordResponse;
@@ -124,39 +120,6 @@ public class RecordController {
     permissionService.requireReadPermission(CollectionId.of(instanceId));
     return recordOrchestratorService.queryForRecords(
         instanceId, recordType, version, searchRequest);
-  }
-
-  @PostMapping("/{instanceid}/records/{version}/{recordType}/{recordId}/evaluateExpressions")
-  public EvaluateExpressionsResponse evaluateExpressions(
-      @PathVariable("instanceid") UUID instanceId,
-      @PathVariable("recordType") RecordType recordType,
-      @PathVariable("version") String version,
-      @PathVariable("recordId") String recordId,
-      @RequestBody EvaluateExpressionsRequest request) {
-    permissionService.requireReadPermission(CollectionId.of(instanceId));
-    return new EvaluateExpressionsResponse(
-        expressionService.evaluateExpressions(
-            instanceId, version, recordType, recordId, request.toMap()));
-  }
-
-  @PostMapping(
-      "/{instanceid}/records/{version}/{recordType}/{recordId}/evaluateExpressionsWithArray")
-  public EvaluateExpressionsWithArrayResponse evaluateExpressionsWithArray(
-      @PathVariable("instanceid") UUID instanceId,
-      @PathVariable("recordType") RecordType recordType,
-      @PathVariable("version") String version,
-      @PathVariable("recordId") String recordId,
-      @RequestBody EvaluateExpressionsWithArrayRequest request) {
-    permissionService.requireReadPermission(CollectionId.of(instanceId));
-    return expressionService.evaluateExpressionsWithRelationArray(
-        instanceId,
-        version,
-        recordType,
-        recordId,
-        request.arrayExpression(),
-        request.expressionsMap(),
-        request.pageSize(),
-        request.offset());
   }
 
   @PutMapping("/{instanceId}/records/{version}/{recordType}/{recordId}")
