@@ -106,15 +106,6 @@ environment variable, such as:
 export SAM_URL=https://sam.dsde-dev.broadinstitute.org/
 ```
 
-##### DATA_REPO_URL
-
-For importing snapshots from the Terra Data Repo, WDS will need the TDR URL configured as an
-environment variable, such as:
-
-```
-export DATA_REPO_URL=https://jade.datarepo-dev.broadinstitute.org/
-```
-
 ##### WORKSPACE_MANAGER_URL
 
 Importing snapshots from the Terra Data Repo also requires the Workspace Manager configured as an
@@ -240,7 +231,7 @@ To run a single test, run
 
 ## Troubleshooting
 
-Some problems during build and test may be solved by running the Gradle `clean` task: 
+Some problems during build and test may be solved by running the Gradle `clean` task:
 
 ```bash
 ./gradlew clean
