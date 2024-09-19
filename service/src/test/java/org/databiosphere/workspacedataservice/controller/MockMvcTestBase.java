@@ -15,7 +15,7 @@ import org.springframework.test.web.servlet.MvcResult;
 @AutoConfigureMockMvc
 @SpringBootTest
 class MockMvcTestBase extends ControlPlaneTestBase {
-  @Autowired private ObjectMapper mapper;
+  @Autowired protected ObjectMapper mapper;
   @Autowired protected MockMvc mockMvc;
 
   protected String toJson(Object value) throws JsonProcessingException {
