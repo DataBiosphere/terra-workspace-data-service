@@ -5,7 +5,6 @@ import java.io.InputStream;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
-import org.databiosphere.workspacedataservice.expressions.ExpressionService;
 import org.databiosphere.workspacedataservice.service.PermissionService;
 import org.databiosphere.workspacedataservice.service.RecordOrchestratorService;
 import org.databiosphere.workspacedataservice.service.model.AttributeSchema;
@@ -44,15 +43,11 @@ public class RecordController {
 
   private final RecordOrchestratorService recordOrchestratorService;
   private final PermissionService permissionService;
-  private final ExpressionService expressionService;
 
   public RecordController(
-      RecordOrchestratorService recordOrchestratorService,
-      PermissionService permissionService,
-      ExpressionService expressionService) {
+      RecordOrchestratorService recordOrchestratorService, PermissionService permissionService) {
     this.recordOrchestratorService = recordOrchestratorService;
     this.permissionService = permissionService;
-    this.expressionService = expressionService;
   }
 
   @PatchMapping("/{instanceId}/records/{version}/{recordType}/{recordId}")
