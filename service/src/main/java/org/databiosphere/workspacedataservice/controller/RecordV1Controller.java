@@ -68,7 +68,10 @@ public class RecordV1Controller implements RecordApi {
                     NamedExpressionServerModel::getExpression));
     var response =
         expressionService.evaluateExpressions(
-            collectionId, RecordType.valueOf(recordType), recordId, expressionsMap);
+            CollectionId.of(collectionId),
+            RecordType.valueOf(recordType),
+            recordId,
+            expressionsMap);
     return new ResponseEntity<>(response, HttpStatus.OK);
   }
 
@@ -88,7 +91,7 @@ public class RecordV1Controller implements RecordApi {
                     NamedExpressionServerModel::getExpression));
     var response =
         expressionService.evaluateExpressionsWithRelationArray(
-            collectionId,
+            CollectionId.of(collectionId),
             RecordType.valueOf(recordType),
             recordId,
             request.getArrayExpression(),

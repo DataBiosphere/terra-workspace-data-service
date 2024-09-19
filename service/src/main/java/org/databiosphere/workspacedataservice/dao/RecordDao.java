@@ -318,7 +318,7 @@ public class RecordDao {
    *     LinkedHashMap is used to maintain the order of the records.
    */
   public LinkedHashMap<String, List<Record>> queryRelatedRecordsWithArray(
-      UUID collectionId,
+      CollectionId collectionId,
       RecordType arrayRecordType,
       String arrayRecordId,
       List<Relation> arrayRelations,
@@ -354,27 +354,27 @@ public class RecordDao {
                 )""",
                 Map.of(
                     "primaryKey",
-                    quote(primaryKeyDao.getPrimaryKeyColumn(rootRecordType, collectionId)),
+                    quote(primaryKeyDao.getPrimaryKeyColumn(rootRecordType, collectionId.id())),
                     "finalRelationIndex",
                     relations.size(),
                     "rootTable",
-                    getQualifiedTableName(rootRecordType, collectionId),
+                    getQualifiedTableName(rootRecordType, collectionId.id()),
                     "joinClause",
                     buildJoinClauseForRelations(collectionId, rootRecordType, relations),
                     "finalArrayRelationIndex",
                     arrayRelations.size(),
                     "arrayRootTable",
-                    getQualifiedTableName(arrayRecordType, collectionId),
+                    getQualifiedTableName(arrayRecordType, collectionId.id()),
                     "arrayJoinClause",
                     buildJoinClauseForRelations(collectionId, arrayRecordType, arrayRelations),
                     "arrayPrimaryKey",
-                    quote(primaryKeyDao.getPrimaryKeyColumn(arrayRecordType, collectionId)))),
+                    quote(primaryKeyDao.getPrimaryKeyColumn(arrayRecordType, collectionId.id())))),
             new MapSqlParameterSource(
                 Map.of(RECORD_ID_PARAM, arrayRecordId, "pageSize", pageSize, "offset", offset)),
             new RecordRowMapper(
                 queryRecordType,
                 objectMapper,
-                collectionId,
+                collectionId.id(),
                 Map.of("sys_root", DataTypeMapping.STRING)))
         .stream()
         .map(
@@ -402,7 +402,10 @@ public class RecordDao {
    * @return A list of related records
    */
   public List<Record> queryRelatedRecords(
-      UUID collectionId, RecordType rootRecordType, String rootRecordId, List<Relation> relations) {
+      CollectionId collectionId,
+      RecordType rootRecordType,
+      String rootRecordId,
+      List<Relation> relations) {
 
     var queryRecordType =
         relations.isEmpty()
@@ -418,19 +421,19 @@ public class RecordDao {
                 where tab0.${primaryKey} = :recordId""",
             Map.of(
                 "primaryKey",
-                quote(primaryKeyDao.getPrimaryKeyColumn(rootRecordType, collectionId)),
+                quote(primaryKeyDao.getPrimaryKeyColumn(rootRecordType, collectionId.id())),
                 "finalRelationIndex",
                 relations.size(),
                 "rootTable",
-                getQualifiedTableName(rootRecordType, collectionId),
+                getQualifiedTableName(rootRecordType, collectionId.id()),
                 "joinClause",
                 buildJoinClauseForRelations(collectionId, rootRecordType, relations))),
         new MapSqlParameterSource(RECORD_ID_PARAM, rootRecordId),
-        new RecordRowMapper(queryRecordType, objectMapper, collectionId));
+        new RecordRowMapper(queryRecordType, objectMapper, collectionId.id()));
   }
 
   private String buildJoinClauseForRelations(
-      UUID collectionId, RecordType rootRecordType, List<Relation> relations) {
+      CollectionId collectionId, RecordType rootRecordType, List<Relation> relations) {
     var joinClause = new StringBuilder();
     for (int relationIndex = 0; relationIndex < relations.size(); relationIndex++) {
       var relation = relations.get(relationIndex);
@@ -438,26 +441,27 @@ public class RecordDao {
           relationIndex == 0
               ? rootRecordType
               : relations.get(relationIndex - 1).relationRecordType();
-      var priorRelationSchema = getExistingTableSchema(collectionId, priorRecordType);
+      var priorRelationSchema = getExistingTableSchema(collectionId.id(), priorRecordType);
       if (priorRelationSchema.get(relation.relationColName()).isArrayType()) {
         var joinTableName =
-            getQualifiedJoinTableName(collectionId, relation.relationColName(), rootRecordType);
+            getQualifiedJoinTableName(
+                collectionId.id(), relation.relationColName(), rootRecordType);
 
         joinClause.append(
             constructRelationArrayJoinFragment(
                 joinTableName,
                 relationIndex,
                 relation,
-                getQualifiedTableName(relation.relationRecordType(), collectionId),
-                primaryKeyDao.getPrimaryKeyColumn(relation.relationRecordType(), collectionId),
-                primaryKeyDao.getPrimaryKeyColumn(priorRecordType, collectionId),
+                getQualifiedTableName(relation.relationRecordType(), collectionId.id()),
+                primaryKeyDao.getPrimaryKeyColumn(relation.relationRecordType(), collectionId.id()),
+                primaryKeyDao.getPrimaryKeyColumn(priorRecordType, collectionId.id()),
                 priorRecordType));
       } else {
         joinClause.append(
             constructRelationJoinFragment(
-                getQualifiedTableName(relation.relationRecordType(), collectionId),
+                getQualifiedTableName(relation.relationRecordType(), collectionId.id()),
                 relationIndex,
-                primaryKeyDao.getPrimaryKeyColumn(relation.relationRecordType(), collectionId),
+                primaryKeyDao.getPrimaryKeyColumn(relation.relationRecordType(), collectionId.id()),
                 relation));
       }
     }

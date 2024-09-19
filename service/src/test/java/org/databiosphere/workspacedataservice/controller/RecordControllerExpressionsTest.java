@@ -59,11 +59,11 @@ public class RecordControllerExpressionsTest extends MockMvcTestBase {
                                 .name(e.getKey())
                                 .expression(e.getValue()))
                     .toList());
-    var collectionId = UUID.randomUUID();
+    var collectionId = CollectionId.of(UUID.randomUUID());
     var recordType = "recordType";
     var recordId = UUID.randomUUID().toString();
 
-    doNothing().when(permissionService).requireReadPermission(CollectionId.of(collectionId));
+    doNothing().when(permissionService).requireReadPermission(collectionId);
     var expressionEvaluation =
         new EvaluateExpressionsResponseServerModel(Map.of(expressionName, value));
     when(expressionService.evaluateExpressions(
@@ -83,7 +83,7 @@ public class RecordControllerExpressionsTest extends MockMvcTestBase {
         .andExpect(content().contentType(MediaType.APPLICATION_JSON))
         .andExpect(content().json(toJson(expressionEvaluation)));
 
-    verify(permissionService).requireReadPermission(CollectionId.of(collectionId));
+    verify(permissionService).requireReadPermission(collectionId);
   }
 
   @ParameterizedTest
@@ -103,11 +103,11 @@ public class RecordControllerExpressionsTest extends MockMvcTestBase {
             relationExpression,
             pageSize,
             offset);
-    var collectionId = UUID.randomUUID();
+    var collectionId = CollectionId.of(UUID.randomUUID());
     var recordType = "recordType";
     var recordId = UUID.randomUUID().toString();
 
-    doNothing().when(permissionService).requireReadPermission(CollectionId.of(collectionId));
+    doNothing().when(permissionService).requireReadPermission(collectionId);
     var expressionEvaluation =
         new ExpressionEvaluationsForRecordServerModel("recordId", Map.of(expressionName, value));
     var expectedResponse =
@@ -135,6 +135,6 @@ public class RecordControllerExpressionsTest extends MockMvcTestBase {
         .andExpect(content().contentType(MediaType.APPLICATION_JSON))
         .andExpect(content().json(toJson(expectedResponse)));
 
-    verify(permissionService).requireReadPermission(CollectionId.of(collectionId));
+    verify(permissionService).requireReadPermission(collectionId);
   }
 }

@@ -63,6 +63,7 @@ class RecordDaoTest extends ControlPlaneTestBase {
   @Autowired WorkspaceRepository workspaceRepository;
 
   UUID collectionUuid;
+  CollectionId collectionId;
   WorkspaceId workspaceId;
   RecordType recordType;
 
@@ -80,6 +81,7 @@ class RecordDaoTest extends ControlPlaneTestBase {
         new WorkspaceRecord(workspaceId, WorkspaceDataTableType.WDS, /* newFlag= */ true));
     // create the collection
     collectionUuid = collectionService.save(workspaceId, "name", "desc").getId();
+    collectionId = CollectionId.of(collectionUuid);
     // create the record type
     recordDao.createRecordType(
         collectionUuid, emptyMap(), recordType, RelationCollection.empty(), PRIMARY_KEY);
@@ -1272,7 +1274,6 @@ class RecordDaoTest extends ControlPlaneTestBase {
 
   /** Test query resulting from an expressions like `this.relationAttr.xxx` */
   @Test
-  @Transactional
   void testQueryRelatedRecords() {
     Record referencedRecord = new Record("referencedRecord", recordType, RecordAttributes.empty());
 
@@ -1294,14 +1295,13 @@ class RecordDaoTest extends ControlPlaneTestBase {
     assertThat(relations).hasSize(1);
 
     var results =
-        recordDao.queryRelatedRecords(collectionUuid, recordType, testRecord.getId(), relations);
+        recordDao.queryRelatedRecords(collectionId, recordType, testRecord.getId(), relations);
 
     assertEquals(List.of(referencedRecord), results);
   }
 
   /** Test query resulting from an expressions like `this.relationAttr.otherRelationAttr.xxx` */
   @Test
-  @Transactional
   void testQueryRelatedRecordsTwoRelations() {
     var otherRecordType = RecordType.valueOf("testRecordType2");
     recordDao.createRecordType(
@@ -1344,7 +1344,7 @@ class RecordDaoTest extends ControlPlaneTestBase {
 
     var results =
         recordDao.queryRelatedRecords(
-            collectionUuid,
+            collectionId,
             recordType,
             testRecord.getId(),
             Stream.of(relations, relationsOtherType).flatMap(List::stream).toList());
@@ -1354,7 +1354,6 @@ class RecordDaoTest extends ControlPlaneTestBase {
 
   /** Test query resulting from an expressions like `this.xxx` */
   @Test
-  @Transactional
   void testQueryRelatedRecordsNoRelations() {
     String recordId = "testRecord";
     Record testRecord = new Record(recordId, recordType, RecordAttributes.empty());
@@ -1362,7 +1361,7 @@ class RecordDaoTest extends ControlPlaneTestBase {
     recordDao.batchUpsert(collectionUuid, recordType, List.of(testRecord), emptyMap());
 
     var results =
-        recordDao.queryRelatedRecords(collectionUuid, recordType, testRecord.getId(), List.of());
+        recordDao.queryRelatedRecords(collectionId, recordType, testRecord.getId(), List.of());
 
     assertEquals(List.of(testRecord), results);
   }
@@ -1372,7 +1371,6 @@ class RecordDaoTest extends ControlPlaneTestBase {
    * array
    */
   @Test
-  @Transactional
   void testQueryRelatedRecordsWitArray() {
     Record referencedRecord1 =
         new Record("referencedRecord1", recordType, RecordAttributes.empty());
@@ -1403,7 +1401,7 @@ class RecordDaoTest extends ControlPlaneTestBase {
     assertThat(relations).hasSize(1);
 
     var results =
-        recordDao.queryRelatedRecords(collectionUuid, recordType, testRecord.getId(), relations);
+        recordDao.queryRelatedRecords(collectionId, recordType, testRecord.getId(), relations);
 
     assertEquals(List.of(referencedRecord1, referencedRecord2), results);
   }
@@ -1413,7 +1411,6 @@ class RecordDaoTest extends ControlPlaneTestBase {
    * relationAttr is an array
    */
   @Test
-  @Transactional
   void testQueryRelatedRecordsWitArrayPlusAnotherRelation() {
     var otherRecordType = RecordType.valueOf("testRecordType2");
     recordDao.createRecordType(
@@ -1481,7 +1478,7 @@ class RecordDaoTest extends ControlPlaneTestBase {
 
     var results =
         recordDao.queryRelatedRecords(
-            collectionUuid,
+            collectionId,
             recordType,
             testRecord.getId(),
             Stream.of(relations, otherRelations).flatMap(List::stream).toList());
@@ -1541,7 +1538,7 @@ class RecordDaoTest extends ControlPlaneTestBase {
 
     var results =
         recordDao.queryRelatedRecordsWithArray(
-            collectionUuid, arrayRecordType, arrayRecord.getId(), arrayRelations, relations, 10, 0);
+            collectionId, arrayRecordType, arrayRecord.getId(), arrayRelations, relations, 10, 0);
 
     assertEquals(
         Map.of(
@@ -1555,7 +1552,7 @@ class RecordDaoTest extends ControlPlaneTestBase {
     for (int page = 0; page < 2; page++) {
       var pagedResults =
           recordDao.queryRelatedRecordsWithArray(
-              collectionUuid,
+              collectionId,
               arrayRecordType,
               arrayRecord.getId(),
               arrayRelations,

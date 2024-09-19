@@ -27,6 +27,7 @@ import org.databiosphere.workspacedataservice.service.RelationUtils;
 import org.databiosphere.workspacedataservice.service.model.DataTypeMapping;
 import org.databiosphere.workspacedataservice.service.model.Relation;
 import org.databiosphere.workspacedataservice.service.model.RelationCollection;
+import org.databiosphere.workspacedataservice.shared.model.CollectionId;
 import org.databiosphere.workspacedataservice.shared.model.Record;
 import org.databiosphere.workspacedataservice.shared.model.RecordAttributes;
 import org.databiosphere.workspacedataservice.shared.model.RecordRequest;
@@ -45,10 +46,8 @@ import org.junit.jupiter.params.provider.MethodSource;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.http.HttpStatus;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.server.ResponseStatusException;
 
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 @SpringBootTest
@@ -61,7 +60,7 @@ public class ExpressionServiceTest extends ControlPlaneTestBase {
   @Autowired private RecordService recordService;
   @Autowired private WorkspaceRepository workspaceRepository;
 
-  UUID collectionUuid;
+  CollectionId collectionId;
 
   @BeforeEach
   void setUp() {
@@ -71,12 +70,13 @@ public class ExpressionServiceTest extends ControlPlaneTestBase {
     workspaceRepository.save(
         new WorkspaceRecord(workspaceId, WorkspaceDataTableType.WDS, /* newFlag= */ true));
     // create the collection
-    collectionUuid = collectionService.save(workspaceId, "name", "desc").getId();
+    collectionId = CollectionId.of(collectionService.save(workspaceId, "name", "desc").getId());
   }
 
   @AfterEach
   void tearDown() {
     TestUtils.cleanAllCollections(collectionService, namedTemplate);
+    TestUtils.cleanAllWorkspaces(namedTemplate);
   }
 
   @Test
@@ -107,19 +107,19 @@ public class ExpressionServiceTest extends ControlPlaneTestBase {
     var pkAttr = "pk";
 
     recordDao.createRecordType(
-        collectionUuid,
+        collectionId.id(),
         Map.of(pkAttr, DataTypeMapping.STRING),
         grandChildType,
         new RelationCollection(Set.of(), Set.of()),
         pkAttr);
     recordDao.createRecordType(
-        collectionUuid,
+        collectionId.id(),
         Map.of(grandRelation.relationColName(), DataTypeMapping.RELATION),
         childType,
         new RelationCollection(Set.of(), Set.of(grandRelation)),
         pkAttr);
     recordDao.createRecordType(
-        collectionUuid,
+        collectionId.id(),
         Map.of(
             sib1Relation.relationColName(),
             DataTypeMapping.RELATION,
@@ -129,8 +129,7 @@ public class ExpressionServiceTest extends ControlPlaneTestBase {
         new RelationCollection(Set.of(sib1Relation, sib2Relation), Set.of()),
         pkAttr);
 
-    var results =
-        expressionService.getArrayRelations(collectionUuid, parentType, "this.sib2.grand");
+    var results = expressionService.getArrayRelations(collectionId, parentType, "this.sib2.grand");
 
     assertThat(results).hasSameElementsAs(List.of(sib2Relation, grandRelation));
   }
@@ -146,9 +145,9 @@ public class ExpressionServiceTest extends ControlPlaneTestBase {
     var pkAttr = "pk";
 
     recordDao.createRecordType(
-        collectionUuid, Map.of(), childType, RelationCollection.empty(), pkAttr);
+        collectionId.id(), Map.of(), childType, RelationCollection.empty(), pkAttr);
     recordDao.createRecordType(
-        collectionUuid,
+        collectionId.id(),
         Map.of(
             sib1Relation.relationColName(),
             DataTypeMapping.RELATION,
@@ -160,13 +159,11 @@ public class ExpressionServiceTest extends ControlPlaneTestBase {
 
     assertThatThrownBy(
             () ->
-                expressionService.getArrayRelations(
-                    collectionUuid, parentType, "this.sib2.missing"))
+                expressionService.getArrayRelations(collectionId, parentType, "this.sib2.missing"))
         .isInstanceOfSatisfying(
-            ResponseStatusException.class,
+            ExpressionParsingException.class,
             e -> {
-              assertThat(e.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
-              assertThat(e.getReason()).contains("missing");
+              assertThat(e.getMessage()).contains("missing");
             });
   }
 
@@ -192,13 +189,13 @@ public class ExpressionServiceTest extends ControlPlaneTestBase {
     var grandChildAttr = "grandChildAttr";
 
     recordDao.createRecordType(
-        collectionUuid,
+        collectionId.id(),
         Map.of(grandChildAttr, DataTypeMapping.STRING, pkAttr, DataTypeMapping.STRING),
         grandChildType,
         new RelationCollection(Set.of(), Set.of()),
         pkAttr);
     recordDao.createRecordType(
-        collectionUuid,
+        collectionId.id(),
         Map.of(
             childAttr,
             DataTypeMapping.STRING,
@@ -210,7 +207,7 @@ public class ExpressionServiceTest extends ControlPlaneTestBase {
         new RelationCollection(Set.of(grandRelation), Set.of()),
         pkAttr);
     recordDao.createRecordType(
-        collectionUuid,
+        collectionId.id(),
         Map.of(
             parentAttr,
             DataTypeMapping.STRING,
@@ -247,7 +244,7 @@ public class ExpressionServiceTest extends ControlPlaneTestBase {
     var results =
         expressionService
             .determineExpressionQueries(
-                collectionUuid,
+                collectionId,
                 parentType,
                 Set.of(
                     parentAttrLookup,
@@ -285,7 +282,7 @@ public class ExpressionServiceTest extends ControlPlaneTestBase {
     var pkAttr = "pk";
 
     recordDao.createRecordType(
-        collectionUuid,
+        collectionId.id(),
         Map.of(pkAttr, DataTypeMapping.STRING),
         recordType,
         new RelationCollection(Set.of(), Set.of()),
@@ -295,7 +292,7 @@ public class ExpressionServiceTest extends ControlPlaneTestBase {
     assertThatThrownBy(
             () ->
                 expressionService.determineExpressionQueries(
-                    collectionUuid,
+                    collectionId,
                     recordType,
                     Set.of(
                         new AttributeLookup(
@@ -304,10 +301,9 @@ public class ExpressionServiceTest extends ControlPlaneTestBase {
                             "this.missingRelation.missingAttr")),
                     0))
         .isInstanceOfSatisfying(
-            ResponseStatusException.class,
+            ExpressionParsingException.class,
             e -> {
-              assertThat(e.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
-              assertThat(e.getReason()).contains(missingRelation);
+              assertThat(e.getMessage()).contains(missingRelation);
             });
   }
 
@@ -384,6 +380,15 @@ public class ExpressionServiceTest extends ControlPlaneTestBase {
   @MethodSource("testGetExpressionResultLookupMapParams")
   void testGetExpressionResultLookupMap(List<Object> recordValues, String expectedJson) {
     var recordType = RecordType.valueOf("recordType");
+    var pkAttr = "pk";
+
+    recordDao.createRecordType(
+        collectionId.id(),
+        Map.of(pkAttr, DataTypeMapping.STRING),
+        recordType,
+        new RelationCollection(Set.of(), Set.of()),
+        pkAttr);
+
     var records =
         recordValues.stream()
             .map(
@@ -401,7 +406,7 @@ public class ExpressionServiceTest extends ControlPlaneTestBase {
                     List.of(),
                     Set.of(
                         new AttributeLookup(List.of(), "value", "this.value"),
-                        new AttributeLookup(List.of(), "recordtype_id", "this.recordtype_id")),
+                        new AttributeLookup(List.of(), pkAttr, "this." + pkAttr)),
                     recordValues.size() > 1),
                 records,
                 new ExpressionQueryInfo(
@@ -409,18 +414,27 @@ public class ExpressionServiceTest extends ControlPlaneTestBase {
                     Set.of(new AttributeLookup(List.of(), "value", "this.that.value")),
                     recordValues.size() > 1),
                 records),
-            recordType);
+            recordType,
+            collectionId);
 
     assertThat(result).hasSize(3);
     assertThat(result.get("this.value").toString()).isEqualTo(expectedJson);
     assertThat(result.get("this.that.value").toString()).isEqualTo(expectedJson);
-    assertThat(result).hasEntrySatisfying("this.recordtype_id", v -> assertThat(v).isNotNull());
+    assertThat(result).hasEntrySatisfying("this." + pkAttr, v -> assertThat(v).isNotNull());
   }
 
   @ParameterizedTest
   @ValueSource(booleans = {true, false})
   void testGetExpressionResultLookupMapMissingValue(boolean isArray) {
     var recordType = RecordType.valueOf("recordType");
+    var pkAttr = "pk";
+
+    recordDao.createRecordType(
+        collectionId.id(),
+        Map.of(pkAttr, DataTypeMapping.STRING),
+        recordType,
+        new RelationCollection(Set.of(), Set.of()),
+        pkAttr);
     var record =
         new Record(
             UUID.randomUUID().toString(), recordType, new RecordRequest(RecordAttributes.empty()));
@@ -433,7 +447,8 @@ public class ExpressionServiceTest extends ControlPlaneTestBase {
                     Set.of(new AttributeLookup(List.of(), "missing", "this.missing")),
                     isArray),
                 List.of(record)),
-            recordType);
+            recordType,
+            collectionId);
 
     assertThat(result).hasSize(1);
     assertThat(result.get("this.missing").toString()).isEqualTo(isArray ? "[]" : "null");
@@ -449,6 +464,14 @@ public class ExpressionServiceTest extends ControlPlaneTestBase {
       delimiter = '|')
   void testSubstituteResultsInExpressions(String expression, String expected) {
     var recordType = RecordType.valueOf("recordType");
+    var pkAttr = "pk";
+
+    recordDao.createRecordType(
+        collectionId.id(),
+        Map.of(pkAttr, DataTypeMapping.STRING),
+        recordType,
+        new RelationCollection(Set.of(), Set.of()),
+        pkAttr);
     var records =
         List.of(
             new Record(
@@ -466,7 +489,8 @@ public class ExpressionServiceTest extends ControlPlaneTestBase {
                     Set.of(new AttributeLookup(List.of(), "value", "this.value")),
                     false),
                 records),
-            recordType);
+            recordType,
+            collectionId);
 
     assertThat(result).hasSize(1);
     assertThat(result.get(expressionName).toString()).isEqualTo(expected);
@@ -480,7 +504,7 @@ public class ExpressionServiceTest extends ControlPlaneTestBase {
     var pkAttr = "pk";
 
     recordDao.createRecordType(
-        collectionUuid,
+        collectionId.id(),
         Map.of(pkAttr, DataTypeMapping.STRING),
         recordType,
         new RelationCollection(Set.of(), Set.of()),
@@ -488,13 +512,13 @@ public class ExpressionServiceTest extends ControlPlaneTestBase {
 
     var recordId = UUID.randomUUID().toString();
     var record = new Record(recordId, recordType, new RecordRequest(RecordAttributes.empty()));
-    recordDao.batchUpsert(collectionUuid, recordType, List.of(record), Map.of());
+    recordDao.batchUpsert(collectionId.id(), recordType, List.of(record), Map.of());
 
     var expressionName = "test";
-    var expression = "this.recordType_id";
+    var expression = "this." + pkAttr;
     var result =
         expressionService.evaluateExpressions(
-            collectionUuid, recordType, recordId, Map.of(expressionName, expression));
+            collectionId, recordType, recordId, Map.of(expressionName, expression));
 
     assertThat(result.getEvaluations()).hasSize(1);
     assertThat(result.getEvaluations().get(expressionName).toString())
@@ -510,13 +534,13 @@ public class ExpressionServiceTest extends ControlPlaneTestBase {
     var pkAttr = "pk";
 
     recordDao.createRecordType(
-        collectionUuid,
+        collectionId.id(),
         Map.of(pkAttr, DataTypeMapping.STRING),
         recordType,
         new RelationCollection(Set.of(), Set.of()),
         pkAttr);
     recordDao.createRecordType(
-        collectionUuid,
+        collectionId.id(),
         Map.of(pkAttr, DataTypeMapping.STRING),
         nestedRecordType,
         new RelationCollection(Set.of(), Set.of()),
@@ -531,13 +555,13 @@ public class ExpressionServiceTest extends ControlPlaneTestBase {
                         nestedRecordType,
                         new RecordRequest(RecordAttributes.empty())))
             .toList();
-    recordDao.batchUpsert(collectionUuid, nestedRecordType, nestedRecords, Map.of());
+    recordDao.batchUpsert(collectionId.id(), nestedRecordType, nestedRecords, Map.of());
 
     var recordId = UUID.randomUUID().toString();
     var record = new Record(recordId, recordType, new RecordRequest(RecordAttributes.empty()));
-    recordDao.batchUpsert(collectionUuid, recordType, List.of(record), Map.of());
+    recordDao.batchUpsert(collectionId.id(), recordType, List.of(record), Map.of());
     recordService.updateSingleRecord(
-        collectionUuid,
+        collectionId.id(),
         recordType,
         record.getId(),
         new RecordRequest(
@@ -549,11 +573,11 @@ public class ExpressionServiceTest extends ControlPlaneTestBase {
                         .toList()))));
 
     var expressionName = "test";
-    var expression = "this.%s_id".formatted(nestedRecordType.getName());
+    var expression = "this." + pkAttr;
     for (int pageSize = 1; pageSize <= nestedRecords.size() + 1; pageSize++) {
       var result =
           expressionService.evaluateExpressionsWithRelationArray(
-              collectionUuid,
+              collectionId,
               recordType,
               recordId,
               "this.arrayAttr",

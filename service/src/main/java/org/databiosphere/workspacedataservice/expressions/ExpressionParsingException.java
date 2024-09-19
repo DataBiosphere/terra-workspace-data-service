@@ -8,4 +8,8 @@ public class ExpressionParsingException extends RuntimeException {
   public ExpressionParsingException(String errorMsg, Throwable cause) {
     super(errorMsg, cause);
   }
+
+  public ExpressionParsingException(String errorMsg) {
+    super(errorMsg);
+  }
 }
