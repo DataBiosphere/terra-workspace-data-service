@@ -51,6 +51,8 @@ paths:
     $ref: 'openapi-docs.yaml#/paths/~1{instanceid}~1search~1{v}~1{type}'
   /{instanceid}/tsv/{v}/{type}:
     $ref: 'openapi-docs.yaml#/paths/~1{instanceid}~1tsv~1{v}~1{type}'
+  /records/v1/{collectionId}/{recordType}/delete:
+    $ref: 'apis-v1.yaml#/paths/~1records~1v1~1{collectionId}~1{recordType}~1delete'
   /records/v1/{collectionId}/{recordType}/{recordId}/evaluateExpressions:
     $ref: 'apis-v1.yaml#/paths/~1records~1v1~1{collectionId}~1{recordType}~1{recordId}~1evaluateExpressions'
   /records/v1/{collectionId}/{recordType}/{recordId}/evaluateExpressionsWithArray:
