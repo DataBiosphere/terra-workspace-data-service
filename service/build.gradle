@@ -39,7 +39,7 @@ jib {
 ext {
     parquet_mr_version = "1.14.2"
     hadoop_version = "3.4.0"
-    spring_cloud_gcp_version = "5.6.0"
+    spring_cloud_gcp_version = "5.6.1"
 }
 
 dependencies {
@@ -51,7 +51,7 @@ dependencies {
     // Azure libraries
     // do not upgrade app insights past 3.5.1 until AJ-1897 is resolved
     implementation 'com.microsoft.azure:applicationinsights-runtime-attach:3.5.3'
-    implementation 'com.azure:azure-storage-blob:12.27.1'
+    implementation 'com.azure:azure-storage-blob:12.28.0'
     implementation 'com.azure:azure-identity-extensions:1.1.19' // postgres password plugin
 
     implementation 'org.springframework.boot:spring-boot-starter'
@@ -141,7 +141,7 @@ dependencies {
     testImplementation 'org.awaitility:awaitility'
 
     // google bucket mock
-    testImplementation 'com.google.cloud:google-cloud-nio:0.127.22'
+    testImplementation 'com.google.cloud:google-cloud-nio:0.127.23'
 
     constraints {
         implementation('org.json:json:20240303') {
