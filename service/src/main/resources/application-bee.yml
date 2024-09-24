@@ -5,3 +5,5 @@ workspacemanagerurl: https://workspace.${beename}.bee.envs-terra.bio
 leoUrl: https://leonardo.${beename}.bee.envs-terra.bio
 rawlsUrl: https://rawls.${beename}.bee.envs-terra.bio
 
+# Enable preview of control plane apis
+controlPlanePreview: "on
