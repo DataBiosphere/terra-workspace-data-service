@@ -7,6 +7,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import java.util.UUID;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
+import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MvcResult;
 
 /**
@@ -16,6 +17,9 @@ import org.springframework.test.web.servlet.MvcResult;
  *
  * <p>See also CorsLocalMockMvcTest for testing CORS behavior in the "local" Spring profile
  */
+@ActiveProfiles(
+    value = {"data-plane"},
+    inheritProfiles = false)
 class CorsLiveMockMvcTest extends MockMvcTestBase {
   private static final String versionId = "v0.2";
 
