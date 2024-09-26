@@ -6,5 +6,6 @@
   "edit.renameAttribute": true,
   "search.filter.ids": true,
   "search.filter.query": true,
-  "search.filter.query.column.exact": true
+  "search.filter.query.column.exact": true,
+  "apiV1.deleteRecords": true
 }
