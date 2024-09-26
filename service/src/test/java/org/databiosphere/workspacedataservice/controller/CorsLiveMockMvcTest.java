@@ -7,6 +7,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import java.util.UUID;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
+import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MvcResult;
 
@@ -20,6 +21,7 @@ import org.springframework.test.web.servlet.MvcResult;
 @ActiveProfiles(
     value = {"data-plane"},
     inheritProfiles = false)
+@DirtiesContext
 class CorsLiveMockMvcTest extends MockMvcTestBase {
   private static final String versionId = "v0.2";
 
