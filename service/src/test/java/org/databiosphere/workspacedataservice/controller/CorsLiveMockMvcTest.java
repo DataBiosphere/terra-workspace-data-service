@@ -10,7 +10,6 @@ import org.databiosphere.workspacedataservice.shared.model.WorkspaceId;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.boot.test.mock.mockito.MockBean;
-import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MvcResult;
 
@@ -24,7 +23,6 @@ import org.springframework.test.web.servlet.MvcResult;
 @ActiveProfiles(
     value = {"data-plane"},
     inheritProfiles = false)
-@DirtiesContext
 class CorsLiveMockMvcTest extends MockMvcTestBase {
   private static final String versionId = "v0.2";
 
