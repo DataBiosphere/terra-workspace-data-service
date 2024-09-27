@@ -5,8 +5,11 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import java.util.UUID;
+import org.databiosphere.workspacedataservice.annotations.SingleTenant;
+import org.databiosphere.workspacedataservice.shared.model.WorkspaceId;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
+import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MvcResult;
@@ -24,6 +27,8 @@ import org.springframework.test.web.servlet.MvcResult;
 @DirtiesContext
 class CorsLiveMockMvcTest extends MockMvcTestBase {
   private static final String versionId = "v0.2";
+
+  @MockBean @SingleTenant WorkspaceId workspaceId;
 
   @ParameterizedTest(name = "CORS response headers for non-local profile to {0} should be correct")
   @ValueSource(
