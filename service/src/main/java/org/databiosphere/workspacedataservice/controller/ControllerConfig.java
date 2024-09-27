@@ -21,7 +21,7 @@ public class ControllerConfig {
    */
   @SuppressWarnings("java:S5122") // we explicitly want to allow * for origins
   @Bean
-  @Profile("local-cors")
+  @Profile({"local-cors", "control-plane"})
   public WebMvcConfigurer corsConfigurer() {
     return new WebMvcConfigurer() {
       @Override
