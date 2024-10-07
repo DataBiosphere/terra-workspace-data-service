@@ -37,9 +37,9 @@ jib {
 }
 
 ext {
-    parquet_mr_version = "1.14.2"
+    parquet_mr_version = "1.14.3"
     hadoop_version = "3.4.0"
-    spring_cloud_gcp_version = "5.6.1"
+    spring_cloud_gcp_version = "5.7.0"
 }
 
 dependencies {
@@ -82,7 +82,7 @@ dependencies {
 
     // required by openapi-generated models and api interfaces
     implementation 'jakarta.validation:jakarta.validation-api'
-    implementation 'io.swagger.core.v3:swagger-annotations:2.2.24'
+    implementation 'io.swagger.core.v3:swagger-annotations:2.2.25'
 
     // Terra libraries
     implementation group: 'org.broadinstitute.dsde.workbench', name: 'sam-client_2.13', version: 'v0.0.282'
@@ -90,7 +90,7 @@ dependencies {
     implementation 'com.squareup.okhttp3:okhttp' // required by Sam client
     implementation "bio.terra:datarepo-client:2.13.0-SNAPSHOT"
     implementation "bio.terra:workspace-manager-client:0.254.983-SNAPSHOT"
-    implementation "bio.terra:java-pfb-library:0.54.0"
+    implementation "bio.terra:java-pfb-library:0.55.0"
     implementation project(path: ':client')
 
     // Parquet, used for TDR snapshot import
@@ -136,11 +136,11 @@ dependencies {
     testImplementation project(':client')
     testImplementation 'au.com.dius.pact.provider:spring:4.6.14'
     testImplementation 'au.com.dius.pact.consumer:junit5:4.6.14'
-    testImplementation 'org.junit-pioneer:junit-pioneer:2.2.0'
+    testImplementation 'org.junit-pioneer:junit-pioneer:2.3.0'
     testImplementation 'org.awaitility:awaitility'
 
     // google bucket mock
-    testImplementation 'com.google.cloud:google-cloud-nio:0.127.23'
+    testImplementation 'com.google.cloud:google-cloud-nio:0.127.24'
 
     constraints {
         implementation('org.json:json:20240303') {
