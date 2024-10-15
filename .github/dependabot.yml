@@ -18,9 +18,9 @@ updates:
       - "gradle"
     open-pull-requests-limit: 10
     reviewers:
-      - "@DataBiosphere/analysisjourneys"
+      - "@DataBiosphere/broad-core-services"
     commit-message:
-      prefix: "[AJ-1782]"
+      prefix: "[CORE-70]"
     schedule:
       interval: "weekly"
       day: "monday"
@@ -39,9 +39,9 @@ updates:
       - "github-actions"
     open-pull-requests-limit: 10
     reviewers:
-      - "@DataBiosphere/analysisjourneys"
+      - "@DataBiosphere/broad-core-services"
     commit-message:
-      prefix: "[AJ-1782]"
+      prefix: "[CORE-70]"
     schedule:
       interval: "weekly"
       day: "monday"
