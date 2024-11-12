@@ -46,7 +46,7 @@ dependencies {
     antlr "org.antlr:antlr4:4.13.2" // use ANTLR version 4
 
     // logging
-    implementation 'org.zalando:logbook-spring-boot-starter:3.9.0'
+    implementation 'org.zalando:logbook-spring-boot-starter:3.10.0'
 
     // Azure libraries
     implementation 'com.microsoft.azure:applicationinsights-runtime-attach:3.5.3'
@@ -77,7 +77,7 @@ dependencies {
     implementation 'org.ehcache:ehcache:3.10.8:jakarta'
     implementation 'org.hashids:hashids:1.0.3'
     implementation 'jakarta.ws.rs:jakarta.ws.rs-api'
-    implementation 'com.google.mug:mug:8.1'
+    implementation 'com.google.mug:mug:8.2'
     implementation 'org.apache.lucene:lucene-queryparser:9.12.0'
 
     // required by openapi-generated models and api interfaces
@@ -90,7 +90,7 @@ dependencies {
     implementation 'com.squareup.okhttp3:okhttp' // required by Sam client
     implementation "bio.terra:datarepo-client:2.13.0-SNAPSHOT"
     implementation "bio.terra:workspace-manager-client:0.254.983-SNAPSHOT"
-    implementation "bio.terra:java-pfb-library:0.59.0"
+    implementation "bio.terra:java-pfb-library:0.61.0"
     implementation project(path: ':client')
 
     // Parquet, used for TDR snapshot import
@@ -129,7 +129,7 @@ dependencies {
     implementation "org.glassfish.jersey.core:jersey-common"
 
     annotationProcessor 'org.springframework.boot:spring-boot-configuration-processor'
-    runtimeOnly 'org.webjars.npm:swagger-ui-dist:5.17.14'
+    runtimeOnly 'org.webjars.npm:swagger-ui-dist:5.18.2'
     testImplementation 'io.micrometer:micrometer-observation-test'
     testImplementation 'org.springframework.boot:spring-boot-starter-test'
     testImplementation 'org.junit.jupiter:junit-jupiter'
