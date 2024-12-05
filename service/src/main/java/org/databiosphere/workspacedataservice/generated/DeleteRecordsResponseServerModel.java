@@ -21,7 +21,7 @@ import jakarta.annotation.Generated;
 
 @Schema(name = "DeleteRecordsResponse", description = "A response body for a bulk record deletion request. Contains a count of records deleted by the request. ")
 @JsonTypeName("DeleteRecordsResponse")
-@Generated(value = "org.openapitools.codegen.languages.SpringCodegen", comments = "Generator version: 7.8.0")
+@Generated(value = "org.openapitools.codegen.languages.SpringCodegen", comments = "Generator version: 7.9.0")
 public class DeleteRecordsResponseServerModel {
 
   private Integer count;

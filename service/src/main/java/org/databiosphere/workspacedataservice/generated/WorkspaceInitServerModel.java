@@ -21,7 +21,7 @@ import jakarta.annotation.Generated;
  */
 
 @JsonTypeName("WorkspaceInit")
-@Generated(value = "org.openapitools.codegen.languages.SpringCodegen", comments = "Generator version: 7.8.0")
+@Generated(value = "org.openapitools.codegen.languages.SpringCodegen", comments = "Generator version: 7.9.0")
 public class WorkspaceInitServerModel {
 
   private WorkspaceInitCloneServerModel clone;

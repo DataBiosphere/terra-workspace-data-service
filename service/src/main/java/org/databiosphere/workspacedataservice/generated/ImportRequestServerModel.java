@@ -24,7 +24,7 @@ import jakarta.annotation.Generated;
  */
 
 @JsonTypeName("ImportRequest")
-@Generated(value = "org.openapitools.codegen.languages.SpringCodegen", comments = "Generator version: 7.8.0")
+@Generated(value = "org.openapitools.codegen.languages.SpringCodegen", comments = "Generator version: 7.9.0")
 public class ImportRequestServerModel {
 
   /**
