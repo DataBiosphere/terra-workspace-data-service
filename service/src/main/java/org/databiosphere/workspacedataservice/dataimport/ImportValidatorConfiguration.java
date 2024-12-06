@@ -19,13 +19,15 @@ public class ImportValidatorConfiguration {
   ImportValidator getDefaultImportValidator(
       ProtectedDataSupport protectedDataSupport,
       SamDao samDao,
-      DataImportProperties dataImportProperties) {
+      DataImportProperties dataImportProperties,
+      ConnectivityChecker connectivityChecker) {
     return new DefaultImportValidator(
         protectedDataSupport,
         samDao,
         dataImportProperties.getAllowedHosts(),
         dataImportProperties.getSources(),
-        dataImportProperties.getRawlsBucketName());
+        dataImportProperties.getRawlsBucketName(),
+        connectivityChecker);
   }
 
   /** Allow import validation to be disabled for some test workflows. */

@@ -43,13 +43,15 @@ public class DefaultImportValidator implements ImportValidator {
   private final ImportRequirementsFactory importRequirementsFactory;
   private final ProtectedDataSupport protectedDataSupport;
   private final SamDao samDao;
+  private final ConnectivityChecker connectivityChecker;
 
   public DefaultImportValidator(
       ProtectedDataSupport protectedDataSupport,
       SamDao samDao,
       Set<Pattern> allowedHttpsHosts,
       List<ImportSourceConfig> sources,
-      @Nullable String allowedRawlsBucket) {
+      @Nullable String allowedRawlsBucket,
+      ConnectivityChecker connectivityChecker) {
     var allowedHostsBuilder =
         ImmutableMap.<String, Set<Pattern>>builder()
             .put(SCHEME_HTTPS, Sets.union(ALWAYS_ALLOWED_HOSTS, allowedHttpsHosts));
@@ -64,6 +66,7 @@ public class DefaultImportValidator implements ImportValidator {
     this.importRequirementsFactory = new ImportRequirementsFactory(sources);
     this.protectedDataSupport = protectedDataSupport;
     this.samDao = samDao;
+    this.connectivityChecker = connectivityChecker;
   }
 
   private Set<Pattern> getAllowedHosts(ImportRequestServerModel importRequest) {
@@ -97,6 +100,12 @@ public class DefaultImportValidator implements ImportValidator {
       validatePathBelongsToWorkspace(importRequest.getUrl().getPath(), destinationWorkspaceId);
     }
     validateDestinationWorkspace(importRequest, destinationWorkspaceId);
+
+    try {
+      connectivityChecker.validateConnectivity(importUrl);
+    } catch (Exception e) {
+      throw new ValidationException("Unable to connect to import URI: " + e.getMessage());
+    }
   }
 
   private static final String URI_TEMPLATE = "^/to-cwds/%s/.*\\.json$";

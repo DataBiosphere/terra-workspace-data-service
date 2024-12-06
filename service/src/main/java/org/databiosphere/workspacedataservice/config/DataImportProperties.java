@@ -22,6 +22,7 @@ public class DataImportProperties {
   private String statusUpdatesSubscription;
   private List<ImportSourceConfig> sources;
   private boolean shouldAddImportMetadata = false;
+  private boolean connectivityCheckEnabled = false;
 
   /** Where to write Rawls JSON files after import. */
   @Nullable
@@ -119,6 +120,14 @@ public class DataImportProperties {
 
   public void setAddImportMetadata(boolean shouldAddImportMetadata) {
     this.shouldAddImportMetadata = shouldAddImportMetadata;
+  }
+
+  public boolean isConnectivityCheckEnabled() {
+    return connectivityCheckEnabled;
+  }
+
+  public void setConnectivityCheckEnabled(boolean connectivityCheckEnabled) {
+    this.connectivityCheckEnabled = connectivityCheckEnabled;
   }
 
   /** Dictates the sink where BatchWriteService should write records after import. */
