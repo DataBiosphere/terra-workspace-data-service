@@ -57,7 +57,8 @@ class DefaultImportValidatorTest extends ControlPlaneTestBase {
                   /* urls */ List.of(Pattern.compile("private\\.pfb")),
                   /* requirePrivateWorkspace */ true,
                   /* requireProtectedDataPolicy */ false)),
-          /* allowedRawlsBucket */ "test-bucket");
+          /* allowedRawlsBucket */ "test-bucket",
+          /* connectivityCheckEnabled */ false);
     }
   }
 

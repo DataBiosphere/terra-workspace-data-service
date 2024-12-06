@@ -3,12 +3,16 @@ package org.databiosphere.workspacedataservice.dataimport;
 import static java.util.Collections.emptySet;
 import static java.util.regex.Pattern.compile;
 
+import com.google.api.client.http.HttpStatusCodes;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Sets;
 import io.micrometer.common.util.StringUtils;
+import java.net.HttpURLConnection;
 import java.net.URI;
+import java.net.URL;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -43,13 +47,15 @@ public class DefaultImportValidator implements ImportValidator {
   private final ImportRequirementsFactory importRequirementsFactory;
   private final ProtectedDataSupport protectedDataSupport;
   private final SamDao samDao;
+  private final Boolean connectivityCheckEnabled;
 
   public DefaultImportValidator(
       ProtectedDataSupport protectedDataSupport,
       SamDao samDao,
       Set<Pattern> allowedHttpsHosts,
       List<ImportSourceConfig> sources,
-      @Nullable String allowedRawlsBucket) {
+      @Nullable String allowedRawlsBucket,
+      Boolean connectivityCheckEnabled) {
     var allowedHostsBuilder =
         ImmutableMap.<String, Set<Pattern>>builder()
             .put(SCHEME_HTTPS, Sets.union(ALWAYS_ALLOWED_HOSTS, allowedHttpsHosts));
@@ -64,6 +70,7 @@ public class DefaultImportValidator implements ImportValidator {
     this.importRequirementsFactory = new ImportRequirementsFactory(sources);
     this.protectedDataSupport = protectedDataSupport;
     this.samDao = samDao;
+    this.connectivityCheckEnabled = connectivityCheckEnabled;
   }
 
   private Set<Pattern> getAllowedHosts(ImportRequestServerModel importRequest) {
@@ -97,6 +104,8 @@ public class DefaultImportValidator implements ImportValidator {
       validatePathBelongsToWorkspace(importRequest.getUrl().getPath(), destinationWorkspaceId);
     }
     validateDestinationWorkspace(importRequest, destinationWorkspaceId);
+
+    validateConnectivity(importUrl);
   }
 
   private static final String URI_TEMPLATE = "^/to-cwds/%s/.*\\.json$";
@@ -143,5 +152,37 @@ public class DefaultImportValidator implements ImportValidator {
             .orElseThrow();
     return workspaceResource.getPublic().getRoles().isEmpty()
         && workspaceResource.getPublic().getActions().isEmpty();
+  }
+
+  private boolean validateConnectivity(URI importUrl) {
+    // short-circuit if not enabled
+    if (!connectivityCheckEnabled) {
+      return true;
+    }
+
+    // we only validate connectivity for https:// urls;
+    // we may want to validate gs:// urls at some future point
+    if (!Objects.equals(importUrl.getScheme(), SCHEME_HTTPS)) {
+      return true;
+    }
+
+    int code;
+    try {
+      URL urlObject = importUrl.toURL();
+      HttpURLConnection conn = (HttpURLConnection) urlObject.openConnection();
+      conn.setRequestMethod("HEAD");
+      conn.setConnectTimeout(5000);
+      conn.setReadTimeout(5000);
+
+      code = conn.getResponseCode();
+    } catch (Exception e) {
+      throw new ValidationException("Can't connect to the import URI: " + e.getMessage());
+    }
+
+    if (!HttpStatusCodes.isSuccess(code)) {
+      throw new ValidationException("URI to be imported returned status code " + code);
+    }
+
+    return true;
   }
 }
