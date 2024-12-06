@@ -17,6 +17,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
 /**
@@ -28,6 +29,7 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
 @ActiveProfiles({"noop-scheduler-dao", "mock-sam"})
 @DirtiesContext
 @SpringBootTest
+@TestPropertySource(properties = "twds.data-import.connectivity-check-enabled=false")
 class ImportServiceControlPlaneTest extends ControlPlaneTestBase {
 
   @Autowired ImportService importService;

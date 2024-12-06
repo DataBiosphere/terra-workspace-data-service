@@ -23,10 +23,12 @@ import org.springframework.http.MediaType;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.web.servlet.MvcResult;
 
 @ActiveProfiles(profiles = {"mock-instance-dao", "mock-sam"})
 @DirtiesContext
+@TestPropertySource(properties = "twds.data-import.connectivity-check-enabled=false")
 class ImportControllerMockMvcTest extends MockMvcTestBase {
 
   @Autowired private CollectionService collectionService;
