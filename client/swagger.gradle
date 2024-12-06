@@ -2,8 +2,8 @@ dependencies {
     //Need to include libraries for generated code to work
     api 'com.google.code.gson:gson'
     api 'io.gsonfire:gson-fire:1.9.0'
-    api 'com.squareup.okhttp3:okhttp'
-    api 'com.squareup.okhttp3:logging-interceptor'
+    api 'com.squareup.okhttp3:okhttp:4.12.0'
+    api 'com.squareup.okhttp3:logging-interceptor:4.12.0'
     // generated classes import com.fasterxml.jackson.databind.util.StdDateFormat,
     // so we need jackson-databind
     api 'com.fasterxml.jackson.core:jackson-databind'

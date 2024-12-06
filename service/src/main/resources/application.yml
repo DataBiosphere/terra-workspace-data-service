@@ -14,9 +14,9 @@ env:
 management:
   endpoint:
     info:
-      enabled: true
+      access: read_only
     health:
-      enabled: true
+      access: read_only
       show-details: ALWAYS
       probes:
         enabled: true
@@ -24,9 +24,11 @@ management:
         liveness:
           include: livenessState,db
     prometheus:
-      enabled: true
+      access: read_only
   endpoints:
-    enabled-by-default: false
+    access:
+      default: none
+      max-permitted: read_only
     web:
       exposure:
         include: "info,health,prometheus"

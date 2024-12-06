@@ -5,6 +5,7 @@ import java.nio.charset.StandardCharsets;
 import org.databiosphere.workspacedataservice.annotations.DeploymentMode.ControlPlane;
 import org.databiosphere.workspacedataservice.annotations.DeploymentMode.DataPlane;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.io.Resource;
@@ -36,6 +37,7 @@ public class SwaggerUiConfig {
   }
 
   @DataPlane
+  @ConditionalOnMissingBean(name = "swaggerHtml") // for tests that use both dat & control plane
   @Bean(name = "swaggerHtml")
   public String dataPlaneSwaggerHtml(
       @Value("classpath:swagger-ui-data-plane.html") Resource swaggerUiDataPlaneResource)

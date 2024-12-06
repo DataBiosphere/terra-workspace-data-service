@@ -67,7 +67,7 @@ dependencies {
     implementation 'org.aspectj:aspectjweaver' // required by spring-retry, not used directly
     implementation 'com.google.guava:guava:33.3.1-jre'
     implementation 'org.postgresql:postgresql'
-    implementation 'org.webjars:webjars-locator-core' // versioned by spring dependency management
+    implementation 'org.webjars:webjars-locator-lite' // versioned by spring dependency management
     implementation 'com.fasterxml.jackson.dataformat:jackson-dataformat-csv'
     implementation 'io.sentry:sentry-logback:7.16.0'
     implementation 'net.logstash.logback:logstash-logback-encoder:8.0'
@@ -87,7 +87,7 @@ dependencies {
     // Terra libraries
     implementation group: 'org.broadinstitute.dsde.workbench', name: 'sam-client_2.13', version: 'v0.0.282'
     implementation group: 'org.broadinstitute.dsde.workbench', name: 'leonardo-client_2.13', version: '1.3.6-22ee00b'
-    implementation 'com.squareup.okhttp3:okhttp' // required by Sam client
+    implementation 'com.squareup.okhttp3:okhttp:4.12.0' // required by Sam client
     implementation "bio.terra:datarepo-client:2.13.0-SNAPSHOT"
     implementation "bio.terra:workspace-manager-client:0.254.983-SNAPSHOT"
     implementation "bio.terra:java-pfb-library:0.63.0"
