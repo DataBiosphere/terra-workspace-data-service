@@ -22,16 +22,16 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.HttpStatus;
 import org.springframework.test.annotation.DirtiesContext;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
 @DirtiesContext
 @SpringBootTest
 class LeonardoDaoTest extends ControlPlaneTestBase {
   @Autowired LeonardoDao leonardoDao;
 
-  @MockBean LeonardoClientFactory leonardoClientFactory;
+  @MockitoBean LeonardoClientFactory leonardoClientFactory;
 
   final AppsApi mockAppsApi = mock(AppsApi.class);
 

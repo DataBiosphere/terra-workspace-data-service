@@ -21,15 +21,15 @@ import org.databiosphere.workspacedataservice.shared.model.WorkspaceId;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.test.annotation.DirtiesContext;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
 @DirtiesContext
 @SpringBootTest
 class RawlsSnapshotSupportTest extends ControlPlaneTestBase {
 
-  @MockBean RawlsClient rawlsClient;
-  @MockBean ActivityLogger activityLogger;
+  @MockitoBean RawlsClient rawlsClient;
+  @MockitoBean ActivityLogger activityLogger;
 
   @ParameterizedTest(name = "paginates through results when Rawls has {0} references")
   @ValueSource(ints = {0, 1, 49, 50, 51, 99, 100, 101, 456})

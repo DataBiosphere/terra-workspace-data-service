@@ -34,8 +34,8 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.test.annotation.DirtiesContext;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.util.StreamUtils;
 
 /**
@@ -48,7 +48,7 @@ import org.springframework.util.StreamUtils;
 @SpringBootTest
 class RawlsRecordSinkPrefixingTest extends ControlPlaneTestBase {
   @Autowired private ObjectMapper mapper;
-  @MockBean private PubSub pubSub;
+  @MockitoBean private PubSub pubSub;
 
   @Qualifier("mockGcsStorage")
   @Autowired

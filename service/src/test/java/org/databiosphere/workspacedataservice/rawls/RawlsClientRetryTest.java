@@ -19,11 +19,11 @@ import org.mockito.ArgumentMatcher;
 import org.mockito.stubbing.Answer;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatusCode;
 import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.TestPropertySource;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.web.client.HttpServerErrorException;
 
 @DirtiesContext
@@ -37,7 +37,7 @@ import org.springframework.web.client.HttpServerErrorException;
     })
 class RawlsClientRetryTest extends ControlPlaneTestBase {
   // create mock for RawlsApi
-  @MockBean RawlsApi mockRawlsApi;
+  @MockitoBean RawlsApi mockRawlsApi;
 
   @Autowired RawlsClient rawlsClient;
 

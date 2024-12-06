@@ -44,13 +44,13 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
 import org.mockito.stubbing.OngoingStubbing;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.MediaType;
 import org.springframework.jdbc.core.RowMapper;
 import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 
@@ -63,7 +63,7 @@ class CollectionControllerMockMvcTest extends MockMvcTestBase {
   @Autowired private NamedParameterJdbcTemplate namedTemplate;
   @Autowired private CollectionService collectionService;
 
-  @MockBean SamAuthorizationDaoFactory samAuthorizationDaoFactory;
+  @MockitoBean SamAuthorizationDaoFactory samAuthorizationDaoFactory;
 
   private final SamAuthorizationDao samAuthorizationDao = spy(MockSamAuthorizationDao.allowAll());
 

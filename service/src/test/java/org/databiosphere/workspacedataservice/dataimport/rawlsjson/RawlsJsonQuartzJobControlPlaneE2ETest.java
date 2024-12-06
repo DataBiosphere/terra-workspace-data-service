@@ -35,10 +35,10 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.test.mock.mockito.MockBean;
-import org.springframework.boot.test.mock.mockito.SpyBean;
 import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
+import org.springframework.test.context.bean.override.mockito.MockitoSpyBean;
 
 /**
  * Tests for RAWLSJSON import that execute "end-to-end" - which for this format is relatively
@@ -52,11 +52,11 @@ import org.springframework.test.context.ActiveProfiles;
 class RawlsJsonQuartzJobControlPlaneE2ETest extends ControlPlaneTestBase {
   @Autowired private ImportService importService;
   @Autowired private RawlsJsonTestSupport testSupport;
-  @SpyBean private PubSub pubSub;
+  @MockitoSpyBean private PubSub pubSub;
 
   // Mock ImportValidator to allow importing test data from a file:// URL.
-  @MockBean ImportValidator importValidator;
-  @MockBean DataTableTypeInspector dataTableTypeInspector;
+  @MockitoBean ImportValidator importValidator;
+  @MockitoBean DataTableTypeInspector dataTableTypeInspector;
 
   @Autowired
   @Qualifier("mockGcsStorage")

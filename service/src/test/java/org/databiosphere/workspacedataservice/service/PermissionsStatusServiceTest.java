@@ -19,8 +19,8 @@ import org.mockito.exceptions.base.MockitoException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.actuate.health.Health;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.test.annotation.DirtiesContext;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
 @DirtiesContext
 @SpringBootTest(properties = "spring.cache.type=NONE")
@@ -28,9 +28,9 @@ class PermissionsStatusServiceTest extends ControlPlaneTestBase {
 
   @Autowired private PermissionsStatusService samStatusService;
 
-  @MockBean HttpSamDao httpSamDao;
+  @MockitoBean HttpSamDao httpSamDao;
 
-  @MockBean SamClientFactory mockSamClientFactory;
+  @MockitoBean SamClientFactory mockSamClientFactory;
 
   // mock for the StatusApi class inside the Sam client; since this is not a Spring bean we have to
   // mock it manually

@@ -38,12 +38,12 @@ import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentMatchers;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.test.mock.mockito.SpyBean;
 import org.springframework.http.MediaType;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.TestPropertySource;
+import org.springframework.test.context.bean.override.mockito.MockitoSpyBean;
 
 @DirtiesContext
 @SpringBootTest
@@ -57,8 +57,8 @@ class TsvBatchTypeDetectionTest extends ControlPlaneTestBase {
   @Autowired private CollectionService collectionService;
   @Autowired private NamedParameterJdbcTemplate namedTemplate;
   @Autowired private WorkspaceRepository workspaceRepository;
-  @SpyBean DataTypeInferer inferer;
-  @SpyBean RecordService recordService;
+  @MockitoSpyBean DataTypeInferer inferer;
+  @MockitoSpyBean RecordService recordService;
 
   @Nullable private UUID collectionId;
   private static final RecordType THING_TYPE = RecordType.valueOf("thing");

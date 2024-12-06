@@ -30,13 +30,13 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.test.mock.mockito.MockBean;
-import org.springframework.boot.test.mock.mockito.SpyBean;
 import org.springframework.integration.jdbc.lock.JdbcLockRegistry;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.lang.Nullable;
 import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
+import org.springframework.test.context.bean.override.mockito.MockitoSpyBean;
 
 @ActiveProfiles({"mock-backup-dao", "mock-restore-dao", "mock-clone-dao", "local-cors"})
 @DirtiesContext
@@ -44,16 +44,16 @@ import org.springframework.test.context.ActiveProfiles;
 class CollectionInitializerBeanTest extends DataPlaneTestBase {
   // Don't run the CollectionInitializer on startup, so this test can start with a clean slate.
   // By making an (empty) mock bean to replace CollectionInitializer, we ensure it is a noop.
-  @MockBean CollectionInitializer collectionInitializer;
+  @MockitoBean CollectionInitializer collectionInitializer;
   @Autowired CollectionService collectionService;
   @Autowired LeonardoDao leoDao;
   @Autowired NamedParameterJdbcTemplate namedTemplate;
   @Autowired WorkspaceDataServiceDao wdsDao;
   @Autowired BackupRestoreService restoreService;
   @Autowired TwdsProperties twdsProperties;
-  @MockBean JdbcLockRegistry registry;
-  @SpyBean CollectionRepository collectionRepository;
-  @SpyBean CloneDao cloneDao;
+  @MockitoBean JdbcLockRegistry registry;
+  @MockitoSpyBean CollectionRepository collectionRepository;
+  @MockitoSpyBean CloneDao cloneDao;
 
   // sourceWorkspaceId when we need one
   final WorkspaceId sourceWorkspaceId = WorkspaceId.of(randomUUID());

@@ -18,11 +18,11 @@ import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
 @SpringBootTest
 class RawlsProtectedDataSupportTest extends ControlPlaneTestBase {
-  @MockBean RawlsClient rawlsClient;
+  @MockitoBean RawlsClient rawlsClient;
 
   @Autowired RawlsProtectedDataSupport rawlsProtectedDataSupport;
 

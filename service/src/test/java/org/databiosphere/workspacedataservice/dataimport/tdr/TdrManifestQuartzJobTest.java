@@ -76,24 +76,24 @@ import org.quartz.JobExecutionContext;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.context.annotation.Import;
 import org.springframework.core.io.Resource;
 import org.springframework.test.annotation.DirtiesContext;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
 @DirtiesContext
 @SpringBootTest
 @Import(MockInstantSourceConfig.class)
 class TdrManifestQuartzJobTest extends ControlPlaneTestBase {
 
-  @MockBean WorkspaceManagerDao wsmDao;
+  @MockitoBean WorkspaceManagerDao wsmDao;
 
-  @MockBean CollectionService collectionService;
-  @MockBean RecordService recordService;
-  @MockBean RecordDao recordDao;
-  @MockBean DataImportProperties dataImportProperties;
-  @MockBean SamDao samDao;
-  @MockBean DataTableTypeInspector dataTableTypeInspector;
+  @MockitoBean CollectionService collectionService;
+  @MockitoBean RecordService recordService;
+  @MockitoBean RecordDao recordDao;
+  @MockitoBean DataImportProperties dataImportProperties;
+  @MockitoBean SamDao samDao;
+  @MockitoBean DataTableTypeInspector dataTableTypeInspector;
   @Autowired RecordSinkFactory recordSinkFactory;
   @Autowired TdrTestSupport testSupport;
   @Autowired MockInstantSource mockInstantSource;

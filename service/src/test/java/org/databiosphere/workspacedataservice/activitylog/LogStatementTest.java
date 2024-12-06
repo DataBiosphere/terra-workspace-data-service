@@ -35,12 +35,12 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.boot.test.system.CapturedOutput;
 import org.springframework.boot.test.system.OutputCaptureExtension;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.test.annotation.DirtiesContext;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.web.multipart.MultipartFile;
 
 @SpringBootTest
@@ -56,14 +56,14 @@ class LogStatementTest extends ControlPlaneTestBase {
   @Autowired NamedParameterJdbcTemplate namedTemplate;
 
   // mocking for Workspace Manager
-  @MockBean WorkspaceManagerClientFactory mockWorkspaceManagerClientFactory;
+  @MockitoBean WorkspaceManagerClientFactory mockWorkspaceManagerClientFactory;
   final ReferencedGcpResourceApi mockReferencedGcpResourceApi =
       Mockito.mock(ReferencedGcpResourceApi.class);
 
   // mocking for data repo
   final RepositoryApi mockRepositoryApi = Mockito.mock(RepositoryApi.class);
 
-  @MockBean DataTableTypeInspector dataTableTypeInspector;
+  @MockitoBean DataTableTypeInspector dataTableTypeInspector;
 
   private WorkspaceId workspaceId;
 

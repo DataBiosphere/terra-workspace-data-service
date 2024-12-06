@@ -47,7 +47,6 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.boot.test.web.client.TestRestTemplate;
 import org.springframework.context.annotation.Import;
 import org.springframework.http.HttpEntity;
@@ -59,6 +58,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
 /**
  * This test spins up a web server and the full Spring Boot web stack. It was necessary to add it in
@@ -78,7 +78,7 @@ class FullStackRecordControllerTest extends ControlPlaneTestBase {
   @Autowired private TestRestTemplate restTemplate;
   @Autowired private WorkspaceRepository workspaceRepository;
 
-  @MockBean RawlsProtectedDataSupport rawlsProtectedDataSupport;
+  @MockitoBean RawlsProtectedDataSupport rawlsProtectedDataSupport;
 
   private HttpHeaders headers;
   private UUID instanceId;

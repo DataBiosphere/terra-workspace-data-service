@@ -37,10 +37,10 @@ import org.databiosphere.workspacedataservice.workspacemanager.WorkspaceManagerE
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
-import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
 import org.springframework.mock.web.MockHttpServletRequest;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.web.context.request.RequestContextHolder;
 import org.springframework.web.context.request.ServletRequestAttributes;
 
@@ -63,7 +63,7 @@ class WsmPactTest {
   private static final String USER_EMAIL = "fake.user@e.mail";
   private static final int NUM_SNAPSHOTS_THAT_EXIST = 3;
   private static final int NUM_SNAPSHOTS_REQUESTED = NUM_SNAPSHOTS_THAT_EXIST + 2;
-  @MockBean ActivityLogger activityLogger;
+  @MockitoBean ActivityLogger activityLogger;
 
   @BeforeEach
   void setUp() {

@@ -41,12 +41,12 @@ import org.quartz.JobExecutionException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.test.mock.mockito.MockBean;
-import org.springframework.boot.test.mock.mockito.SpyBean;
 import org.springframework.core.io.Resource;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
+import org.springframework.test.context.bean.override.mockito.MockitoSpyBean;
 
 /**
  * Tests for PFB import that execute "end-to-end" - that is, they go through the whole process of
@@ -62,10 +62,10 @@ class PfbQuartzJobDataPlaneE2ETest extends DataPlaneTestBase {
   @Autowired CollectionService collectionService;
   @Autowired PfbTestSupport testSupport;
   @Autowired NamedParameterJdbcTemplate namedTemplate;
-  @MockBean WorkspaceManagerDao wsmDao;
+  @MockitoBean WorkspaceManagerDao wsmDao;
   // Mock ImportValidator to allow importing test data from a file:// URL.
-  @MockBean ImportValidator importValidator;
-  @SpyBean SamDao samDao;
+  @MockitoBean ImportValidator importValidator;
+  @MockitoSpyBean SamDao samDao;
 
   // test resources used below
   @Value("classpath:avro/four_rows.avro")

@@ -26,10 +26,10 @@ import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.boot.test.system.CapturedOutput;
 import org.springframework.boot.test.system.OutputCaptureExtension;
 import org.springframework.test.annotation.DirtiesContext;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.web.context.request.RequestAttributes;
 import org.springframework.web.context.request.RequestContextHolder;
 
@@ -41,7 +41,7 @@ class ActivityEventBuilderTest extends ControlPlaneTestBase {
 
   @Autowired CollectionService collectionService;
 
-  @MockBean SamClientFactory mockSamClientFactory;
+  @MockitoBean SamClientFactory mockSamClientFactory;
 
   final UsersApi mockUsersApi = Mockito.mock(UsersApi.class);
   final ResourcesApi mockResourcesApi = Mockito.mock(ResourcesApi.class);

@@ -20,14 +20,14 @@ import org.quartz.SchedulerException;
 import org.quartz.Trigger;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.test.annotation.DirtiesContext;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
 @DirtiesContext
 @SpringBootTest
 class QuartzSchedulerDaoTest extends ControlPlaneTestBase {
 
-  @MockBean Scheduler scheduler;
+  @MockitoBean Scheduler scheduler;
   @Autowired SchedulerDao schedulerDao;
 
   // this test needs a valid implementation of Job, so here's a noop one:

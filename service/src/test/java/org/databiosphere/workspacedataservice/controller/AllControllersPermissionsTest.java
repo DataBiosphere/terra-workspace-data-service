@@ -40,11 +40,11 @@ import org.junit.jupiter.params.provider.MethodSource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.MediaType;
 import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder;
 
@@ -55,12 +55,12 @@ import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilde
 class AllControllersPermissionsTest extends DataPlaneTestBase {
   @Autowired private MockMvc mockMvc;
   @Autowired PermissionService permissionService;
-  @MockBean SamAuthorizationDaoFactory samAuthorizationDaoFactory;
-  @MockBean CollectionService collectionService;
-  @MockBean RecordDao recordDao;
-  @MockBean JobService jobService;
-  @MockBean BackupRestoreService backupRestoreService;
-  @MockBean RecordOrchestratorService recordOrchestratorService;
+  @MockitoBean SamAuthorizationDaoFactory samAuthorizationDaoFactory;
+  @MockitoBean CollectionService collectionService;
+  @MockitoBean RecordDao recordDao;
+  @MockitoBean JobService jobService;
+  @MockitoBean BackupRestoreService backupRestoreService;
+  @MockitoBean RecordOrchestratorService recordOrchestratorService;
   @Autowired TwdsProperties twdsProperties;
 
   private final SamAuthorizationDao samAuthorizationDao = spy(MockSamAuthorizationDao.allowAll());
