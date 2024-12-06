@@ -28,10 +28,10 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.HttpStatus;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.test.annotation.DirtiesContext;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
 /** Tests for CollectionService.getWorkspaceId() */
 @DirtiesContext
@@ -44,13 +44,13 @@ class CollectionServiceGetWorkspaceIdTest extends ControlPlaneTestBase {
   @Autowired private NamedParameterJdbcTemplate namedTemplate;
   @Autowired private WorkspaceRepository workspaceRepository;
 
-  @MockBean RawlsClient rawlsClient;
-  @MockBean TenancyProperties tenancyProperties;
-  @MockBean TwdsProperties twdsProperties;
+  @MockitoBean RawlsClient rawlsClient;
+  @MockitoBean TenancyProperties tenancyProperties;
+  @MockitoBean TwdsProperties twdsProperties;
 
   // mocks to satisfy bean dependencies, but unused
-  @MockBean ImportValidator importValidator;
-  @MockBean DataImportProperties dataImportProperties;
+  @MockitoBean ImportValidator importValidator;
+  @MockitoBean DataImportProperties dataImportProperties;
 
   @BeforeEach
   void beforeEach() {

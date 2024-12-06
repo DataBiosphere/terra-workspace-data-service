@@ -31,9 +31,9 @@ import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.TestConfiguration;
-import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Primary;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
 @SpringBootTest
 class DefaultImportValidatorTest extends ControlPlaneTestBase {
@@ -61,9 +61,9 @@ class DefaultImportValidatorTest extends ControlPlaneTestBase {
     }
   }
 
-  @MockBean ProtectedDataSupport protectedDataSupport;
+  @MockitoBean ProtectedDataSupport protectedDataSupport;
 
-  @MockBean SamDao samDao;
+  @MockitoBean SamDao samDao;
 
   @Autowired DefaultImportValidator importValidator;
 

@@ -21,10 +21,10 @@ import org.databiosphere.workspacedataservice.shared.model.WorkspaceId;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.TestPropertySource;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
 @DirtiesContext
 @SpringBootTest(properties = "spring.cache.type=NONE")
@@ -35,7 +35,7 @@ class BackupRestoreServiceTest extends DataPlaneTestBase {
   @Autowired private NamedParameterJdbcTemplate namedTemplate;
   @Autowired private WorkspaceId workspaceId;
 
-  @MockBean BackupRestoreDao<RestoreResponse> mockRestoreDao;
+  @MockitoBean BackupRestoreDao<RestoreResponse> mockRestoreDao;
 
   @Test
   void CheckBackupCommandLine() {

@@ -37,7 +37,6 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.boot.test.web.client.TestRestTemplate;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.HttpEntity;
@@ -48,6 +47,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
 @ActiveProfiles(profiles = {"mock-sam"})
 @DirtiesContext
@@ -60,7 +60,7 @@ class JobControllerTest extends ControlPlaneTestBase {
   @Autowired private TestRestTemplate restTemplate;
   @Autowired private JobDao jobDao;
 
-  @MockBean private CollectionService collectionService;
+  @MockitoBean private CollectionService collectionService;
 
   private final CollectionId collectionId = CollectionId.of(randomUUID());
   private UUID jobId;

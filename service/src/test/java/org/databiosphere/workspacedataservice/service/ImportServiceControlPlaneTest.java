@@ -15,9 +15,9 @@ import org.databiosphere.workspacedataservice.workspace.WorkspaceDataTableType;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
 /**
  * Tests for permission behaviors in the control plane. See also {@link ImportServiceTest} for tests
@@ -32,7 +32,7 @@ class ImportServiceControlPlaneTest extends ControlPlaneTestBase {
 
   @Autowired ImportService importService;
 
-  @MockBean DataTableTypeInspector dataTableTypeInspector;
+  @MockitoBean DataTableTypeInspector dataTableTypeInspector;
 
   private final URI importUri =
       URI.create("https://teststorageaccount.blob.core.windows.net/testcontainer/file");

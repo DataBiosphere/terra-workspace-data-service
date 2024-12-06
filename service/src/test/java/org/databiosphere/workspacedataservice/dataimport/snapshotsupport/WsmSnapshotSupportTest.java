@@ -24,16 +24,16 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.test.annotation.DirtiesContext;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
 @DirtiesContext
 @SpringBootTest
 class WsmSnapshotSupportTest extends DataPlaneTestBase {
 
-  @MockBean JobDao jobDao;
-  @MockBean WorkspaceManagerDao wsmDao;
-  @MockBean ActivityLogger activityLogger;
+  @MockitoBean JobDao jobDao;
+  @MockitoBean WorkspaceManagerDao wsmDao;
+  @MockitoBean ActivityLogger activityLogger;
   @Autowired RestClientRetry restClientRetry;
 
   @ParameterizedTest(name = "paginates through results when WSM has {0} references")

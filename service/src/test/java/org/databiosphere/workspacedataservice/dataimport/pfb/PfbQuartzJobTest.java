@@ -50,9 +50,9 @@ import org.quartz.JobExecutionException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.core.io.Resource;
 import org.springframework.test.annotation.DirtiesContext;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
 /**
  * This test explicitly asserts on and mock calls to WSM as part of PFB import; it is explicitly a
@@ -61,11 +61,11 @@ import org.springframework.test.annotation.DirtiesContext;
 @DirtiesContext
 @SpringBootTest
 class PfbQuartzJobTest extends DataPlaneTestBase {
-  @MockBean JobDao jobDao;
-  @MockBean WorkspaceManagerDao wsmDao;
-  @MockBean BatchWriteService batchWriteService;
-  @MockBean CollectionService collectionService;
-  @MockBean ActivityLogger activityLogger;
+  @MockitoBean JobDao jobDao;
+  @MockitoBean WorkspaceManagerDao wsmDao;
+  @MockitoBean BatchWriteService batchWriteService;
+  @MockitoBean CollectionService collectionService;
+  @MockitoBean ActivityLogger activityLogger;
   @Autowired PfbTestSupport testSupport;
   @Autowired MeterRegistry meterRegistry;
 

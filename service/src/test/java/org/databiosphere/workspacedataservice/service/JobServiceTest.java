@@ -25,11 +25,11 @@ import org.databiosphere.workspacedataservice.shared.model.CollectionId;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.TestPropertySource;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
 @ActiveProfiles(profiles = {"control-plane"})
 @DirtiesContext
@@ -44,7 +44,7 @@ import org.springframework.test.context.TestPropertySource;
 class JobServiceTest extends JobServiceTestBase {
 
   @Autowired JobService jobService;
-  @MockBean JobDao jobDao;
+  @MockitoBean JobDao jobDao;
 
   /** requested job does not exist */
   @Test

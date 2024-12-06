@@ -19,14 +19,14 @@ import org.databiosphere.workspacedataservice.service.CollectionService;
 import org.databiosphere.workspacedataservice.shared.model.CollectionId;
 import org.databiosphere.workspacedataservice.shared.model.WorkspaceId;
 import org.junit.jupiter.api.Test;
-import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MvcResult;
 
 @ActiveProfiles(profiles = {"mock-sam"})
 class JobControllerMockMvcTest extends MockMvcTestBase {
-  @MockBean private JobDao jobDao;
-  @MockBean private CollectionService collectionService;
+  @MockitoBean private JobDao jobDao;
+  @MockitoBean private CollectionService collectionService;
 
   @Test
   void smokeTestGetJob() throws Exception {

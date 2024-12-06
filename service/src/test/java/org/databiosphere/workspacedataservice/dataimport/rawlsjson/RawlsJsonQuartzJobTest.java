@@ -32,11 +32,11 @@ import org.quartz.JobExecutionException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.test.mock.mockito.MockBean;
-import org.springframework.boot.test.mock.mockito.SpyBean;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
+import org.springframework.test.context.bean.override.mockito.MockitoSpyBean;
 
 @DirtiesContext
 @SpringBootTest
@@ -45,10 +45,10 @@ class RawlsJsonQuartzJobTest extends ControlPlaneTestBase {
   @Autowired private CollectionService collectionService;
   @Autowired private NamedParameterJdbcTemplate namedTemplate;
   @Autowired private RawlsJsonTestSupport testSupport;
-  @SpyBean private PubSub pubSub;
+  @MockitoSpyBean private PubSub pubSub;
 
   // mock out JobDao to prevent Job state transitions from requiring a real entry in db
-  @MockBean private JobDao jobDao;
+  @MockitoBean private JobDao jobDao;
 
   @Autowired
   @Qualifier("mockGcsStorage")

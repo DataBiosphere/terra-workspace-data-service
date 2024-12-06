@@ -61,10 +61,10 @@ import org.quartz.Job;
 import org.quartz.JobDataMap;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.test.mock.mockito.MockBean;
-import org.springframework.boot.test.mock.mockito.SpyBean;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.test.annotation.DirtiesContext;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
+import org.springframework.test.context.bean.override.mockito.MockitoSpyBean;
 
 @DirtiesContext
 @SpringBootTest
@@ -73,9 +73,9 @@ class ImportServiceTest extends ControlPlaneTestBase {
 
   @Autowired ImportService importService;
   @Autowired CollectionService collectionService;
-  @SpyBean JobDao jobDao;
-  @MockBean SchedulerDao schedulerDao;
-  @MockBean SamClientFactory mockSamClientFactory;
+  @MockitoSpyBean JobDao jobDao;
+  @MockitoBean SchedulerDao schedulerDao;
+  @MockitoBean SamClientFactory mockSamClientFactory;
   @Autowired NamedParameterJdbcTemplate namedTemplate;
   @Autowired WorkspaceRepository workspaceRepository;
 

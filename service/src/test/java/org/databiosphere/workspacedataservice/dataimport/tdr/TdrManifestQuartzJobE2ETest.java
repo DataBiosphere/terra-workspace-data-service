@@ -44,11 +44,11 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.core.io.Resource;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
 /**
  * Tests for TdrManifest import that execute "end-to-end" - that is, they go through the whole
@@ -74,8 +74,8 @@ class TdrManifestQuartzJobE2ETest extends DataPlaneTestBase {
   @Autowired private TwdsProperties twdsProperties;
 
   // Mock ImportValidator to allow importing test data from a file:// URL.
-  @MockBean ImportValidator importValidator;
-  @MockBean WorkspaceManagerDao wsmDao;
+  @MockitoBean ImportValidator importValidator;
+  @MockitoBean WorkspaceManagerDao wsmDao;
 
   @Value("classpath:tdrmanifest/v2f.json")
   Resource v2fManifestResource;

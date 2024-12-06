@@ -33,7 +33,7 @@ import org.databiosphere.workspacedataservice.config.DataImportProperties;
 import org.databiosphere.workspacedataservice.dao.JobDao;
 import org.databiosphere.workspacedataservice.generated.GenericJobServerModel;
 import org.databiosphere.workspacedataservice.sam.TokenContextUtil;
-import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -44,8 +44,8 @@ import org.quartz.JobKey;
 import org.quartz.impl.JobDetailImpl;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.test.annotation.DirtiesContext;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
 @SpringBootTest
 @DirtiesContext
@@ -53,13 +53,13 @@ import org.springframework.test.annotation.DirtiesContext;
 @WithTestObservationRegistry
 class QuartzJobTest extends ControlPlaneTestBase {
 
-  @MockBean JobDao jobDao;
-  @MockBean DataImportProperties dataImportProperties;
+  @MockitoBean JobDao jobDao;
+  @MockitoBean DataImportProperties dataImportProperties;
   @Autowired MeterRegistry meterRegistry;
   @Autowired TestObservationRegistry observationRegistry;
 
-  @BeforeAll
-  void beforeAll() {
+  @BeforeEach
+  void beforeEach() {
     // set up the mock jobDao to return successfully on all calls except JobDao.fail()
     GenericJobServerModel genericJobServerModel =
         new GenericJobServerModel(
