@@ -30,7 +30,6 @@ import org.databiosphere.workspacedataservice.shared.model.WorkspaceId;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
-import org.junit.jupiter.params.provider.FieldSource;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -246,18 +245,17 @@ class DefaultImportValidatorTest extends ControlPlaneTestBase {
     }
   }
 
-  private static final List<Arguments> connectivityExceptions =
-      List.of(
-          Arguments.of(new SSLHandshakeException("Unit test intentional failure")),
-          Arguments.of(
-              new HttpClientErrorException(HttpStatus.FORBIDDEN, "Unit test intentional failure")),
-          Arguments.of(
-              new HttpServerErrorException(
-                  HttpStatus.INTERNAL_SERVER_ERROR, "Unit test intentional failure")),
-          Arguments.of(new ValidationException("Unit test intentional failure")));
+  static Stream<Exception> connectivityExceptions() {
+    return Stream.of(
+        new SSLHandshakeException("Unit test intentional failure"),
+        new HttpClientErrorException(HttpStatus.FORBIDDEN, "Unit test intentional failure"),
+        new HttpServerErrorException(
+            HttpStatus.INTERNAL_SERVER_ERROR, "Unit test intentional failure"),
+        new ValidationException("Unit test intentional failure"));
+  }
 
   @ParameterizedTest(name = "fails validation if connection throws {0}")
-  @FieldSource("connectivityExceptions")
+  @MethodSource("connectivityExceptions")
   void connectionFailureInvalidates(Exception ex) throws IOException {
     // mock connectivity checker that throws an error
     ConnectivityChecker mockConnectivityChecker = mock(ConnectivityChecker.class);

@@ -27,8 +27,7 @@ public class HttpConnectivityChecker implements ConnectivityChecker {
       return true;
     }
 
-    // we only validate connectivity for https:// urls;
-    // we may want to validate gs:// urls at some future point
+    // we only validate connectivity for https urls for now
     if (!Objects.equals(importUrl.getScheme(), "https")) {
       return true;
     }
