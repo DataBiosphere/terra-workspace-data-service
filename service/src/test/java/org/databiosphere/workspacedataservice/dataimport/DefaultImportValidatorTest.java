@@ -5,14 +5,18 @@ import static org.assertj.core.api.AssertionsForClassTypes.assertThatExceptionOf
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+import java.io.IOException;
 import java.net.URI;
 import java.util.List;
 import java.util.Set;
 import java.util.UUID;
 import java.util.regex.Pattern;
 import java.util.stream.Stream;
+import javax.net.ssl.SSLHandshakeException;
 import org.broadinstitute.dsde.workbench.client.sam.model.RolesAndActions;
 import org.broadinstitute.dsde.workbench.client.sam.model.UserResourcesResponse;
 import org.databiosphere.workspacedataservice.common.ControlPlaneTestBase;
@@ -26,6 +30,7 @@ import org.databiosphere.workspacedataservice.shared.model.WorkspaceId;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.FieldSource;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -33,7 +38,10 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Primary;
+import org.springframework.http.HttpStatus;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
+import org.springframework.web.client.HttpClientErrorException;
+import org.springframework.web.client.HttpServerErrorException;
 
 @SpringBootTest
 class DefaultImportValidatorTest extends ControlPlaneTestBase {
@@ -58,7 +66,7 @@ class DefaultImportValidatorTest extends ControlPlaneTestBase {
                   /* requirePrivateWorkspace */ true,
                   /* requireProtectedDataPolicy */ false)),
           /* allowedRawlsBucket */ "test-bucket",
-          /* connectivityCheckEnabled */ false);
+          new NoopConnectivityChecker());
     }
   }
 
@@ -236,6 +244,41 @@ class DefaultImportValidatorTest extends ControlPlaneTestBase {
           "Data from this source can only be imported into a protected workspace.",
           err.getMessage());
     }
+  }
+
+  private static final List<Arguments> connectivityExceptions =
+      List.of(
+          Arguments.of(new SSLHandshakeException("Unit test intentional failure")),
+          Arguments.of(
+              new HttpClientErrorException(HttpStatus.FORBIDDEN, "Unit test intentional failure")),
+          Arguments.of(
+              new HttpServerErrorException(
+                  HttpStatus.INTERNAL_SERVER_ERROR, "Unit test intentional failure")),
+          Arguments.of(new ValidationException("Unit test intentional failure")));
+
+  @ParameterizedTest(name = "fails validation if connection throws {0}")
+  @FieldSource("connectivityExceptions")
+  void connectionFailureInvalidates(Exception ex) throws IOException {
+    // mock connectivity checker that throws an error
+    ConnectivityChecker mockConnectivityChecker = mock(ConnectivityChecker.class);
+    when(mockConnectivityChecker.validateConnectivity(any(URI.class))).thenThrow(ex);
+
+    // validator that uses the mock connectivity checker
+    ImportValidator validator =
+        new DefaultImportValidator(
+            protectedDataSupport,
+            samDao,
+            /* allowedHttpsHosts */ Set.of(Pattern.compile(".*\\.terra\\.bio")),
+            /* sources */ List.of(),
+            /* allowedRawlsBucket */ "test-bucket",
+            mockConnectivityChecker);
+
+    URI importUri = URI.create("https://127.0.0.1/unit-test");
+    ImportRequestServerModel importRequest = new ImportRequestServerModel(TypeEnum.PFB, importUri);
+
+    assertThrows(
+        ValidationException.class,
+        () -> validator.validateImport(importRequest, destinationWorkspaceId));
   }
 
   static Stream<Arguments> requireProtectedWorkspacesForImportsFromConfiguredSourcesTestCases() {
