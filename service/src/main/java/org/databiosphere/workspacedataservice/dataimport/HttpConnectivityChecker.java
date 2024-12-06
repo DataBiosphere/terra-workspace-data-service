@@ -7,6 +7,8 @@ import java.net.URL;
 import java.util.Objects;
 import org.databiosphere.workspacedataservice.config.DataImportProperties;
 import org.databiosphere.workspacedataservice.service.model.exception.ValidationException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpStatusCode;
 import org.springframework.web.client.HttpClientErrorException;
@@ -14,6 +16,8 @@ import org.springframework.web.client.HttpServerErrorException;
 
 @Configuration
 public class HttpConnectivityChecker implements ConnectivityChecker {
+
+  private final Logger logger = LoggerFactory.getLogger(HttpConnectivityChecker.class);
 
   private final DataImportProperties dataImportProperties;
 
@@ -32,6 +36,8 @@ public class HttpConnectivityChecker implements ConnectivityChecker {
       return true;
     }
 
+    logger.info("Checking connectivity to import URI ...");
+
     // set up the connection to the url-to-be-imported
     // we may want to make the timeouts configurable at some point
     URL urlObject = importUrl.toURL();
@@ -43,6 +49,8 @@ public class HttpConnectivityChecker implements ConnectivityChecker {
     // perform the connection and get the response code
     int code = conn.getResponseCode();
     HttpStatusCode statusCode = HttpStatusCode.valueOf(code);
+
+    logger.info("Import URI responded with {}", statusCode);
 
     // success?
     if (statusCode.is2xxSuccessful()) {

@@ -6,7 +6,6 @@ import static java.util.regex.Pattern.compile;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Sets;
 import io.micrometer.common.util.StringUtils;
-import java.io.IOException;
 import java.net.URI;
 import java.util.List;
 import java.util.Map;
@@ -104,7 +103,7 @@ public class DefaultImportValidator implements ImportValidator {
 
     try {
       connectivityChecker.validateConnectivity(importUrl);
-    } catch (IOException e) {
+    } catch (Exception e) {
       throw new ValidationException("Unable to connect to import URI: " + e.getMessage());
     }
   }
