@@ -8,7 +8,7 @@ plugins {
     id 'org.openapi.generator'
     id 'com.diffplug.spotless'
     id 'jacoco'
-    id "au.com.dius.pact" version "4.6.15"
+    id "au.com.dius.pact" version "4.6.16"
     id 'jvm-test-suite'
     id 'antlr'
 }
@@ -37,9 +37,9 @@ jib {
 }
 
 ext {
-    parquet_mr_version = "1.14.3"
+    parquet_mr_version = "1.15.0"
     hadoop_version = "3.4.1"
-    spring_cloud_gcp_version = "5.8.0"
+    spring_cloud_gcp_version = "5.9.0"
 }
 
 dependencies {
@@ -50,8 +50,8 @@ dependencies {
 
     // Azure libraries
     implementation 'com.microsoft.azure:applicationinsights-runtime-attach:3.5.3'
-    implementation 'com.azure:azure-storage-blob:12.28.1'
-    implementation 'com.azure:azure-identity-extensions:1.1.21' // postgres password plugin
+    implementation 'com.azure:azure-storage-blob:12.29.0'
+    implementation 'com.azure:azure-identity-extensions:1.1.22' // postgres password plugin
 
     implementation 'org.springframework.boot:spring-boot-starter'
     implementation 'org.springframework.boot:spring-boot-starter-jdbc'
@@ -69,7 +69,7 @@ dependencies {
     implementation 'org.postgresql:postgresql'
     implementation 'org.webjars:webjars-locator-lite' // versioned by spring dependency management
     implementation 'com.fasterxml.jackson.dataformat:jackson-dataformat-csv'
-    implementation 'io.sentry:sentry-logback:7.16.0'
+    implementation 'io.sentry:sentry-logback:7.18.1'
     implementation 'net.logstash.logback:logstash-logback-encoder:8.0'
     implementation 'org.codehaus.janino:janino'
     implementation 'org.liquibase:liquibase-core'
@@ -82,7 +82,7 @@ dependencies {
 
     // required by openapi-generated models and api interfaces
     implementation 'jakarta.validation:jakarta.validation-api'
-    implementation 'io.swagger.core.v3:swagger-annotations:2.2.25'
+    implementation 'io.swagger.core.v3:swagger-annotations:2.2.26'
 
     // Terra libraries
     implementation group: 'org.broadinstitute.dsde.workbench', name: 'sam-client_2.13', version: 'v0.0.282'
@@ -134,13 +134,13 @@ dependencies {
     testImplementation 'org.springframework.boot:spring-boot-starter-test'
     testImplementation 'org.junit.jupiter:junit-jupiter'
     testImplementation project(':client')
-    testImplementation 'au.com.dius.pact.provider:spring:4.6.15'
-    testImplementation 'au.com.dius.pact.consumer:junit5:4.6.15'
+    testImplementation 'au.com.dius.pact.provider:spring:4.6.16'
+    testImplementation 'au.com.dius.pact.consumer:junit5:4.6.16'
     testImplementation 'org.junit-pioneer:junit-pioneer:2.3.0'
     testImplementation 'org.awaitility:awaitility'
 
     // google bucket mock
-    testImplementation 'com.google.cloud:google-cloud-nio:0.127.26'
+    testImplementation 'com.google.cloud:google-cloud-nio:0.127.27'
 
     constraints {
         implementation('org.json:json:20240303') {
