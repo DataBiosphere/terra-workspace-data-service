@@ -22,7 +22,7 @@ import jakarta.annotation.Generated;
  */
 
 @JsonTypeName("ExpressionEvaluationsForRecord")
-@Generated(value = "org.openapitools.codegen.languages.SpringCodegen", comments = "Generator version: 7.9.0")
+@Generated(value = "org.openapitools.codegen.languages.SpringCodegen", comments = "Generator version: 7.10.0")
 public class ExpressionEvaluationsForRecordServerModel {
 
   private String recordId;

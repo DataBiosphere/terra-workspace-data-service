@@ -22,7 +22,7 @@ import jakarta.annotation.Generated;
 
 @Schema(name = "WorkspaceInitClone", description = "when present, will clone all collections from sourceWorkspaceId into this workspace")
 @JsonTypeName("WorkspaceInitClone")
-@Generated(value = "org.openapitools.codegen.languages.SpringCodegen", comments = "Generator version: 7.9.0")
+@Generated(value = "org.openapitools.codegen.languages.SpringCodegen", comments = "Generator version: 7.10.0")
 public class WorkspaceInitCloneServerModel {
 
   private UUID sourceWorkspaceId;
