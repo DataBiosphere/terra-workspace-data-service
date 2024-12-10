@@ -140,7 +140,7 @@ twds:
     require-env-workspace: true
     enforce-collections-match-workspace-id: true
   data-import:
-    connectivity-check-enabled: true
+    connectivity-check-enabled: false
     allowed-hosts:
       - anvil\.gi\.ucsc\.edu
       - .*\.singlecell\.gi\.ucsc\.edu,
