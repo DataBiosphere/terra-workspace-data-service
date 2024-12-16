@@ -69,7 +69,7 @@ dependencies {
     implementation 'org.postgresql:postgresql'
     implementation 'org.webjars:webjars-locator-lite' // versioned by spring dependency management
     implementation 'com.fasterxml.jackson.dataformat:jackson-dataformat-csv'
-    implementation 'io.sentry:sentry-logback:7.18.1'
+    implementation 'io.sentry:sentry-logback:7.19.0'
     implementation 'net.logstash.logback:logstash-logback-encoder:8.0'
     implementation 'org.codehaus.janino:janino'
     implementation 'org.liquibase:liquibase-core'
@@ -78,11 +78,11 @@ dependencies {
     implementation 'org.hashids:hashids:1.0.3'
     implementation 'jakarta.ws.rs:jakarta.ws.rs-api'
     implementation 'com.google.mug:mug:8.2'
-    implementation 'org.apache.lucene:lucene-queryparser:9.12.0'
+    implementation 'org.apache.lucene:lucene-queryparser:9.12.1'
 
     // required by openapi-generated models and api interfaces
     implementation 'jakarta.validation:jakarta.validation-api'
-    implementation 'io.swagger.core.v3:swagger-annotations:2.2.26'
+    implementation 'io.swagger.core.v3:swagger-annotations:2.2.27'
 
     // Terra libraries
     implementation group: 'org.broadinstitute.dsde.workbench', name: 'sam-client_2.13', version: 'v0.0.282'
@@ -140,7 +140,7 @@ dependencies {
     testImplementation 'org.awaitility:awaitility'
 
     // google bucket mock
-    testImplementation 'com.google.cloud:google-cloud-nio:0.127.27'
+    testImplementation 'com.google.cloud:google-cloud-nio:0.127.28'
 
     constraints {
         implementation('org.json:json:20240303') {
