@@ -7,7 +7,7 @@ on:
         # Friendly description to be shown in the UI instead of 'name'
         description: 'Jira ID'
         # Default value if no value is explicitly provided
-        default: 'AJ-###'
+        default: 'CORE-###'
         # Input has to be provided for the workflow to run
         required: true
         # The data type of the input
