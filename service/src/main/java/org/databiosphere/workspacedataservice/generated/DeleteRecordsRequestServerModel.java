@@ -8,6 +8,7 @@ import com.fasterxml.jackson.annotation.JsonTypeName;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import org.springframework.lang.Nullable;
 import org.openapitools.jackson.nullable.JsonNullable;
 import java.time.OffsetDateTime;
 import jakarta.validation.Valid;
@@ -24,7 +25,7 @@ import jakarta.annotation.Generated;
 
 @Schema(name = "DeleteRecordsRequest", description = "A request body to delete records in bulk. The caller must either:  (1) specify which records should be deleted using the `record_ids` field  *OR*  (2) set `delete_all=true`.  If `delete_all=true`, the caller may optionally specify a list of records  to be spared from deletion using the `excluded_record_ids` field. ")
 @JsonTypeName("DeleteRecordsRequest")
-@Generated(value = "org.openapitools.codegen.languages.SpringCodegen", comments = "Generator version: 7.10.0")
+@Generated(value = "org.openapitools.codegen.languages.SpringCodegen", comments = "Generator version: 7.11.0")
 public class DeleteRecordsRequestServerModel {
 
   @Valid

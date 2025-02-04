@@ -9,6 +9,7 @@ import com.fasterxml.jackson.annotation.JsonValue;
 import java.time.OffsetDateTime;
 import java.util.UUID;
 import org.springframework.format.annotation.DateTimeFormat;
+import org.springframework.lang.Nullable;
 import org.openapitools.jackson.nullable.JsonNullable;
 import java.time.OffsetDateTime;
 import jakarta.validation.Valid;
@@ -24,7 +25,7 @@ import jakarta.annotation.Generated;
  */
 
 @JsonTypeName("JobV1")
-@Generated(value = "org.openapitools.codegen.languages.SpringCodegen", comments = "Generator version: 7.10.0")
+@Generated(value = "org.openapitools.codegen.languages.SpringCodegen", comments = "Generator version: 7.11.0")
 public class JobV1ServerModel {
 
   private UUID jobId;
@@ -123,7 +124,7 @@ public class JobV1ServerModel {
   @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME)
   private OffsetDateTime updated;
 
-  private String errorMessage;
+  private @Nullable String errorMessage;
 
   public JobV1ServerModel() {
     super();

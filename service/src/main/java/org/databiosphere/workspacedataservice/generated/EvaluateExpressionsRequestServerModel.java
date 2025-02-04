@@ -9,6 +9,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import org.databiosphere.workspacedataservice.generated.NamedExpressionServerModel;
+import org.springframework.lang.Nullable;
 import org.openapitools.jackson.nullable.JsonNullable;
 import java.time.OffsetDateTime;
 import jakarta.validation.Valid;
@@ -24,7 +25,7 @@ import jakarta.annotation.Generated;
  */
 
 @JsonTypeName("EvaluateExpressionsRequest")
-@Generated(value = "org.openapitools.codegen.languages.SpringCodegen", comments = "Generator version: 7.10.0")
+@Generated(value = "org.openapitools.codegen.languages.SpringCodegen", comments = "Generator version: 7.11.0")
 public class EvaluateExpressionsRequestServerModel {
 
   @Valid

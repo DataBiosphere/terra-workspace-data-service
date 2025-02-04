@@ -5,6 +5,7 @@ import java.util.Objects;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonTypeName;
+import org.springframework.lang.Nullable;
 import org.openapitools.jackson.nullable.JsonNullable;
 import java.time.OffsetDateTime;
 import jakarta.validation.Valid;
@@ -21,10 +22,10 @@ import jakarta.annotation.Generated;
 
 @Schema(name = "DeleteRecordsResponse", description = "A response body for a bulk record deletion request. Contains a count of records deleted by the request. ")
 @JsonTypeName("DeleteRecordsResponse")
-@Generated(value = "org.openapitools.codegen.languages.SpringCodegen", comments = "Generator version: 7.10.0")
+@Generated(value = "org.openapitools.codegen.languages.SpringCodegen", comments = "Generator version: 7.11.0")
 public class DeleteRecordsResponseServerModel {
 
-  private Integer count;
+  private @Nullable Integer count;
 
   public DeleteRecordsResponseServerModel count(Integer count) {
     this.count = count;
