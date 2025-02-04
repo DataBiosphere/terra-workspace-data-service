@@ -5,5 +5,6 @@ workspacemanagerurl: https://workspace.${beename}.bee.envs-terra.bio
 leoUrl: https://leonardo.${beename}.bee.envs-terra.bio
 rawlsUrl: https://rawls.${beename}.bee.envs-terra.bio
 
-# Enable preview of control plane apis
-controlPlanePreview: "on"
+# Disable preview of control plane apis
+# This is the default; leaving this property here for easy overriding later
+controlPlanePreview: "off"
