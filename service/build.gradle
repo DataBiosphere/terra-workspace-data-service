@@ -49,7 +49,6 @@ dependencies {
     implementation 'org.zalando:logbook-spring-boot-starter:3.10.0'
 
     // Azure libraries
-    implementation 'com.microsoft.azure:applicationinsights-runtime-attach:3.5.3'
     implementation 'com.azure:azure-storage-blob:12.29.0'
     implementation 'com.azure:azure-identity-extensions:1.2.0' // postgres password plugin
 
@@ -109,7 +108,7 @@ dependencies {
         exclude(group: 'org.slf4j')
         exclude(group: 'io.netty')
         exclude(group: 'org.mortbay.jetty')
-        exclude(group: 'javax.servlet') // conflicts with applicationinsights among others
+        exclude(group: 'javax.servlet')
         exclude(group: 'javax.servlet.jsp')
         exclude(group: 'com.sun.jersey')
         exclude(group: 'com.sun.xml.bind')

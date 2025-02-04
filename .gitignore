@@ -7,7 +7,6 @@ logs/
 !**/src/test/**/build/
 service/build/
 service/logs/
-service/applicationinsights.log
 
 ### STS ###
 .apt_generated
