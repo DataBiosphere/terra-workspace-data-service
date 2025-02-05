@@ -6,6 +6,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import org.databiosphere.workspacedataservice.generated.WorkspaceInitCloneServerModel;
+import org.springframework.lang.Nullable;
 import org.openapitools.jackson.nullable.JsonNullable;
 import java.time.OffsetDateTime;
 import jakarta.validation.Valid;
@@ -21,10 +22,10 @@ import jakarta.annotation.Generated;
  */
 
 @JsonTypeName("WorkspaceInit")
-@Generated(value = "org.openapitools.codegen.languages.SpringCodegen", comments = "Generator version: 7.10.0")
+@Generated(value = "org.openapitools.codegen.languages.SpringCodegen", comments = "Generator version: 7.11.0")
 public class WorkspaceInitServerModel {
 
-  private WorkspaceInitCloneServerModel clone;
+  private @Nullable WorkspaceInitCloneServerModel clone;
 
   public WorkspaceInitServerModel clone(WorkspaceInitCloneServerModel clone) {
     this.clone = clone;

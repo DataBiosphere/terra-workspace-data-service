@@ -9,6 +9,7 @@ import com.fasterxml.jackson.annotation.JsonValue;
 import java.time.OffsetDateTime;
 import java.util.UUID;
 import org.springframework.format.annotation.DateTimeFormat;
+import org.springframework.lang.Nullable;
 import org.openapitools.jackson.nullable.JsonNullable;
 import java.time.OffsetDateTime;
 import jakarta.validation.Valid;
@@ -25,7 +26,7 @@ import jakarta.annotation.Generated;
 
 @Schema(name = "GenericJob", description = "Generic representation of a job, no opinion on inputs and result for the job. See individual APIs for more guidance on expected input and result payloads. ")
 @JsonTypeName("GenericJob")
-@Generated(value = "org.openapitools.codegen.languages.SpringCodegen", comments = "Generator version: 7.10.0")
+@Generated(value = "org.openapitools.codegen.languages.SpringCodegen", comments = "Generator version: 7.11.0")
 public class GenericJobServerModel {
 
   private UUID jobId;
@@ -124,11 +125,11 @@ public class GenericJobServerModel {
   @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME)
   private OffsetDateTime updated;
 
-  private String errorMessage;
+  private @Nullable String errorMessage;
 
-  private Object input;
+  private @Nullable Object input;
 
-  private Object result;
+  private @Nullable Object result;
 
   public GenericJobServerModel() {
     super();
