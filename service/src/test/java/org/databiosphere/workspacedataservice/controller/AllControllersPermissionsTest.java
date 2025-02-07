@@ -23,7 +23,6 @@ import org.databiosphere.workspacedataservice.generated.GenericJobServerModel;
 import org.databiosphere.workspacedataservice.sam.MockSamAuthorizationDao;
 import org.databiosphere.workspacedataservice.sam.SamAuthorizationDao;
 import org.databiosphere.workspacedataservice.sam.SamAuthorizationDaoFactory;
-import org.databiosphere.workspacedataservice.service.BackupRestoreService;
 import org.databiosphere.workspacedataservice.service.CollectionService;
 import org.databiosphere.workspacedataservice.service.JobService;
 import org.databiosphere.workspacedataservice.service.PermissionService;
@@ -59,7 +58,6 @@ class AllControllersPermissionsTest extends DataPlaneTestBase {
   @MockitoBean CollectionService collectionService;
   @MockitoBean RecordDao recordDao;
   @MockitoBean JobService jobService;
-  @MockitoBean BackupRestoreService backupRestoreService;
   @MockitoBean RecordOrchestratorService recordOrchestratorService;
   @Autowired TwdsProperties twdsProperties;
 
@@ -244,26 +242,6 @@ class AllControllersPermissionsTest extends DataPlaneTestBase {
                     "myattribute"))));
   }
 
-  // these single-tenant APIs require read permission. When single-tenant APIs are fully retired,
-  // this method and any tests that use it should be deleted.
-  private static Stream<Arguments> singleTenantReadOnlyApis() {
-    return Stream.of(
-        // Cloning
-        arguments(
-            named(
-                "POST /backup/v0.2",
-                post("/backup/v0.2")
-                    .content(
-                        "{\"requestingWorkspaceId\": \"3fa85f64-5717-4562-b3fc-2c963f66afa6\","
-                            + "  \"description\": \"string\"}")
-                    .contentType(MediaType.APPLICATION_JSON))),
-        arguments(
-            named(
-                "GET /backup/v0.2/{trackingId}",
-                get("/backup/v0.2/{trackingId}", UUID.randomUUID()))),
-        arguments(named("GET /clone/v0.2", get("/clone/v0.2"))));
-  }
-
   // ========== write API tests
 
   @ParameterizedTest(name = "write API {0} succeeds with write permission")
@@ -307,30 +285,6 @@ class AllControllersPermissionsTest extends DataPlaneTestBase {
   @MethodSource("readOnlyApis")
   void readApiNoPermission(MockHttpServletRequestBuilder request) throws Exception {
     userNoPermissions(workspaceId);
-    requestShouldBeMaskedNotFound(request);
-  }
-
-  // ========== single-tenant read-only API tests
-
-  @ParameterizedTest(name = "single-tenant read-only API {0} succeeds with write permission")
-  @MethodSource("singleTenantReadOnlyApis")
-  void singleTenantReadApiWritePermission(MockHttpServletRequestBuilder request) throws Exception {
-    userCanWrite(twdsProperties.workspaceId());
-    requestShouldSucceed(request);
-  }
-
-  @ParameterizedTest(name = "single-tenant read-only API {0} succeeds with read-only permission")
-  @MethodSource("singleTenantReadOnlyApis")
-  void singleTenantReadApiReadOnlyPermission(MockHttpServletRequestBuilder request)
-      throws Exception {
-    userCanRead(twdsProperties.workspaceId());
-    requestShouldSucceed(request);
-  }
-
-  @ParameterizedTest(name = "single-tenant read-only API {0} fails with no permission")
-  @MethodSource("singleTenantReadOnlyApis")
-  void singleTenantReadApiNoPermission(MockHttpServletRequestBuilder request) throws Exception {
-    userNoPermissions(twdsProperties.workspaceId());
     requestShouldBeMaskedNotFound(request);
   }
 

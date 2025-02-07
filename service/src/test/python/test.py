@@ -100,7 +100,9 @@ class WdsTests(TestCase):
     schema_client = wds_client.SchemaApi(api_client)
     import_client = wds_client.ImportApi(api_client)
     job_client = wds_client.JobApi(api_client)
+    collections_client = wds_client.CollectionApi(api_client)
     current_workspaceId = os.environ['WORKSPACE_ID']
+    current_collectionId = '' # will be overwritten by setup_method
 
     local_server_host = 'http://localhost:9889'
 
@@ -118,15 +120,23 @@ class WdsTests(TestCase):
     cvsUpload_test = "TestUpload"
     generatedCvs_name = "generated_test.tsv"
 
+    ### setup: create the default collection and save to current_collectionId
+    ### This needs to happen first, before other tests that rely on it
+    @classmethod
+    def setup_class(cls):
+      collection_request = wds_client.CollectionRequest(name='default', description='default')
+      collection_created = cls.collections_client.create_collection_v1(cls.current_workspaceId, collection_request)
+      cls.current_collectionId = collection_created.id
+
     # creates a new record or replaces existing one with specified primary key
     def create_record_with_primary_key(self, record, record_type, record_id, key):
         record_request = wds_client.RecordRequest(attributes=record);
-        recordCreated = self.records_client.create_or_replace_record(self.current_workspaceId, self.version, record_type, record_id, record_request, primary_key=key)
+        recordCreated = self.records_client.create_or_replace_record(self.current_collectionId, self.version, record_type, record_id, record_request, primary_key=key)
 
     # created a new records or replaces existing one with no primary key (default to sys_name)
     def create_record(self, record, record_type, record_id):
         record_request = wds_client.RecordRequest(attributes=record);
-        recordCreated = self.records_client.create_or_replace_record(self.current_workspaceId, self.version, record_type, record_id, record_request)
+        recordCreated = self.records_client.create_or_replace_record(self.current_collectionId, self.version, record_type, record_id, record_request)
 
     # generated and adds two separate records that are related to each other
     def generate_two_records(self, type1, id1, type2, id2, key):
@@ -152,23 +162,23 @@ class WdsTests(TestCase):
     def test_simple_record_creation_query1_and_delete(self):
         record = {"column_key": "SomeString"};
         self.create_record(record, self.testType1_simple, self.testId1_simple)
-        recordRetrieved = self.records_client.get_record(self.current_workspaceId, self.version, self.testType1_simple, self.testId1_simple)
+        recordRetrieved = self.records_client.get_record(self.current_collectionId, self.version, self.testType1_simple, self.testId1_simple)
         # check that record that was saved is the same as what was retrieved
         record_updated = adjust_record_to_wds(record, None, self.testId1_simple)
         self.assertTrue(record_updated == recordRetrieved.attributes)
 
         record["column_key"] = "AnotherString";
         record_request = wds_client.RecordRequest(attributes=record)
-        response = self.records_client.update_record(self.current_workspaceId, self.version, self.testType1_simple, self.testId1_simple, record_request)
-        recordRetrieved = self.records_client.get_record(self.current_workspaceId, self.version, self.testType1_simple, self.testId1_simple)
+        response = self.records_client.update_record(self.current_collectionId, self.version, self.testType1_simple, self.testId1_simple, record_request)
+        recordRetrieved = self.records_client.get_record(self.current_collectionId, self.version, self.testType1_simple, self.testId1_simple)
         # check that record that was saved is the same as what was retrieved
         record_updated = adjust_record_to_wds(record, None, self.testId1_simple)
         self.assertTrue(record_updated == recordRetrieved.attributes)
 
         # clean up
-        response = self.records_client.delete_record(self.current_workspaceId, self.version, self.testType1_simple, self.testId1_simple);
-        response = self.schema_client.delete_record_type(self.current_workspaceId, self.version, self.testType1_simple);
-        workspace_ent_type = self.schema_client.describe_all_record_types(self.current_workspaceId, self.version)
+        response = self.records_client.delete_record(self.current_collectionId, self.version, self.testType1_simple, self.testId1_simple);
+        response = self.schema_client.delete_record_type(self.current_collectionId, self.version, self.testType1_simple);
+        workspace_ent_type = self.schema_client.describe_all_record_types(self.current_collectionId, self.version)
         self.assertTrue(len(workspace_ent_type) == 0)
 
     # SCENARIO 3
@@ -176,16 +186,16 @@ class WdsTests(TestCase):
     def test_complex_record_creation_query_describe_and_delete(self):
         record = generate_record();
         self.create_record_with_primary_key(record, self.testType1_complex, self.testId1_complex, "testKey")
-        recordRetrieved = self.records_client.get_record(self.current_workspaceId, self.version, self.testType1_complex, self.testId1_complex)
+        recordRetrieved = self.records_client.get_record(self.current_collectionId, self.version, self.testType1_complex, self.testId1_complex)
         record_updated = adjust_record_to_wds(record, "testKey", self.testId1_complex)
         self.assertTrue(record_updated == recordRetrieved.attributes)
 
-        ent_types = self.schema_client.describe_record_type(self.current_workspaceId, self.version, self.testType1_complex)
+        ent_types = self.schema_client.describe_record_type(self.current_collectionId, self.version, self.testType1_complex)
         #print ("NAME:", ent_types.name ,"COUNT:", ent_types.count)
 
         # clean up
-        response = self.schema_client.delete_record_type(self.current_workspaceId, self.version, self.testType1_complex);
-        workspace_ent_type = self.schema_client.describe_all_record_types(self.current_workspaceId, self.version)
+        response = self.schema_client.delete_record_type(self.current_collectionId, self.version, self.testType1_complex);
+        workspace_ent_type = self.schema_client.describe_all_record_types(self.current_collectionId, self.version)
         self.assertTrue(len(workspace_ent_type) == 0)
 
     # SCENARIO 4
@@ -194,17 +204,17 @@ class WdsTests(TestCase):
         records = self.generate_two_records(self.testType2_complex, self.testId1_complex, self.testType2_relation, self.testId1_relation, "testKey_complex")
         search_request = { "offset": 0, "limit": 10, "sort": "DESC", "sortAttribute": "NumberTest3"}
 
-        recordsRetrieved = self.records_client.query_records(self.current_workspaceId, self.version, self.testType2_complex, search_request)
+        recordsRetrieved = self.records_client.query_records(self.current_collectionId, self.version, self.testType2_complex, search_request)
         self.assertEqual("DESC", recordsRetrieved.search_request.sort)
         record_updated = adjust_record_to_wds(records[0], "testKey_complex", self.testId1_complex)
         self.assertTrue(record_updated == recordsRetrieved.records[0].attributes)
 
-        recordsRetrieved = self.records_client.query_records(self.current_workspaceId, self.version, self.testType2_relation, search_request)
+        recordsRetrieved = self.records_client.query_records(self.current_collectionId, self.version, self.testType2_relation, search_request)
         self.assertEqual("DESC", recordsRetrieved.search_request.sort)
         record_updated = adjust_record_to_wds(records[1], None, self.testId1_relation)
         self.assertTrue(record_updated == recordsRetrieved.records[0].attributes)
 
-        workspace_ent_type = self.schema_client.describe_all_record_types(self.current_workspaceId, self.version)
+        workspace_ent_type = self.schema_client.describe_all_record_types(self.current_collectionId, self.version)
         #print(workspace_ent_type)
         for t in workspace_ent_type:
             if t.name == self.testType2_complex:
@@ -215,11 +225,11 @@ class WdsTests(TestCase):
                 self.assertTrue(t.primary_key, "sys_name")
 
         # clean up
-        response = self.records_client.delete_record(self.current_workspaceId, self.version, self.testType2_relation, self.testId1_relation);
-        response = self.records_client.delete_record(self.current_workspaceId, self.version, self.testType2_complex, self.testId1_complex);
-        response = self.schema_client.delete_record_type(self.current_workspaceId, self.version, self.testType2_relation);
-        response = self.schema_client.delete_record_type(self.current_workspaceId, self.version, self.testType2_complex);
-        workspace_ent_type = self.schema_client.describe_all_record_types(self.current_workspaceId, self.version)
+        response = self.records_client.delete_record(self.current_collectionId, self.version, self.testType2_relation, self.testId1_relation);
+        response = self.records_client.delete_record(self.current_collectionId, self.version, self.testType2_complex, self.testId1_complex);
+        response = self.schema_client.delete_record_type(self.current_collectionId, self.version, self.testType2_relation);
+        response = self.schema_client.delete_record_type(self.current_collectionId, self.version, self.testType2_complex);
+        workspace_ent_type = self.schema_client.describe_all_record_types(self.current_collectionId, self.version)
         self.assertTrue(len(workspace_ent_type) == 0)
 
     # SCENARIO 5
@@ -227,26 +237,26 @@ class WdsTests(TestCase):
     def test_upload_download_tsv(self):
         num_records = 5000
         generate_csv(num_records, self.generatedCvs_name)
-        record = self.records_client.upload_tsv(self.current_workspaceId, self.version, self.cvsUpload_test, self.generatedCvs_name)
+        record = self.records_client.upload_tsv(self.current_collectionId, self.version, self.cvsUpload_test, self.generatedCvs_name)
         self.assertEqual(record.records_modified, num_records)
 
-        ent_types = self.schema_client.describe_record_type(self.current_workspaceId, self.version, self.cvsUpload_test)
+        ent_types = self.schema_client.describe_record_type(self.current_collectionId, self.version, self.cvsUpload_test)
         self.assertEqual(ent_types.count, num_records)
 
-        tsv_records = self.records_client.get_records_as_tsv(self.current_workspaceId, self.version, self.cvsUpload_test)
+        tsv_records = self.records_client.get_records_as_tsv(self.current_collectionId, self.version, self.cvsUpload_test)
         diff = compare_csv(self.generatedCvs_name, tsv_records)
         self.assertTrue(len(diff) == 0)
 
         # clean up
-        response = self.schema_client.delete_record_type(self.current_workspaceId, self.version, self.cvsUpload_test);
-        workspace_ent_type = self.schema_client.describe_all_record_types(self.current_workspaceId, self.version)
+        response = self.schema_client.delete_record_type(self.current_collectionId, self.version, self.cvsUpload_test);
+        workspace_ent_type = self.schema_client.describe_all_record_types(self.current_collectionId, self.version)
         self.assertTrue(len(workspace_ent_type) == 0)
 
     # SCENARIO 6
     # import snapshot from TDR with appropriate permissions
     def test_import_snapshot(self):
         import_request = { "type": "TDRMANIFEST", "url": self.local_server_host + "/tdrmanifest/v2f_for_python.json"}
-        job_response = self.import_client.import_v1(self.current_workspaceId, import_request)
+        job_response = self.import_client.import_v1(self.current_collectionId, import_request)
         job_status_response = self.job_client.job_status_v1(job_response.job_id)
         job_status = job_status_response.status
         while job_status in ['RUNNING', 'QUEUED']:
@@ -257,17 +267,17 @@ class WdsTests(TestCase):
 
 
         # should create tables from manifest, spot-check
-        ent_types = self.schema_client.describe_record_type(self.current_workspaceId, self.version, "all_data_types")
+        ent_types = self.schema_client.describe_record_type(self.current_collectionId, self.version, "all_data_types")
         assert ent_types.count == 5
         search_request = { "offset": 0, "limit": 2}
-        records = self.records_client.query_records(self.current_workspaceId, self.version, "all_data_types", search_request)
+        records = self.records_client.query_records(self.current_collectionId, self.version, "all_data_types", search_request)
         testRecord = records.records[0]
         assert testRecord.id == "12:101976753:T:C"
         assert len(testRecord.attributes) == 23
         assert testRecord.attributes['datarepo_row_id'] == "0E369A2D-25E5-4D65-955B-334F894C2883"
         # clean up
-        all_record_types = self.schema_client.describe_all_record_types(self.current_workspaceId, self.version)
+        all_record_types = self.schema_client.describe_all_record_types(self.current_collectionId, self.version)
         for record_type in all_record_types:
-            self.schema_client.delete_record_type(self.current_workspaceId, self.version, record_type.name)
-        workspace_ent_type = self.schema_client.describe_all_record_types(self.current_workspaceId, self.version)
+            self.schema_client.delete_record_type(self.current_collectionId, self.version, record_type.name)
+        workspace_ent_type = self.schema_client.describe_all_record_types(self.current_collectionId, self.version)
         assert len(workspace_ent_type) == 0

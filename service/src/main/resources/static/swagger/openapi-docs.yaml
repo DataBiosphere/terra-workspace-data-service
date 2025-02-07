@@ -22,8 +22,6 @@ security:
 
 tags:
   # Tags should be listed in the order they should appear in the UI
-  - name: Cloning
-    description: Cloning APIs including Backup and Restore
   - name: Records
     description: Record APIs
   - name: Import
@@ -44,58 +42,6 @@ tags:
 paths:
   # Paths should be grouped by their tag, following the order of tags listed above.
   # Within each tag group, paths should be listed alphabetically.
-
-  ##############################
-  # Cloning APIs
-  ##############################
-  /backup/{v}:
-    post:
-      tags:
-        - Cloning
-      parameters:
-        - $ref: '#/components/parameters/versionPathParam'
-      requestBody:
-        $ref: '#/components/requestBodies/BackupRestoreRequestBody'
-      summary: Create a backup of all WDS data
-      operationId: createBackup
-      responses:
-        200:
-          description: Successfully initiated the backup process
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/BackupJob'
-  /backup/{v}/{trackingId}:
-    get:
-      tags:
-        - Cloning
-      parameters:
-        - $ref: '#/components/parameters/versionPathParam'
-        - $ref: '#/components/parameters/trackingIdPathParam'
-      summary: Check status of a WDS data backup
-      operationId: getBackupStatus
-      responses:
-        200:
-          description: Returns backup status
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/BackupJob'
-  /clone/{v}:
-    get:
-      tags:
-        - Cloning
-      parameters:
-        - $ref: '#/components/parameters/versionPathParam'
-      summary: Check status of a WDS data clone
-      operationId: getCloneStatus
-      responses:
-        200:
-          description: Returns clone status
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/CloneJob'
 
   ##############################
   # Records APIs
@@ -617,13 +563,6 @@ components:
         application/json:
           schema:
             $ref: '#/components/schemas/AttributeSchemaUpdate'
-    BackupRestoreRequestBody:
-      description: A backup request
-      required: true
-      content:
-        application/json:
-          schema:
-            $ref: '#/components/schemas/BackupRestoreRequest'
     BatchRequestBody:
       description: A list of batch operations to perform on records
       required: true
@@ -684,40 +623,6 @@ components:
           description: new name of this attribute.
         datatype:
           $ref: '#/components/schemas/AttributeDataType'
-    BackupJob:
-      x-all-of-name: BackupJob
-      allOf:
-        - $ref: '#/components/schemas/Job'
-        - type: object
-          properties:
-            input:
-              type: object
-              description: Input arguments; expected to be empty.
-            result:
-              $ref: '#/components/schemas/BackupResponse'
-    BackupResponse:
-      type: object
-      properties:
-        filename:
-          type: string
-          description: backup location
-        requester:
-          type: string
-          format: uuid
-          description: workspace which initiated the backup
-        description:
-          type: string
-          description: description of this backup
-    BackupRestoreRequest:
-      type: object
-      properties:
-        requestingWorkspaceId:
-          type: string
-          format: uuid
-          description: workspace requesting the backup. Optional; defaults to the workspace in which this WDS is running.
-        description:
-          type: string
-          description: User-friendly description to associate with this backup. Optional.
     BatchOperation:
       type: object
       required:
@@ -766,27 +671,6 @@ components:
           type: string
         group:
           type: string
-    CloneJob:
-      x-all-of-name: CloneJob
-      allOf:
-        - $ref: '#/components/schemas/Job'
-        - type: object
-          properties:
-            input:
-              type: object
-              description: Input arguments; expected to be empty.
-            result:
-              $ref: '#/components/schemas/CloneResponse'
-    CloneResponse:
-      type: object
-      properties:
-        sourceworkspaceid:
-          type: string
-          format: uuid
-          description: workspace which initiated the clone
-        clonestatus:
-          type: string
-          description: description of this clone status
     commit:
       type: object
       properties:
@@ -827,27 +711,6 @@ components:
           type: string
         commit:
           $ref: '#/components/schemas/commit'
-    Job:
-      type: object
-      required:
-        - jobId
-        - status
-        - created
-        - updated
-      properties:
-        jobId:
-          type: string
-        jobType:
-          type: string
-        status:
-          type: string
-          enum: [ QUEUED, RUNNING, SUCCEEDED, ERROR, CANCELLED, UNKNOWN ]
-        created:
-          type: string
-        updated:
-          type: string
-        errorMessage:
-          type: string
     RecordAttributes:
       type: object
       additionalProperties: true
