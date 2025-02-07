@@ -100,6 +100,7 @@ class WdsTests(TestCase):
     schema_client = wds_client.SchemaApi(api_client)
     import_client = wds_client.ImportApi(api_client)
     job_client = wds_client.JobApi(api_client)
+    collections_client = wds_client.CollectionApi(api_client)
     current_workspaceId = os.environ['WORKSPACE_ID']
 
     local_server_host = 'http://localhost:9889'
@@ -117,6 +118,11 @@ class WdsTests(TestCase):
 
     cvsUpload_test = "TestUpload"
     generatedCvs_name = "generated_test.tsv"
+
+    # Create the default collection. This needs to happen first, before other tests that rely on it
+    def create_default_collection(self):
+      collection_request = wds_client.CollectionRequest(name='default', description='default')
+      collection_created = self.collections_client.create_collection_v1(self.current_workspaceId, collection_request)
 
     # creates a new record or replaces existing one with specified primary key
     def create_record_with_primary_key(self, record, record_type, record_id, key):
