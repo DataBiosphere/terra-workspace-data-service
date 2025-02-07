@@ -23,7 +23,6 @@ import org.databiosphere.workspacedataservice.generated.GenericJobServerModel;
 import org.databiosphere.workspacedataservice.sam.MockSamAuthorizationDao;
 import org.databiosphere.workspacedataservice.sam.SamAuthorizationDao;
 import org.databiosphere.workspacedataservice.sam.SamAuthorizationDaoFactory;
-import org.databiosphere.workspacedataservice.service.BackupRestoreService;
 import org.databiosphere.workspacedataservice.service.CollectionService;
 import org.databiosphere.workspacedataservice.service.JobService;
 import org.databiosphere.workspacedataservice.service.PermissionService;
@@ -59,7 +58,6 @@ class AllControllersPermissionsTest extends DataPlaneTestBase {
   @MockitoBean CollectionService collectionService;
   @MockitoBean RecordDao recordDao;
   @MockitoBean JobService jobService;
-  @MockitoBean BackupRestoreService backupRestoreService;
   @MockitoBean RecordOrchestratorService recordOrchestratorService;
   @Autowired TwdsProperties twdsProperties;
 
