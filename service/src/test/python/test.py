@@ -126,7 +126,7 @@ class WdsTests(TestCase):
     def setup_class(cls):
       collection_request = wds_client.CollectionRequest(name='default', description='default')
       collection_created = cls.collections_client.create_collection_v1(cls.current_workspaceId, collection_request)
-      current_collectionId = collection_created.id
+      cls.current_collectionId = collection_created.id
 
     # creates a new record or replaces existing one with specified primary key
     def create_record_with_primary_key(self, record, record_type, record_id, key):
