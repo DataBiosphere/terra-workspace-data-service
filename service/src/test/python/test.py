@@ -101,7 +101,7 @@ class WdsTests(TestCase):
     import_client = wds_client.ImportApi(api_client)
     job_client = wds_client.JobApi(api_client)
     collections_client = wds_client.CollectionApi(api_client)
-    current_workspaceId = os.environ['WORKSPACE_ID']
+    current_workspaceId = os.environ['WORKSPACE_ID'] # will be overwritten by setup_method
 
     local_server_host = 'http://localhost:9889'
 
@@ -118,6 +118,13 @@ class WdsTests(TestCase):
 
     cvsUpload_test = "TestUpload"
     generatedCvs_name = "generated_test.tsv"
+
+    ### setup: create the default collection and save to current_workspaceId 
+    ### This needs to happen first, before other tests that rely on it
+    def setup_method(self):
+      collection_request = wds_client.CollectionRequest(name='default', description='default')
+      collection_created = self.collections_client.create_collection_v1(self.current_workspaceId, collection_request)
+      current_workspaceId = collection_created.id
 
     # creates a new record or replaces existing one with specified primary key
     def create_record_with_primary_key(self, record, record_type, record_id, key):
@@ -147,12 +154,6 @@ class WdsTests(TestCase):
     def test_check_status(self):
         response = self.generalInfo_client.status_get()
         self.assertEqual(response.status, "UP")
-
-    # Create the default collection. This needs to happen first, before other tests that rely on it
-    def test_create_default_collection(self):
-      collection_request = wds_client.CollectionRequest(name='default', description='default')
-      collection_created = self.collections_client.create_collection_v1(self.current_workspaceId, collection_request)
-      self.assertTrue(collection_created.id == self.current_workspaceId)
 
     # SCENARIO 2
     # create a simple record, retrieve it back and check that the result matches, then update and repeat
