@@ -56,7 +56,6 @@ class RestClientRetryTest extends ControlPlaneTestBase {
         org.broadinstitute.dsde.workbench.client.sam.ApiException.class,
         bio.terra.workspace.client.ApiException.class,
         bio.terra.datarepo.client.ApiException.class,
-        org.broadinstitute.dsde.workbench.client.leonardo.ApiException.class,
         org.databiosphere.workspacedata.client.ApiException.class
       })
   @interface CartesianTestableExceptions {}
@@ -72,7 +71,6 @@ class RestClientRetryTest extends ControlPlaneTestBase {
         org.broadinstitute.dsde.workbench.client.sam.ApiException.class,
         bio.terra.workspace.client.ApiException.class,
         bio.terra.datarepo.client.ApiException.class,
-        org.broadinstitute.dsde.workbench.client.leonardo.ApiException.class,
         org.databiosphere.workspacedata.client.ApiException.class
       })
   @interface TestableExceptionsSource {}

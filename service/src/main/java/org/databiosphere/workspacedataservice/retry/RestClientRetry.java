@@ -178,14 +178,6 @@ public class RestClientRetry {
     if (e instanceof bio.terra.datarepo.client.ApiException tdrException) {
       return tdrException.getCode();
     }
-    // Leo
-    if (e instanceof org.broadinstitute.dsde.workbench.client.leonardo.ApiException leoException) {
-      return leoException.getCode();
-    }
-    // WDS
-    if (e instanceof org.databiosphere.workspacedata.client.ApiException wdsException) {
-      return wdsException.getCode();
-    }
     // Rawls, or anything using RestTemplate
     if (e instanceof HttpStatusCodeException httpStatusCodeException) {
       return httpStatusCodeException.getStatusCode().value();
