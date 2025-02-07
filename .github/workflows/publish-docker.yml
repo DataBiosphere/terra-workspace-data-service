@@ -1,20 +1,14 @@
-name: Publish Docker Images to GCR and ACR
+name: Publish Docker Images to GCR
 on:
   workflow_call:
     inputs:
       new-tag:
         required: true
         type: string
-    secrets:
-      ACR_SP_PASSWORD:
-        required: true
-      ACR_SP_USER:
-        required: true
 
 env:
   SERVICE_NAME: ${{ github.event.repository.name }}
   GCR_REGISTRY: us.gcr.io
-  ACR_REGISTRY: terradevacrpublic.azurecr.io
   GOOGLE_PROJECT: broad-dsp-gcr-public
 
 jobs:
@@ -67,10 +61,6 @@ jobs:
         id: gcr-image-name
         run: echo "name=${GCR_REGISTRY}/${GOOGLE_PROJECT}/${SERVICE_NAME}" >> $GITHUB_OUTPUT
 
-      - name: Construct ACR docker image name
-        id: acr-image-name
-        run: echo "name=${ACR_REGISTRY}/${SERVICE_NAME}" >> $GITHUB_OUTPUT
-
       - name: Build image locally with jib
         run: |
           ./gradlew --build-cache jibDockerBuild \
@@ -88,19 +78,6 @@ jobs:
 
       - name: Push GCR image
         run: docker push --all-tags ${{ steps.gcr-image-name.outputs.name }}
-
-      - name: Re-tag image for ACR
-        run: docker tag ${{ steps.gcr-image-name.outputs.name }}:${{ steps.setHash.outputs.git_short_sha }} ${{ steps.acr-image-name.outputs.name }}:${{ steps.setHash.outputs.git_short_sha }}
-
-      - name: Add version tag to ACR
-        run: docker image tag ${{ steps.acr-image-name.outputs.name }}:${{ steps.setHash.outputs.git_short_sha }} ${{ steps.acr-image-name.outputs.name }}:${{ inputs.new-tag }}
-
-      - name: Push image to Azure
-        run: |
-          echo ${{ secrets.ACR_SP_PASSWORD }} | docker login ${ACR_REGISTRY} \
-          --username ${{ secrets.ACR_SP_USER }} \
-          --password-stdin
-          docker push --all-tags ${{ steps.acr-image-name.outputs.name }}
 
   # Report the new version of cWDS to Sherlock.
   # This enables Sherlock to gather metrics and generate changelogs for deployments.
