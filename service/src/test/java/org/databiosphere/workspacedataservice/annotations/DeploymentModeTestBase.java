@@ -35,7 +35,6 @@ class DeploymentModeTestBase extends DataPlaneTestBase {
         "collectionInitializerBean",
         "wsmProtectedDataSupport",
         "capabilitiesController",
-        "cloningController",
         "collectionController",
         "recordController");
   }

@@ -22,8 +22,6 @@ security:
 
 tags:
   # Tags should be listed in the order they should appear in the UI
-  - name: Cloning
-    description: Cloning APIs including Backup and Restore
   - name: Records
     description: Record APIs
   - name: Import
@@ -44,58 +42,6 @@ tags:
 paths:
   # Paths should be grouped by their tag, following the order of tags listed above.
   # Within each tag group, paths should be listed alphabetically.
-
-  ##############################
-  # Cloning APIs
-  ##############################
-  /backup/{v}:
-    post:
-      tags:
-        - Cloning
-      parameters:
-        - $ref: '#/components/parameters/versionPathParam'
-      requestBody:
-        $ref: '#/components/requestBodies/BackupRestoreRequestBody'
-      summary: Create a backup of all WDS data
-      operationId: createBackup
-      responses:
-        200:
-          description: Successfully initiated the backup process
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/BackupJob'
-  /backup/{v}/{trackingId}:
-    get:
-      tags:
-        - Cloning
-      parameters:
-        - $ref: '#/components/parameters/versionPathParam'
-        - $ref: '#/components/parameters/trackingIdPathParam'
-      summary: Check status of a WDS data backup
-      operationId: getBackupStatus
-      responses:
-        200:
-          description: Returns backup status
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/BackupJob'
-  /clone/{v}:
-    get:
-      tags:
-        - Cloning
-      parameters:
-        - $ref: '#/components/parameters/versionPathParam'
-      summary: Check status of a WDS data clone
-      operationId: getCloneStatus
-      responses:
-        200:
-          description: Returns clone status
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/CloneJob'
 
   ##############################
   # Records APIs
