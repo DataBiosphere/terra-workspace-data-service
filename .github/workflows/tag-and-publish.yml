@@ -51,15 +51,12 @@ jobs:
     secrets:
       ARTIFACTORY_PASSWORD: ${{ secrets.ARTIFACTORY_PASSWORD }}
       ARTIFACTORY_USERNAME: ${{ secrets.ARTIFACTORY_USERNAME }}
-  # Publish Docker image to Google and Azure Container Registries
+  # Publish Docker image to Google Container Registry
   docker-image-job:
     needs: tag-job
     uses: ./.github/workflows/publish-docker.yml
     with:
       new-tag: ${{ needs.tag-job.outputs.new_tag }}
-    secrets:
-      ACR_SP_PASSWORD: ${{ secrets.ACR_SP_PASSWORD }}
-      ACR_SP_USER: ${{ secrets.ACR_SP_USER }}
   # Publish GitHub Release
   release-job:
     needs: tag-job
@@ -82,7 +79,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
   # Publish new version to DSP infrastructure
   publish-app-version-job:
-    needs: [tag-job, docker-image-job]
+    needs: [ tag-job, docker-image-job ]
     uses: ./.github/workflows/publish-app-version.yml
     with:
       new-tag: ${{ needs.tag-job.outputs.new_tag }}
