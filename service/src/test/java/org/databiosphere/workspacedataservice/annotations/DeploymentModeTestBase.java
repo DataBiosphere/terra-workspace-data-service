@@ -31,8 +31,6 @@ class DeploymentModeTestBase extends DataPlaneTestBase {
   protected static Stream<String> dataPlaneConditionalBeans() {
     return Stream.of(
         "backupRestoreService",
-        "collectionInitializer",
-        "collectionInitializerBean",
         "wsmProtectedDataSupport",
         "capabilitiesController",
         "collectionController",
