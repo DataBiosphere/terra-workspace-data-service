@@ -108,13 +108,10 @@ jobs:
     needs: [ build, unit-tests, bump-check ]
     secrets: inherit
 
-  # Publish Docker image to Google and Azure Container Registries, also reports to sherlock
+  # Publish Docker image to Google Container Registry, also reports to sherlock
   docker-image-job:
     if: always() && needs.bump-check.outputs.is-bump == 'no' && github.event_name == 'push'
-    needs: [build, bump-check, tag]
+    needs: [ build, bump-check, tag ]
     uses: ./.github/workflows/publish-docker.yml
     with:
       new-tag: ${{ needs.tag.outputs.new-tag }}
-    secrets:
-      ACR_SP_PASSWORD: ${{ secrets.ACR_SP_PASSWORD }}
-      ACR_SP_USER: ${{ secrets.ACR_SP_USER }}
