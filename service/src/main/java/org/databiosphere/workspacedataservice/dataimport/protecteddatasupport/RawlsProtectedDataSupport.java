@@ -1,6 +1,5 @@
 package org.databiosphere.workspacedataservice.dataimport.protecteddatasupport;
 
-import org.databiosphere.workspacedataservice.annotations.DeploymentMode.ControlPlane;
 import org.databiosphere.workspacedataservice.policy.PolicyUtils;
 import org.databiosphere.workspacedataservice.rawls.RawlsClient;
 import org.databiosphere.workspacedataservice.rawls.RawlsWorkspaceDetails;
@@ -9,7 +8,6 @@ import org.databiosphere.workspacedataservice.shared.model.WorkspaceId;
 import org.springframework.stereotype.Component;
 
 @Component
-@ControlPlane
 public class RawlsProtectedDataSupport implements ProtectedDataSupport {
   private final RawlsClient rawlsClient;
 

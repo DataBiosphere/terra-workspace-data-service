@@ -29,14 +29,10 @@ class DeploymentModeTestBase extends DataPlaneTestBase {
   @Autowired protected ApplicationContext context;
 
   protected static Stream<String> dataPlaneConditionalBeans() {
-    return Stream.of(
-        "wsmProtectedDataSupport",
-        "capabilitiesController",
-        "collectionController",
-        "recordController");
+    return Stream.of("capabilitiesController", "collectionController", "recordController");
   }
 
   protected static Stream<String> controlPlaneConditionalBeans() {
-    return Stream.of("rawlsProtectedDataSupport", "rawlsJsonQuartzJob");
+    return Stream.of("rawlsJsonQuartzJob");
   }
 }
