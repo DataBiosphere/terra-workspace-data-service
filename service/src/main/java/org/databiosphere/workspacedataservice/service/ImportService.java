@@ -6,7 +6,9 @@ import static org.databiosphere.workspacedataservice.shared.model.Schedulable.AR
 
 import com.google.common.annotations.VisibleForTesting;
 import java.io.Serializable;
+import java.net.URI;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
@@ -17,6 +19,9 @@ import org.databiosphere.workspacedataservice.dataimport.ImportValidator;
 import org.databiosphere.workspacedataservice.dataimport.pfb.PfbSchedulable;
 import org.databiosphere.workspacedataservice.dataimport.rawlsjson.RawlsJsonSchedulable;
 import org.databiosphere.workspacedataservice.dataimport.tdr.TdrManifestSchedulable;
+import org.databiosphere.workspacedataservice.drshub.DrsHubApi;
+import org.databiosphere.workspacedataservice.drshub.ResolveDrsRequest;
+import org.databiosphere.workspacedataservice.drshub.ResourceMetadataResponse;
 import org.databiosphere.workspacedataservice.generated.GenericJobServerModel;
 import org.databiosphere.workspacedataservice.generated.ImportRequestServerModel;
 import org.databiosphere.workspacedataservice.generated.ImportRequestServerModel.TypeEnum;
@@ -42,18 +47,21 @@ public class ImportService {
   private final JobDao jobDao;
   private final SchedulerDao schedulerDao;
   private final ImportValidator importValidator;
+  private final DrsHubApi drsHubApi;
 
   public ImportService(
       CollectionService collectionService,
       SamDao samDao,
       JobDao jobDao,
       SchedulerDao schedulerDao,
-      ImportValidator importValidator) {
+      ImportValidator importValidator,
+      DrsHubApi drsHubApi) {
     this.collectionService = collectionService;
     this.samDao = samDao;
     this.jobDao = jobDao;
     this.schedulerDao = schedulerDao;
     this.importValidator = importValidator;
+    this.drsHubApi = drsHubApi;
   }
 
   public GenericJobServerModel createImport(
@@ -66,6 +74,21 @@ public class ImportService {
     String petToken = samDao.getPetToken();
 
     logger.info("Data import of type {} requested", importRequest.getType());
+
+    // if the URI is a DRS URI, resolve it to get the actual URL
+    if (isDrsUri(importRequest.getUrl())) {
+      try {
+        logger.info("Resolving DRS URI {}", importRequest.getUrl());
+        ResolveDrsRequest drsRequest =
+            new ResolveDrsRequest(importRequest.getUrl().toString(), List.of("accessUrl"));
+        ResourceMetadataResponse resolvedFile = drsHubApi.resolveDrs(drsRequest);
+        importRequest.setUrl(resolvedFile.accessUrl().url());
+        logger.info("Resolved DRS URI to {}", importRequest.getUrl());
+        importValidator.validateImport(importRequest, workspaceId);
+      } catch (Exception e) {
+        throw new IllegalArgumentException("Could not resolve DRS URI: " + e.getMessage());
+      }
+    }
 
     ImportJobInput importJobInput = ImportJobInput.from(importRequest);
     Job<JobInput, JobResult> job =
@@ -131,5 +154,14 @@ public class ImportService {
       case TDRMANIFEST -> new TdrManifestSchedulable(
           jobId.toString(), "TDR manifest import", arguments);
     };
+  }
+
+  /**
+   * Check if the URI is a DRS URI
+   *
+   * @return true if the URI scheme is "drs", false otherwise
+   */
+  public static boolean isDrsUri(URI uri) {
+    return "drs".equalsIgnoreCase(uri.getScheme());
   }
 }
