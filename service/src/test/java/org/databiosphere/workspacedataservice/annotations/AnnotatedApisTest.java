@@ -6,11 +6,8 @@ import java.util.Optional;
 import org.databiosphere.workspacedataservice.annotations.DeploymentMode.ControlPlane;
 import org.databiosphere.workspacedataservice.annotations.DeploymentMode.DataPlane;
 import org.databiosphere.workspacedataservice.common.DataPlaneTestBase;
-import org.databiosphere.workspacedataservice.dataimport.protecteddatasupport.ProtectedDataSupport;
-import org.databiosphere.workspacedataservice.dataimport.protecteddatasupport.WsmProtectedDataSupport;
 import org.databiosphere.workspacedataservice.workspace.DataTableTypeInspector;
 import org.databiosphere.workspacedataservice.workspace.WdsDataTableTypeInspector;
-import org.databiosphere.workspacedataservice.workspacemanager.WorkspaceManagerDao;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
@@ -42,12 +39,6 @@ class AnnotatedApisTest extends DataPlaneTestBase {
   // conflicts.
   @TestConfiguration
   static class SpecifyConflictingBeans {
-
-    @Primary
-    @Bean("overrideProtectedDataSupport")
-    ProtectedDataSupport overrideProtectedDataSupport(WorkspaceManagerDao wsmDao) {
-      return new WsmProtectedDataSupport(wsmDao);
-    }
 
     @Primary
     @Bean("overrideDataTableTypeInspector")
