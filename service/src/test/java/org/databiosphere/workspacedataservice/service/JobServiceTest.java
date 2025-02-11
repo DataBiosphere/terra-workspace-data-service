@@ -39,7 +39,8 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
       // turn off pubsub autoconfiguration for tests
       "spring.cloud.gcp.pubsub.enabled=false",
       // Rawls url must be valid, else context initialization (Spring startup) will fail
-      "rawlsUrl=https://localhost/"
+      "rawlsUrl=https://localhost/",
+      "drshuburl=https://localhost/"
     })
 class JobServiceTest extends JobServiceTestBase {
 
