@@ -33,6 +33,8 @@ import org.databiosphere.workspacedataservice.service.model.DataTypeMapping;
 import org.databiosphere.workspacedataservice.service.model.RecordTypeSchema;
 import org.databiosphere.workspacedataservice.shared.model.RecordResponse;
 import org.databiosphere.workspacedataservice.shared.model.RecordType;
+import org.databiosphere.workspacedataservice.workspace.DataTableTypeInspector;
+import org.databiosphere.workspacedataservice.workspace.WorkspaceDataTableType;
 import org.databiosphere.workspacedataservice.workspacemanager.WorkspaceManagerDao;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -76,6 +78,7 @@ class TdrManifestQuartzJobE2ETest extends DataPlaneTestBase {
   // Mock ImportValidator to allow importing test data from a file:// URL.
   @MockitoBean ImportValidator importValidator;
   @MockitoBean WorkspaceManagerDao wsmDao;
+  @MockitoBean DataTableTypeInspector dataTableTypeInspector;
 
   @Value("classpath:tdrmanifest/v2f.json")
   Resource v2fManifestResource;
@@ -90,6 +93,9 @@ class TdrManifestQuartzJobE2ETest extends DataPlaneTestBase {
     CollectionServerModel collectionServerModel =
         TestUtils.createCollection(collectionService, twdsProperties.workspaceId());
     collectionId = collectionServerModel.getId();
+    // dataTableTypeInspector says ok to use data tables
+    when(dataTableTypeInspector.getWorkspaceDataTableType(any()))
+        .thenReturn(WorkspaceDataTableType.WDS);
   }
 
   @AfterEach

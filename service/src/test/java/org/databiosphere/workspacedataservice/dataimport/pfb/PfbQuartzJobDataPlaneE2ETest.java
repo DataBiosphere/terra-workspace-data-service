@@ -32,6 +32,8 @@ import org.databiosphere.workspacedataservice.service.model.DataTypeMapping;
 import org.databiosphere.workspacedataservice.service.model.RecordTypeSchema;
 import org.databiosphere.workspacedataservice.shared.model.RecordResponse;
 import org.databiosphere.workspacedataservice.shared.model.RecordType;
+import org.databiosphere.workspacedataservice.workspace.DataTableTypeInspector;
+import org.databiosphere.workspacedataservice.workspace.WorkspaceDataTableType;
 import org.databiosphere.workspacedataservice.workspacemanager.WorkspaceManagerDao;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -65,6 +67,7 @@ class PfbQuartzJobDataPlaneE2ETest extends DataPlaneTestBase {
   @MockitoBean WorkspaceManagerDao wsmDao;
   // Mock ImportValidator to allow importing test data from a file:// URL.
   @MockitoBean ImportValidator importValidator;
+  @MockitoBean DataTableTypeInspector dataTableTypeInspector;
   @MockitoSpyBean SamDao samDao;
 
   // test resources used below
@@ -94,6 +97,10 @@ class PfbQuartzJobDataPlaneE2ETest extends DataPlaneTestBase {
     // stub out WSM to report no snapshots already linked to this workspace
     when(wsmDao.enumerateDataRepoSnapshotReferences(any(), anyInt(), anyInt()))
         .thenReturn(new ResourceList());
+
+    // dataTableTypeInspector says ok to use data tables
+    when(dataTableTypeInspector.getWorkspaceDataTableType(any()))
+        .thenReturn(WorkspaceDataTableType.WDS);
   }
 
   @AfterEach
