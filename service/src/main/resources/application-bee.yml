@@ -4,7 +4,7 @@ samurl: https://sam.${beename}.bee.envs-terra.bio
 workspacemanagerurl: https://workspace.${beename}.bee.envs-terra.bio
 leoUrl: https://leonardo.${beename}.bee.envs-terra.bio
 rawlsUrl: https://rawls.${beename}.bee.envs-terra.bio
-drshubUrl: https://drs.${beename}.bee.envs-terra.bio
+drshubUrl: https://drshub.${beename}.bee.envs-terra.bio
 
 # Disable preview of control plane apis
 # This is the default; leaving this property here for easy overriding later
