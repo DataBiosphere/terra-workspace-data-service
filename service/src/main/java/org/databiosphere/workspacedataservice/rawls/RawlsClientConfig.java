@@ -4,6 +4,7 @@ import io.micrometer.observation.ObservationRegistry;
 import java.net.MalformedURLException;
 import java.net.URL;
 import org.databiosphere.workspacedataservice.retry.RestClientRetry;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -24,7 +25,7 @@ public class RawlsClientConfig {
 
   // RestClient-enabled proxy for the Rawls API
   @Bean
-  public RawlsApi rawlsApi(RestClient restClient) {
+  public RawlsApi rawlsApi(@Qualifier("rawlsRestClient") RestClient restClient) {
     HttpServiceProxyFactory httpServiceProxyFactory =
         HttpServiceProxyFactory.builderFor(RestClientAdapter.create(restClient)).build();
 
