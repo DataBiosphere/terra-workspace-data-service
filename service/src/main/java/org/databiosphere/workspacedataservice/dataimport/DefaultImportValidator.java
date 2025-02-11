@@ -25,9 +25,10 @@ import org.springframework.lang.Nullable;
 public class DefaultImportValidator implements ImportValidator {
   private static final String SCHEME_HTTPS = "https";
   private static final String SCHEME_GS = "gs";
+  private static final String SCHEME_DRS = "drs";
   private static final Map<TypeEnum, Set<String>> SUPPORTED_URL_SCHEMES_BY_IMPORT_TYPE =
       Map.of(
-          TypeEnum.PFB, Set.of(SCHEME_HTTPS),
+          TypeEnum.PFB, Set.of(SCHEME_HTTPS, SCHEME_DRS),
           TypeEnum.RAWLSJSON, Set.of(SCHEME_GS),
           TypeEnum.TDRMANIFEST, Set.of(SCHEME_HTTPS));
   private static final Set<Pattern> ALWAYS_ALLOWED_HOSTS =
@@ -44,6 +45,8 @@ public class DefaultImportValidator implements ImportValidator {
   private final ProtectedDataSupport protectedDataSupport;
   private final SamDao samDao;
   private final ConnectivityChecker connectivityChecker;
+  private static final Set<Pattern> ALWAYS_ALLOWED_DRS_HOSTS =
+      Set.of(compile("jade\\.datarepo-.*\\.broadinstitute\\.org"));
 
   public DefaultImportValidator(
       ProtectedDataSupport protectedDataSupport,
@@ -54,7 +57,8 @@ public class DefaultImportValidator implements ImportValidator {
       ConnectivityChecker connectivityChecker) {
     var allowedHostsBuilder =
         ImmutableMap.<String, Set<Pattern>>builder()
-            .put(SCHEME_HTTPS, Sets.union(ALWAYS_ALLOWED_HOSTS, allowedHttpsHosts));
+            .put(SCHEME_HTTPS, Sets.union(ALWAYS_ALLOWED_HOSTS, allowedHttpsHosts))
+            .put(SCHEME_DRS, ALWAYS_ALLOWED_DRS_HOSTS);
 
     if (StringUtils.isNotBlank(allowedRawlsBucket)) {
       allowedHostsBuilder.put(SCHEME_GS, Set.of(compile(allowedRawlsBucket)));
