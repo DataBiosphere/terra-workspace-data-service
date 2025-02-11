@@ -86,7 +86,7 @@ public class ImportService {
         logger.info("Resolved DRS URI to {}", importRequest.getUrl());
         importValidator.validateImport(importRequest, workspaceId);
       } catch (Exception e) {
-        throw new IllegalArgumentException("Could not resolve DRS URI: " + e.getMessage());
+        throw new IllegalArgumentException("Could not resolve DRS URI: " + e.getMessage(), e);
       }
     }
 
