@@ -121,16 +121,13 @@ class WdsTests(TestCase):
     cvsUpload_test = "TestUpload"
     generatedCvs_name = "generated_test.tsv"
 
-    ### setup: create the default collection and save to current_collectionId
-    ### then initialize the workspace for use with data tables
-    ### This needs to happen first, before other tests that rely on it
+    ### setup: initialize the workspace for use with data tables
+    ### This needs to happen first, before other tests that rely on the initialization
     @classmethod
     def setup_class(cls):
-      collection_request = wds_client.CollectionRequest(name='default', description='default')
-      collection_created = cls.collections_client.create_collection_v1(cls.current_workspaceId, collection_request)
-      cls.current_collectionId = collection_created.id
       workspace_init_request = wds_client.WorkspaceInit()
-      cls.workspace_client.init_workspace_v1(cls.current_workspaceId, workspace_init_request)
+      init_response = cls.workspace_client.init_workspace_v1(cls.current_workspaceId, workspace_init_request)
+      cls.current_collectionId = cls.current_workspaceId
 
     # creates a new record or replaces existing one with specified primary key
     def create_record_with_primary_key(self, record, record_type, record_id, key):
