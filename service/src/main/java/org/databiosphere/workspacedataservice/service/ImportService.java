@@ -42,35 +42,25 @@ public class ImportService {
   private final JobDao jobDao;
   private final SchedulerDao schedulerDao;
   private final ImportValidator importValidator;
-  private final DrsService drsService;
 
   public ImportService(
       CollectionService collectionService,
       SamDao samDao,
       JobDao jobDao,
       SchedulerDao schedulerDao,
-      ImportValidator importValidator,
-      DrsService drsService) {
+      ImportValidator importValidator) {
     this.collectionService = collectionService;
     this.samDao = samDao;
     this.jobDao = jobDao;
     this.schedulerDao = schedulerDao;
     this.importValidator = importValidator;
-    this.drsService = drsService;
   }
 
   public GenericJobServerModel createImport(
       UUID collectionId, ImportRequestServerModel importRequest) {
-
     // validate
     WorkspaceId workspaceId = collectionService.getWorkspaceId(CollectionId.of(collectionId));
     importValidator.validateImport(importRequest, workspaceId);
-
-    // if the URI is a DRS URI, resolve it to get the actual URL
-    if (this.drsService.isDrsUri(importRequest.getUrl())) {
-      importRequest.setUrl(this.drsService.resolveDrsUri(importRequest.getUrl()));
-      importValidator.validateImport(importRequest, workspaceId); // re-validate after resolving
-    }
 
     // get a token to execute the job
     String petToken = samDao.getPetToken();

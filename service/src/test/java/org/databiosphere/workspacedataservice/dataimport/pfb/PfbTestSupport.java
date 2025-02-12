@@ -17,6 +17,7 @@ import org.databiosphere.workspacedataservice.metrics.ImportMetrics;
 import org.databiosphere.workspacedataservice.recordsink.RecordSinkFactory;
 import org.databiosphere.workspacedataservice.recordsource.RecordSourceFactory;
 import org.databiosphere.workspacedataservice.service.BatchWriteService;
+import org.databiosphere.workspacedataservice.service.DrsService;
 import org.databiosphere.workspacedataservice.service.ImportService;
 import org.quartz.JobExecutionContext;
 import org.quartz.JobExecutionException;
@@ -39,6 +40,7 @@ class PfbTestSupport {
   @Autowired private SnapshotSupportFactory snapshotSupportFactory;
   @Autowired private DataImportProperties dataImportProperties;
   @Autowired private ImportDetailsRetriever importDetailsRetriever;
+  @Autowired private DrsService drsService;
 
   UUID executePfbImportQuartzJob(UUID collectionId, Resource pfbResource)
       throws IOException, JobExecutionException {
@@ -68,6 +70,7 @@ class PfbTestSupport {
         importMetrics,
         snapshotSupportFactory,
         dataImportProperties,
-        importDetailsRetriever);
+        importDetailsRetriever,
+        drsService);
   }
 }

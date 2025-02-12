@@ -38,6 +38,7 @@ import org.databiosphere.workspacedataservice.recordsink.RecordSinkFactory;
 import org.databiosphere.workspacedataservice.recordsource.RecordSource.ImportMode;
 import org.databiosphere.workspacedataservice.recordsource.RecordSourceFactory;
 import org.databiosphere.workspacedataservice.service.BatchWriteService;
+import org.databiosphere.workspacedataservice.service.DrsService;
 import org.databiosphere.workspacedataservice.service.model.BatchWriteResult;
 import org.databiosphere.workspacedataservice.service.model.exception.DataImportException;
 import org.databiosphere.workspacedataservice.service.model.exception.PfbImportException;
@@ -65,6 +66,7 @@ public class PfbQuartzJob extends QuartzJob {
   private final SnapshotSupportFactory snapshotSupportFactory;
   private final ImportDetailsRetriever importDetailsRetriever;
   private final ImportMetrics importMetrics;
+  private final DrsService drsService;
 
   public PfbQuartzJob(
       JobDao jobDao,
@@ -76,7 +78,8 @@ public class PfbQuartzJob extends QuartzJob {
       ImportMetrics importMetrics,
       SnapshotSupportFactory snapshotSupportFactory,
       DataImportProperties dataImportProperties,
-      ImportDetailsRetriever importDetailsRetriever) {
+      ImportDetailsRetriever importDetailsRetriever,
+      DrsService drsService) {
     super(jobDao, observationRegistry, dataImportProperties);
     this.recordSourceFactory = recordSourceFactory;
     this.recordSinkFactory = recordSinkFactory;
@@ -85,6 +88,7 @@ public class PfbQuartzJob extends QuartzJob {
     this.snapshotSupportFactory = snapshotSupportFactory;
     this.importDetailsRetriever = importDetailsRetriever;
     this.importMetrics = importMetrics;
+    this.drsService = drsService;
   }
 
   @Override
@@ -98,6 +102,11 @@ public class PfbQuartzJob extends QuartzJob {
     // Grab the PFB uri from the job's data map
     JobDataMapReader jobData = JobDataMapReader.fromContext(context);
     URI uri = jobData.getURI(ARG_URL);
+
+    // if the URI is a DRS URI, resolve it to get the actual URL
+    if (this.drsService.isDrsUri(uri)) {
+      uri = this.drsService.resolveDrsUri(uri);
+    }
 
     ImportDetails details = importDetailsRetriever.fetch(jobId, jobData, PrefixStrategy.PFB);
 
