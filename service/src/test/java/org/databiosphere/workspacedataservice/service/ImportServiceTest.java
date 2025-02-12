@@ -8,9 +8,7 @@ import static org.databiosphere.workspacedataservice.shared.model.Schedulable.AR
 import static org.databiosphere.workspacedataservice.shared.model.Schedulable.ARG_TOKEN;
 import static org.databiosphere.workspacedataservice.shared.model.Schedulable.ARG_URL;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.doNothing;
@@ -19,11 +17,9 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.reset;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
 
 import java.io.Serializable;
 import java.net.URI;
-import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.stream.Stream;
@@ -38,9 +34,6 @@ import org.databiosphere.workspacedataservice.dataimport.ImportJobInput;
 import org.databiosphere.workspacedataservice.dataimport.pfb.PfbQuartzJob;
 import org.databiosphere.workspacedataservice.dataimport.tdr.TdrManifestImportOptions;
 import org.databiosphere.workspacedataservice.dataimport.tdr.TdrManifestQuartzJob;
-import org.databiosphere.workspacedataservice.drshub.DrsHubApi;
-import org.databiosphere.workspacedataservice.drshub.ResolveDrsRequest;
-import org.databiosphere.workspacedataservice.drshub.ResourceMetadataResponse;
 import org.databiosphere.workspacedataservice.generated.GenericJobServerModel;
 import org.databiosphere.workspacedataservice.generated.ImportRequestServerModel;
 import org.databiosphere.workspacedataservice.sam.SamClientFactory;
@@ -54,7 +47,6 @@ import org.databiosphere.workspacedataservice.workspace.WorkspaceRecord;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
@@ -84,7 +76,6 @@ class ImportServiceTest extends ControlPlaneTestBase {
   @Autowired ImportService importService;
   @Autowired CollectionService collectionService;
   @MockitoSpyBean JobDao jobDao;
-  @MockitoBean DrsHubApi mockDrsHubApi;
   @MockitoBean SchedulerDao schedulerDao;
   @MockitoBean SamClientFactory mockSamClientFactory;
   @Autowired NamedParameterJdbcTemplate namedTemplate;
@@ -319,47 +310,5 @@ class ImportServiceTest extends ControlPlaneTestBase {
 
   private CollectionId defaultCollectionId() {
     return CollectionId.of(workspaceId.id());
-  }
-
-  @Test
-  void testIsDrsUri() {
-    URI drsUri = URI.create("drs://example.com/file");
-    URI httpUri = URI.create("https://example.com/file");
-
-    assertTrue(ImportService.isDrsUri(drsUri));
-    assertFalse(ImportService.isDrsUri(httpUri));
-  }
-
-  @Test
-  void testResolveDrsUri() {
-    URI drsUri = URI.create("drs://example.com/file");
-    URI resolvedUri = URI.create("https://example.com/file");
-
-    ResourceMetadataResponse.AccessUrl accessUrl =
-        new ResourceMetadataResponse.AccessUrl(resolvedUri, Map.of("header1", "value1"));
-    ResolveDrsRequest drsRequest = new ResolveDrsRequest(drsUri.toString(), List.of("accessUrl"));
-    ResourceMetadataResponse response = new ResourceMetadataResponse(accessUrl);
-
-    when(mockDrsHubApi.resolveDrs(drsRequest)).thenReturn(response);
-
-    URI result = importService.resolveDrsUri(drsUri);
-    assertEquals(resolvedUri, result);
-  }
-
-  @Test
-  void testResolveDrsUriThrowsException() {
-    URI drsUri = URI.create("drs://example.com/file");
-
-    when(mockDrsHubApi.resolveDrs(new ResolveDrsRequest(drsUri.toString(), List.of("accessUrl"))))
-        .thenThrow(new RuntimeException("Resolution failed"));
-
-    IllegalArgumentException exception =
-        assertThrows(
-            IllegalArgumentException.class,
-            () -> {
-              importService.resolveDrsUri(drsUri);
-            });
-
-    assertEquals("Could not resolve DRS URI: Resolution failed", exception.getMessage());
   }
 }

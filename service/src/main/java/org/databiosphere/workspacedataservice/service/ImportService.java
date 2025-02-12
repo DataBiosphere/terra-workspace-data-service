@@ -6,9 +6,7 @@ import static org.databiosphere.workspacedataservice.shared.model.Schedulable.AR
 
 import com.google.common.annotations.VisibleForTesting;
 import java.io.Serializable;
-import java.net.URI;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
@@ -19,9 +17,6 @@ import org.databiosphere.workspacedataservice.dataimport.ImportValidator;
 import org.databiosphere.workspacedataservice.dataimport.pfb.PfbSchedulable;
 import org.databiosphere.workspacedataservice.dataimport.rawlsjson.RawlsJsonSchedulable;
 import org.databiosphere.workspacedataservice.dataimport.tdr.TdrManifestSchedulable;
-import org.databiosphere.workspacedataservice.drshub.DrsHubApi;
-import org.databiosphere.workspacedataservice.drshub.ResolveDrsRequest;
-import org.databiosphere.workspacedataservice.drshub.ResourceMetadataResponse;
 import org.databiosphere.workspacedataservice.generated.GenericJobServerModel;
 import org.databiosphere.workspacedataservice.generated.ImportRequestServerModel;
 import org.databiosphere.workspacedataservice.generated.ImportRequestServerModel.TypeEnum;
@@ -47,7 +42,7 @@ public class ImportService {
   private final JobDao jobDao;
   private final SchedulerDao schedulerDao;
   private final ImportValidator importValidator;
-  private final DrsHubApi drsHubApi;
+  private final DrsService drsService;
 
   public ImportService(
       CollectionService collectionService,
@@ -55,13 +50,13 @@ public class ImportService {
       JobDao jobDao,
       SchedulerDao schedulerDao,
       ImportValidator importValidator,
-      DrsHubApi drsHubApi) {
+      DrsService drsService) {
     this.collectionService = collectionService;
     this.samDao = samDao;
     this.jobDao = jobDao;
     this.schedulerDao = schedulerDao;
     this.importValidator = importValidator;
-    this.drsHubApi = drsHubApi;
+    this.drsService = drsService;
   }
 
   public GenericJobServerModel createImport(
@@ -72,8 +67,8 @@ public class ImportService {
     importValidator.validateImport(importRequest, workspaceId);
 
     // if the URI is a DRS URI, resolve it to get the actual URL
-    if (isDrsUri(importRequest.getUrl())) {
-      importRequest.setUrl(resolveDrsUri(importRequest.getUrl()));
+    if (this.drsService.isDrsUri(importRequest.getUrl())) {
+      importRequest.setUrl(this.drsService.resolveDrsUri(importRequest.getUrl()));
       importValidator.validateImport(importRequest, workspaceId); // re-validate after resolving
     }
 
@@ -146,35 +141,5 @@ public class ImportService {
       case TDRMANIFEST -> new TdrManifestSchedulable(
           jobId.toString(), "TDR manifest import", arguments);
     };
-  }
-
-  /**
-   * Check if the URI is a DRS URI
-   *
-   * @return true if the URI scheme is "drs", false otherwise
-   */
-  @VisibleForTesting
-  public static boolean isDrsUri(URI uri) {
-    return "drs".equalsIgnoreCase(uri.getScheme());
-  }
-
-  /**
-   * Resolve a DRS URI to get the actual URL
-   *
-   * @param drsUri the DRS URI to resolve
-   * @return the resolved URL
-   */
-  @VisibleForTesting
-  public URI resolveDrsUri(URI drsUri) {
-    logger.info("Resolving DRS URI {}", drsUri);
-    try {
-      ResolveDrsRequest drsRequest = new ResolveDrsRequest(drsUri.toString(), List.of("accessUrl"));
-      ResourceMetadataResponse resourceMetadataResponse = drsHubApi.resolveDrs(drsRequest);
-      URI resolvedUri = resourceMetadataResponse.accessUrl().url();
-      logger.info("Resolved DRS URI to {}", resolvedUri);
-      return resolvedUri;
-    } catch (Exception e) {
-      throw new IllegalArgumentException("Could not resolve DRS URI: " + e.getMessage(), e);
-    }
   }
 }
