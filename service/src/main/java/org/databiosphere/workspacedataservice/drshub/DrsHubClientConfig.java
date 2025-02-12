@@ -16,7 +16,7 @@ import org.springframework.web.service.invoker.HttpServiceProxyFactory;
 @Configuration
 public class DrsHubClientConfig {
 
-  @Value("${drshuburl:}")
+  @Value("${drshubUrl:}")
   private String drsHubUrl;
 
   @Bean
