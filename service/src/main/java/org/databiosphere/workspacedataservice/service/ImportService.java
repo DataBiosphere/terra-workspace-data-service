@@ -66,6 +66,12 @@ public class ImportService {
 
   public GenericJobServerModel createImport(
       UUID collectionId, ImportRequestServerModel importRequest) {
+
+    // if the URI is a DRS URI, resolve it to get the actual URL
+    if (isDrsUri(importRequest.getUrl())) {
+      importRequest.setUrl(resolveDrsUri(importRequest.getUrl()));
+    }
+
     // validate
     WorkspaceId workspaceId = collectionService.getWorkspaceId(CollectionId.of(collectionId));
     importValidator.validateImport(importRequest, workspaceId);
@@ -74,21 +80,6 @@ public class ImportService {
     String petToken = samDao.getPetToken();
 
     logger.info("Data import of type {} requested", importRequest.getType());
-
-    // if the URI is a DRS URI, resolve it to get the actual URL
-    if (isDrsUri(importRequest.getUrl())) {
-      try {
-        logger.info("Resolving DRS URI {}", importRequest.getUrl());
-        ResolveDrsRequest drsRequest =
-            new ResolveDrsRequest(importRequest.getUrl().toString(), List.of("accessUrl"));
-        ResourceMetadataResponse resolvedFile = drsHubApi.resolveDrs(drsRequest);
-        importRequest.setUrl(resolvedFile.accessUrl().url());
-        logger.info("Resolved DRS URI to {}", importRequest.getUrl());
-        importValidator.validateImport(importRequest, workspaceId);
-      } catch (Exception e) {
-        throw new IllegalArgumentException("Could not resolve DRS URI: " + e.getMessage(), e);
-      }
-    }
 
     ImportJobInput importJobInput = ImportJobInput.from(importRequest);
     Job<JobInput, JobResult> job =
@@ -161,7 +152,28 @@ public class ImportService {
    *
    * @return true if the URI scheme is "drs", false otherwise
    */
+  @VisibleForTesting
   public static boolean isDrsUri(URI uri) {
     return "drs".equalsIgnoreCase(uri.getScheme());
+  }
+
+  /**
+   * Resolve a DRS URI to get the actual URL
+   *
+   * @param drsUri the DRS URI to resolve
+   * @return the resolved URL
+   */
+  @VisibleForTesting
+  public URI resolveDrsUri(URI drsUri) {
+    logger.info("Resolving DRS URI {}", drsUri);
+    try {
+      ResolveDrsRequest drsRequest = new ResolveDrsRequest(drsUri.toString(), List.of("accessUrl"));
+      ResourceMetadataResponse resourceMetadataResponse = drsHubApi.resolveDrs(drsRequest);
+      URI resolvedUri = resourceMetadataResponse.accessUrl().url();
+      logger.info("Resolved DRS URI to {}", resolvedUri);
+      return resolvedUri;
+    } catch (Exception e) {
+      throw new IllegalArgumentException("Could not resolve DRS URI: " + e.getMessage(), e);
+    }
   }
 }
