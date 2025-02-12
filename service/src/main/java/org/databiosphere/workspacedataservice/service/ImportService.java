@@ -67,14 +67,15 @@ public class ImportService {
   public GenericJobServerModel createImport(
       UUID collectionId, ImportRequestServerModel importRequest) {
 
-    // if the URI is a DRS URI, resolve it to get the actual URL
-    if (isDrsUri(importRequest.getUrl())) {
-      importRequest.setUrl(resolveDrsUri(importRequest.getUrl()));
-    }
-
     // validate
     WorkspaceId workspaceId = collectionService.getWorkspaceId(CollectionId.of(collectionId));
     importValidator.validateImport(importRequest, workspaceId);
+
+    // if the URI is a DRS URI, resolve it to get the actual URL
+    if (isDrsUri(importRequest.getUrl())) {
+      importRequest.setUrl(resolveDrsUri(importRequest.getUrl()));
+      importValidator.validateImport(importRequest, workspaceId); // re-validate after resolving
+    }
 
     // get a token to execute the job
     String petToken = samDao.getPetToken();
