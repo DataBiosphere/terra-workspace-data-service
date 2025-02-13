@@ -38,9 +38,8 @@ public class DrsService {
     try {
       ResolveDrsRequest drsRequest = new ResolveDrsRequest(drsUri.toString(), List.of("accessUrl"));
       ResourceMetadataResponse resourceMetadataResponse = drsHubApi.resolveDrs(drsRequest);
-      URI resolvedUri = resourceMetadataResponse.accessUrl().url();
-      logger.info("Resolved DRS URI to {}", resolvedUri);
-      return resolvedUri;
+      logger.info("Resolved DRS URI successfully");
+      return resourceMetadataResponse.accessUrl().url();
     } catch (Exception e) {
       throw new IllegalArgumentException("Could not resolve DRS URI: " + e.getMessage(), e);
     }
