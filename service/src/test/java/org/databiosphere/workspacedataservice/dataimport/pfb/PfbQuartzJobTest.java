@@ -39,7 +39,10 @@ import org.databiosphere.workspacedataservice.service.model.BatchWriteResult;
 import org.databiosphere.workspacedataservice.shared.model.CollectionId;
 import org.databiosphere.workspacedataservice.shared.model.RecordType;
 import org.databiosphere.workspacedataservice.shared.model.WorkspaceId;
+import org.databiosphere.workspacedataservice.workspace.DataTableTypeInspector;
+import org.databiosphere.workspacedataservice.workspace.WorkspaceDataTableType;
 import org.databiosphere.workspacedataservice.workspacemanager.WorkspaceManagerDao;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
@@ -66,6 +69,7 @@ class PfbQuartzJobTest extends DataPlaneTestBase {
   @MockitoBean BatchWriteService batchWriteService;
   @MockitoBean CollectionService collectionService;
   @MockitoBean ActivityLogger activityLogger;
+  @MockitoBean DataTableTypeInspector dataTableTypeInspector;
   @Autowired PfbTestSupport testSupport;
   @Autowired MeterRegistry meterRegistry;
 
@@ -75,6 +79,13 @@ class PfbQuartzJobTest extends DataPlaneTestBase {
 
   @Value("classpath:avro/test.avro")
   Resource testAvroResource;
+
+  @BeforeEach
+  void beforeEach() {
+    // dataTableTypeInspector says ok to use data tables
+    when(dataTableTypeInspector.getWorkspaceDataTableType(any()))
+        .thenReturn(WorkspaceDataTableType.WDS);
+  }
 
   @Test
   void linkAllNewSnapshots() {
