@@ -3,3 +3,8 @@ workspacemanagerurl: https://workspace.dsde-staging.broadinstitute.org/
 leoUrl: https://leonardo.dsde-staging.broadinstitute.org/
 rawlsUrl: https://rawls.dsde-staging.broadinstitute.org/
 drshubUrl: https://drshub.dsde-staging.broadinstitute.org/
+
+# Set the allowed hosts for drs pfb imports
+drs:
+  allowed-hosts:
+    - jade\.datarepo-.*\.broadinstitute\.org

@@ -12,8 +12,10 @@ import java.util.Map;
 import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 import org.broadinstitute.dsde.workbench.client.sam.model.UserResourcesResponse;
 import org.databiosphere.workspacedataservice.config.DataImportProperties.ImportSourceConfig;
+import org.databiosphere.workspacedataservice.config.DrsImportProperties;
 import org.databiosphere.workspacedataservice.dataimport.protecteddatasupport.ProtectedDataSupport;
 import org.databiosphere.workspacedataservice.generated.ImportRequestServerModel;
 import org.databiosphere.workspacedataservice.generated.ImportRequestServerModel.TypeEnum;
@@ -45,8 +47,6 @@ public class DefaultImportValidator implements ImportValidator {
   private final ProtectedDataSupport protectedDataSupport;
   private final SamDao samDao;
   private final ConnectivityChecker connectivityChecker;
-  private static final Set<Pattern> ALWAYS_ALLOWED_DRS_HOSTS =
-      Set.of(compile("jade\\.datarepo-.*\\.broadinstitute\\.org"));
 
   public DefaultImportValidator(
       ProtectedDataSupport protectedDataSupport,
@@ -54,11 +54,16 @@ public class DefaultImportValidator implements ImportValidator {
       Set<Pattern> allowedHttpsHosts,
       List<ImportSourceConfig> sources,
       @Nullable String allowedRawlsBucket,
-      ConnectivityChecker connectivityChecker) {
+      ConnectivityChecker connectivityChecker,
+      DrsImportProperties drsImportProperties) {
     var allowedHostsBuilder =
         ImmutableMap.<String, Set<Pattern>>builder()
             .put(SCHEME_HTTPS, Sets.union(ALWAYS_ALLOWED_HOSTS, allowedHttpsHosts))
-            .put(SCHEME_DRS, ALWAYS_ALLOWED_DRS_HOSTS);
+            .put(
+                SCHEME_DRS,
+                drsImportProperties.getAllowedHosts().stream()
+                    .map(Pattern::compile)
+                    .collect(Collectors.toSet()));
 
     if (StringUtils.isNotBlank(allowedRawlsBucket)) {
       allowedHostsBuilder.put(SCHEME_GS, Set.of(compile(allowedRawlsBucket)));

@@ -13,3 +13,8 @@ twds:
       - .*service\.azul\.data\.humancellatlas\.org
       - .*redcaptest\.vumc\.org
       - .*redcap\.vumc\.org
+
+# Set the allowed hosts for drs pfb imports
+drs:
+  allowed-hosts:
+    - # TODO: add allowed sage drs hostnames

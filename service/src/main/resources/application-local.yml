@@ -21,3 +21,7 @@ logging:
   pattern:
     correlation: "%X{requestId} "
 
+# Set the allowed hosts for drs pfb imports
+drs:
+  allowed-hosts:
+    - jade\.datarepo-.*\.broadinstitute\.org

@@ -7,3 +7,8 @@ drshubUrl: https://drshub.dsde-dev.broadinstitute.org/
 # Disable preview of control plane apis
 # This is the default; leaving this property here for easy overriding later
 controlPlanePreview: "off"
+
+# Set the allowed hosts for drs pfb imports
+drs:
+  allowed-hosts:
+    - jade\.datarepo-.*\.broadinstitute\.org
