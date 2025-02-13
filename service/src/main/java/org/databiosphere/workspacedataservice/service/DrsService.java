@@ -41,7 +41,7 @@ public class DrsService {
       logger.info("Resolved DRS URI successfully");
       return resourceMetadataResponse.accessUrl().url();
     } catch (Exception e) {
-      throw new IllegalArgumentException("Could not resolve DRS URI: " + e.getMessage(), e);
+      throw new IllegalArgumentException("Could not resolve DRS URI: " + e.getMessage());
     }
   }
 }
