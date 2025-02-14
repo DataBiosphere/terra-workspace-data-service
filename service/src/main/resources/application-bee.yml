@@ -4,7 +4,13 @@ samurl: https://sam.${beename}.bee.envs-terra.bio
 workspacemanagerurl: https://workspace.${beename}.bee.envs-terra.bio
 leoUrl: https://leonardo.${beename}.bee.envs-terra.bio
 rawlsUrl: https://rawls.${beename}.bee.envs-terra.bio
+drshubUrl: https://drshub.${beename}.bee.envs-terra.bio
 
 # Disable preview of control plane apis
 # This is the default; leaving this property here for easy overriding later
 controlPlanePreview: "off"
+
+# Set the allowed hosts for drs pfb imports
+drs:
+  allowed-hosts:
+    - data\.[^.]+\.bee\.envs-terra\.bio # This is a regex that matches tdr bee environments
