@@ -13,4 +13,4 @@ controlPlanePreview: "off"
 # Set the allowed hosts for drs pfb imports
 drs:
   allowed-hosts:
-    - jade\.datarepo-.*\.broadinstitute\.org
+    - data\.*\.bee\.envs-terra\.bio
