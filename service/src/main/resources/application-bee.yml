@@ -13,4 +13,4 @@ controlPlanePreview: "off"
 # Set the allowed hosts for drs pfb imports
 drs:
   allowed-hosts:
-    - data\.*\.bee\.envs-terra\.bio
+    - data\.[^.]+\.bee\.envs-terra\.bio # This is a regex that matches tdr bee environments
