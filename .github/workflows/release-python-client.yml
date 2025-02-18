@@ -86,10 +86,10 @@ jobs:
           export SAM_URL=http://localhost:9889
           export WORKSPACE_MANAGER_URL=http://localhost:9889
           export WORKSPACE_ID=123e4567-e89b-12d3-a456-426614174000
-          export SPRING_PROFILES_ACTIVE=data-plane,local
+          export SPRING_PROFILES_ACTIVE=control-plane,local
           ./gradlew --build-cache build -x test
           # Allow http imports from localhost to test with files from resources served by the mock API server
-          ./gradlew bootRun --args='--twds.data-import.require-validation=false' &
+          ./gradlew bootRun --args='--twds.data-import.require-validation=false --spring.cloud.gcp.core.enabled=false' &
           count=20
           until $(curl --output /dev/null --silent --head --fail http://localhost:8080/status); do
             printf '.'
