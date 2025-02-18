@@ -8,7 +8,6 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.Mockito.when;
 
-import bio.terra.workspace.model.ResourceList;
 import com.google.common.collect.ImmutableMap;
 import java.io.IOException;
 import java.util.List;
@@ -21,13 +20,14 @@ import org.databiosphere.workspacedataservice.config.TwdsProperties;
 import org.databiosphere.workspacedataservice.dataimport.ImportValidator;
 import org.databiosphere.workspacedataservice.generated.CollectionServerModel;
 import org.databiosphere.workspacedataservice.generated.ImportRequestServerModel;
+import org.databiosphere.workspacedataservice.rawls.RawlsClient;
+import org.databiosphere.workspacedataservice.rawls.SnapshotListResponse;
 import org.databiosphere.workspacedataservice.service.CollectionService;
 import org.databiosphere.workspacedataservice.service.ImportService;
 import org.databiosphere.workspacedataservice.service.RecordOrchestratorService;
 import org.databiosphere.workspacedataservice.service.model.RecordTypeSchema;
 import org.databiosphere.workspacedataservice.workspace.DataTableTypeInspector;
 import org.databiosphere.workspacedataservice.workspace.WorkspaceDataTableType;
-import org.databiosphere.workspacedataservice.workspacemanager.WorkspaceManagerDao;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Tag;
@@ -72,7 +72,7 @@ class TdrManifestQuartzJobMultipleBatchTest extends DataPlaneTestBase {
 
   // Mock ImportValidator to allow importing test data from a file:// URL.
   @MockitoBean ImportValidator importValidator;
-  @MockitoBean WorkspaceManagerDao wsmDao;
+  @MockitoBean RawlsClient rawlsClient;
   @MockitoBean DataTableTypeInspector dataTableTypeInspector;
 
   @Value("classpath:tdrmanifest/with-entity-reference-lists.json")
@@ -113,9 +113,9 @@ class TdrManifestQuartzJobMultipleBatchTest extends DataPlaneTestBase {
     UUID jobId = genericJobServerModel.getJobId();
     JobExecutionContext mockContext = stubJobContext(jobId, importResource, collectionId);
 
-    // WSM should report no snapshots already linked to this workspace
-    when(wsmDao.enumerateDataRepoSnapshotReferences(any(), anyInt(), anyInt()))
-        .thenReturn(new ResourceList());
+    // Rawls should report no snapshots already linked to this workspace
+    when(rawlsClient.enumerateDataRepoSnapshotReferences(any(), anyInt(), anyInt()))
+        .thenReturn(new SnapshotListResponse(List.of()));
 
     testSupport.buildTdrManifestQuartzJob().execute(mockContext);
 

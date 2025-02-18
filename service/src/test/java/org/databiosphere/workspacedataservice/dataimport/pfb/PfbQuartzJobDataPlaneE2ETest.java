@@ -9,7 +9,6 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import bio.terra.workspace.model.ResourceList;
 import com.google.common.collect.ImmutableMap;
 import java.io.IOException;
 import java.math.BigDecimal;
@@ -23,6 +22,8 @@ import org.databiosphere.workspacedataservice.common.DataPlaneTestBase;
 import org.databiosphere.workspacedataservice.config.TwdsProperties;
 import org.databiosphere.workspacedataservice.dataimport.ImportValidator;
 import org.databiosphere.workspacedataservice.generated.CollectionServerModel;
+import org.databiosphere.workspacedataservice.rawls.RawlsClient;
+import org.databiosphere.workspacedataservice.rawls.SnapshotListResponse;
 import org.databiosphere.workspacedataservice.sam.SamDao;
 import org.databiosphere.workspacedataservice.service.CollectionService;
 import org.databiosphere.workspacedataservice.service.RecordOrchestratorService;
@@ -34,7 +35,6 @@ import org.databiosphere.workspacedataservice.shared.model.RecordResponse;
 import org.databiosphere.workspacedataservice.shared.model.RecordType;
 import org.databiosphere.workspacedataservice.workspace.DataTableTypeInspector;
 import org.databiosphere.workspacedataservice.workspace.WorkspaceDataTableType;
-import org.databiosphere.workspacedataservice.workspacemanager.WorkspaceManagerDao;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Tag;
@@ -64,7 +64,7 @@ class PfbQuartzJobDataPlaneE2ETest extends DataPlaneTestBase {
   @Autowired CollectionService collectionService;
   @Autowired PfbTestSupport testSupport;
   @Autowired NamedParameterJdbcTemplate namedTemplate;
-  @MockitoBean WorkspaceManagerDao wsmDao;
+  @MockitoBean RawlsClient rawlsClient;
   // Mock ImportValidator to allow importing test data from a file:// URL.
   @MockitoBean ImportValidator importValidator;
   @MockitoBean DataTableTypeInspector dataTableTypeInspector;
@@ -94,9 +94,9 @@ class PfbQuartzJobDataPlaneE2ETest extends DataPlaneTestBase {
         TestUtils.createCollection(collectionService, twdsProperties.workspaceId());
     collectionId = collectionServerModel.getId();
 
-    // stub out WSM to report no snapshots already linked to this workspace
-    when(wsmDao.enumerateDataRepoSnapshotReferences(any(), anyInt(), anyInt()))
-        .thenReturn(new ResourceList());
+    // stub out Rawls to report no snapshots already linked to this workspace
+    when(rawlsClient.enumerateDataRepoSnapshotReferences(any(), anyInt(), anyInt()))
+        .thenReturn(new SnapshotListResponse(List.of()));
 
     // dataTableTypeInspector says ok to use data tables
     when(dataTableTypeInspector.getWorkspaceDataTableType(any()))
