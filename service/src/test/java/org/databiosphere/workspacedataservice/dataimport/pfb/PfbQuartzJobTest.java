@@ -218,8 +218,7 @@ class PfbQuartzJobTest extends ControlPlaneTestBase {
     // by this unit test
     verify(rawlsClient)
         .createSnapshotReference(
-            eq(expectedWorkspaceId.id()),
-            eq(UUID.fromString("790795c4-49b1-4ac8-a060-207b92ea08c5")));
+            expectedWorkspaceId.id(), UUID.fromString("790795c4-49b1-4ac8-a060-207b92ea08c5"));
 
     // Job should be running (can't test succeeded because that needs a message back from Rawls)
     verify(jobDao).running(jobId);
@@ -247,7 +246,7 @@ class PfbQuartzJobTest extends ControlPlaneTestBase {
     // by this unit test
     verify(rawlsClient)
         .createSnapshotReference(
-            eq(workspaceId.id()), eq(UUID.fromString("790795c4-49b1-4ac8-a060-207b92ea08c5")));
+            workspaceId.id(), UUID.fromString("790795c4-49b1-4ac8-a060-207b92ea08c5"));
     // Job should be running (can't test succeeded because that needs a message back from Rawls)
     verify(jobDao).running(jobId);
   }
@@ -338,6 +337,6 @@ class PfbQuartzJobTest extends ControlPlaneTestBase {
                   .metadata(resourceMetadata)
                   .attributes(attributes);
             })
-        .collect(Collectors.toList());
+        .toList();
   }
 }
