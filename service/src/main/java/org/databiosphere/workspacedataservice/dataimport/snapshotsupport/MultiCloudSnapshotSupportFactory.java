@@ -28,17 +28,14 @@ public class MultiCloudSnapshotSupportFactory implements SnapshotSupportFactory 
   }
 
   /**
-   * Get the {@link SnapshotSupport} for a given workspace.
+   * Get the {@link SnapshotSupport} for a given workspace. As of 2025, this will always be
+   * RawlsSnapshotSupport.
    *
    * @param workspaceId the workspace in question
    * @return the appropriate {@link SnapshotSupport} for the workspace
    */
   @Override
   public SnapshotSupport buildSnapshotSupport(WorkspaceId workspaceId) {
-
-    return switch (workspaceService.getDataTableType(workspaceId)) {
-      case RAWLS -> new RawlsSnapshotSupport(workspaceId, rawlsClient, activityLogger);
-      case WDS -> new WsmSnapshotSupport(workspaceId, wsmDao, activityLogger);
-    };
+    return new RawlsSnapshotSupport(workspaceId, rawlsClient, activityLogger);
   }
 }
