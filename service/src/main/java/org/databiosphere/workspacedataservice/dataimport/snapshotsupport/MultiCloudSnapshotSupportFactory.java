@@ -12,9 +12,7 @@ public class MultiCloudSnapshotSupportFactory implements SnapshotSupportFactory 
   private final ActivityLogger activityLogger;
   private final RawlsClient rawlsClient;
 
-  public MultiCloudSnapshotSupportFactory(
-      ActivityLogger activityLogger,
-      RawlsClient rawlsClient) {
+  public MultiCloudSnapshotSupportFactory(ActivityLogger activityLogger, RawlsClient rawlsClient) {
     this.activityLogger = activityLogger;
     this.rawlsClient = rawlsClient;
   }
