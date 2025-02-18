@@ -84,7 +84,7 @@ jobs:
       - name: Run WDS service and tests
         run: |
           export SAM_URL=http://localhost:9889
-          export WORKSPACE_MANAGER_URL=http://localhost:9889
+          export RAWLS_URL=http://localhost:9889
           export WORKSPACE_ID=123e4567-e89b-12d3-a456-426614174000
           export SPRING_PROFILES_ACTIVE=data-plane,local
           ./gradlew --build-cache build -x test
