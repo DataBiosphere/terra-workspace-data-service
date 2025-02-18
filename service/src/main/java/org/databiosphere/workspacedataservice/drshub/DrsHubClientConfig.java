@@ -1,8 +1,9 @@
-package org.databiosphere.workspacedataservice.rawls;
+package org.databiosphere.workspacedataservice.drshub;
 
 import io.micrometer.observation.ObservationRegistry;
 import java.net.MalformedURLException;
 import java.net.URL;
+import org.databiosphere.workspacedataservice.rawls.BearerAuthRequestInitializer;
 import org.databiosphere.workspacedataservice.retry.RestClientRetry;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
@@ -13,38 +14,33 @@ import org.springframework.web.client.support.RestClientAdapter;
 import org.springframework.web.service.invoker.HttpServiceProxyFactory;
 
 @Configuration
-public class RawlsClientConfig {
+public class DrsHubClientConfig {
 
-  @Value("${rawlsurl:}")
-  private String rawlsUrl;
+  @Value("${drshubUrl:}")
+  private String drsHubUrl;
 
   @Bean
-  public RawlsClient rawlsClient(RawlsApi rawlsApi, RestClientRetry restClientRetry) {
-    return new RawlsClient(rawlsApi, restClientRetry);
+  public DrsHubClient drsHubClient(DrsHubApi drsHubApi, RestClientRetry restClientRetry) {
+    return new DrsHubClient(drsHubApi, restClientRetry);
   }
 
-  // RestClient-enabled proxy for the Rawls API
   @Bean
-  public RawlsApi rawlsApi(@Qualifier("rawlsRestClient") RestClient restClient) {
+  public DrsHubApi drsHubApi(@Qualifier("drsHubRestClient") RestClient restClient) {
     HttpServiceProxyFactory httpServiceProxyFactory =
         HttpServiceProxyFactory.builderFor(RestClientAdapter.create(restClient)).build();
 
-    return httpServiceProxyFactory.createClient(RawlsApi.class);
+    return httpServiceProxyFactory.createClient(DrsHubApi.class);
   }
 
-  // fluent RestClient, initialized with Rawls' base url, auth from TokenContextUtil, and the
-  // current observationRegistry for Prometheus metrics
   @Bean
-  public RestClient rawlsRestClient(ObservationRegistry observationRegistry)
+  public RestClient drsHubRestClient(ObservationRegistry observationRegistry)
       throws MalformedURLException {
 
-    // validate the Rawls url is well-formed.
-    // this will throw and prevent Spring startup if the Rawls url is invalid.
-    new URL(rawlsUrl);
+    new URL(drsHubUrl); // validate the DRS Hub URL is well-formed.
 
     return RestClient.builder()
         .observationRegistry(observationRegistry)
-        .baseUrl(rawlsUrl)
+        .baseUrl(drsHubUrl)
         .requestInitializer(new BearerAuthRequestInitializer())
         .build();
   }

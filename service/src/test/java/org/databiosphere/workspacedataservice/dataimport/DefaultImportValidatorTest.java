@@ -21,6 +21,7 @@ import org.broadinstitute.dsde.workbench.client.sam.model.RolesAndActions;
 import org.broadinstitute.dsde.workbench.client.sam.model.UserResourcesResponse;
 import org.databiosphere.workspacedataservice.common.ControlPlaneTestBase;
 import org.databiosphere.workspacedataservice.config.DataImportProperties.ImportSourceConfig;
+import org.databiosphere.workspacedataservice.config.DrsImportProperties;
 import org.databiosphere.workspacedataservice.dataimport.protecteddatasupport.ProtectedDataSupport;
 import org.databiosphere.workspacedataservice.generated.ImportRequestServerModel;
 import org.databiosphere.workspacedataservice.generated.ImportRequestServerModel.TypeEnum;
@@ -50,7 +51,9 @@ class DefaultImportValidatorTest extends ControlPlaneTestBase {
     @Bean
     @Primary
     DefaultImportValidator getDefaultImportValidatorForTest(
-        ProtectedDataSupport protectedDataSupport, SamDao samDao) {
+        ProtectedDataSupport protectedDataSupport,
+        SamDao samDao,
+        DrsImportProperties drsImportProperties) {
       return new DefaultImportValidator(
           protectedDataSupport,
           samDao,
@@ -65,13 +68,16 @@ class DefaultImportValidatorTest extends ControlPlaneTestBase {
                   /* requirePrivateWorkspace */ true,
                   /* requireProtectedDataPolicy */ false)),
           /* allowedRawlsBucket */ "test-bucket",
-          new NoopConnectivityChecker());
+          new NoopConnectivityChecker(),
+          drsImportProperties);
     }
   }
 
   @MockitoBean ProtectedDataSupport protectedDataSupport;
 
   @MockitoBean SamDao samDao;
+
+  @MockitoBean DrsImportProperties drsImportProperties;
 
   @Autowired DefaultImportValidator importValidator;
 
@@ -269,7 +275,8 @@ class DefaultImportValidatorTest extends ControlPlaneTestBase {
             /* allowedHttpsHosts */ Set.of(Pattern.compile(".*\\.terra\\.bio")),
             /* sources */ List.of(),
             /* allowedRawlsBucket */ "test-bucket",
-            mockConnectivityChecker);
+            mockConnectivityChecker,
+            drsImportProperties);
 
     URI importUri = URI.create("https://127.0.0.1/unit-test");
     ImportRequestServerModel importRequest = new ImportRequestServerModel(TypeEnum.PFB, importUri);
