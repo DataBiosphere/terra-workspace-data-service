@@ -260,12 +260,11 @@ class WdsTests(TestCase):
         job_response = self.import_client.import_v1(self.current_collectionId, import_request)
         job_status_response = self.job_client.job_status_v1(job_response.job_id)
         job_status = job_status_response.status
-        while job_status == 'QUEUED':
+        while job_status in ['RUNNING', 'QUEUED']:
             time.sleep(10) #sleep ten seconds then try again
             job_status_response = self.job_client.job_status_v1(job_response.job_id)
             job_status = job_status_response.status
-        # we only check for running; success requires a message back from Rawls
-        assert job_status == 'RUNNING'
+        assert job_status == 'SUCCEEDED'
 
 
         # should create tables from manifest, spot-check
