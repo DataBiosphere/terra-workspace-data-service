@@ -40,7 +40,9 @@ public class RawlsSnapshotSupport extends SnapshotSupport {
   }
 
   /**
-   * Transforms a List<DataRepoSnapshotResource> to a ResourceList.
+   * Transforms a List<DataRepoSnapshotResource> to a ResourceList. RawlsSnapshotSupport and
+   * WsmSnapshotSupport return slightly different models from their API calls; performing this
+   * translation allows the two SnapshotSupport implementations to share code elsewhere.
    *
    * @param dataRepoSnapshotResourceList the model returned by Rawls APIs
    * @return the model returned by WSM APIs
