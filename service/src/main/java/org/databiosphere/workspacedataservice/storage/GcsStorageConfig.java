@@ -14,4 +14,5 @@ public class GcsStorageConfig {
       GcpProjectIdProvider projectIdProvider, DataImportProperties properties) throws IOException {
     return GcsStorageImpl.create(projectIdProvider.getProjectId(), properties);
   }
+
 }
