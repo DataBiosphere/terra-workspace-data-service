@@ -235,7 +235,7 @@ public abstract class SnapshotSupport {
   }
 
   /**
-   * Query a source system (WSM, Rawls) for a single page's worth of snapshot references.
+   * Query a source system (Rawls) for a single page's worth of snapshot references.
    *
    * @param offset pagination offset; used when the current workspace has many references
    * @param pageSize pagination page size; used when the current workspace has many references

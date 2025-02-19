@@ -27,7 +27,6 @@ import org.databiosphere.workspacedataservice.shared.model.RecordType;
 import org.databiosphere.workspacedataservice.shared.model.WorkspaceId;
 import org.databiosphere.workspacedataservice.workspace.DataTableTypeInspector;
 import org.databiosphere.workspacedataservice.workspace.WorkspaceDataTableType;
-import org.databiosphere.workspacedataservice.workspacemanager.WorkspaceManagerClientFactory;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -55,8 +54,6 @@ class LogStatementTest extends ControlPlaneTestBase {
   @Autowired ObjectMapper objectMapper;
   @Autowired NamedParameterJdbcTemplate namedTemplate;
 
-  // mocking for Workspace Manager
-  @MockitoBean WorkspaceManagerClientFactory mockWorkspaceManagerClientFactory;
   final ReferencedGcpResourceApi mockReferencedGcpResourceApi =
       Mockito.mock(ReferencedGcpResourceApi.class);
 

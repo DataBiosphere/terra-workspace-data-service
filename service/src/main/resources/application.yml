@@ -167,7 +167,7 @@ twds:
     # When running on Azure in k8s with workload identity set PGDUMP_USE_AZURE_IDENTITY to true
     useAzureIdentity: ${PGDUMP_USE_AZURE_IDENTITY:true}
 
-# retry configuration for REST clients (Sam, WSM, TDR, Leo, etc)
+# retry configuration for REST clients (Sam, TDR, etc)
 rest:
   retry:
     maxAttempts: 5
