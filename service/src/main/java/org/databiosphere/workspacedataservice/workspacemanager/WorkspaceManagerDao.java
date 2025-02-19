@@ -8,6 +8,7 @@ import bio.terra.workspace.api.WorkspaceApi;
 import bio.terra.workspace.model.*;
 import java.text.SimpleDateFormat;
 import java.util.UUID;
+import org.databiosphere.workspacedataservice.dataimport.snapshotsupport.SnapshotSupport;
 import org.databiosphere.workspacedataservice.retry.RestClientRetry;
 import org.databiosphere.workspacedataservice.retry.RestClientRetry.RestCall;
 import org.databiosphere.workspacedataservice.service.model.exception.RestException;
@@ -18,15 +19,6 @@ import org.springframework.http.HttpStatus;
 import org.springframework.lang.Nullable;
 
 public class WorkspaceManagerDao {
-  public static final String INSTANCE_NAME = "terra";
-
-  /**
-   * indicates the purpose of a snapshot reference - e.g. is it created for the sole purpose of
-   * linking policies.
-   */
-  public static final String PROP_PURPOSE = "purpose";
-
-  public static final String PURPOSE_POLICY = "policy";
 
   private final WorkspaceManagerClientFactory workspaceManagerClientFactory;
   private final RestClientRetry restClientRetry;
@@ -43,8 +35,8 @@ public class WorkspaceManagerDao {
   public void linkSnapshotForPolicy(WorkspaceId workspaceId, SnapshotModel snapshotModel) {
     Properties properties = null;
     Property policyProperty = new Property();
-    policyProperty.setKey(PROP_PURPOSE);
-    policyProperty.setValue(PURPOSE_POLICY);
+    policyProperty.setKey(SnapshotSupport.PROP_PURPOSE);
+    policyProperty.setValue(SnapshotSupport.PURPOSE_POLICY);
     properties = new Properties();
     properties.add(policyProperty);
     createDataRepoSnapshotReference(workspaceId, snapshotModel, properties);
@@ -63,7 +55,7 @@ public class WorkspaceManagerDao {
                   new CreateDataRepoSnapshotReferenceRequestBody()
                       .snapshot(
                           new DataRepoSnapshotAttributes()
-                              .instanceName(INSTANCE_NAME)
+                              .instanceName(SnapshotSupport.INSTANCE_NAME)
                               .snapshot(snapshotModel.getId().toString()))
                       .metadata(
                           new ReferenceResourceCommonFields()

@@ -1,8 +1,8 @@
 package org.databiosphere.workspacedataservice.workspacemanager;
 
 import static java.util.UUID.randomUUID;
-import static org.databiosphere.workspacedataservice.workspacemanager.WorkspaceManagerDao.PROP_PURPOSE;
-import static org.databiosphere.workspacedataservice.workspacemanager.WorkspaceManagerDao.PURPOSE_POLICY;
+import static org.databiosphere.workspacedataservice.dataimport.snapshotsupport.SnapshotSupport.PROP_PURPOSE;
+import static org.databiosphere.workspacedataservice.dataimport.snapshotsupport.SnapshotSupport.PURPOSE_POLICY;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
