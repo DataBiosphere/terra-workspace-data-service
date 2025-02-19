@@ -83,6 +83,7 @@ dependencies {
     implementation group: 'org.broadinstitute.dsde.workbench', name: 'sam-client_2.13', version: 'v0.0.282'
     implementation 'com.squareup.okhttp3:okhttp:4.12.0' // required by Sam client
     implementation "bio.terra:datarepo-client:2.13.0-SNAPSHOT"
+    // WSM client included for models only
     implementation "bio.terra:workspace-manager-client:0.254.983-SNAPSHOT"
     implementation "bio.terra:java-pfb-library:0.68.0"
     implementation project(path: ':client')
