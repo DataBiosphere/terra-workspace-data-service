@@ -2,7 +2,6 @@ beename: ${BEE_NAME}
 
 samurl: https://sam.${beename}.bee.envs-terra.bio
 
-leoUrl: https://leonardo.${beename}.bee.envs-terra.bio
 rawlsUrl: https://rawls.${beename}.bee.envs-terra.bio
 drshubUrl: https://drshub.${beename}.bee.envs-terra.bio
 
