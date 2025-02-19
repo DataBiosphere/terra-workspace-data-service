@@ -31,6 +31,7 @@ import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import org.databiosphere.workspacedataservice.common.ControlPlaneTestBase;
 import org.databiosphere.workspacedataservice.dao.JobDao;
+import org.databiosphere.workspacedataservice.dataimport.snapshotsupport.SnapshotSupport;
 import org.databiosphere.workspacedataservice.rawls.RawlsClient;
 import org.databiosphere.workspacedataservice.rawls.SnapshotListResponse;
 import org.databiosphere.workspacedataservice.service.BatchWriteService;
@@ -41,7 +42,6 @@ import org.databiosphere.workspacedataservice.shared.model.RecordType;
 import org.databiosphere.workspacedataservice.shared.model.WorkspaceId;
 import org.databiosphere.workspacedataservice.workspace.DataTableTypeInspector;
 import org.databiosphere.workspacedataservice.workspace.WorkspaceDataTableType;
-import org.databiosphere.workspacedataservice.workspacemanager.WorkspaceManagerDao;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
@@ -323,8 +323,8 @@ class PfbQuartzJobTest extends ControlPlaneTestBase {
         .map(
             id -> {
               Property p = new Property();
-              p.setKey(WorkspaceManagerDao.PROP_PURPOSE);
-              p.setValue(WorkspaceManagerDao.PURPOSE_POLICY);
+              p.setKey(SnapshotSupport.PROP_PURPOSE);
+              p.setValue(SnapshotSupport.PURPOSE_POLICY);
               Properties properties = new Properties();
               properties.add(p);
               ResourceMetadata resourceMetadata = new ResourceMetadata();

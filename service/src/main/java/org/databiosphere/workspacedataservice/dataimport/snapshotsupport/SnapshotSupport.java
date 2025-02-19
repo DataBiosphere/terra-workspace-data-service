@@ -20,13 +20,21 @@ import java.util.stream.Stream;
 import org.databiosphere.workspacedataservice.service.model.exception.DataImportException;
 import org.databiosphere.workspacedataservice.service.model.exception.RestException;
 import org.databiosphere.workspacedataservice.shared.model.RecordType;
-import org.databiosphere.workspacedataservice.workspacemanager.WorkspaceManagerDao;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.lang.Nullable;
 
 public abstract class SnapshotSupport {
 
+  public static final String INSTANCE_NAME = "terra";
+
+  /**
+   * indicates the purpose of a snapshot reference - e.g. is it created for the sole purpose of
+   * linking policies.
+   */
+  public static final String PROP_PURPOSE = "purpose";
+
+  public static final String PURPOSE_POLICY = "policy";
   private static final String DEFAULT_PRIMARY_KEY = "datarepo_row_id";
 
   private static final Logger LOGGER = LoggerFactory.getLogger(SnapshotSupport.class);
@@ -144,8 +152,8 @@ public abstract class SnapshotSupport {
                 properties.stream()
                     .anyMatch(
                         property ->
-                            WorkspaceManagerDao.PROP_PURPOSE.equals(property.getKey())
-                                && WorkspaceManagerDao.PURPOSE_POLICY.equals(property.getValue())))
+                            PROP_PURPOSE.equals(property.getKey())
+                                && PURPOSE_POLICY.equals(property.getValue())))
         .orElse(false);
   }
 
