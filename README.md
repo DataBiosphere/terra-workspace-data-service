@@ -66,7 +66,9 @@ manually. The variables that need to be set are described below. You can also ad
 have to at least specify data-plane or control-plane.
 
 ##### Control Plane Setup
-If you are running locally with the `control-plane` profile, you'll need some additional setup to use PubSub.
+
+If you are running locally with the `control-plane` profile, you'll need some additional setup to
+use PubSub.
 
 1. [Set up application default credentials](https://cloud.google.com/docs/authentication/provide-credentials-adc).
    ```bash
@@ -74,7 +76,7 @@ If you are running locally with the `control-plane` profile, you'll need some ad
    ```
 
 2. Configure a Google Cloud Project for CWDS to use. This can be done by setting a default project
-with `gcloud` or by setting the `GOOGLE_CLOUD_PROJECT` environment variable.
+   with `gcloud` or by setting the `GOOGLE_CLOUD_PROJECT` environment variable.
    ```bash
    gcloud config set project broad-dsde-dev
    export GOOGLE_CLOUD_PROJECT=broad-dsde-dev
@@ -104,24 +106,6 @@ environment variable, such as:
 
 ```
 export SAM_URL=https://sam.dsde-dev.broadinstitute.org/
-```
-
-##### WORKSPACE_MANAGER_URL
-
-Importing snapshots from the Terra Data Repo also requires the Workspace Manager configured as an
-environment variable, such as:
-
-```
-export WORKSPACE_MANAGER_URL=https://workspace.dsde-dev.broadinstitute.org/
-```
-
-##### LEONARDO_URL
-
-Starting WDS in clone mode (your WDS is attempting to clone some other WDS) requires contacting Leo.
-Set a Leo env var such as:
-
-```
-export LEONARDO_URL=https://leonardo.dsde-dev.broadinstitute.org/
 ```
 
 ##### WORKSPACE_ID
