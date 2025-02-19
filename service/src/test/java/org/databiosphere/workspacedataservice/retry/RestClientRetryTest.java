@@ -339,7 +339,7 @@ class RestClientRetryTest extends ControlPlaneTestBase {
         .hasBeenStarted()
         .hasError()
         .thenError()
-        .hasMessage("Not Found");
+        .hasMessage("Message: Not Found");
   }
 
   @Test
