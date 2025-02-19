@@ -117,11 +117,6 @@ dependencies {
     implementation "org.apache.hadoop:hadoop-common:$hadoop_version", withoutHadoopExcludes
     implementation "org.apache.hadoop:hadoop-mapreduce-client-core:$hadoop_version", withoutHadoopExcludes
 
-    // Jersey libs, required by WSM client (and maybe other clients?), version managed by Spring
-    implementation "org.glassfish.jersey.inject:jersey-hk2"
-    implementation "org.glassfish.jersey.core:jersey-client"
-    implementation "org.glassfish.jersey.core:jersey-common"
-
     annotationProcessor 'org.springframework.boot:spring-boot-configuration-processor'
     runtimeOnly 'org.webjars.npm:swagger-ui-dist:5.18.3'
     testImplementation 'io.micrometer:micrometer-observation-test'
