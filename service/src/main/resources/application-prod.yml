@@ -16,4 +16,4 @@ twds:
 # Set the allowed hosts for drs pfb imports
 drs:
   allowed-hosts:
-    - # TODO: add allowed sage drs hostnames
+    - repo-prod\.prod\.sagebase\.org
