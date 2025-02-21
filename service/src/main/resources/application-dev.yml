@@ -11,3 +11,4 @@ controlPlanePreview: "off"
 drs:
   allowed-hosts:
     - jade\.datarepo-.*\.broadinstitute\.org
+    - repo-dev\.dev\.sagebase\.org
