@@ -12,8 +12,10 @@ import java.util.Map;
 import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 import org.broadinstitute.dsde.workbench.client.sam.model.UserResourcesResponse;
 import org.databiosphere.workspacedataservice.config.DataImportProperties.ImportSourceConfig;
+import org.databiosphere.workspacedataservice.config.DrsImportProperties;
 import org.databiosphere.workspacedataservice.dataimport.protecteddatasupport.ProtectedDataSupport;
 import org.databiosphere.workspacedataservice.generated.ImportRequestServerModel;
 import org.databiosphere.workspacedataservice.generated.ImportRequestServerModel.TypeEnum;
@@ -25,9 +27,10 @@ import org.springframework.lang.Nullable;
 public class DefaultImportValidator implements ImportValidator {
   private static final String SCHEME_HTTPS = "https";
   private static final String SCHEME_GS = "gs";
+  private static final String SCHEME_DRS = "drs";
   private static final Map<TypeEnum, Set<String>> SUPPORTED_URL_SCHEMES_BY_IMPORT_TYPE =
       Map.of(
-          TypeEnum.PFB, Set.of(SCHEME_HTTPS),
+          TypeEnum.PFB, Set.of(SCHEME_HTTPS, SCHEME_DRS),
           TypeEnum.RAWLSJSON, Set.of(SCHEME_GS),
           TypeEnum.TDRMANIFEST, Set.of(SCHEME_HTTPS));
   private static final Set<Pattern> ALWAYS_ALLOWED_HOSTS =
@@ -51,10 +54,16 @@ public class DefaultImportValidator implements ImportValidator {
       Set<Pattern> allowedHttpsHosts,
       List<ImportSourceConfig> sources,
       @Nullable String allowedRawlsBucket,
-      ConnectivityChecker connectivityChecker) {
+      ConnectivityChecker connectivityChecker,
+      DrsImportProperties drsImportProperties) {
     var allowedHostsBuilder =
         ImmutableMap.<String, Set<Pattern>>builder()
-            .put(SCHEME_HTTPS, Sets.union(ALWAYS_ALLOWED_HOSTS, allowedHttpsHosts));
+            .put(SCHEME_HTTPS, Sets.union(ALWAYS_ALLOWED_HOSTS, allowedHttpsHosts))
+            .put(
+                SCHEME_DRS,
+                drsImportProperties.getAllowedHosts().stream()
+                    .map(Pattern::compile)
+                    .collect(Collectors.toSet()));
 
     if (StringUtils.isNotBlank(allowedRawlsBucket)) {
       allowedHostsBuilder.put(SCHEME_GS, Set.of(compile(allowedRawlsBucket)));

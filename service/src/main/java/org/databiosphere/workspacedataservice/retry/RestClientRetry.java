@@ -170,10 +170,6 @@ public class RestClientRetry {
     if (e instanceof org.broadinstitute.dsde.workbench.client.sam.ApiException samException) {
       return samException.getCode();
     }
-    // WSM
-    if (e instanceof bio.terra.workspace.client.ApiException wsmException) {
-      return wsmException.getCode();
-    }
     // TDR
     if (e instanceof bio.terra.datarepo.client.ApiException tdrException) {
       return tdrException.getCode();

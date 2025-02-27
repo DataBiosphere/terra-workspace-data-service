@@ -31,7 +31,8 @@ import org.springframework.test.context.TestPropertySource;
       "rest.retry.maxAttempts=2",
       "rest.retry.backoff.delay=3",
       // Rawls url must be valid, else context initialization (Spring startup) will fail
-      "rawlsUrl=https://localhost/"
+      "rawlsUrl=https://localhost/",
+      "drshubUrl=https://localhost/"
     })
 @ExtendWith(ConfigurationExceptionDetector.class)
 public abstract class ControlPlaneTestBase {}

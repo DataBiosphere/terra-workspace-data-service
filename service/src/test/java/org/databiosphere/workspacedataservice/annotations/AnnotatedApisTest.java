@@ -6,19 +6,11 @@ import java.util.Optional;
 import org.databiosphere.workspacedataservice.annotations.DeploymentMode.ControlPlane;
 import org.databiosphere.workspacedataservice.annotations.DeploymentMode.DataPlane;
 import org.databiosphere.workspacedataservice.common.DataPlaneTestBase;
-import org.databiosphere.workspacedataservice.dataimport.protecteddatasupport.ProtectedDataSupport;
-import org.databiosphere.workspacedataservice.dataimport.protecteddatasupport.WsmProtectedDataSupport;
-import org.databiosphere.workspacedataservice.workspace.DataTableTypeInspector;
-import org.databiosphere.workspacedataservice.workspace.WdsDataTableTypeInspector;
-import org.databiosphere.workspacedataservice.workspacemanager.WorkspaceManagerDao;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.context.ApplicationContext;
-import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Primary;
 import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.TestPropertySource;
@@ -35,26 +27,6 @@ import org.springframework.web.bind.annotation.RestController;
       "spring.cloud.gcp.pubsub.enabled=false"
     })
 class AnnotatedApisTest extends DataPlaneTestBase {
-
-  // Since we're running with both control-plane and data-plane profiles simultaneously, Spring
-  // does not know what to do with beans which are satisfied by two different mutually exclusive
-  // implementations. In this @TestConfiguration, we explicitly specify @Primary beans for any
-  // conflicts.
-  @TestConfiguration
-  static class SpecifyConflictingBeans {
-
-    @Primary
-    @Bean("overrideProtectedDataSupport")
-    ProtectedDataSupport overrideProtectedDataSupport(WorkspaceManagerDao wsmDao) {
-      return new WsmProtectedDataSupport(wsmDao);
-    }
-
-    @Primary
-    @Bean("overrideDataTableTypeInspector")
-    DataTableTypeInspector overrideDataTableTypeInspector() {
-      return new WdsDataTableTypeInspector();
-    }
-  }
 
   @Autowired private ApplicationContext context;
 

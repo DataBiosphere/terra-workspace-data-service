@@ -1,7 +1,7 @@
 samurl: ${SAM_URL:https://sam.dsde-dev.broadinstitute.org/}
-workspacemanagerurl: ${WORKSPACE_MANAGER_URL:https://workspace.dsde-dev.broadinstitute.org/}
-leoUrl: ${LEONARDO_URL:https://leonardo.dsde-dev.broadinstitute.org/}
+
 rawlsUrl: ${RAWLS_URL:https://rawls.dsde-dev.broadinstitute.org/}
+drshubUrl: ${DRS_HUB_URL:https://drshub.dsde-dev.broadinstitute.org/}
 
 twds:
   instance:
@@ -19,4 +19,9 @@ spring:
 logging:
   pattern:
     correlation: "%X{requestId} "
-    
+
+# Set the allowed hosts for drs pfb imports
+drs:
+  allowed-hosts:
+    - jade\.datarepo-.*\.broadinstitute\.org
+    - repo-dev\.dev\.sagebase\.org

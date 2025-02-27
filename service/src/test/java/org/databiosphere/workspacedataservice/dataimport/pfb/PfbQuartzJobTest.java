@@ -1,5 +1,6 @@
 package org.databiosphere.workspacedataservice.dataimport.pfb;
 
+import static bio.terra.workspace.model.CloningInstructionsEnum.REFERENCE;
 import static org.databiosphere.workspacedataservice.TestTags.SLOW;
 import static org.databiosphere.workspacedataservice.dataimport.pfb.PfbTestUtils.stubJobContext;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -12,39 +13,39 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import bio.terra.datarepo.model.SnapshotModel;
-import bio.terra.workspace.model.CloningInstructionsEnum;
 import bio.terra.workspace.model.DataRepoSnapshotAttributes;
+import bio.terra.workspace.model.DataRepoSnapshotResource;
 import bio.terra.workspace.model.Properties;
 import bio.terra.workspace.model.Property;
-import bio.terra.workspace.model.ResourceAttributesUnion;
-import bio.terra.workspace.model.ResourceDescription;
-import bio.terra.workspace.model.ResourceList;
 import bio.terra.workspace.model.ResourceMetadata;
 import io.micrometer.core.instrument.DistributionSummary;
 import io.micrometer.core.instrument.MeterRegistry;
 import java.io.IOException;
+import java.util.Collection;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Random;
 import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
-import org.databiosphere.workspacedataservice.activitylog.ActivityLogger;
-import org.databiosphere.workspacedataservice.common.DataPlaneTestBase;
+import org.databiosphere.workspacedataservice.common.ControlPlaneTestBase;
 import org.databiosphere.workspacedataservice.dao.JobDao;
+import org.databiosphere.workspacedataservice.dataimport.snapshotsupport.SnapshotSupport;
+import org.databiosphere.workspacedataservice.rawls.RawlsClient;
+import org.databiosphere.workspacedataservice.rawls.SnapshotListResponse;
 import org.databiosphere.workspacedataservice.service.BatchWriteService;
 import org.databiosphere.workspacedataservice.service.CollectionService;
 import org.databiosphere.workspacedataservice.service.model.BatchWriteResult;
 import org.databiosphere.workspacedataservice.shared.model.CollectionId;
 import org.databiosphere.workspacedataservice.shared.model.RecordType;
 import org.databiosphere.workspacedataservice.shared.model.WorkspaceId;
-import org.databiosphere.workspacedataservice.workspacemanager.WorkspaceManagerDao;
+import org.databiosphere.workspacedataservice.workspace.DataTableTypeInspector;
+import org.databiosphere.workspacedataservice.workspace.WorkspaceDataTableType;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
-import org.mockito.ArgumentMatcher;
-import org.mockito.ArgumentMatchers;
 import org.quartz.JobExecutionContext;
 import org.quartz.JobExecutionException;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -55,17 +56,17 @@ import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
 /**
- * This test explicitly asserts on and mock calls to WSM as part of PFB import; it is explicitly a
- * test of data-plane behavior.
+ * This test explicitly asserts on and mock calls to Rawls as part of PFB import; it is explicitly a
+ * test of control-plane behavior.
  */
 @DirtiesContext
 @SpringBootTest
-class PfbQuartzJobTest extends DataPlaneTestBase {
+class PfbQuartzJobTest extends ControlPlaneTestBase {
   @MockitoBean JobDao jobDao;
-  @MockitoBean WorkspaceManagerDao wsmDao;
+  @MockitoBean RawlsClient rawlsClient;
   @MockitoBean BatchWriteService batchWriteService;
   @MockitoBean CollectionService collectionService;
-  @MockitoBean ActivityLogger activityLogger;
+  @MockitoBean DataTableTypeInspector dataTableTypeInspector;
   @Autowired PfbTestSupport testSupport;
   @Autowired MeterRegistry meterRegistry;
 
@@ -76,28 +77,34 @@ class PfbQuartzJobTest extends DataPlaneTestBase {
   @Value("classpath:avro/test.avro")
   Resource testAvroResource;
 
+  @BeforeEach
+  void beforeEach() {
+    // dataTableTypeInspector says ok to use data tables
+    when(dataTableTypeInspector.getWorkspaceDataTableType(any()))
+        .thenReturn(WorkspaceDataTableType.WDS);
+  }
+
   @Test
   void linkAllNewSnapshots() {
     // input is a list of 10 UUIDs
     Set<UUID> input =
         IntStream.range(0, 10).mapToObj(i -> UUID.randomUUID()).collect(Collectors.toSet());
-    // WSM returns no pre-existing snapshots
-    when(wsmDao.enumerateDataRepoSnapshotReferences(any(), anyInt(), anyInt()))
-        .thenReturn(new ResourceList());
+    // Rawls returns no pre-existing snapshots
+    when(rawlsClient.enumerateDataRepoSnapshotReferences(any(), anyInt(), anyInt()))
+        .thenReturn(new SnapshotListResponse(List.of()));
 
     // call linkSnapshots
     WorkspaceId workspaceId = WorkspaceId.of(UUID.randomUUID());
     PfbQuartzJob pfbQuartzJob = testSupport.buildPfbQuartzJob();
     pfbQuartzJob.linkSnapshots(input, workspaceId);
     // capture calls
-    ArgumentCaptor<SnapshotModel> argumentCaptor = ArgumentCaptor.forClass(SnapshotModel.class);
-    // should have called WSM's create-snapshot-reference 10 times
-    verify(wsmDao, times(input.size()))
-        .linkSnapshotForPolicy(eq(workspaceId), argumentCaptor.capture());
+    ArgumentCaptor<UUID> argumentCaptor = ArgumentCaptor.forClass(UUID.class);
+    // should have called Rawls's create-snapshot-reference 10 times
+    verify(rawlsClient, times(input.size()))
+        .createSnapshotReference(eq(workspaceId.id()), argumentCaptor.capture());
     // those 10 calls should have used our 10 input UUIDs
-    List<SnapshotModel> actualModels = argumentCaptor.getAllValues();
-    Set<UUID> actualUuids =
-        actualModels.stream().map(SnapshotModel::getId).collect(Collectors.toSet());
+    List<UUID> actualSnapshotIds = argumentCaptor.getAllValues();
+    Set<UUID> actualUuids = new HashSet<>(actualSnapshotIds);
     assertEquals(input, actualUuids);
   }
 
@@ -107,20 +114,17 @@ class PfbQuartzJobTest extends DataPlaneTestBase {
     Set<UUID> input =
         IntStream.range(0, 10).mapToObj(i -> UUID.randomUUID()).collect(Collectors.toSet());
 
-    // WSM returns all of those UUIDs as pre-existing snapshots
-    ResourceList resourceList = new ResourceList();
-    List<ResourceDescription> resourceDescriptions =
-        input.stream().map(this::createResourceDescription).toList();
-    resourceList.setResources(resourceDescriptions);
-    when(wsmDao.enumerateDataRepoSnapshotReferences(any(), anyInt(), anyInt()))
-        .thenReturn(resourceList);
+    // Rawls returns all of those UUIDs as pre-existing snapshots
+    List<DataRepoSnapshotResource> snapshotResources = generateSnapshotResources(input);
+    when(rawlsClient.enumerateDataRepoSnapshotReferences(any(), anyInt(), anyInt()))
+        .thenReturn(new SnapshotListResponse(snapshotResources));
 
     // call linkSnapshots
     WorkspaceId workspaceId = WorkspaceId.of(UUID.randomUUID());
     PfbQuartzJob pfbQuartzJob = testSupport.buildPfbQuartzJob();
     pfbQuartzJob.linkSnapshots(input, workspaceId);
-    // should not call WSM's create-snapshot-reference at all
-    verify(wsmDao, times(0)).linkSnapshotForPolicy(eq(workspaceId), any());
+    // should not call Rawls's create-snapshot-reference at all
+    verify(rawlsClient, times(0)).createSnapshotReference(eq(workspaceId.id()), any());
   }
 
   @Test
@@ -129,32 +133,32 @@ class PfbQuartzJobTest extends DataPlaneTestBase {
     Set<UUID> input =
         IntStream.range(0, 10).mapToObj(i -> UUID.randomUUID()).collect(Collectors.toSet());
 
-    // WSM returns some of those UUIDs as pre-existing snapshots
-    ResourceList resourceList = new ResourceList();
+    // Rawls returns some of those UUIDs as pre-existing snapshots
     Random random = new Random();
     // note that the random in here can select the same UUID twice from the input, thus
     // we need the distinct()
     List<UUID> preExisting =
         IntStream.range(0, 5)
             .mapToObj(i -> input.stream().toList().get(random.nextInt(input.size())))
+            .distinct()
             .toList();
-    List<ResourceDescription> resourceDescriptions =
-        preExisting.stream().map(this::createResourceDescription).distinct().toList();
-    resourceList.setResources(resourceDescriptions);
-    when(wsmDao.enumerateDataRepoSnapshotReferences(any(), anyInt(), anyInt()))
-        .thenReturn(resourceList);
+    List<DataRepoSnapshotResource> snapshotResources = generateSnapshotResources(preExisting);
+
+    when(rawlsClient.enumerateDataRepoSnapshotReferences(any(), anyInt(), anyInt()))
+        .thenReturn(new SnapshotListResponse(snapshotResources));
 
     // call linkSnapshots
     WorkspaceId workspaceId = WorkspaceId.of(UUID.randomUUID());
     PfbQuartzJob pfbQuartzJob = testSupport.buildPfbQuartzJob();
     pfbQuartzJob.linkSnapshots(input, workspaceId);
 
-    // should call WSM's create-snapshot-reference only for the references that didn't already exist
-    int expectedCallCount = input.size() - resourceDescriptions.size();
-    ArgumentCaptor<SnapshotModel> argumentCaptor = ArgumentCaptor.forClass(SnapshotModel.class);
-    verify(wsmDao, times(expectedCallCount))
-        .linkSnapshotForPolicy(eq(workspaceId), argumentCaptor.capture());
-    List<UUID> actual = argumentCaptor.getAllValues().stream().map(SnapshotModel::getId).toList();
+    // should call Rawls's create-snapshot-reference only for the references that didn't already
+    // exist
+    int expectedCallCount = input.size() - snapshotResources.size();
+    ArgumentCaptor<UUID> argumentCaptor = ArgumentCaptor.forClass(UUID.class);
+    verify(rawlsClient, times(expectedCallCount))
+        .createSnapshotReference(eq(workspaceId.id()), argumentCaptor.capture());
+    List<UUID> actual = argumentCaptor.getAllValues().stream().toList();
     actual.forEach(
         id ->
             assertFalse(
@@ -172,19 +176,19 @@ class PfbQuartzJobTest extends DataPlaneTestBase {
 
     when(collectionService.getWorkspaceId(collectionId)).thenReturn(workspaceId);
 
-    // WSM should report no snapshots already linked to this workspace
-    when(wsmDao.enumerateDataRepoSnapshotReferences(any(), anyInt(), anyInt()))
-        .thenReturn(new ResourceList());
+    // Rawls should report no snapshots already linked to this workspace
+    when(rawlsClient.enumerateDataRepoSnapshotReferences(any(), anyInt(), anyInt()))
+        .thenReturn(new SnapshotListResponse(List.of()));
     // We're not testing this, so it doesn't matter what returns
     when(batchWriteService.batchWrite(any(), any(), any(), any()))
         .thenReturn(BatchWriteResult.empty());
 
     testSupport.buildPfbQuartzJob().execute(mockContext);
 
-    // Should not call wsm dao
-    verify(wsmDao, times(0)).linkSnapshotForPolicy(eq(workspaceId), any());
-    // But job should succeed
-    verify(jobDao).succeeded(jobId);
+    // Should not call Rawls client
+    verify(rawlsClient, times(0)).createSnapshotReference(eq(workspaceId.id()), any());
+    // Job should be running (can't test succeeded because that needs a message back from Rawls)
+    verify(jobDao).running(jobId);
   }
 
   @Test
@@ -194,9 +198,9 @@ class PfbQuartzJobTest extends DataPlaneTestBase {
     CollectionId collectionId = CollectionId.of(UUID.randomUUID());
     JobExecutionContext mockContext = stubJobContext(jobId, testAvroResource, collectionId.id());
 
-    // WSM should report no snapshots already linked to this workspace
-    when(wsmDao.enumerateDataRepoSnapshotReferences(any(), anyInt(), anyInt()))
-        .thenReturn(new ResourceList());
+    // Rawls should report no snapshots already linked to this workspace
+    when(rawlsClient.enumerateDataRepoSnapshotReferences(any(), anyInt(), anyInt()))
+        .thenReturn(new SnapshotListResponse(List.of()));
     // We're not testing this, so it doesn't matter what returns
     when(batchWriteService.batchWrite(any(), any(), any(), any()))
         .thenReturn(BatchWriteResult.empty());
@@ -208,18 +212,16 @@ class PfbQuartzJobTest extends DataPlaneTestBase {
     testSupport.buildPfbQuartzJob().execute(mockContext);
 
     // verify that snapshot operations use the appropriate workspaceId
-    verify(wsmDao, times(1))
-        .enumerateDataRepoSnapshotReferences(eq(expectedWorkspaceId), anyInt(), anyInt());
+    verify(rawlsClient, times(1))
+        .enumerateDataRepoSnapshotReferences(eq(expectedWorkspaceId.id()), anyInt(), anyInt());
     // The "790795c4..." UUID below is the snapshotId found in the "test.avro" resource used
     // by this unit test
-    verify(wsmDao)
-        .linkSnapshotForPolicy(
-            eq(expectedWorkspaceId),
-            ArgumentMatchers.argThat(
-                new SnapshotModelMatcher(UUID.fromString("790795c4-49b1-4ac8-a060-207b92ea08c5"))));
+    verify(rawlsClient)
+        .createSnapshotReference(
+            expectedWorkspaceId.id(), UUID.fromString("790795c4-49b1-4ac8-a060-207b92ea08c5"));
 
-    // But job should succeed
-    verify(jobDao).succeeded(jobId);
+    // Job should be running (can't test succeeded because that needs a message back from Rawls)
+    verify(jobDao).running(jobId);
   }
 
   @Test
@@ -231,9 +233,9 @@ class PfbQuartzJobTest extends DataPlaneTestBase {
 
     when(collectionService.getWorkspaceId(collectionId)).thenReturn(workspaceId);
 
-    // WSM should report no snapshots already linked to this workspace
-    when(wsmDao.enumerateDataRepoSnapshotReferences(any(), anyInt(), anyInt()))
-        .thenReturn(new ResourceList());
+    // Rawls should report no snapshots already linked to this workspace
+    when(rawlsClient.enumerateDataRepoSnapshotReferences(any(), anyInt(), anyInt()))
+        .thenReturn(new SnapshotListResponse(List.of()));
     // We're not testing this, so it doesn't matter what returns
     when(batchWriteService.batchWrite(any(), any(), any(), any()))
         .thenReturn(BatchWriteResult.empty());
@@ -242,13 +244,11 @@ class PfbQuartzJobTest extends DataPlaneTestBase {
 
     // The "790795c4..." UUID below is the snapshotId found in the "test.avro" resource used
     // by this unit test
-    verify(wsmDao)
-        .linkSnapshotForPolicy(
-            eq(workspaceId),
-            ArgumentMatchers.argThat(
-                new SnapshotModelMatcher(UUID.fromString("790795c4-49b1-4ac8-a060-207b92ea08c5"))));
-    // Job should succeed
-    verify(jobDao).succeeded(jobId);
+    verify(rawlsClient)
+        .createSnapshotReference(
+            workspaceId.id(), UUID.fromString("790795c4-49b1-4ac8-a060-207b92ea08c5"));
+    // Job should be running (can't test succeeded because that needs a message back from Rawls)
+    verify(jobDao).running(jobId);
   }
 
   @Test
@@ -281,9 +281,9 @@ class PfbQuartzJobTest extends DataPlaneTestBase {
 
     when(collectionService.getWorkspaceId(collectionId)).thenReturn(workspaceId);
 
-    // WSM should report no snapshots already linked to this workspace
-    when(wsmDao.enumerateDataRepoSnapshotReferences(any(), anyInt(), anyInt()))
-        .thenReturn(new ResourceList());
+    // Rawls should report no snapshots already linked to this workspace
+    when(rawlsClient.enumerateDataRepoSnapshotReferences(any(), anyInt(), anyInt()))
+        .thenReturn(new SnapshotListResponse(List.of()));
     // BatchWriteService returns a BatchWriteResult of 1234 upserts
     BatchWriteResult result = BatchWriteResult.empty();
     result.increaseCount(RecordType.valueOf("fooType"), 1234);
@@ -291,8 +291,8 @@ class PfbQuartzJobTest extends DataPlaneTestBase {
 
     testSupport.buildPfbQuartzJob().execute(mockContext);
 
-    // Job should succeed
-    verify(jobDao).succeeded(jobId);
+    // Job should be running (can't test succeeded because that needs a message back from Rawls)
+    verify(jobDao).running(jobId);
 
     // get the ending state of the upsertCount distribution summary, now that we've run a job
     long endingUpsertCount = upsertCountSummary.count();
@@ -318,35 +318,25 @@ class PfbQuartzJobTest extends DataPlaneTestBase {
     assertEquals(0, endingSnapshotsLinkedTotal - startingSnapshotsLinkedTotal);
   }
 
-  private record SnapshotModelMatcher(UUID expectedSnapshotId)
-      implements ArgumentMatcher<SnapshotModel> {
-
-    @Override
-    public boolean matches(SnapshotModel exampleSnapshot) {
-      return exampleSnapshot.getId().equals(expectedSnapshotId);
-    }
-  }
-
-  private ResourceDescription createResourceDescription(UUID snapshotId) {
-    DataRepoSnapshotAttributes dataRepoSnapshotAttributes = new DataRepoSnapshotAttributes();
-    dataRepoSnapshotAttributes.setSnapshot(snapshotId.toString());
-
-    ResourceAttributesUnion resourceAttributes = new ResourceAttributesUnion();
-    resourceAttributes.setGcpDataRepoSnapshot(dataRepoSnapshotAttributes);
-
-    ResourceDescription resourceDescription = new ResourceDescription();
-    resourceDescription.setResourceAttributes(resourceAttributes);
-
-    ResourceMetadata resourceMetadata = new ResourceMetadata();
-    Property purposeProperty = new Property();
-    purposeProperty.setKey(WorkspaceManagerDao.PROP_PURPOSE);
-    purposeProperty.setValue(WorkspaceManagerDao.PURPOSE_POLICY);
-    Properties properties = new Properties();
-    properties.add(purposeProperty);
-    resourceMetadata.setProperties(properties);
-    resourceMetadata.setCloningInstructions(CloningInstructionsEnum.REFERENCE);
-    resourceDescription.setMetadata(resourceMetadata);
-
-    return resourceDescription;
+  private List<DataRepoSnapshotResource> generateSnapshotResources(Collection<UUID> input) {
+    return input.stream()
+        .map(
+            id -> {
+              Property p = new Property();
+              p.setKey(SnapshotSupport.PROP_PURPOSE);
+              p.setValue(SnapshotSupport.PURPOSE_POLICY);
+              Properties properties = new Properties();
+              properties.add(p);
+              ResourceMetadata resourceMetadata = new ResourceMetadata();
+              resourceMetadata.setResourceId(UUID.randomUUID());
+              resourceMetadata.setProperties(properties);
+              resourceMetadata.setCloningInstructions(REFERENCE);
+              DataRepoSnapshotAttributes attributes = new DataRepoSnapshotAttributes();
+              attributes.setSnapshot(id.toString());
+              return new DataRepoSnapshotResource()
+                  .metadata(resourceMetadata)
+                  .attributes(attributes);
+            })
+        .toList();
   }
 }

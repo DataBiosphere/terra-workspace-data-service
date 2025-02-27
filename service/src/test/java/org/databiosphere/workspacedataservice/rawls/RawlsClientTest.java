@@ -11,8 +11,8 @@ import static org.mockito.Mockito.when;
 import bio.terra.workspace.model.CloningInstructionsEnum;
 import java.util.UUID;
 import org.databiosphere.workspacedataservice.common.ControlPlaneTestBase;
+import org.databiosphere.workspacedataservice.dataimport.snapshotsupport.SnapshotSupport;
 import org.databiosphere.workspacedataservice.shared.model.WorkspaceId;
-import org.databiosphere.workspacedataservice.workspacemanager.WorkspaceManagerDao;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
@@ -58,6 +58,6 @@ class RawlsClientTest extends ControlPlaneTestBase {
     assertEquals("%s-policy".formatted(snapshotId), snapshotReference.name());
     assertEquals(CloningInstructionsEnum.REFERENCE, snapshotReference.cloningInstructions());
     assertThat(snapshotReference.properties())
-        .containsEntry(WorkspaceManagerDao.PROP_PURPOSE, WorkspaceManagerDao.PURPOSE_POLICY);
+        .containsEntry(SnapshotSupport.PROP_PURPOSE, SnapshotSupport.PURPOSE_POLICY);
   }
 }

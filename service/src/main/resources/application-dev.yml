@@ -1,8 +1,14 @@
 samurl: https://sam.dsde-dev.broadinstitute.org/
-workspacemanagerurl: https://workspace.dsde-dev.broadinstitute.org/
-leoUrl: https://leonardo.dsde-dev.broadinstitute.org/
+
 rawlsUrl: https://rawls.dsde-dev.broadinstitute.org/
+drshubUrl: https://drshub.dsde-dev.broadinstitute.org/
 
 # Disable preview of control plane apis
 # This is the default; leaving this property here for easy overriding later
 controlPlanePreview: "off"
+
+# Set the allowed hosts for drs pfb imports
+drs:
+  allowed-hosts:
+    - jade\.datarepo-.*\.broadinstitute\.org
+    - repo-dev\.dev\.sagebase\.org

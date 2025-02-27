@@ -5,7 +5,6 @@ import static bio.terra.workspace.model.CloningInstructionsEnum.*;
 import static bio.terra.workspace.model.CloningInstructionsEnum.NOTHING;
 import static org.databiosphere.workspacedataservice.TestTags.PACT_TEST;
 import static org.databiosphere.workspacedataservice.pact.TestHeaderSupport.*;
-import static org.databiosphere.workspacedataservice.workspacemanager.WorkspaceManagerDao.*;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -27,6 +26,7 @@ import io.micrometer.observation.ObservationRegistry;
 import io.micrometer.observation.tck.TestObservationRegistry;
 import java.util.Map;
 import java.util.UUID;
+import org.databiosphere.workspacedataservice.dataimport.snapshotsupport.SnapshotSupport;
 import org.databiosphere.workspacedataservice.rawls.BearerAuthRequestInitializer;
 import org.databiosphere.workspacedataservice.rawls.RawlsApi;
 import org.databiosphere.workspacedataservice.rawls.RawlsClient;
@@ -115,7 +115,9 @@ class RawlsPactTest {
                     .stringValue("cloningInstructions", REFERENCE.toString())
                     .object(
                         "properties",
-                        properties -> properties.stringValue(PROP_PURPOSE, PURPOSE_POLICY)))
+                        properties ->
+                            properties.stringValue(
+                                SnapshotSupport.PROP_PURPOSE, SnapshotSupport.PURPOSE_POLICY)))
         .build();
   }
 
@@ -129,7 +131,7 @@ class RawlsPactTest {
             .stringType("description")
             .stringValue("cloningInstructions", REFERENCE.toString())
             .object("properties")
-            .stringValue(PROP_PURPOSE, PURPOSE_POLICY)
+            .stringValue(SnapshotSupport.PROP_PURPOSE, SnapshotSupport.PURPOSE_POLICY)
             .closeObject();
     return builder
         .given(

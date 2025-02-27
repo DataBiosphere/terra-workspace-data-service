@@ -54,7 +54,6 @@ class RestClientRetryTest extends ControlPlaneTestBase {
   @CartesianTest.Values(
       classes = {
         org.broadinstitute.dsde.workbench.client.sam.ApiException.class,
-        bio.terra.workspace.client.ApiException.class,
         bio.terra.datarepo.client.ApiException.class
       })
   @interface CartesianTestableExceptions {}
@@ -68,7 +67,6 @@ class RestClientRetryTest extends ControlPlaneTestBase {
   @ValueSource(
       classes = {
         org.broadinstitute.dsde.workbench.client.sam.ApiException.class,
-        bio.terra.workspace.client.ApiException.class,
         bio.terra.datarepo.client.ApiException.class
       })
   @interface TestableExceptionsSource {}
@@ -322,7 +320,7 @@ class RestClientRetryTest extends ControlPlaneTestBase {
     // arrange
     VoidRestCall voidRestCall =
         () -> {
-          throw new bio.terra.workspace.client.ApiException(404, "Not Found");
+          throw new org.broadinstitute.dsde.workbench.client.sam.ApiException(404, "Not Found");
         }; // no-op
 
     // act
@@ -341,7 +339,7 @@ class RestClientRetryTest extends ControlPlaneTestBase {
         .hasBeenStarted()
         .hasError()
         .thenError()
-        .hasMessage("Not Found");
+        .hasMessageStartingWith("Message: Not Found");
   }
 
   @Test
@@ -371,7 +369,8 @@ class RestClientRetryTest extends ControlPlaneTestBase {
         () -> {
           if (counter.getAndIncrement() == 0) {
             observations.clear(); // clear the observation from the first attempt
-            throw new bio.terra.workspace.client.ApiException(503, "Fake retryable exception.");
+            throw new org.broadinstitute.dsde.workbench.client.sam.ApiException(
+                503, "Fake retryable exception.");
           }
           // will succeed otherwise on an additional attempt
         }; // no-op

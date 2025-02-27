@@ -1,7 +1,7 @@
 samurl: https://sam.dsde-prod.broadinstitute.org/
-workspacemanagerurl: https://workspace.dsde-prod.broadinstitute.org/
-leoUrl: https://leonardo.dsde-prod.broadinstitute.org/
+
 rawlsUrl: https://rawls.dsde-prod.broadinstitute.org/
+drshubUrl: https://drshub.dsde-prod.broadinstitute.org/
 
 twds:
   data-import:
@@ -12,3 +12,8 @@ twds:
       - .*service\.azul\.data\.humancellatlas\.org
       - .*redcaptest\.vumc\.org
       - .*redcap\.vumc\.org
+
+# Set the allowed hosts for drs pfb imports
+drs:
+  allowed-hosts:
+    - repo-prod\.prod\.sagebase\.org

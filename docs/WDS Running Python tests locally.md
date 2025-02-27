@@ -91,7 +91,7 @@ Start WDS pointing at the mock server:
 
 ```bash
 SAM_URL=http://localhost:9889 \
-WORKSPACE_MANAGER_URL=http://localhost:9889 \
+RAWLS_URL=http://localhost:9889 \
 ./gradlew bootRun \
 --args='--twds.data-import.require-validation=false'
 ```
