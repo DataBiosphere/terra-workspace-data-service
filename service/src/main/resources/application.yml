@@ -72,6 +72,10 @@ spring:
         enabled: false
       storage:
         enabled: false
+      secretmanager:
+        # WDS does not use secret manager, but GCP starter libraries attempt to autoconfigure it.
+        # Explicitly disable it here to avoid problems with autoconfig.
+        enabled: false
 
   datasource:
     hikari:
