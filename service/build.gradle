@@ -46,7 +46,7 @@ dependencies {
     antlr "org.antlr:antlr4:4.13.2" // use ANTLR version 4
 
     // logging
-    implementation 'org.zalando:logbook-spring-boot-starter:3.10.0'
+    implementation 'org.zalando:logbook-spring-boot-starter:3.11.0'
 
     implementation 'org.springframework.boot:spring-boot-starter'
     implementation 'org.springframework.boot:spring-boot-starter-jdbc'
@@ -64,7 +64,7 @@ dependencies {
     implementation 'org.postgresql:postgresql'
     implementation 'org.webjars:webjars-locator-lite' // versioned by spring dependency management
     implementation 'com.fasterxml.jackson.dataformat:jackson-dataformat-csv'
-    implementation 'io.sentry:sentry-logback:8.2.0'
+    implementation 'io.sentry:sentry-logback:8.3.0'
     implementation 'net.logstash.logback:logstash-logback-encoder:8.0'
     implementation 'org.codehaus.janino:janino'
     implementation 'org.liquibase:liquibase-core'
@@ -119,7 +119,7 @@ dependencies {
     implementation "org.apache.hadoop:hadoop-mapreduce-client-core:$hadoop_version", withoutHadoopExcludes
 
     annotationProcessor 'org.springframework.boot:spring-boot-configuration-processor'
-    runtimeOnly 'org.webjars.npm:swagger-ui-dist:5.19.0'
+    runtimeOnly 'org.webjars.npm:swagger-ui-dist:5.20.0'
     testImplementation 'io.micrometer:micrometer-observation-test'
     testImplementation 'org.springframework.boot:spring-boot-starter-test'
     testImplementation 'org.junit.jupiter:junit-jupiter'
@@ -130,7 +130,7 @@ dependencies {
     testImplementation 'org.awaitility:awaitility'
 
     // google bucket mock
-    testImplementation 'com.google.cloud:google-cloud-nio:0.127.31'
+    testImplementation 'com.google.cloud:google-cloud-nio:0.127.32'
 
     constraints {
         implementation('org.json:json:20250107') {
