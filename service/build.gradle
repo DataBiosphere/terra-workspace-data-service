@@ -81,7 +81,7 @@ dependencies {
 
     // required by openapi-generated models and api interfaces
     implementation 'jakarta.validation:jakarta.validation-api'
-    implementation 'io.swagger.core.v3:swagger-annotations:2.2.28'
+    implementation 'io.swagger.core.v3:swagger-annotations:2.2.29'
 
     // Terra libraries
     implementation group: 'org.broadinstitute.dsde.workbench', name: 'sam-client_2.13', version: 'v0.0.282'
@@ -89,7 +89,7 @@ dependencies {
     implementation "bio.terra:datarepo-client:2.13.0-SNAPSHOT"
     // WSM client included for models only
     implementation "bio.terra:workspace-manager-client:0.254.983-SNAPSHOT"
-    implementation "bio.terra:java-pfb-library:0.68.0"
+    implementation "bio.terra:java-pfb-library:0.69.0"
     implementation project(path: ':client')
 
     // Parquet, used for TDR snapshot import
@@ -123,7 +123,7 @@ dependencies {
     implementation "org.apache.hadoop:hadoop-mapreduce-client-core:$hadoop_version", withoutHadoopExcludes
 
     annotationProcessor 'org.springframework.boot:spring-boot-configuration-processor'
-    runtimeOnly 'org.webjars.npm:swagger-ui-dist:5.20.0'
+    runtimeOnly 'org.webjars.npm:swagger-ui-dist:5.20.1'
     testImplementation 'io.micrometer:micrometer-observation-test'
     testImplementation 'org.springframework.boot:spring-boot-starter-test'
     testImplementation 'org.junit.jupiter:junit-jupiter'
