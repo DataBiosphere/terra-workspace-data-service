@@ -24,6 +24,10 @@ repositories {
     maven { url 'https://broadinstitute.jfrog.io/artifactory/libs-release' }
 }
 
+gitProperties {
+    dotGitDirectory = project.rootProject.layout.projectDirectory.dir(".git")
+}
+
 jib {
     from {
         // see https://github.com/broadinstitute/dsp-appsec-blessed-images/tree/main/jre
