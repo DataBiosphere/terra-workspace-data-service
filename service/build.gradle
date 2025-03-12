@@ -49,9 +49,6 @@ ext {
 dependencies {
     antlr "org.antlr:antlr4:4.13.2" // use ANTLR version 4
 
-    // logging
-    implementation 'org.zalando:logbook-spring-boot-starter:3.11.0'
-
     implementation 'org.springframework.boot:spring-boot-starter'
     implementation 'org.springframework.boot:spring-boot-starter-jdbc'
     implementation 'org.springframework.boot:spring-boot-starter-web'
