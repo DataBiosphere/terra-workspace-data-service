@@ -118,7 +118,6 @@ logging:
   level:
     com.zaxxer.hikari.HikariConfig: INFO
     com.zaxxer.hikari: INFO
-    org.zalando.logbook: TRACE
 server:
   error:
     include-stacktrace: never
