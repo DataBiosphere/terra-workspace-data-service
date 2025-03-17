@@ -41,9 +41,9 @@ jib {
 }
 
 ext {
-    parquet_mr_version = "1.15.0"
+    parquet_mr_version = "1.15.1"
     hadoop_version = "3.4.1"
-    spring_cloud_gcp_version = "6.0.1"
+    spring_cloud_gcp_version = "6.1.0"
 }
 
 dependencies {
@@ -65,7 +65,7 @@ dependencies {
     implementation 'org.postgresql:postgresql'
     implementation 'org.webjars:webjars-locator-lite' // versioned by spring dependency management
     implementation 'com.fasterxml.jackson.dataformat:jackson-dataformat-csv'
-    implementation 'io.sentry:sentry-logback:8.3.0'
+    implementation 'io.sentry:sentry-logback:8.4.0'
     implementation 'net.logstash.logback:logstash-logback-encoder:8.0'
     implementation 'org.codehaus.janino:janino'
     implementation 'org.liquibase:liquibase-core'
@@ -131,7 +131,7 @@ dependencies {
     testImplementation 'org.awaitility:awaitility'
 
     // google bucket mock
-    testImplementation 'com.google.cloud:google-cloud-nio:0.127.32'
+    testImplementation 'com.google.cloud:google-cloud-nio:0.127.33'
 
     constraints {
         implementation('org.json:json:20250107') {
