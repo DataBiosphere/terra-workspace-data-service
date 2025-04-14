@@ -42,7 +42,8 @@ class RawlsDataTableTypeInspectorTest {
     RawlsClient mockRawlsClient = Mockito.mock(RawlsClient.class);
 
     WorkspaceId workspaceId = WorkspaceId.of(UUID.randomUUID());
-    RawlsWorkspace rawlsWorkspace = new RawlsWorkspace("bucketName", workspaceType);
+    RawlsWorkspace rawlsWorkspace =
+        new RawlsWorkspace("bucketName", workspaceType, "namespace", "name");
     RawlsWorkspaceDetails rawlsWorkspaceDetails =
         new RawlsWorkspaceDetails(rawlsWorkspace, List.of());
 
@@ -94,7 +95,7 @@ class RawlsDataTableTypeInspectorTest {
 
     // Rawls client returns a value of MC
     RawlsWorkspace rawlsWorkspace =
-        new RawlsWorkspace("bucketName", RawlsWorkspace.WorkspaceType.MC);
+        new RawlsWorkspace("bucketName", RawlsWorkspace.WorkspaceType.MC, "namespace", "name");
     RawlsWorkspaceDetails rawlsWorkspaceDetails =
         new RawlsWorkspaceDetails(rawlsWorkspace, List.of());
 
@@ -128,7 +129,7 @@ class RawlsDataTableTypeInspectorTest {
 
     // Rawls client returns a value of MC
     RawlsWorkspace rawlsWorkspace =
-        new RawlsWorkspace("bucketName", RawlsWorkspace.WorkspaceType.MC);
+        new RawlsWorkspace("bucketName", RawlsWorkspace.WorkspaceType.MC, "namespace", "name");
     RawlsWorkspaceDetails rawlsWorkspaceDetails =
         new RawlsWorkspaceDetails(rawlsWorkspace, List.of());
 

@@ -7,6 +7,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import java.io.IOException;
@@ -45,6 +46,7 @@ import org.springframework.web.client.HttpServerErrorException;
 
 @SpringBootTest
 class DefaultImportValidatorTest extends ControlPlaneTestBase {
+  static String authDomain = UUID.randomUUID().toString();
 
   @TestConfiguration
   static class DefaultImportValidatorTestConfiguration {
@@ -60,13 +62,20 @@ class DefaultImportValidatorTest extends ControlPlaneTestBase {
           /* allowedHttpsHosts */ Set.of(Pattern.compile(".*\\.terra\\.bio")),
           /* sources */ List.of(
               new ImportSourceConfig(
+                  /* urls */ List.of(Pattern.compile("authdomain\\.pfb")),
+                  /* requirePrivateWorkspace */ false,
+                  /* requireProtectedDataPolicy */ false,
+                  /* requiredAuthDomainGroups */ List.of(authDomain)),
+              new ImportSourceConfig(
                   /* urls */ List.of(Pattern.compile("protected\\.pfb")),
                   /* requirePrivateWorkspace */ false,
-                  /* requireProtectedDataPolicy */ true),
+                  /* requireProtectedDataPolicy */ true,
+                  /* requiredAuthDomainGroups */ List.of()),
               new ImportSourceConfig(
                   /* urls */ List.of(Pattern.compile("private\\.pfb")),
                   /* requirePrivateWorkspace */ true,
-                  /* requireProtectedDataPolicy */ false)),
+                  /* requireProtectedDataPolicy */ false,
+                  /* requiredAuthDomainGroups */ List.of())),
           /* allowedRawlsBucket */ "test-bucket",
           new NoopConnectivityChecker(),
           drsImportProperties);
@@ -225,6 +234,21 @@ class DefaultImportValidatorTest extends ControlPlaneTestBase {
     assertThatExceptionOfType(ValidationException.class)
         .isThrownBy(() -> importValidator.validateImport(importRequest, destinationWorkspaceId))
         .withMessageContaining("/to-cwds/%s/".formatted(destinationWorkspaceId));
+  }
+
+  @Test
+  void addsAuthDomains() {
+    // Arrange
+    ImportRequestServerModel importRequest =
+        new ImportRequestServerModel(
+            TypeEnum.PFB, URI.create("https://files.terra.bio/authdomain.pfb"));
+
+    // Act
+    importValidator.validateImport(importRequest, destinationWorkspaceId);
+
+    // Assert
+    verify(protectedDataSupport)
+        .addAuthDomainGroupsToWorkspace(destinationWorkspaceId, List.of(authDomain));
   }
 
   @ParameterizedTest

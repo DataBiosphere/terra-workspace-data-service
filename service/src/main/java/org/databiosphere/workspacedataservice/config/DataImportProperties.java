@@ -151,7 +151,10 @@ public class DataImportProperties {
   }
 
   public record ImportSourceConfig(
-      List<Pattern> urls, boolean requirePrivateWorkspace, boolean requireProtectedDataPolicy) {
+      List<Pattern> urls,
+      boolean requirePrivateWorkspace,
+      boolean requireProtectedDataPolicy,
+      List<String> requiredAuthDomainGroups) {
     public boolean matchesUri(URI uri) {
       String uriString = uri.toString();
       return urls.stream().anyMatch(urlPattern -> urlPattern.matcher(uriString).find());

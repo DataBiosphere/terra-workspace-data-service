@@ -1,7 +1,10 @@
 package org.databiosphere.workspacedataservice.dataimport;
 
-public record ImportRequirements(boolean privateWorkspace, boolean protectedDataPolicy) {
+import java.util.List;
+
+public record ImportRequirements(
+    boolean privateWorkspace, boolean protectedDataPolicy, List<String> requiredAuthDomainGroups) {
   public ImportRequirements() {
-    this(false, false);
+    this(false, false, List.of());
   }
 }
