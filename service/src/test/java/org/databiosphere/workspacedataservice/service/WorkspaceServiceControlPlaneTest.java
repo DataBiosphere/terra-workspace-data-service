@@ -43,7 +43,7 @@ class WorkspaceServiceControlPlaneTest extends ControlPlaneTestBase {
 
     WorkspaceId workspaceId = WorkspaceId.of(UUID.randomUUID());
     RawlsWorkspaceDetails.RawlsWorkspace rawlsWorkspace =
-        new RawlsWorkspaceDetails.RawlsWorkspace("bucketName", workspaceType);
+        new RawlsWorkspaceDetails.RawlsWorkspace("bucketName", workspaceType, "namespace", "name");
     RawlsWorkspaceDetails rawlsWorkspaceDetails =
         new RawlsWorkspaceDetails(rawlsWorkspace, List.of());
 

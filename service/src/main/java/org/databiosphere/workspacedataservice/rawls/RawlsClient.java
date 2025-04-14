@@ -1,8 +1,10 @@
 package org.databiosphere.workspacedataservice.rawls;
 
 import static org.databiosphere.workspacedataservice.retry.RestClientRetry.RestCall;
+import static org.databiosphere.workspacedataservice.retry.RestClientRetry.VoidRestCall;
 
 import bio.terra.workspace.model.DataRepoSnapshotResource;
+import java.util.List;
 import java.util.UUID;
 import org.databiosphere.workspacedataservice.retry.RestClientRetry;
 import org.springframework.web.client.RestClientResponseException;
@@ -54,6 +56,18 @@ public class RawlsClient {
 
       // note we do not return the DataRepoSnapshotResource from this method
       restClientRetry.withRetryAndErrorHandling(restCall, "Rawls.createSnapshotReference");
+    } catch (RestClientResponseException restException) {
+      throw new RawlsException(restException);
+    }
+  }
+
+  public void addAuthDomainGroups(
+      String workspaceNamespace, String workspaceName, List<String> authDomainGroups) {
+    try {
+      VoidRestCall restCall =
+          () -> rawlsApi.addAuthDomainGroups(workspaceNamespace, workspaceName, authDomainGroups);
+
+      restClientRetry.withRetryAndErrorHandling(restCall, "Rawls.addAuthDomainGroups");
     } catch (RestClientResponseException restException) {
       throw new RawlsException(restException);
     }

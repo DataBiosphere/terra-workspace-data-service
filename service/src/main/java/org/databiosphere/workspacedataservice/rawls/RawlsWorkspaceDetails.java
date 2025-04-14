@@ -18,7 +18,10 @@ public record RawlsWorkspaceDetails(
       List.of("policies", "workspace.bucketName", "workspace.workspaceType");
 
   public record RawlsWorkspace(
-      @JsonProperty String bucketName, @JsonProperty WorkspaceType workspaceType) {
+      @JsonProperty String bucketName,
+      @JsonProperty WorkspaceType workspaceType,
+      @JsonProperty String namespace,
+      @JsonProperty String name) {
 
     public enum WorkspaceType {
       MC("mc"),

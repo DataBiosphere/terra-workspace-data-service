@@ -2,6 +2,7 @@ package org.databiosphere.workspacedataservice.dataimport.protecteddatasupport;
 
 import static java.util.Collections.emptyList;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import bio.terra.workspace.model.WsmPolicyInput;
@@ -13,6 +14,7 @@ import org.databiosphere.workspacedataservice.rawls.RawlsClient;
 import org.databiosphere.workspacedataservice.rawls.RawlsWorkspaceDetails;
 import org.databiosphere.workspacedataservice.rawls.RawlsWorkspaceDetails.RawlsWorkspace.WorkspaceType;
 import org.databiosphere.workspacedataservice.shared.model.WorkspaceId;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -53,23 +55,27 @@ class RawlsProtectedDataSupportTest extends ControlPlaneTestBase {
 
     RawlsWorkspaceDetails azureProtectedWorkspace =
         new RawlsWorkspaceDetails(
-            new RawlsWorkspaceDetails.RawlsWorkspace(null, WorkspaceType.MC),
+            new RawlsWorkspaceDetails.RawlsWorkspace(null, WorkspaceType.MC, "namespace", "name"),
             List.of(protectedDataPolicy));
 
     RawlsWorkspaceDetails azureUnprotectedWorkspace =
         new RawlsWorkspaceDetails(
-            new RawlsWorkspaceDetails.RawlsWorkspace(null, WorkspaceType.MC), emptyList());
+            new RawlsWorkspaceDetails.RawlsWorkspace(null, WorkspaceType.MC, "namespace", "name"),
+            emptyList());
 
     RawlsWorkspaceDetails googleProtectedWorkspace =
         new RawlsWorkspaceDetails(
             new RawlsWorkspaceDetails.RawlsWorkspace(
-                "fc-secure-%s".formatted(workspaceId.id()), WorkspaceType.RAWLS),
+                "fc-secure-%s".formatted(workspaceId.id()),
+                WorkspaceType.RAWLS,
+                "namespace",
+                "name"),
             emptyList());
 
     RawlsWorkspaceDetails googleUnprotectedWorkspace =
         new RawlsWorkspaceDetails(
             new RawlsWorkspaceDetails.RawlsWorkspace(
-                "fc-%s".formatted(workspaceId.id()), WorkspaceType.RAWLS),
+                "fc-%s".formatted(workspaceId.id()), WorkspaceType.RAWLS, "namespace", "name"),
             emptyList());
 
     return Stream.of(
@@ -77,5 +83,33 @@ class RawlsProtectedDataSupportTest extends ControlPlaneTestBase {
         Arguments.of("Azure", workspaceId, azureUnprotectedWorkspace, false),
         Arguments.of("Google", workspaceId, googleProtectedWorkspace, true),
         Arguments.of("Google", workspaceId, googleUnprotectedWorkspace, false));
+  }
+
+  @Test
+  void addAuthDomainGroupsToWorkspace() {
+    // Arrange
+    WorkspaceId workspaceId = WorkspaceId.of(UUID.randomUUID());
+    List<String> authDomainGroups = List.of("group1", "group2");
+
+    RawlsWorkspaceDetails workspaceDetails =
+        new RawlsWorkspaceDetails(
+            new RawlsWorkspaceDetails.RawlsWorkspace(
+                null,
+                WorkspaceType.RAWLS,
+                UUID.randomUUID().toString(),
+                UUID.randomUUID().toString()),
+            emptyList());
+
+    when(rawlsClient.getWorkspaceDetails(workspaceId.id())).thenReturn(workspaceDetails);
+
+    // Act
+    rawlsProtectedDataSupport.addAuthDomainGroupsToWorkspace(workspaceId, authDomainGroups);
+
+    // Assert
+    verify(rawlsClient)
+        .addAuthDomainGroups(
+            workspaceDetails.workspace().namespace(),
+            workspaceDetails.workspace().name(),
+            authDomainGroups);
   }
 }

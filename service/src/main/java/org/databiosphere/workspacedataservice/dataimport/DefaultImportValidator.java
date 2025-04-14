@@ -144,6 +144,11 @@ public class DefaultImportValidator implements ImportValidator {
       throw new ValidationException(
           "Data from this source cannot be imported into a public workspace.");
     }
+
+    if (!requirements.requiredAuthDomainGroups().isEmpty()) {
+      protectedDataSupport.addAuthDomainGroupsToWorkspace(
+          destinationWorkspaceId, requirements.requiredAuthDomainGroups());
+    }
   }
 
   private boolean checkWorkspaceIsPrivate(WorkspaceId workspaceId) {

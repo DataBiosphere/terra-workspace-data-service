@@ -1,5 +1,6 @@
 package org.databiosphere.workspacedataservice.dataimport.protecteddatasupport;
 
+import java.util.List;
 import org.databiosphere.workspacedataservice.policy.PolicyUtils;
 import org.databiosphere.workspacedataservice.rawls.RawlsClient;
 import org.databiosphere.workspacedataservice.rawls.RawlsWorkspaceDetails;
@@ -23,5 +24,14 @@ public class RawlsProtectedDataSupport implements ProtectedDataSupport {
       case MC -> PolicyUtils.containsProtectedDataPolicy(workspaceDetails.policies());
       case RAWLS -> workspaceDetails.workspace().bucketName().startsWith("fc-secure-");
     };
+  }
+
+  public void addAuthDomainGroupsToWorkspace(
+      WorkspaceId workspaceId, List<String> authDomainGroups) {
+    RawlsWorkspaceDetails workspaceDetails = rawlsClient.getWorkspaceDetails(workspaceId.id());
+    rawlsClient.addAuthDomainGroups(
+        workspaceDetails.workspace().namespace(),
+        workspaceDetails.workspace().name(),
+        authDomainGroups);
   }
 }

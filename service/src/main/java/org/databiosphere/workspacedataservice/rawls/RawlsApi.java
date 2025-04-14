@@ -1,11 +1,13 @@
 package org.databiosphere.workspacedataservice.rawls;
 
 import bio.terra.workspace.model.DataRepoSnapshotResource;
+import java.util.List;
 import java.util.UUID;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.service.annotation.GetExchange;
+import org.springframework.web.service.annotation.PatchExchange;
 import org.springframework.web.service.annotation.PostExchange;
 
 /**
@@ -46,4 +48,10 @@ public interface RawlsApi {
   @PostExchange("/api/workspaces/{workspaceId}/snapshots/v2")
   DataRepoSnapshotResource createDataRepoSnapshotByWorkspaceId(
       @PathVariable UUID workspaceId, @RequestBody NamedDataRepoSnapshot namedDataRepoSnapshot);
+
+  @PatchExchange("/api/workspaces/v2/{workspaceNamespace}/{workspaceName}/authDomain")
+  void addAuthDomainGroups(
+      @PathVariable("workspaceNamespace") String workspaceNamespace,
+      @PathVariable("workspaceName") String workspaceName,
+      @RequestBody List<String> authDomainGroups);
 }

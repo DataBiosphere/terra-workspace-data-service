@@ -22,6 +22,13 @@ public class ImportRequirementsFactory {
             .filter(source -> source.matchesUri(importUri))
             .anyMatch(ImportSourceConfig::requireProtectedDataPolicy);
 
-    return new ImportRequirements(requiresPrivateWorkspace, requiresProtectedDataPolicy);
+    List<String> requiredAuthDomainGroups =
+        sources.stream()
+            .filter(source -> source.matchesUri(importUri))
+            .flatMap(source -> source.requiredAuthDomainGroups().stream())
+            .toList();
+
+    return new ImportRequirements(
+        requiresPrivateWorkspace, requiresProtectedDataPolicy, requiredAuthDomainGroups);
   }
 }

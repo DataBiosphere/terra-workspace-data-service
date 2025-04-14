@@ -158,6 +158,8 @@ twds:
           - ^https:\/\/s3\.amazonaws\.com\/gen3-theanvil-io-pfb-export\/
         requirePrivateWorkspace: true
         requireProtectedDataPolicy: true
+        requiredAuthDomainGroups:
+          - "federal_data_lockdown"
 
   pg_dump:
     path: ${PGDUMP_PATH:/usr/bin/pg_dump}
