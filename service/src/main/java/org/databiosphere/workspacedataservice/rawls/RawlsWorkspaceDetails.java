@@ -15,7 +15,12 @@ public record RawlsWorkspaceDetails(
    * will return only the fields included in RawlsWorkspaceDetails.
    */
   public static final List<String> SUPPORTED_FIELDS =
-      List.of("policies", "workspace.bucketName", "workspace.workspaceType");
+      List.of(
+          "policies",
+          "workspace.bucketName",
+          "workspace.workspaceType",
+          "workspace.namespace",
+          "workspace.name");
 
   public record RawlsWorkspace(
       @JsonProperty String bucketName,
