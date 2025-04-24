@@ -154,6 +154,9 @@ twds:
           - ^https:\/\/.*gen3\.biodatacatalyst\.nhlbi\.nih\.gov\/
           - ^https:\/\/gen3-biodatacatalyst-nhlbi-nih-gov-pfb-export\.s3\.amazonaws\.com\/
           - ^https:\/\/s3\.amazonaws.com\/gen3-biodatacatalyst-nhlbi-nih-gov-pfb-export\/
+          - ^https:\/\/pic-sure-auth-prod-data-export\.s3\.amazonaws\.com\/
+          - ^https:\/\/s3\.amazonaws.com\/pic-sure-auth-prod-data-export\/
+          # anvil data is in TDR now, these are the old URLs
           - ^https:\/\/gen3-theanvil-io-pfb-export\.s3\.amazonaws\.com\/
           - ^https:\/\/s3\.amazonaws\.com\/gen3-theanvil-io-pfb-export\/
         requirePrivateWorkspace: true
