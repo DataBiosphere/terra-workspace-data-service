@@ -1,5 +1,11 @@
 name: Tag and Publish
 on:
+  push:
+    branches:
+      - main
+    paths-ignore:
+      - '*.md'
+      - 'local-dev/**'
   workflow_dispatch:
     # Inputs the workflow accepts.
     inputs:
@@ -77,12 +83,37 @@ jobs:
           config-name: release-drafter-config.yml
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+  # Get Jira ID
+  # If the workflow is triggered manually (workflow_dispatch), use the provided Jira ID from inputs.
+  # If the workflow is triggered by a push event, extract the title of the most recently merged PR into the main branch.
+    # Look for a Jira ID in the format 'CORE-###' within the PR title.
+    # If no Jira ID is found in the PR title, default to 'CORE-###'.
+    # If the event type is unsupported, the workflow will fail with an error.
+  get-jira-id:
+    runs-on: ubuntu-latest
+    needs: tag-job
+    outputs:
+      jiraId: ${{ steps.set-jira-id.outputs.jiraId }}
+    steps:
+      - name: Set Jira ID
+        id: set-jira-id
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            echo "jiraId=${{ github.event.inputs.jiraId }}" >> $GITHUB_OUTPUT
+          elif [ "${{ github.event_name }}" = "push" ]; then
+            PR_TITLE=$(gh pr list --repo ${{ github.repository }} --state merged --base main --limit 1 --json title --jq '.[0].title')
+            JIRA_ID=$(echo "$PR_TITLE" | grep -oE 'CORE-[0-9]+' | head -1 || echo 'CORE-###')
+            echo "jiraId=${JIRA_ID}" >> $GITHUB_OUTPUT
+          else
+            echo "Unsupported event: ${{ github.event_name }}" 1>&2
+            exit 1
+          fi
   # Publish new version to DSP infrastructure
   publish-app-version-job:
-    needs: [ tag-job, docker-image-job ]
+    needs: [ tag-job, get-jira-id, docker-image-job ]
     uses: ./.github/workflows/publish-app-version.yml
     with:
       new-tag: ${{ needs.tag-job.outputs.new_tag }}
-      jiraId: ${{ inputs.jiraId }}
+      jiraId: ${{ needs.get-jira-id.outputs.jiraId }}
     secrets:
       BROADBOT_TOKEN: ${{ secrets.BROADBOT_TOKEN }}
