@@ -117,7 +117,3 @@ jobs:
       jiraId: ${{ needs.get-jira-id.outputs.jiraId }}
     secrets:
       BROADBOT_TOKEN: ${{ secrets.BROADBOT_TOKEN }}
-  # Draft release notes
-  release-drafter-job:
-    needs: [ tag-job, publish-app-version-job ]
-    uses: ./.github/workflows/release-drafter.yml
