@@ -77,7 +77,6 @@ jobs:
           config-name: release-drafter-config.yml
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
   # Publish new version to DSP infrastructure
   publish-app-version-job:
     needs: [ tag-job, docker-image-job ]
