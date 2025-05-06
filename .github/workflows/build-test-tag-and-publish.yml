@@ -1,4 +1,4 @@
-name: Build and Test
+name: Build, Test, Tag and Publish
 
 on:
   pull_request:
@@ -102,16 +102,8 @@ jobs:
         with:
           event-name: ${{ github.event_name }}
 
-  tag:
-    if: always() && needs.bump-check.outputs.is-bump == 'no' && github.event_name == 'push'
-    uses: ./.github/workflows/tag.yml
+  tag-publish:
+    if: needs.bump-check.outputs.is-bump == 'no' && github.event_name == 'push' && github.ref_name == 'main'
+    uses: ./.github/workflows/tag-and-publish.yml
     needs: [ build, unit-tests, bump-check ]
     secrets: inherit
-
-  # Publish Docker image to Google Container Registry, also reports to Sherlock
-  docker-image-job:
-    if: always() && needs.bump-check.outputs.is-bump == 'no' && github.event_name == 'push'
-    needs: [ build, bump-check, tag ]
-    uses: ./.github/workflows/publish-docker.yml
-    with:
-      new-tag: ${{ needs.tag.outputs.new-tag }}
