@@ -103,14 +103,14 @@ jobs:
           event-name: ${{ github.event_name }}
 
   tag-job:
-    if: needs.bump-check.outputs.is-bump == 'no' && github.event_name == 'push'
+    if: needs.bump-check.outputs.is-bump == 'no'
     uses: ./.github/workflows/tag.yml
     needs: [ build, unit-tests, bump-check ]
     secrets: inherit
 
   # Publish Docker image to Google Container Registry, also reports to Sherlock
   docker-image-job:
-    if: needs.bump-check.outputs.is-bump == 'no' && github.event_name == 'push'
+    if: needs.bump-check.outputs.is-bump == 'no'
     needs: [ build, bump-check, tag-job ]
     uses: ./.github/workflows/publish-docker.yml
     with:
