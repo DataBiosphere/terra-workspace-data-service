@@ -6,9 +6,6 @@ on:
   push:
     paths-ignore: [ '*.md' ]
 
-env:
-  IS_MAIN_PUSH: ${{ github.event_name == 'push' && github.ref_name == 'main' }}
-
 concurrency:
   group: ${{ github.workflow }}-${{ github.head_ref || github.ref }}
   cancel-in-progress: true
@@ -106,14 +103,14 @@ jobs:
           event-name: ${{ github.event_name }}
 
   tag-job:
-    if: needs.bump-check.outputs.is-bump == 'no' && env.IS_MAIN_PUSH
+    if: needs.bump-check.outputs.is-bump == 'no' && github.event_name == 'push' && github.ref_name == 'main'
     uses: ./.github/workflows/tag.yml
     needs: [ build, unit-tests, bump-check ]
     secrets: inherit
 
   # Publish Python client to PyPI
   python-client-job:
-    if: needs.bump-check.outputs.is-bump == 'no' && env.IS_MAIN_PUSH
+    if: needs.bump-check.outputs.is-bump == 'no' && github.event_name == 'push' && github.ref_name == 'main'
     needs: [ build, bump-check, tag-job ]
     uses: ./.github/workflows/release-python-client.yml
     with:
@@ -123,7 +120,7 @@ jobs:
 
   # Publish Java client to Artifactory
   java-client-job:
-    if: needs.bump-check.outputs.is-bump == 'no' && env.IS_MAIN_PUSH
+    if: needs.bump-check.outputs.is-bump == 'no' && github.event_name == 'push' && github.ref_name == 'main'
     needs: [ build, bump-check, tag-job ]
     uses: ./.github/workflows/publish-java-client.yml
     secrets:
@@ -132,7 +129,7 @@ jobs:
 
     # Publish Docker image to Google Container Registry, also reports to Sherlock
   docker-image-job:
-    if: needs.bump-check.outputs.is-bump == 'no' && env.IS_MAIN_PUSH
+    if: needs.bump-check.outputs.is-bump == 'no' && github.event_name == 'push' && github.ref_name == 'main'
     needs: [ build, bump-check, tag-job ]
     uses: ./.github/workflows/publish-docker.yml
     with:
@@ -140,7 +137,7 @@ jobs:
 
   # Publish GitHub Release
   release-job:
-    if: needs.bump-check.outputs.is-bump == 'no' && env.IS_MAIN_PUSH
+    if: needs.bump-check.outputs.is-bump == 'no' && github.event_name == 'push' && github.ref_name == 'main'
     needs: [ build, bump-check, tag-job ]
     permissions:
       # write permission is required to create a github release
@@ -164,7 +161,7 @@ jobs:
   # Look for a Jira ID in the format 'CORE-###' within the commit message.
   # If no Jira ID is found in the PR title, default to 'CORE-###'.
   get-jira-id:
-    if: needs.bump-check.outputs.is-bump == 'no' && env.IS_MAIN_PUSH
+    if: needs.bump-check.outputs.is-bump == 'no' && github.event_name == 'push' && github.ref_name == 'main'
     needs: [ build, bump-check, tag-job ]
     runs-on: ubuntu-latest
     outputs:
@@ -178,7 +175,7 @@ jobs:
 
   # Publish new version to DSP infrastructure
   publish-app-version-job:
-    if: needs.bump-check.outputs.is-bump == 'no' && env.IS_MAIN_PUSH
+    if: needs.bump-check.outputs.is-bump == 'no' && github.event_name == 'push' && github.ref_name == 'main'
     needs: [ build, bump-check, tag-job, get-jira-id, docker-image-job ]
     uses: ./.github/workflows/publish-app-version.yml
     with:
