@@ -1,11 +1,6 @@
 name: Tag and Publish
 on:
-  push:
-    branches:
-      - main
-    paths-ignore:
-      - '*.md'
-      - 'local-dev/**'
+  workflow_call:
   workflow_dispatch:
     # Inputs the workflow accepts.
     inputs:
