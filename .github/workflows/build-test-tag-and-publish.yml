@@ -103,10 +103,18 @@ jobs:
           event-name: ${{ github.event_name }}
 
   tag-job:
-    if: needs.bump-check.outputs.is-bump == 'no' && github.event_name == 'push' && github.ref_name == 'main'
+    if: needs.bump-check.outputs.is-bump == 'no' && github.event_name == 'push'
     uses: ./.github/workflows/tag.yml
     needs: [ build, unit-tests, bump-check ]
     secrets: inherit
+
+  # Publish Docker image to Google Container Registry, also reports to Sherlock
+  docker-image-job:
+    if: needs.bump-check.outputs.is-bump == 'no' && github.event_name == 'push'
+    needs: [ build, bump-check, tag-job ]
+    uses: ./.github/workflows/publish-docker.yml
+    with:
+      new-tag: ${{ needs.tag-job.outputs.new_tag }}
 
   # Publish Python client to PyPI
   python-client-job:
@@ -126,14 +134,6 @@ jobs:
     secrets:
       ARTIFACTORY_PASSWORD: ${{ secrets.ARTIFACTORY_PASSWORD }}
       ARTIFACTORY_USERNAME: ${{ secrets.ARTIFACTORY_USERNAME }}
-
-    # Publish Docker image to Google Container Registry, also reports to Sherlock
-  docker-image-job:
-    if: needs.bump-check.outputs.is-bump == 'no' && github.event_name == 'push' && github.ref_name == 'main'
-    needs: [ build, bump-check, tag-job ]
-    uses: ./.github/workflows/publish-docker.yml
-    with:
-      new-tag: ${{ needs.tag-job.outputs.new_tag }}
 
   # Publish GitHub Release
   release-job:
