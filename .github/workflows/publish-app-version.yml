@@ -32,11 +32,11 @@ jobs:
     name: Create terra-helmfile PR for latest WDS version
     runs-on: ubuntu-latest
     steps:
-      - name: Look for AJ (Analysis Journeys) Jira ID in the manual workflow trigger message
+      - name: Look for CORE (Core Services) Jira ID in the manual workflow trigger message
         id: find-jira-id
         run: |
           set +e
-          JIRA_ID=$(echo "${{ inputs.jiraId }}" | grep -iEo -m 1 'AJ-[0-9]+' | head -1 || '')
+          JIRA_ID=$(echo "${{ inputs.jiraId }}" | grep -iEo -m 1 'CORE-[0-9]+' | head -1 || '')
           if [[ -z "$JIRA_ID" ]]; then
             echo "JIRA_ID missing, PR to terra-helmfile will not be created" 1>&2
             exit 1;
