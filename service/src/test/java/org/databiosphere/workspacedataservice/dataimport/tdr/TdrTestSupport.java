@@ -8,7 +8,7 @@ import org.databiosphere.workspacedataservice.activitylog.ActivityLogger;
 import org.databiosphere.workspacedataservice.config.DataImportProperties;
 import org.databiosphere.workspacedataservice.dao.JobDao;
 import org.databiosphere.workspacedataservice.dataimport.ImportDetailsRetriever;
-import org.databiosphere.workspacedataservice.dataimport.snapshotsupport.SnapshotSupportFactory;
+import org.databiosphere.workspacedataservice.dataimport.snapshotsupport.MultiCloudSnapshotSupportFactory;
 import org.databiosphere.workspacedataservice.metrics.ImportMetrics;
 import org.databiosphere.workspacedataservice.recordsink.RecordSinkFactory;
 import org.databiosphere.workspacedataservice.recordsource.RecordSourceFactory;
@@ -32,7 +32,7 @@ class TdrTestSupport {
   @Autowired private ObservationRegistry observationRegistry;
   @Autowired private ImportMetrics importMetrics;
   @Autowired private DataImportProperties dataImportProperties;
-  @Autowired private SnapshotSupportFactory snapshotSupportFactory;
+  @Autowired private MultiCloudSnapshotSupportFactory snapshotSupportFactory;
   @Autowired private InstantSource instantSource;
 
   /** Returns a TdrManifestQuartzJob that is capable of pulling parquet files from the classpath. */

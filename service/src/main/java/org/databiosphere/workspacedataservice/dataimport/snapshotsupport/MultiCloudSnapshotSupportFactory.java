@@ -7,7 +7,7 @@ import org.springframework.stereotype.Component;
 
 /** Factory to generate the appropriate {@link SnapshotSupport} for any given workspace. */
 @Component
-public class MultiCloudSnapshotSupportFactory implements SnapshotSupportFactory {
+public class MultiCloudSnapshotSupportFactory {
 
   private final ActivityLogger activityLogger;
   private final RawlsClient rawlsClient;
@@ -24,8 +24,7 @@ public class MultiCloudSnapshotSupportFactory implements SnapshotSupportFactory 
    * @param workspaceId the workspace in question
    * @return the appropriate {@link SnapshotSupport} for the workspace
    */
-  @Override
   public SnapshotSupport buildSnapshotSupport(WorkspaceId workspaceId) {
-    return new RawlsSnapshotSupport(workspaceId, rawlsClient, activityLogger);
+    return new SnapshotSupport(workspaceId, rawlsClient, activityLogger);
   }
 }

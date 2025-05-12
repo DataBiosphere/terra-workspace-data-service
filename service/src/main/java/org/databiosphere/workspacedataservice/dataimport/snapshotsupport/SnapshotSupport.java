@@ -12,14 +12,17 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+import org.databiosphere.workspacedataservice.activitylog.ActivityLogger;
+import org.databiosphere.workspacedataservice.rawls.RawlsClient;
 import org.databiosphere.workspacedataservice.service.model.exception.DataImportException;
 import org.databiosphere.workspacedataservice.service.model.exception.RestException;
 import org.databiosphere.workspacedataservice.shared.model.RecordType;
+import org.databiosphere.workspacedataservice.shared.model.WorkspaceId;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.lang.Nullable;
 
-public abstract class SnapshotSupport {
+public class SnapshotSupport {
 
   /**
    * indicates the purpose of a snapshot reference - e.g. is it created for the sole purpose of
@@ -31,6 +34,17 @@ public abstract class SnapshotSupport {
   private static final String DEFAULT_PRIMARY_KEY = "datarepo_row_id";
 
   private static final Logger LOGGER = LoggerFactory.getLogger(SnapshotSupport.class);
+
+  private final WorkspaceId workspaceId;
+  private final RawlsClient rawlsClient;
+  private final ActivityLogger activityLogger;
+
+  public SnapshotSupport(
+      WorkspaceId workspaceId, RawlsClient rawlsClient, ActivityLogger activityLogger) {
+    this.workspaceId = workspaceId;
+    this.rawlsClient = rawlsClient;
+    this.activityLogger = activityLogger;
+  }
 
   @VisibleForTesting
   String getDefaultPrimaryKey() {
@@ -78,11 +92,18 @@ public abstract class SnapshotSupport {
    * @param snapshotIds the list of snapshot ids to create or verify references.
    */
   public SnapshotLinkResult linkSnapshots(Set<UUID> snapshotIds) {
-
+    // TODO can i change this to accept a list
     // only call Rawls if we found snapshots
     if (!snapshotIds.isEmpty()) {
       try {
-        linkSnapshots(snapshotIds.stream().toList());
+        //        linkSnapshots(snapshotIds.stream().toList());
+        rawlsClient.createSnapshotReferences(workspaceId.id(), snapshotIds.stream().toList());
+        activityLogger.saveEventForCurrentUser(
+            user ->
+                user.linked()
+                    .snapshotReference()
+                    .withIds(snapshotIds.stream().map(UUID::toString).toArray(String[]::new)));
+
       } catch (RestException re) {
         throw new DataImportException("Error processing data import: " + re.getMessage(), re);
       }
@@ -92,12 +113,17 @@ public abstract class SnapshotSupport {
     return new SnapshotLinkResult(snapshotIds.size(), snapshotIds.size());
   }
 
-  /**
-   * Given a list of snapshotIds, create a reference to each of them from the current workspace.
-   *
-   * @param snapshotIds ids of the snapshots to reference
+  /*
+    @Override
+  protected void linkSnapshots(List<UUID> snapshotIds) {
+    rawlsClient.createSnapshotReferences(workspaceId.id(), snapshotIds);
+    activityLogger.saveEventForCurrentUser(
+        user ->
+            user.linked()
+                .snapshotReference()
+                .withIds(snapshotIds.stream().map(UUID::toString).toArray(String[]::new)));
+  }
    */
-  protected abstract void linkSnapshots(List<UUID> snapshotIds);
 
   /**
    * Given a list of TDR tables, find the primary keys for those tables.

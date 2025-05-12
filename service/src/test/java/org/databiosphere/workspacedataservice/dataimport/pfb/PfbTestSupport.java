@@ -9,7 +9,7 @@ import org.databiosphere.workspacedataservice.activitylog.ActivityLogger;
 import org.databiosphere.workspacedataservice.config.DataImportProperties;
 import org.databiosphere.workspacedataservice.dao.JobDao;
 import org.databiosphere.workspacedataservice.dataimport.ImportDetailsRetriever;
-import org.databiosphere.workspacedataservice.dataimport.snapshotsupport.SnapshotSupportFactory;
+import org.databiosphere.workspacedataservice.dataimport.snapshotsupport.MultiCloudSnapshotSupportFactory;
 import org.databiosphere.workspacedataservice.generated.GenericJobServerModel;
 import org.databiosphere.workspacedataservice.generated.ImportRequestServerModel;
 import org.databiosphere.workspacedataservice.generated.ImportRequestServerModel.TypeEnum;
@@ -37,7 +37,7 @@ class PfbTestSupport {
   @Autowired private ObservationRegistry observationRegistry;
   @Autowired private ImportMetrics importMetrics;
   @Autowired private ImportService importService;
-  @Autowired private SnapshotSupportFactory snapshotSupportFactory;
+  @Autowired private MultiCloudSnapshotSupportFactory snapshotSupportFactory;
   @Autowired private DataImportProperties dataImportProperties;
   @Autowired private ImportDetailsRetriever importDetailsRetriever;
   @Autowired private DrsService drsService;

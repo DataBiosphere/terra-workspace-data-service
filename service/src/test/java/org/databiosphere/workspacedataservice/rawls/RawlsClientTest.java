@@ -33,7 +33,6 @@ class RawlsClientTest extends ControlPlaneTestBase {
     reset(mockRawlsApi);
   }
 
-  @Captor ArgumentCaptor<NamedDataRepoSnapshot> namedDataRepoSnapshotCaptor;
   @Captor ArgumentCaptor<List<UUID>> uuidListCaptor;
 
   @Test
