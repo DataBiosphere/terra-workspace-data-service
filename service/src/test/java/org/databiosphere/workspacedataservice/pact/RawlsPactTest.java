@@ -13,7 +13,7 @@ import static org.mockito.Mockito.when;
 
 import au.com.dius.pact.consumer.MockServer;
 import au.com.dius.pact.consumer.dsl.DslPart;
-import au.com.dius.pact.consumer.dsl.PactDslJsonBody;
+import au.com.dius.pact.consumer.dsl.PactDslJsonArray;
 import au.com.dius.pact.consumer.dsl.PactDslWithProvider;
 import au.com.dius.pact.consumer.junit5.PactConsumerTestExt;
 import au.com.dius.pact.consumer.junit5.PactTestFor;
@@ -124,15 +124,7 @@ class RawlsPactTest {
   @Pact(consumer = "cwds", provider = "rawls")
   RequestResponsePact createSnapshotPact(PactDslWithProvider builder) {
 
-    var snapshotRequest =
-        new PactDslJsonBody()
-            .stringValue("snapshotId", RESOURCE_UUID)
-            .stringType("name")
-            .stringType("description")
-            .stringValue("cloningInstructions", REFERENCE.toString())
-            .object("properties")
-            .stringValue(SnapshotSupport.PROP_PURPOSE, SnapshotSupport.PURPOSE_POLICY)
-            .closeObject();
+    var snapshotRequest = new PactDslJsonArray().stringValue(RESOURCE_UUID);
     return builder
         .given(
             "a workspace with the given {workspaceId} exists",
@@ -140,11 +132,11 @@ class RawlsPactTest {
         .given("policies allowing snapshot reference creation")
         .uponReceiving("a request to create a snapshot reference")
         .pathFromProviderState(
-            "/api/workspaces/${workspaceId}/snapshots/v2",
-            String.format("/api/workspaces/%s/snapshots/v2", WORKSPACE_UUID))
+            "/api/workspaces/${workspaceId}/snapshots/v3",
+            String.format("/api/workspaces/%s/snapshots/v3", WORKSPACE_UUID))
         .method("POST")
         .headers(contentTypeJson())
-        .body(getSnapshotRequestBody())
+        .body(snapshotRequest)
         .willRespondWith()
         .status(HttpStatus.CREATED.value())
         .headers(contentTypeJson())

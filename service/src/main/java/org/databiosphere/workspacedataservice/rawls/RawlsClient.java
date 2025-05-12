@@ -47,12 +47,24 @@ public class RawlsClient {
     }
   }
 
-  public void createSnapshotReference(UUID workspaceId, UUID snapshotId) {
+  public void createSnapshotReferenceV2(UUID workspaceId, UUID snapshotId) {
     try {
       NamedDataRepoSnapshot namedDataRepoSnapshot = NamedDataRepoSnapshot.forSnapshotId(snapshotId);
 
       RestCall<DataRepoSnapshotResource> restCall =
           () -> rawlsApi.createDataRepoSnapshotByWorkspaceId(workspaceId, namedDataRepoSnapshot);
+
+      // note we do not return the DataRepoSnapshotResource from this method
+      restClientRetry.withRetryAndErrorHandling(restCall, "Rawls.createSnapshotReference");
+    } catch (RestClientResponseException restException) {
+      throw new RawlsException(restException);
+    }
+  }
+
+  public void createSnapshotReference(UUID workspaceId, UUID snapshotId) {
+    try {
+      RestCall<DataRepoSnapshotResource> restCall =
+          () -> rawlsApi.createSnapshotsByWorkspaceIdV3(workspaceId, List.of(snapshotId));
 
       // note we do not return the DataRepoSnapshotResource from this method
       restClientRetry.withRetryAndErrorHandling(restCall, "Rawls.createSnapshotReference");

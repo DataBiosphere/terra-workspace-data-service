@@ -1,6 +1,5 @@
 package org.databiosphere.workspacedataservice.rawls;
 
-import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
@@ -8,10 +7,9 @@ import static org.mockito.Mockito.reset;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import bio.terra.workspace.model.CloningInstructionsEnum;
+import java.util.List;
 import java.util.UUID;
 import org.databiosphere.workspacedataservice.common.ControlPlaneTestBase;
-import org.databiosphere.workspacedataservice.dataimport.snapshotsupport.SnapshotSupport;
 import org.databiosphere.workspacedataservice.shared.model.WorkspaceId;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -36,6 +34,7 @@ class RawlsClientTest extends ControlPlaneTestBase {
   }
 
   @Captor ArgumentCaptor<NamedDataRepoSnapshot> namedDataRepoSnapshotCaptor;
+  @Captor ArgumentCaptor<List<UUID>> uuidListCaptor;
 
   @Test
   void linkSnapshot() {
@@ -43,7 +42,7 @@ class RawlsClientTest extends ControlPlaneTestBase {
     WorkspaceId workspaceId = WorkspaceId.of(UUID.randomUUID());
     UUID snapshotId = UUID.randomUUID();
 
-    when(mockRawlsApi.createDataRepoSnapshotByWorkspaceId(eq(workspaceId.id()), any()))
+    when(mockRawlsApi.createSnapshotsByWorkspaceIdV3(eq(workspaceId.id()), any()))
         .thenAnswer((Answer<?>) invocation -> null);
 
     // ACT
@@ -51,13 +50,8 @@ class RawlsClientTest extends ControlPlaneTestBase {
 
     // ASSERT
     verify(mockRawlsApi)
-        .createDataRepoSnapshotByWorkspaceId(
-            eq(workspaceId.id()), namedDataRepoSnapshotCaptor.capture());
-    NamedDataRepoSnapshot snapshotReference = namedDataRepoSnapshotCaptor.getValue();
-    assertEquals(snapshotId, snapshotReference.snapshotId());
-    assertEquals("%s-policy".formatted(snapshotId), snapshotReference.name());
-    assertEquals(CloningInstructionsEnum.REFERENCE, snapshotReference.cloningInstructions());
-    assertThat(snapshotReference.properties())
-        .containsEntry(SnapshotSupport.PROP_PURPOSE, SnapshotSupport.PURPOSE_POLICY);
+        .createSnapshotsByWorkspaceIdV3(eq(workspaceId.id()), uuidListCaptor.capture());
+    List<UUID> capturedSnapshotId = uuidListCaptor.getValue();
+    assertEquals(snapshotId, capturedSnapshotId.get(0));
   }
 }

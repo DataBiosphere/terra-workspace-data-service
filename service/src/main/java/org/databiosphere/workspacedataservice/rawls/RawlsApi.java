@@ -42,6 +42,17 @@ public interface RawlsApi {
    * Create a new snapshot reference in a workspace
    *
    * @param workspaceId target workspace
+   * @param snapshotIds ids of the snapshots to reference
+   * @return the created snapshot reference
+   */
+  @PostExchange("/api/workspaces/{workspaceId}/snapshots/v3")
+  DataRepoSnapshotResource createSnapshotsByWorkspaceIdV3(
+      @PathVariable UUID workspaceId, @RequestBody List<UUID> snapshotIds);
+
+  /**
+   * Create a new snapshot reference in a workspace
+   *
+   * @param workspaceId target workspace
    * @param namedDataRepoSnapshot the snapshot reference to create
    * @return the created snapshot reference
    */

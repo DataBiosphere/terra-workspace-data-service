@@ -15,7 +15,6 @@ import org.databiosphere.workspacedataservice.common.ControlPlaneTestBase;
 import org.databiosphere.workspacedataservice.shared.model.WorkspaceId;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.mockito.ArgumentMatcher;
 import org.mockito.stubbing.Answer;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -88,12 +87,10 @@ class RawlsClientRetryTest extends ControlPlaneTestBase {
     WorkspaceId workspaceId = WorkspaceId.of(UUID.randomUUID());
     UUID snapshotId = UUID.randomUUID();
 
-    // argument matcher for the post payload
-    var payloadMatcher = new NamedDataRepoSnapshotHttpEntityMatcher(snapshotId);
-
     // RestTemplate will throw 502 on the first and second attempts, but succeed on the third
-    when(mockRawlsApi.createDataRepoSnapshotByWorkspaceId(
-            eq(workspaceId.id()), argThat(payloadMatcher)))
+    when(mockRawlsApi.createSnapshotsByWorkspaceIdV3(
+            eq(workspaceId.id()),
+            argThat(argument -> argument != null && argument.contains(snapshotId))))
         .thenThrow(badGateway)
         .thenThrow(badGateway)
         .thenAnswer((Answer<?>) invocation -> null);
@@ -105,25 +102,8 @@ class RawlsClientRetryTest extends ControlPlaneTestBase {
     // ASSERT
     // verify it retried three times, until it got the success
     verify(mockRawlsApi, times(3))
-        .createDataRepoSnapshotByWorkspaceId(eq(workspaceId.id()), argThat(payloadMatcher));
-  }
-
-  // custom ArgumentMatcher - does a given NamedDataRepoSnapshot
-  // contain the supplied snapshotId?
-  // we need this because RawlsClient.createSnapshotReference adds a timestamp to each
-  // reference it creates, and those are hard to predict
-  static class NamedDataRepoSnapshotHttpEntityMatcher
-      implements ArgumentMatcher<NamedDataRepoSnapshot> {
-    private final UUID snapshotId;
-
-    NamedDataRepoSnapshotHttpEntityMatcher(UUID snapshotId) {
-      this.snapshotId = snapshotId;
-    }
-
-    @Override
-    public boolean matches(NamedDataRepoSnapshot argument) {
-
-      return snapshotId.equals(argument.snapshotId());
-    }
+        .createSnapshotsByWorkspaceIdV3(
+            eq(workspaceId.id()),
+            argThat(argument -> argument != null && argument.contains(snapshotId)));
   }
 }
