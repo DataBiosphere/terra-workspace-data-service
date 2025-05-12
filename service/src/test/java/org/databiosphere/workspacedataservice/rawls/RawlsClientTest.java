@@ -46,7 +46,7 @@ class RawlsClientTest extends ControlPlaneTestBase {
         .thenAnswer((Answer<?>) invocation -> null);
 
     // ACT
-    rawlsClient.createSnapshotReference(workspaceId.id(), snapshotId);
+    rawlsClient.createSnapshotReferences(workspaceId.id(), List.of(snapshotId));
 
     // ASSERT
     verify(mockRawlsApi)

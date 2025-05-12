@@ -4,10 +4,8 @@ import static bio.terra.workspace.model.CloningInstructionsEnum.REFERENCE;
 import static org.databiosphere.workspacedataservice.TestTags.SLOW;
 import static org.databiosphere.workspacedataservice.dataimport.pfb.PfbTestUtils.stubJobContext;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -24,7 +22,6 @@ import java.io.IOException;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Random;
 import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -33,7 +30,6 @@ import org.databiosphere.workspacedataservice.common.ControlPlaneTestBase;
 import org.databiosphere.workspacedataservice.dao.JobDao;
 import org.databiosphere.workspacedataservice.dataimport.snapshotsupport.SnapshotSupport;
 import org.databiosphere.workspacedataservice.rawls.RawlsClient;
-import org.databiosphere.workspacedataservice.rawls.SnapshotListResponse;
 import org.databiosphere.workspacedataservice.service.BatchWriteService;
 import org.databiosphere.workspacedataservice.service.CollectionService;
 import org.databiosphere.workspacedataservice.service.model.BatchWriteResult;
@@ -56,8 +52,8 @@ import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
 /**
- * This test explicitly asserts on and mock calls to Rawls as part of PFB import; it is explicitly a
- * test of control-plane behavior.
+ * This test explicitly asserts on and mocks calls to Rawls as part of PFB import; it is explicitly
+ * a test of control-plane behavior.
  */
 @DirtiesContext
 @SpringBootTest
@@ -89,81 +85,20 @@ class PfbQuartzJobTest extends ControlPlaneTestBase {
     // input is a list of 10 UUIDs
     Set<UUID> input =
         IntStream.range(0, 10).mapToObj(i -> UUID.randomUUID()).collect(Collectors.toSet());
-    // Rawls returns no pre-existing snapshots
-    when(rawlsClient.enumerateDataRepoSnapshotReferences(any(), anyInt(), anyInt()))
-        .thenReturn(new SnapshotListResponse(List.of()));
 
     // call linkSnapshots
     WorkspaceId workspaceId = WorkspaceId.of(UUID.randomUUID());
     PfbQuartzJob pfbQuartzJob = testSupport.buildPfbQuartzJob();
     pfbQuartzJob.linkSnapshots(input, workspaceId);
     // capture calls
-    ArgumentCaptor<UUID> argumentCaptor = ArgumentCaptor.forClass(UUID.class);
-    // should have called Rawls's create-snapshot-reference 10 times
-    verify(rawlsClient, times(input.size()))
-        .createSnapshotReference(eq(workspaceId.id()), argumentCaptor.capture());
+    ArgumentCaptor<List<UUID>> argumentCaptor = ArgumentCaptor.forClass(List.class);
+    // should have called Rawls's create-snapshot-reference
+    verify(rawlsClient, times(1))
+        .createSnapshotReferences(eq(workspaceId.id()), argumentCaptor.capture());
     // those 10 calls should have used our 10 input UUIDs
-    List<UUID> actualSnapshotIds = argumentCaptor.getAllValues();
+    List<UUID> actualSnapshotIds = argumentCaptor.getValue();
     Set<UUID> actualUuids = new HashSet<>(actualSnapshotIds);
     assertEquals(input, actualUuids);
-  }
-
-  @Test
-  void linkNothingWhenAllExist() {
-    // input is a list of 10 UUIDs
-    Set<UUID> input =
-        IntStream.range(0, 10).mapToObj(i -> UUID.randomUUID()).collect(Collectors.toSet());
-
-    // Rawls returns all of those UUIDs as pre-existing snapshots
-    List<DataRepoSnapshotResource> snapshotResources = generateSnapshotResources(input);
-    when(rawlsClient.enumerateDataRepoSnapshotReferences(any(), anyInt(), anyInt()))
-        .thenReturn(new SnapshotListResponse(snapshotResources));
-
-    // call linkSnapshots
-    WorkspaceId workspaceId = WorkspaceId.of(UUID.randomUUID());
-    PfbQuartzJob pfbQuartzJob = testSupport.buildPfbQuartzJob();
-    pfbQuartzJob.linkSnapshots(input, workspaceId);
-    // should not call Rawls's create-snapshot-reference at all
-    verify(rawlsClient, times(0)).createSnapshotReference(eq(workspaceId.id()), any());
-  }
-
-  @Test
-  void linkSomeWhenSomeExist() {
-    // input is a list of 10 UUIDs
-    Set<UUID> input =
-        IntStream.range(0, 10).mapToObj(i -> UUID.randomUUID()).collect(Collectors.toSet());
-
-    // Rawls returns some of those UUIDs as pre-existing snapshots
-    Random random = new Random();
-    // note that the random in here can select the same UUID twice from the input, thus
-    // we need the distinct()
-    List<UUID> preExisting =
-        IntStream.range(0, 5)
-            .mapToObj(i -> input.stream().toList().get(random.nextInt(input.size())))
-            .distinct()
-            .toList();
-    List<DataRepoSnapshotResource> snapshotResources = generateSnapshotResources(preExisting);
-
-    when(rawlsClient.enumerateDataRepoSnapshotReferences(any(), anyInt(), anyInt()))
-        .thenReturn(new SnapshotListResponse(snapshotResources));
-
-    // call linkSnapshots
-    WorkspaceId workspaceId = WorkspaceId.of(UUID.randomUUID());
-    PfbQuartzJob pfbQuartzJob = testSupport.buildPfbQuartzJob();
-    pfbQuartzJob.linkSnapshots(input, workspaceId);
-
-    // should call Rawls's create-snapshot-reference only for the references that didn't already
-    // exist
-    int expectedCallCount = input.size() - snapshotResources.size();
-    ArgumentCaptor<UUID> argumentCaptor = ArgumentCaptor.forClass(UUID.class);
-    verify(rawlsClient, times(expectedCallCount))
-        .createSnapshotReference(eq(workspaceId.id()), argumentCaptor.capture());
-    List<UUID> actual = argumentCaptor.getAllValues().stream().toList();
-    actual.forEach(
-        id ->
-            assertFalse(
-                preExisting.contains(id),
-                "should not have created reference to pre-existing snapshot"));
   }
 
   @Test
@@ -176,9 +111,6 @@ class PfbQuartzJobTest extends ControlPlaneTestBase {
 
     when(collectionService.getWorkspaceId(collectionId)).thenReturn(workspaceId);
 
-    // Rawls should report no snapshots already linked to this workspace
-    when(rawlsClient.enumerateDataRepoSnapshotReferences(any(), anyInt(), anyInt()))
-        .thenReturn(new SnapshotListResponse(List.of()));
     // We're not testing this, so it doesn't matter what returns
     when(batchWriteService.batchWrite(any(), any(), any(), any()))
         .thenReturn(BatchWriteResult.empty());
@@ -186,7 +118,7 @@ class PfbQuartzJobTest extends ControlPlaneTestBase {
     testSupport.buildPfbQuartzJob().execute(mockContext);
 
     // Should not call Rawls client
-    verify(rawlsClient, times(0)).createSnapshotReference(eq(workspaceId.id()), any());
+    verify(rawlsClient, times(0)).createSnapshotReferences(eq(workspaceId.id()), any());
     // Job should be running (can't test succeeded because that needs a message back from Rawls)
     verify(jobDao).running(jobId);
   }
@@ -199,8 +131,8 @@ class PfbQuartzJobTest extends ControlPlaneTestBase {
     JobExecutionContext mockContext = stubJobContext(jobId, testAvroResource, collectionId.id());
 
     // Rawls should report no snapshots already linked to this workspace
-    when(rawlsClient.enumerateDataRepoSnapshotReferences(any(), anyInt(), anyInt()))
-        .thenReturn(new SnapshotListResponse(List.of()));
+    //    when(rawlsClient.enumerateDataRepoSnapshotReferences(any(), anyInt(), anyInt()))
+    //        .thenReturn(new SnapshotListResponse(List.of()));
     // We're not testing this, so it doesn't matter what returns
     when(batchWriteService.batchWrite(any(), any(), any(), any()))
         .thenReturn(BatchWriteResult.empty());
@@ -212,13 +144,12 @@ class PfbQuartzJobTest extends ControlPlaneTestBase {
     testSupport.buildPfbQuartzJob().execute(mockContext);
 
     // verify that snapshot operations use the appropriate workspaceId
-    verify(rawlsClient, times(1))
-        .enumerateDataRepoSnapshotReferences(eq(expectedWorkspaceId.id()), anyInt(), anyInt());
     // The "790795c4..." UUID below is the snapshotId found in the "test.avro" resource used
     // by this unit test
     verify(rawlsClient)
-        .createSnapshotReference(
-            expectedWorkspaceId.id(), UUID.fromString("790795c4-49b1-4ac8-a060-207b92ea08c5"));
+        .createSnapshotReferences(
+            expectedWorkspaceId.id(),
+            List.of(UUID.fromString("790795c4-49b1-4ac8-a060-207b92ea08c5")));
 
     // Job should be running (can't test succeeded because that needs a message back from Rawls)
     verify(jobDao).running(jobId);
@@ -233,9 +164,6 @@ class PfbQuartzJobTest extends ControlPlaneTestBase {
 
     when(collectionService.getWorkspaceId(collectionId)).thenReturn(workspaceId);
 
-    // Rawls should report no snapshots already linked to this workspace
-    when(rawlsClient.enumerateDataRepoSnapshotReferences(any(), anyInt(), anyInt()))
-        .thenReturn(new SnapshotListResponse(List.of()));
     // We're not testing this, so it doesn't matter what returns
     when(batchWriteService.batchWrite(any(), any(), any(), any()))
         .thenReturn(BatchWriteResult.empty());
@@ -245,8 +173,8 @@ class PfbQuartzJobTest extends ControlPlaneTestBase {
     // The "790795c4..." UUID below is the snapshotId found in the "test.avro" resource used
     // by this unit test
     verify(rawlsClient)
-        .createSnapshotReference(
-            workspaceId.id(), UUID.fromString("790795c4-49b1-4ac8-a060-207b92ea08c5"));
+        .createSnapshotReferences(
+            workspaceId.id(), List.of(UUID.fromString("790795c4-49b1-4ac8-a060-207b92ea08c5")));
     // Job should be running (can't test succeeded because that needs a message back from Rawls)
     verify(jobDao).running(jobId);
   }
@@ -281,9 +209,6 @@ class PfbQuartzJobTest extends ControlPlaneTestBase {
 
     when(collectionService.getWorkspaceId(collectionId)).thenReturn(workspaceId);
 
-    // Rawls should report no snapshots already linked to this workspace
-    when(rawlsClient.enumerateDataRepoSnapshotReferences(any(), anyInt(), anyInt()))
-        .thenReturn(new SnapshotListResponse(List.of()));
     // BatchWriteService returns a BatchWriteResult of 1234 upserts
     BatchWriteResult result = BatchWriteResult.empty();
     result.increaseCount(RecordType.valueOf("fooType"), 1234);

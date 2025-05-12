@@ -16,7 +16,7 @@ import static org.databiosphere.workspacedataservice.recordsink.RawlsModel.Op.RE
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyInt;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -47,7 +47,6 @@ import org.databiosphere.workspacedataservice.common.ControlPlaneTestBase;
 import org.databiosphere.workspacedataservice.dataimport.ImportValidator;
 import org.databiosphere.workspacedataservice.pubsub.PubSub;
 import org.databiosphere.workspacedataservice.rawls.RawlsClient;
-import org.databiosphere.workspacedataservice.rawls.SnapshotListResponse;
 import org.databiosphere.workspacedataservice.recordsink.RawlsModel.AddListMember;
 import org.databiosphere.workspacedataservice.recordsink.RawlsModel.AddUpdateAttribute;
 import org.databiosphere.workspacedataservice.recordsink.RawlsModel.AttributeValue;
@@ -144,10 +143,6 @@ class PfbQuartzJobControlPlaneE2ETest extends ControlPlaneTestBase {
     // mock out the DataTableTypeInspector to show that this workspace is Rawls-powered.
     when(dataTableTypeInspector.getWorkspaceDataTableType(WorkspaceId.of(collectionId)))
         .thenReturn(WorkspaceDataTableType.RAWLS);
-
-    // stub out rawls to report no snapshots already linked to this workspace
-    when(rawlsClient.enumerateDataRepoSnapshotReferences(any(), anyInt(), anyInt()))
-        .thenReturn(new SnapshotListResponse(Collections.emptyList()));
 
     // stub out WorkspaceService to say this is an EntityService workspace
     when(workspaceService.getDataTableType(WorkspaceId.of(collectionId)))
@@ -435,8 +430,10 @@ class PfbQuartzJobControlPlaneE2ETest extends ControlPlaneTestBase {
             .put("outcome", "ERROR")
             .put("error", "RuntimeException")
             .build();
-    when(rawlsClient.enumerateDataRepoSnapshotReferences(any(), anyInt(), anyInt()))
-        .thenThrow(new RuntimeException("Fake exception for unit test"));
+    doThrow(new RuntimeException("Fake exception for unit test"))
+        .when(rawlsClient)
+        .createSnapshotReferences(any(), any());
+
     testSupport.executePfbImportQuartzJob(collectionId, minimalDataPfb);
 
     // Assert

@@ -1,6 +1,5 @@
 package org.databiosphere.workspacedataservice.rawls;
 
-import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.reset;
@@ -56,32 +55,6 @@ class RawlsClientRetryTest extends ControlPlaneTestBase {
           null);
 
   @Test
-  void enumerateDoesRetry() {
-    // ARRANGE
-    WorkspaceId workspaceId = WorkspaceId.of(UUID.randomUUID());
-
-    // define the successful REST response payload
-    SnapshotListResponse successResponse = new SnapshotListResponse(List.of());
-
-    // RestTemplate will throw 502 on the first and second attempts, but succeed on the third
-    when(mockRawlsApi.enumerateDataRepoSnapshotByWorkspaceId(workspaceId.id(), 0, 5))
-        .thenThrow(badGateway)
-        .thenThrow(badGateway)
-        .thenReturn(successResponse);
-
-    // ACT
-    // execute the method under test
-    SnapshotListResponse snapshotListResponse =
-        rawlsClient.enumerateDataRepoSnapshotReferences(workspaceId.id(), 0, 5);
-
-    // ASSERT
-    // verify it retried three times, until it got the success
-    verify(mockRawlsApi, times(3)).enumerateDataRepoSnapshotByWorkspaceId(workspaceId.id(), 0, 5);
-
-    assertThat(snapshotListResponse.gcpDataRepoSnapshots()).isEmpty();
-  }
-
-  @Test
   void linkDoesRetry() {
     // ARRANGE
     WorkspaceId workspaceId = WorkspaceId.of(UUID.randomUUID());
@@ -97,7 +70,7 @@ class RawlsClientRetryTest extends ControlPlaneTestBase {
 
     // ACT
     // execute the method under test
-    rawlsClient.createSnapshotReference(workspaceId.id(), snapshotId);
+    rawlsClient.createSnapshotReferences(workspaceId.id(), List.of(snapshotId));
 
     // ASSERT
     // verify it retried three times, until it got the success

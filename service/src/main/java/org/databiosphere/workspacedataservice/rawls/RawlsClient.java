@@ -34,37 +34,10 @@ public class RawlsClient {
     }
   }
 
-  public SnapshotListResponse enumerateDataRepoSnapshotReferences(
-      UUID workspaceId, int offset, int limit) {
-    try {
-      RestCall<SnapshotListResponse> restCall =
-          () -> rawlsApi.enumerateDataRepoSnapshotByWorkspaceId(workspaceId, offset, limit);
-
-      return restClientRetry.withRetryAndErrorHandling(
-          restCall, "Rawls.enumerateDataRepoSnapshotReferences");
-    } catch (RestClientResponseException restException) {
-      throw new RawlsException(restException);
-    }
-  }
-
-  public void createSnapshotReferenceV2(UUID workspaceId, UUID snapshotId) {
-    try {
-      NamedDataRepoSnapshot namedDataRepoSnapshot = NamedDataRepoSnapshot.forSnapshotId(snapshotId);
-
-      RestCall<DataRepoSnapshotResource> restCall =
-          () -> rawlsApi.createDataRepoSnapshotByWorkspaceId(workspaceId, namedDataRepoSnapshot);
-
-      // note we do not return the DataRepoSnapshotResource from this method
-      restClientRetry.withRetryAndErrorHandling(restCall, "Rawls.createSnapshotReference");
-    } catch (RestClientResponseException restException) {
-      throw new RawlsException(restException);
-    }
-  }
-
-  public void createSnapshotReference(UUID workspaceId, UUID snapshotId) {
+  public void createSnapshotReferences(UUID workspaceId, List<UUID> snapshotIds) {
     try {
       RestCall<DataRepoSnapshotResource> restCall =
-          () -> rawlsApi.createSnapshotsByWorkspaceIdV3(workspaceId, List.of(snapshotId));
+          () -> rawlsApi.createSnapshotsByWorkspaceIdV3(workspaceId, snapshotIds);
 
       // note we do not return the DataRepoSnapshotResource from this method
       restClientRetry.withRetryAndErrorHandling(restCall, "Rawls.createSnapshotReference");
