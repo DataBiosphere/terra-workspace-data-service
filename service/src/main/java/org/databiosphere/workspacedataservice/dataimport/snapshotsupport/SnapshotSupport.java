@@ -92,11 +92,9 @@ public class SnapshotSupport {
    * @param snapshotIds the list of snapshot ids to create or verify references.
    */
   public SnapshotLinkResult linkSnapshots(Set<UUID> snapshotIds) {
-    // TODO can i change this to accept a list
     // only call Rawls if we found snapshots
     if (!snapshotIds.isEmpty()) {
       try {
-        //        linkSnapshots(snapshotIds.stream().toList());
         rawlsClient.createSnapshotReferences(workspaceId.id(), snapshotIds.stream().toList());
         activityLogger.saveEventForCurrentUser(
             user ->
@@ -112,18 +110,6 @@ public class SnapshotSupport {
     // TODO do we need to figure out how many succeeded vs failed?
     return new SnapshotLinkResult(snapshotIds.size(), snapshotIds.size());
   }
-
-  /*
-    @Override
-  protected void linkSnapshots(List<UUID> snapshotIds) {
-    rawlsClient.createSnapshotReferences(workspaceId.id(), snapshotIds);
-    activityLogger.saveEventForCurrentUser(
-        user ->
-            user.linked()
-                .snapshotReference()
-                .withIds(snapshotIds.stream().map(UUID::toString).toArray(String[]::new)));
-  }
-   */
 
   /**
    * Given a list of TDR tables, find the primary keys for those tables.

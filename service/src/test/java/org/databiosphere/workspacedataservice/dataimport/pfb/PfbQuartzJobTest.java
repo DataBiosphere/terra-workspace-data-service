@@ -130,9 +130,6 @@ class PfbQuartzJobTest extends ControlPlaneTestBase {
     CollectionId collectionId = CollectionId.of(UUID.randomUUID());
     JobExecutionContext mockContext = stubJobContext(jobId, testAvroResource, collectionId.id());
 
-    // Rawls should report no snapshots already linked to this workspace
-    //    when(rawlsClient.enumerateDataRepoSnapshotReferences(any(), anyInt(), anyInt()))
-    //        .thenReturn(new SnapshotListResponse(List.of()));
     // We're not testing this, so it doesn't matter what returns
     when(batchWriteService.batchWrite(any(), any(), any(), any()))
         .thenReturn(BatchWriteResult.empty());

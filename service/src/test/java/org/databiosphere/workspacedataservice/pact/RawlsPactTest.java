@@ -1,6 +1,5 @@
 package org.databiosphere.workspacedataservice.pact;
 
-import static au.com.dius.pact.consumer.dsl.LambdaDsl.newJsonBody;
 import static bio.terra.workspace.model.CloningInstructionsEnum.*;
 import static org.databiosphere.workspacedataservice.TestTags.PACT_TEST;
 import static org.databiosphere.workspacedataservice.pact.TestHeaderSupport.*;
@@ -62,7 +61,7 @@ class RawlsPactTest {
         .willRespondWith()
         .status(HttpStatus.CREATED.value())
         .headers(contentTypeJson())
-        .body(newJsonBody(body -> {}).build())
+        //        .body(newJsonBody(body -> {}).build())
         .toPact();
   }
 
