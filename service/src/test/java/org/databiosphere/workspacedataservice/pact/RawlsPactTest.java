@@ -58,9 +58,7 @@ class RawlsPactTest {
         .headers(contentTypeJson())
         .body(snapshotRequest)
         .willRespondWith()
-        .status(HttpStatus.CREATED.value())
-        .headers(contentTypeJson())
-        //        .body(newJsonBody(body -> {}).build())
+        .status(HttpStatus.NO_CONTENT.value())
         .toPact();
   }
 

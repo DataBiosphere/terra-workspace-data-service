@@ -91,7 +91,7 @@ public class SnapshotSupport {
    *
    * @param snapshotIds the list of snapshot ids to create or verify references.
    */
-  public SnapshotLinkResult linkSnapshots(Set<UUID> snapshotIds) {
+  public boolean linkSnapshots(Set<UUID> snapshotIds) {
     // only call Rawls if we found snapshots
     if (!snapshotIds.isEmpty()) {
       try {
@@ -107,8 +107,7 @@ public class SnapshotSupport {
       }
     }
 
-    // TODO do we need to figure out how many succeeded vs failed?
-    return new SnapshotLinkResult(snapshotIds.size(), snapshotIds.size());
+    return true;
   }
 
   /**

@@ -2,6 +2,7 @@ package org.databiosphere.workspacedataservice.dataimport.snapshotsupport;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
@@ -179,8 +180,8 @@ class SnapshotSupportTest extends ControlPlaneTestBase {
   @Test
   void linkSnapshots() {
     Set<UUID> snapshotIds = Set.of(UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID());
-    SnapshotLinkResult result = snapshotSupport.linkSnapshots(snapshotIds);
-    assertEquals(3, result.numSnapshotsLinked());
+    boolean result = snapshotSupport.linkSnapshots(snapshotIds);
+    assertTrue(result);
     verify(rawlsClient)
         .createSnapshotReferences(eq(workspaceId.id()), eq(snapshotIds.stream().toList()));
   }
@@ -188,8 +189,8 @@ class SnapshotSupportTest extends ControlPlaneTestBase {
   @Test
   void doNotLinkEmptySnapshots() {
     Set<UUID> snapshotIds = Set.of();
-    SnapshotLinkResult result = snapshotSupport.linkSnapshots(snapshotIds);
-    assertEquals(0, result.numSnapshotsLinked());
+    boolean result = snapshotSupport.linkSnapshots(snapshotIds);
+    assertTrue(result);
     verify(rawlsClient, never()).createSnapshotReferences(any(), any());
   }
 
