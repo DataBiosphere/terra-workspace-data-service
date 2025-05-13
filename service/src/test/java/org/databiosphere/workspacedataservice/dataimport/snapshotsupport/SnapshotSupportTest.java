@@ -2,7 +2,11 @@ package org.databiosphere.workspacedataservice.dataimport.snapshotsupport;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
 
 import bio.terra.datarepo.model.TableModel;
 import bio.terra.workspace.model.DataRepoSnapshotAttributes;
@@ -10,6 +14,7 @@ import bio.terra.workspace.model.ResourceAttributesUnion;
 import bio.terra.workspace.model.ResourceDescription;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
@@ -29,11 +34,11 @@ import org.springframework.test.annotation.DirtiesContext;
 class SnapshotSupportTest extends ControlPlaneTestBase {
 
   private SnapshotSupport snapshotSupport;
+  private final RawlsClient rawlsClient = mock(RawlsClient.class);
+  private final WorkspaceId workspaceId = new WorkspaceId(UUID.randomUUID());
 
   @BeforeEach
   void setUp() {
-    WorkspaceId workspaceId = new WorkspaceId(UUID.randomUUID());
-    RawlsClient rawlsClient = mock(RawlsClient.class);
     ActivityLogger activityLogger = mock(ActivityLogger.class);
 
     snapshotSupport = new SnapshotSupport(workspaceId, rawlsClient, activityLogger);
@@ -171,7 +176,22 @@ class SnapshotSupportTest extends ControlPlaneTestBase {
     assertEquals(expected, actual);
   }
 
-  // TODO test linksnapshots
+  @Test
+  void linkSnapshots() {
+    Set<UUID> snapshotIds = Set.of(UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID());
+    SnapshotLinkResult result = snapshotSupport.linkSnapshots(snapshotIds);
+    assertEquals(3, result.numSnapshotsLinked());
+    verify(rawlsClient)
+        .createSnapshotReferences(eq(workspaceId.id()), eq(snapshotIds.stream().toList()));
+  }
+
+  @Test
+  void doNotLinkEmptySnapshots() {
+    Set<UUID> snapshotIds = Set.of();
+    SnapshotLinkResult result = snapshotSupport.linkSnapshots(snapshotIds);
+    assertEquals(0, result.numSnapshotsLinked());
+    verify(rawlsClient, never()).createSnapshotReferences(any(), any());
+  }
 
   private ResourceDescription createResourceDescription(UUID snapshotId) {
     DataRepoSnapshotAttributes dataRepoSnapshotAttributes = new DataRepoSnapshotAttributes();

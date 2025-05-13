@@ -1,6 +1,5 @@
 package org.databiosphere.workspacedataservice.pact;
 
-import static bio.terra.workspace.model.CloningInstructionsEnum.*;
 import static org.databiosphere.workspacedataservice.TestTags.PACT_TEST;
 import static org.databiosphere.workspacedataservice.pact.TestHeaderSupport.*;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;

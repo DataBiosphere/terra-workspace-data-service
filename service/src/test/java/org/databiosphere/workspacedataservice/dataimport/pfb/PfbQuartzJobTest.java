@@ -1,6 +1,5 @@
 package org.databiosphere.workspacedataservice.dataimport.pfb;
 
-import static bio.terra.workspace.model.CloningInstructionsEnum.REFERENCE;
 import static org.databiosphere.workspacedataservice.TestTags.SLOW;
 import static org.databiosphere.workspacedataservice.dataimport.pfb.PfbTestUtils.stubJobContext;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -11,15 +10,9 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import bio.terra.workspace.model.DataRepoSnapshotAttributes;
-import bio.terra.workspace.model.DataRepoSnapshotResource;
-import bio.terra.workspace.model.Properties;
-import bio.terra.workspace.model.Property;
-import bio.terra.workspace.model.ResourceMetadata;
 import io.micrometer.core.instrument.DistributionSummary;
 import io.micrometer.core.instrument.MeterRegistry;
 import java.io.IOException;
-import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -28,7 +21,6 @@ import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import org.databiosphere.workspacedataservice.common.ControlPlaneTestBase;
 import org.databiosphere.workspacedataservice.dao.JobDao;
-import org.databiosphere.workspacedataservice.dataimport.snapshotsupport.SnapshotSupport;
 import org.databiosphere.workspacedataservice.rawls.RawlsClient;
 import org.databiosphere.workspacedataservice.service.BatchWriteService;
 import org.databiosphere.workspacedataservice.service.CollectionService;
@@ -238,27 +230,5 @@ class PfbQuartzJobTest extends ControlPlaneTestBase {
     double endingSnapshotsLinkedTotal = snapshotsLinkedSummary.totalAmount();
     assertEquals(1, endingSnapshotsLinkedCount - startingSnapshotsLinkedCount);
     assertEquals(0, endingSnapshotsLinkedTotal - startingSnapshotsLinkedTotal);
-  }
-
-  private List<DataRepoSnapshotResource> generateSnapshotResources(Collection<UUID> input) {
-    return input.stream()
-        .map(
-            id -> {
-              Property p = new Property();
-              p.setKey(SnapshotSupport.PROP_PURPOSE);
-              p.setValue(SnapshotSupport.PURPOSE_POLICY);
-              Properties properties = new Properties();
-              properties.add(p);
-              ResourceMetadata resourceMetadata = new ResourceMetadata();
-              resourceMetadata.setResourceId(UUID.randomUUID());
-              resourceMetadata.setProperties(properties);
-              resourceMetadata.setCloningInstructions(REFERENCE);
-              DataRepoSnapshotAttributes attributes = new DataRepoSnapshotAttributes();
-              attributes.setSnapshot(id.toString());
-              return new DataRepoSnapshotResource()
-                  .metadata(resourceMetadata)
-                  .attributes(attributes);
-            })
-        .toList();
   }
 }
