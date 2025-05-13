@@ -237,7 +237,7 @@ public class PfbQuartzJob extends QuartzJob {
   protected void linkSnapshots(Set<UUID> snapshotIds, WorkspaceId workspaceId) {
     // list existing snapshots linked to this workspace
     SnapshotSupport snapshotSupport = snapshotSupportFactory.buildSnapshotSupport(workspaceId);
-    Boolean snapshotLinkResult = snapshotSupport.linkSnapshots(snapshotIds);
+    boolean snapshotLinkResult = snapshotSupport.linkSnapshots(snapshotIds);
 
     // record metrics
     importMetrics

@@ -482,7 +482,7 @@ public class TdrManifestQuartzJob extends QuartzJob {
     // list existing snapshots linked to this workspace
     SnapshotSupport snapshotSupport = snapshotSupportFactory.buildSnapshotSupport(workspaceId);
     // TODO AJ-1673: don't use the env-var workspaceId here
-    Boolean snapshotLinkResult = snapshotSupport.linkSnapshots(snapshotIds);
+    boolean snapshotLinkResult = snapshotSupport.linkSnapshots(snapshotIds);
 
     // record metrics
     importMetrics
