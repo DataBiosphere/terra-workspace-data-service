@@ -27,27 +27,15 @@ public interface RawlsApi {
       @PathVariable UUID workspaceId, @RequestParam String fields);
 
   /**
-   * List snapshot references in a workspace.
-   *
-   * @param workspaceId target workspace
-   * @param offset pagination offset
-   * @param limit pagination limit
-   * @return list of snapshot references in this workspace.
-   */
-  @GetExchange("/api/workspaces/{workspaceId}/snapshots/v2")
-  SnapshotListResponse enumerateDataRepoSnapshotByWorkspaceId(
-      @PathVariable UUID workspaceId, @RequestParam int offset, @RequestParam int limit);
-
-  /**
    * Create a new snapshot reference in a workspace
    *
    * @param workspaceId target workspace
-   * @param namedDataRepoSnapshot the snapshot reference to create
+   * @param snapshotIds ids of the snapshots to reference
    * @return the created snapshot reference
    */
-  @PostExchange("/api/workspaces/{workspaceId}/snapshots/v2")
-  DataRepoSnapshotResource createDataRepoSnapshotByWorkspaceId(
-      @PathVariable UUID workspaceId, @RequestBody NamedDataRepoSnapshot namedDataRepoSnapshot);
+  @PostExchange("/api/workspaces/{workspaceId}/snapshots/v3")
+  DataRepoSnapshotResource createSnapshotsByWorkspaceIdV3(
+      @PathVariable UUID workspaceId, @RequestBody List<UUID> snapshotIds);
 
   @PatchExchange("/api/workspaces/v2/{workspaceNamespace}/{workspaceName}/authDomain")
   void addAuthDomainGroups(

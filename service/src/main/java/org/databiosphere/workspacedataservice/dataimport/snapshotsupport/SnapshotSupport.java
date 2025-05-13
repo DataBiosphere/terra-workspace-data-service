@@ -1,32 +1,28 @@
 package org.databiosphere.workspacedataservice.dataimport.snapshotsupport;
 
 import bio.terra.datarepo.model.TableModel;
-import bio.terra.workspace.model.CloningInstructionsEnum;
 import bio.terra.workspace.model.DataRepoSnapshotAttributes;
 import bio.terra.workspace.model.ResourceAttributesUnion;
 import bio.terra.workspace.model.ResourceDescription;
-import bio.terra.workspace.model.ResourceList;
-import bio.terra.workspace.model.ResourceMetadata;
 import com.google.common.annotations.VisibleForTesting;
-import com.google.common.collect.Sets;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+import org.databiosphere.workspacedataservice.activitylog.ActivityLogger;
+import org.databiosphere.workspacedataservice.rawls.RawlsClient;
 import org.databiosphere.workspacedataservice.service.model.exception.DataImportException;
 import org.databiosphere.workspacedataservice.service.model.exception.RestException;
 import org.databiosphere.workspacedataservice.shared.model.RecordType;
+import org.databiosphere.workspacedataservice.shared.model.WorkspaceId;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.lang.Nullable;
 
-public abstract class SnapshotSupport {
-
-  public static final String INSTANCE_NAME = "terra";
+public class SnapshotSupport {
 
   /**
    * indicates the purpose of a snapshot reference - e.g. is it created for the sole purpose of
@@ -38,6 +34,17 @@ public abstract class SnapshotSupport {
   private static final String DEFAULT_PRIMARY_KEY = "datarepo_row_id";
 
   private static final Logger LOGGER = LoggerFactory.getLogger(SnapshotSupport.class);
+
+  private final WorkspaceId workspaceId;
+  private final RawlsClient rawlsClient;
+  private final ActivityLogger activityLogger;
+
+  public SnapshotSupport(
+      WorkspaceId workspaceId, RawlsClient rawlsClient, ActivityLogger activityLogger) {
+    this.workspaceId = workspaceId;
+    this.rawlsClient = rawlsClient;
+    this.activityLogger = activityLogger;
+  }
 
   @VisibleForTesting
   String getDefaultPrimaryKey() {
@@ -84,77 +91,23 @@ public abstract class SnapshotSupport {
    *
    * @param snapshotIds the list of snapshot ids to create or verify references.
    */
-  public SnapshotLinkResult linkSnapshots(Set<UUID> snapshotIds) {
-    // list existing snapshots linked to this workspace
-    Set<UUID> existingSnapshotIds = Set.copyOf(existingPolicySnapshotIds(/* pageSize= */ 50));
-    // find the snapshots that are not already linked to this workspace
-    Set<UUID> newSnapshotIds = Sets.difference(snapshotIds, existingSnapshotIds);
-
-    LOGGER.info(
-        "Import data contains {} snapshot ids. {} of these are already linked to the workspace; {} new links will be created.",
-        snapshotIds.size(),
-        snapshotIds.size() - newSnapshotIds.size(),
-        newSnapshotIds.size());
-
-    // pass snapshotIds to underlying client to link
-    int successfulLinks = 0;
-    for (UUID uuid : newSnapshotIds) {
+  public boolean linkSnapshots(Set<UUID> snapshotIds) {
+    // only call Rawls if we found snapshots
+    if (!snapshotIds.isEmpty()) {
       try {
-        linkSnapshot(uuid);
-        successfulLinks++;
+        rawlsClient.createSnapshotReferences(workspaceId.id(), snapshotIds.stream().toList());
+        activityLogger.saveEventForCurrentUser(
+            user ->
+                user.linked()
+                    .snapshotReference()
+                    .withIds(snapshotIds.stream().map(UUID::toString).toArray(String[]::new)));
+
       } catch (RestException re) {
         throw new DataImportException("Error processing data import: " + re.getMessage(), re);
       }
     }
 
-    return new SnapshotLinkResult(snapshotIds.size(), successfulLinks);
-  }
-
-  /**
-   * Given a single snapshotId, create a reference to that snapshot from the current workspace.
-   *
-   * @param snapshotId id of the snapshot to reference
-   */
-  protected abstract void linkSnapshot(UUID snapshotId);
-
-  /**
-   * Get the list of unique snapshotIds referenced by the current workspace.
-   *
-   * @param pageSize how many references to return in each paginated request
-   * @return the list of unique ids for all pre-existing snapshot references
-   */
-  @VisibleForTesting
-  public List<UUID> existingPolicySnapshotIds(int pageSize) {
-    List<ResourceDescription> allSnapshots = listAllSnapshots(pageSize).getResources();
-    Stream<ResourceDescription> policySnapshots =
-        allSnapshots.stream()
-            .filter(this::isResourceReferenceForPolicy)
-            .filter(this::isResourceReferenceCloned);
-    return extractSnapshotIds(policySnapshots).toList();
-  }
-
-  /** Does the given resource have cloning instructions set to "COPY_REFERENCE". */
-  private boolean isResourceReferenceCloned(ResourceDescription resource) {
-    return Optional.of(resource)
-        .map(ResourceDescription::getMetadata)
-        .map(ResourceMetadata::getCloningInstructions)
-        .map(CloningInstructionsEnum.REFERENCE::equals)
-        .orElse(false);
-  }
-
-  /** Does the given resource have a "purpose: policy" property? */
-  private boolean isResourceReferenceForPolicy(ResourceDescription resource) {
-    return Optional.of(resource)
-        .map(ResourceDescription::getMetadata)
-        .map(ResourceMetadata::getProperties)
-        .map(
-            properties ->
-                properties.stream()
-                    .anyMatch(
-                        property ->
-                            PROP_PURPOSE.equals(property.getKey())
-                                && PURPOSE_POLICY.equals(property.getValue())))
-        .orElse(false);
+    return true;
   }
 
   /**
@@ -198,48 +151,4 @@ public abstract class SnapshotSupport {
     }
     return DEFAULT_PRIMARY_KEY;
   }
-
-  /**
-   * Query for the full list of referenced snapshots in this workspace, paginating as necessary.
-   *
-   * @param pageSize how many references to return in each paginated request
-   * @return the full list of snapshot references in this workspace
-   */
-  // TODO (AJ-1705): Filter out snapshots that do NOT have purpose:policy
-  @VisibleForTesting
-  ResourceList listAllSnapshots(int pageSize) {
-    int offset = 0;
-    final int hardLimit = 10000; // under no circumstances return more than this many snapshots
-
-    ResourceList finalList = new ResourceList(); // collect our results
-
-    while (offset < hardLimit) {
-      // get a page of results
-      ResourceList thisPage = enumerateDataRepoSnapshotReferences(offset, pageSize);
-
-      // add this page of results to our collector
-      finalList.getResources().addAll(thisPage.getResources());
-
-      if (thisPage.getResources().size() < pageSize) {
-        // fewer results than we requested; this is the last page of results
-        return finalList;
-      } else {
-        // bump our offset and request another page of results
-        offset += pageSize;
-      }
-    }
-
-    throw new DataImportException(
-        "Exceeded hard limit of %d for number of pre-existing snapshot references"
-            .formatted(hardLimit));
-  }
-
-  /**
-   * Query a source system (Rawls) for a single page's worth of snapshot references.
-   *
-   * @param offset pagination offset; used when the current workspace has many references
-   * @param pageSize pagination page size; used when the current workspace has many references
-   * @return the page of references from the source system
-   */
-  protected abstract ResourceList enumerateDataRepoSnapshotReferences(int offset, int pageSize);
 }

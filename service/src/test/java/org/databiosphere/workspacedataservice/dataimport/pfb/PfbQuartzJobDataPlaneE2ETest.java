@@ -4,7 +4,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.databiosphere.workspacedataservice.TestTags.SLOW;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -23,7 +22,6 @@ import org.databiosphere.workspacedataservice.config.TwdsProperties;
 import org.databiosphere.workspacedataservice.dataimport.ImportValidator;
 import org.databiosphere.workspacedataservice.generated.CollectionServerModel;
 import org.databiosphere.workspacedataservice.rawls.RawlsClient;
-import org.databiosphere.workspacedataservice.rawls.SnapshotListResponse;
 import org.databiosphere.workspacedataservice.sam.SamDao;
 import org.databiosphere.workspacedataservice.service.CollectionService;
 import org.databiosphere.workspacedataservice.service.RecordOrchestratorService;
@@ -93,10 +91,6 @@ class PfbQuartzJobDataPlaneE2ETest extends DataPlaneTestBase {
     CollectionServerModel collectionServerModel =
         TestUtils.createCollection(collectionService, twdsProperties.workspaceId());
     collectionId = collectionServerModel.getId();
-
-    // stub out Rawls to report no snapshots already linked to this workspace
-    when(rawlsClient.enumerateDataRepoSnapshotReferences(any(), anyInt(), anyInt()))
-        .thenReturn(new SnapshotListResponse(List.of()));
 
     // dataTableTypeInspector says ok to use data tables
     when(dataTableTypeInspector.getWorkspaceDataTableType(any()))

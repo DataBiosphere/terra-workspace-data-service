@@ -9,7 +9,6 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.atLeastOnce;
@@ -49,7 +48,6 @@ import org.databiosphere.workspacedataservice.dataimport.FileDownloadHelper;
 import org.databiosphere.workspacedataservice.dataimport.ImportDetails;
 import org.databiosphere.workspacedataservice.dataimport.tdr.TdrManifestExemplarData.AzureSmall;
 import org.databiosphere.workspacedataservice.rawls.RawlsClient;
-import org.databiosphere.workspacedataservice.rawls.SnapshotListResponse;
 import org.databiosphere.workspacedataservice.recordsink.RawlsAttributePrefixer.PrefixStrategy;
 import org.databiosphere.workspacedataservice.recordsink.RecordSink;
 import org.databiosphere.workspacedataservice.recordsink.RecordSinkFactory;
@@ -280,11 +278,6 @@ class TdrManifestQuartzJobTest extends ControlPlaneTestBase {
     UUID jobId = UUID.randomUUID();
     // mock collection service to return this workspace id for this collection id
     when(collectionService.getWorkspaceId(collectionId)).thenReturn(workspaceId);
-    // Rawls should report no snapshots already linked to this workspace
-    // note that if enumerateDataRepoSnapshotReferences is called with the wrong workspaceId,
-    // this test will fail
-    when(rawlsClient.enumerateDataRepoSnapshotReferences(eq(workspaceId.id()), anyInt(), anyInt()))
-        .thenReturn(new SnapshotListResponse(List.of()));
 
     // set up the job
     TdrManifestQuartzJob tdrManifestQuartzJob = testSupport.buildTdrManifestQuartzJob();
@@ -329,11 +322,6 @@ class TdrManifestQuartzJobTest extends ControlPlaneTestBase {
     UUID jobId = UUID.randomUUID();
     // mock collection service to return this workspace id for this collection id
     when(collectionService.getWorkspaceId(collectionId)).thenReturn(workspaceId);
-    // Rawls should report no snapshots already linked to this workspace
-    // note that if enumerateDataRepoSnapshotReferences is called with the wrong workspaceId,
-    // this test will fail
-    when(rawlsClient.enumerateDataRepoSnapshotReferences(eq(workspaceId.id()), anyInt(), anyInt()))
-        .thenReturn(new SnapshotListResponse(List.of()));
 
     // set up the job
     TdrManifestQuartzJob tdrManifestQuartzJob = testSupport.buildTdrManifestQuartzJob();
@@ -344,8 +332,7 @@ class TdrManifestQuartzJobTest extends ControlPlaneTestBase {
     tdrManifestQuartzJob.executeInternal(jobId, mockContext);
 
     // ASSERT
-    verify(rawlsClient)
-        .enumerateDataRepoSnapshotReferences(eq(workspaceId.id()), anyInt(), anyInt());
+    verify(rawlsClient).createSnapshotReferences(eq(workspaceId.id()), any());
   }
 
   @Test
@@ -361,11 +348,6 @@ class TdrManifestQuartzJobTest extends ControlPlaneTestBase {
     UUID snapshotId = UUID.fromString("e3638824-9ed9-408e-b3f5-cba7585658a3");
     // mock collection service to return this workspace id for this collection id
     when(collectionService.getWorkspaceId(collectionId)).thenReturn(workspaceId);
-    // Rawls should report no snapshots already linked to this workspace
-    // note that if enumerateDataRepoSnapshotReferences is called with the wrong workspaceId,
-    // this test will fail
-    when(rawlsClient.enumerateDataRepoSnapshotReferences(eq(workspaceId.id()), anyInt(), anyInt()))
-        .thenReturn(new SnapshotListResponse(List.of()));
     // mock property that only gets enabled in application-control-plane.yml
     when(dataImportProperties.isTdrPermissionSyncingEnabled()).thenReturn(true);
     // mock sam call
@@ -407,12 +389,6 @@ class TdrManifestQuartzJobTest extends ControlPlaneTestBase {
 
     // Mock collection service to return this workspace ID for this collection ID
     when(collectionService.getWorkspaceId(collectionId)).thenReturn(workspaceId);
-
-    // Rawls should report no snapshots already linked to this workspace
-    // note that if enumerateDataRepoSnapshotReferences is called with the wrong workspaceId,
-    // this test will fail
-    when(rawlsClient.enumerateDataRepoSnapshotReferences(eq(workspaceId.id()), anyInt(), anyInt()))
-        .thenReturn(new SnapshotListResponse(List.of()));
 
     // Set up the job
     TdrManifestQuartzJob tdrManifestQuartzJob = testSupport.buildTdrManifestQuartzJob();

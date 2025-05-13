@@ -8,7 +8,6 @@ import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.Mockito.when;
 
 import com.google.common.collect.ImmutableMap;
@@ -25,7 +24,6 @@ import org.databiosphere.workspacedataservice.dataimport.ImportValidator;
 import org.databiosphere.workspacedataservice.generated.CollectionServerModel;
 import org.databiosphere.workspacedataservice.generated.ImportRequestServerModel;
 import org.databiosphere.workspacedataservice.rawls.RawlsClient;
-import org.databiosphere.workspacedataservice.rawls.SnapshotListResponse;
 import org.databiosphere.workspacedataservice.service.CollectionService;
 import org.databiosphere.workspacedataservice.service.ImportService;
 import org.databiosphere.workspacedataservice.service.RecordOrchestratorService;
@@ -113,10 +111,6 @@ class TdrManifestQuartzJobE2ETest extends DataPlaneTestBase {
 
     UUID jobId = genericJobServerModel.getJobId();
     JobExecutionContext mockContext = stubJobContext(jobId, v2fManifestResource, collectionId);
-
-    // Rawls should report no snapshots already linked to this workspace
-    when(rawlsClient.enumerateDataRepoSnapshotReferences(any(), anyInt(), anyInt()))
-        .thenReturn(new SnapshotListResponse(List.of()));
 
     testSupport.buildTdrManifestQuartzJob().execute(mockContext);
 
@@ -246,10 +240,6 @@ class TdrManifestQuartzJobE2ETest extends DataPlaneTestBase {
     UUID jobId = genericJobServerModel.getJobId();
     JobExecutionContext mockContext =
         stubJobContext(jobId, withEntityReferenceListsResource, collectionId);
-
-    // Rawls should report no snapshots already linked to this workspace
-    when(rawlsClient.enumerateDataRepoSnapshotReferences(any(), anyInt(), anyInt()))
-        .thenReturn(new SnapshotListResponse(List.of()));
 
     testSupport.buildTdrManifestQuartzJob().execute(mockContext);
 

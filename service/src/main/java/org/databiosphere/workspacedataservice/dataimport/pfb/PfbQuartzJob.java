@@ -26,9 +26,8 @@ import org.databiosphere.workspacedataservice.config.DataImportProperties;
 import org.databiosphere.workspacedataservice.dao.JobDao;
 import org.databiosphere.workspacedataservice.dataimport.ImportDetails;
 import org.databiosphere.workspacedataservice.dataimport.ImportDetailsRetriever;
-import org.databiosphere.workspacedataservice.dataimport.snapshotsupport.SnapshotLinkResult;
+import org.databiosphere.workspacedataservice.dataimport.snapshotsupport.MultiCloudSnapshotSupportFactory;
 import org.databiosphere.workspacedataservice.dataimport.snapshotsupport.SnapshotSupport;
-import org.databiosphere.workspacedataservice.dataimport.snapshotsupport.SnapshotSupportFactory;
 import org.databiosphere.workspacedataservice.jobexec.JobDataMapReader;
 import org.databiosphere.workspacedataservice.jobexec.QuartzJob;
 import org.databiosphere.workspacedataservice.metrics.ImportMetrics;
@@ -63,7 +62,7 @@ public class PfbQuartzJob extends QuartzJob {
   private final ActivityLogger activityLogger;
   private final RecordSourceFactory recordSourceFactory;
   private final RecordSinkFactory recordSinkFactory;
-  private final SnapshotSupportFactory snapshotSupportFactory;
+  private final MultiCloudSnapshotSupportFactory snapshotSupportFactory;
   private final ImportDetailsRetriever importDetailsRetriever;
   private final ImportMetrics importMetrics;
   private final DrsService drsService;
@@ -76,7 +75,7 @@ public class PfbQuartzJob extends QuartzJob {
       ActivityLogger activityLogger,
       ObservationRegistry observationRegistry,
       ImportMetrics importMetrics,
-      SnapshotSupportFactory snapshotSupportFactory,
+      MultiCloudSnapshotSupportFactory snapshotSupportFactory,
       DataImportProperties dataImportProperties,
       ImportDetailsRetriever importDetailsRetriever,
       DrsService drsService) {
@@ -238,18 +237,19 @@ public class PfbQuartzJob extends QuartzJob {
   protected void linkSnapshots(Set<UUID> snapshotIds, WorkspaceId workspaceId) {
     // list existing snapshots linked to this workspace
     SnapshotSupport snapshotSupport = snapshotSupportFactory.buildSnapshotSupport(workspaceId);
-    SnapshotLinkResult snapshotLinkResult = snapshotSupport.linkSnapshots(snapshotIds);
+    boolean snapshotLinkResult = snapshotSupport.linkSnapshots(snapshotIds);
 
     // record metrics
     importMetrics
         .snapshotsConsideredDistributionSummary()
         .distributionSummary()
-        .record(snapshotLinkResult.numSnapshotsConsidered());
-
-    importMetrics
-        .snapshotsLinkedDistributionSummary()
-        .distributionSummary()
-        .record(snapshotLinkResult.numSnapshotsLinked());
+        .record(snapshotIds.size());
+    if (snapshotLinkResult) {
+      importMetrics
+          .snapshotsLinkedDistributionSummary()
+          .distributionSummary()
+          .record(snapshotIds.size());
+    }
   }
 
   @Nullable

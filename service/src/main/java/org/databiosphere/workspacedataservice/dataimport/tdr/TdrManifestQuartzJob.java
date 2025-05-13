@@ -46,9 +46,8 @@ import org.databiosphere.workspacedataservice.dataimport.FileDownloadHelper;
 import org.databiosphere.workspacedataservice.dataimport.ImportDetails;
 import org.databiosphere.workspacedataservice.dataimport.ImportDetailsRetriever;
 import org.databiosphere.workspacedataservice.dataimport.ImportJobInput;
-import org.databiosphere.workspacedataservice.dataimport.snapshotsupport.SnapshotLinkResult;
+import org.databiosphere.workspacedataservice.dataimport.snapshotsupport.MultiCloudSnapshotSupportFactory;
 import org.databiosphere.workspacedataservice.dataimport.snapshotsupport.SnapshotSupport;
-import org.databiosphere.workspacedataservice.dataimport.snapshotsupport.SnapshotSupportFactory;
 import org.databiosphere.workspacedataservice.jobexec.JobDataMapReader;
 import org.databiosphere.workspacedataservice.jobexec.JobExecutionException;
 import org.databiosphere.workspacedataservice.jobexec.QuartzJob;
@@ -85,7 +84,7 @@ public class TdrManifestQuartzJob extends QuartzJob {
   private final ActivityLogger activityLogger;
   private final ObjectMapper mapper;
   private final RecordSourceFactory recordSourceFactory;
-  private final SnapshotSupportFactory snapshotSupportFactory;
+  private final MultiCloudSnapshotSupportFactory snapshotSupportFactory;
   private final SamDao samDao;
   private final boolean isTdrPermissionSyncingEnabled;
   private final ImportDetailsRetriever importDetailsRetriever;
@@ -103,7 +102,7 @@ public class TdrManifestQuartzJob extends QuartzJob {
       ObservationRegistry observationRegistry,
       ImportMetrics importMetrics,
       DataImportProperties dataImportProperties,
-      SnapshotSupportFactory snapshotSupportFactory,
+      MultiCloudSnapshotSupportFactory snapshotSupportFactory,
       SamDao samDao,
       ImportDetailsRetriever importDetailsRetriever,
       InstantSource instantSource) {
@@ -483,18 +482,19 @@ public class TdrManifestQuartzJob extends QuartzJob {
     // list existing snapshots linked to this workspace
     SnapshotSupport snapshotSupport = snapshotSupportFactory.buildSnapshotSupport(workspaceId);
     // TODO AJ-1673: don't use the env-var workspaceId here
-    SnapshotLinkResult snapshotLinkResult = snapshotSupport.linkSnapshots(snapshotIds);
+    boolean snapshotLinkResult = snapshotSupport.linkSnapshots(snapshotIds);
 
     // record metrics
     importMetrics
         .snapshotsConsideredDistributionSummary()
         .distributionSummary()
-        .record(snapshotLinkResult.numSnapshotsConsidered());
-
-    importMetrics
-        .snapshotsLinkedDistributionSummary()
-        .distributionSummary()
-        .record(snapshotLinkResult.numSnapshotsLinked());
+        .record(snapshotIds.size());
+    if (snapshotLinkResult) {
+      importMetrics
+          .snapshotsLinkedDistributionSummary()
+          .distributionSummary()
+          .record(snapshotIds.size());
+    }
   }
 
   /**
