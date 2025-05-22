@@ -118,7 +118,7 @@ jobs:
 
   # Publish Python client to PyPI
   python-client-job:
-    if: needs.bump-check.outputs.is-bump == 'no' && github.event_name == 'push' && github.ref_name == 'main'
+    if: false # [CORE-390] Disabled due to minimal Python client usage
     needs: [ build, bump-check, tag-job ]
     uses: ./.github/workflows/release-python-client.yml
     with:
