@@ -134,7 +134,7 @@ dependencies {
     testImplementation 'com.google.cloud:google-cloud-nio:0.127.36'
 
     constraints {
-        implementation('org.json:json:20250107') {
+        implementation('org.json:json:20250517') {
             because("CVE-2022-45688")
         }
         // commons-compress required by org.apache.avro:avro:1.11.3, required by java-pfb-library:0.14.0
