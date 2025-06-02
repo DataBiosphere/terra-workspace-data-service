@@ -43,7 +43,7 @@ jib {
 ext {
     parquet_mr_version = "1.15.2"
     hadoop_version = "3.4.1"
-    spring_cloud_gcp_version = "6.1.1"
+    spring_cloud_gcp_version = "6.2.1"
 }
 
 dependencies {
@@ -65,7 +65,7 @@ dependencies {
     implementation 'org.postgresql:postgresql'
     implementation 'org.webjars:webjars-locator-lite' // versioned by spring dependency management
     implementation 'com.fasterxml.jackson.dataformat:jackson-dataformat-csv'
-    implementation 'io.sentry:sentry-logback:8.11.1'
+    implementation 'io.sentry:sentry-logback:8.13.2'
     implementation 'net.logstash.logback:logstash-logback-encoder:8.1'
     implementation 'org.codehaus.janino:janino'
     implementation 'org.liquibase:liquibase-core'
@@ -73,12 +73,12 @@ dependencies {
     implementation 'org.ehcache:ehcache:3.10.8:jakarta'
     implementation 'org.hashids:hashids:1.0.3'
     implementation 'jakarta.ws.rs:jakarta.ws.rs-api'
-    implementation 'com.google.mug:mug:8.5'
+    implementation 'com.google.mug:mug:8.6'
     implementation 'org.apache.lucene:lucene-queryparser:9.12.1'
 
     // required by openapi-generated models and api interfaces
     implementation 'jakarta.validation:jakarta.validation-api'
-    implementation 'io.swagger.core.v3:swagger-annotations:2.2.30'
+    implementation 'io.swagger.core.v3:swagger-annotations:2.2.32'
 
     // Terra libraries
     implementation group: 'org.broadinstitute.dsde.workbench', name: 'sam-client_2.13', version: 'v0.0.282'
@@ -86,7 +86,7 @@ dependencies {
     implementation "bio.terra:datarepo-client:2.13.0-SNAPSHOT"
     // WSM client included for models only
     implementation "bio.terra:workspace-manager-client:0.254.983-SNAPSHOT"
-    implementation "bio.terra:java-pfb-library:0.71.0"
+    implementation "bio.terra:java-pfb-library:0.72.0"
     implementation project(path: ':client')
 
     // Parquet, used for TDR snapshot import
@@ -120,7 +120,7 @@ dependencies {
     implementation "org.apache.hadoop:hadoop-mapreduce-client-core:$hadoop_version", withoutHadoopExcludes
 
     annotationProcessor 'org.springframework.boot:spring-boot-configuration-processor'
-    runtimeOnly 'org.webjars.npm:swagger-ui-dist:5.21.0'
+    runtimeOnly 'org.webjars.npm:swagger-ui-dist:5.22.0'
     testImplementation 'io.micrometer:micrometer-observation-test'
     testImplementation 'org.springframework.boot:spring-boot-starter-test'
     testImplementation 'org.junit.jupiter:junit-jupiter'
@@ -131,10 +131,10 @@ dependencies {
     testImplementation 'org.awaitility:awaitility'
 
     // google bucket mock
-    testImplementation 'com.google.cloud:google-cloud-nio:0.127.34'
+    testImplementation 'com.google.cloud:google-cloud-nio:0.127.36'
 
     constraints {
-        implementation('org.json:json:20250107') {
+        implementation('org.json:json:20250517') {
             because("CVE-2022-45688")
         }
         // commons-compress required by org.apache.avro:avro:1.11.3, required by java-pfb-library:0.14.0
