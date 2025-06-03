@@ -86,7 +86,7 @@ dependencies {
     implementation "bio.terra:datarepo-client:2.13.0-SNAPSHOT"
     // WSM client included for models only
     implementation "bio.terra:workspace-manager-client:0.254.983-SNAPSHOT"
-    implementation "bio.terra:java-pfb-library:0.72.0"
+    implementation "bio.terra:java-pfb-library:0.74.0"
     implementation project(path: ':client')
 
     // Parquet, used for TDR snapshot import
