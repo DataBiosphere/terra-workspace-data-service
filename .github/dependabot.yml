@@ -2,7 +2,7 @@ version: 2
 registries:
   broad-artifactory:
     type: maven-repository
-    url: https://broadinstitute.jfrog.io/artifactory/libs-release
+    url: https://us-central1-maven.pkg.dev/dsp-artifact-registry/libs-release/
 updates:
   - package-ecosystem: "gradle"
     registries:

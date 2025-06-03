@@ -9,7 +9,7 @@ plugins {
 }
 
 repositories {
-    maven { url 'https://broadinstitute.jfrog.io/artifactory/maven-central' }
+    maven { url 'https://us-central1-maven.pkg.dev/dsp-artifact-registry/maven-central/' }
     mavenCentral()
 }
 
