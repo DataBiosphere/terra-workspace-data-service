@@ -47,10 +47,13 @@ import org.databiosphere.workspacedataservice.shared.model.Record;
 import org.databiosphere.workspacedataservice.shared.model.RecordAttributes;
 import org.databiosphere.workspacedataservice.shared.model.RecordType;
 import org.databiosphere.workspacedataservice.shared.model.attributes.JsonAttribute;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.util.CollectionUtils;
 
 public class DataTypeInferer {
 
+  private static final Logger logger = LoggerFactory.getLogger(DataTypeInferer.class);
   private final ObjectMapper objectMapper;
 
   public DataTypeInferer(ObjectMapper mapper) {
@@ -204,7 +207,13 @@ public class DataTypeInferer {
       // boolean values
       // as booleans - e.g. `TRUE`, `tRUe`, or `true` ---> `true`
       return objectMapper.readTree(val.toLowerCase());
-    } catch (JsonProcessingException e) {
+    } catch (JsonProcessingException | NumberFormatException e) {
+      // number format exceptions can occur if the input is scientific notation but too big
+      // e.g. 9623e89508858559
+      return null;
+    } catch (Exception e) {
+      // Catch-all for any other exceptions that may occur during parsing
+      logger.info("unexpected exception while parsing json, proceeding as string", e);
       return null;
     }
   }

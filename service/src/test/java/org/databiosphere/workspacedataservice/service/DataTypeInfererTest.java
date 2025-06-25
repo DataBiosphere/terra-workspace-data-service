@@ -92,6 +92,11 @@ class DataTypeInfererTest extends ControlPlaneTestBase {
     assertThat(inferer.tryJsonObject(Boolean.TRUE.toString())).isEmpty();
     assertThat(inferer.tryJsonObject("True")).isEmpty();
     assertThat(inferer.tryJsonObject("{\"foo\":\"bar\"}")).isPresent();
+
+    // scientific notation
+    assertThat(inferer.tryJsonObject("3e4")).isEmpty();
+    // scientific notation that's too big
+    assertThat(inferer.tryJsonObject("9623e89508858559")).isEmpty();
   }
 
   @Test
