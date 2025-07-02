@@ -43,7 +43,7 @@ jib {
 ext {
     parquet_mr_version = "1.15.2"
     hadoop_version = "3.4.1"
-    spring_cloud_gcp_version = "6.2.2"
+    spring_cloud_gcp_version = "6.2.3"
 }
 
 dependencies {
@@ -86,7 +86,7 @@ dependencies {
     implementation "bio.terra:datarepo-client:2.13.0-SNAPSHOT"
     // WSM client included for models only
     implementation "bio.terra:workspace-manager-client:0.254.983-SNAPSHOT"
-    implementation "bio.terra:java-pfb-library:0.74.0"
+    implementation "bio.terra:java-pfb-library:0.76.0"
     implementation project(path: ':client')
 
     // Parquet, used for TDR snapshot import
@@ -120,7 +120,7 @@ dependencies {
     implementation "org.apache.hadoop:hadoop-mapreduce-client-core:$hadoop_version", withoutHadoopExcludes
 
     annotationProcessor 'org.springframework.boot:spring-boot-configuration-processor'
-    runtimeOnly 'org.webjars.npm:swagger-ui-dist:5.25.3'
+    runtimeOnly 'org.webjars.npm:swagger-ui-dist:5.26.0'
     testImplementation 'io.micrometer:micrometer-observation-test'
     testImplementation 'org.springframework.boot:spring-boot-starter-test'
     testImplementation 'org.junit.jupiter:junit-jupiter'
