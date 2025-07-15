@@ -656,7 +656,7 @@ public class RecordDao {
 
   private String genColumnDefs(Map<String, DataTypeMapping> tableInfo, String primaryKeyCol) {
     return getPrimaryKeyDef(primaryKeyCol)
-        + (tableInfo.size() > 0
+        + (!tableInfo.isEmpty()
             ? ", "
                 + tableInfo.entrySet().stream()
                     .map(
