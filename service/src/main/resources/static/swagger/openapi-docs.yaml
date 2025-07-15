@@ -95,7 +95,7 @@ paths:
         If the record already exists, its entire set of attributes will be overwritten by
         the attributes in the request body.
         TODO: add a query parameter to allow/disallow overwriting existing records?
-      operationId: createOrReplaceRecord
+      operationId: putRecord
       tags:
         - Records
       parameters:
