@@ -71,7 +71,7 @@ paths:
     get:
       summary: Get record
       operationId: getRecord
-      description: Retrieves a single record by its record type and id
+      description: Retrieves a single record by its type and id
       tags:
         - Records
       parameters:
@@ -95,7 +95,7 @@ paths:
         If the record already exists, its entire set of attributes will be overwritten by
         the attributes in the request body.
         TODO: add a query parameter to allow/disallow overwriting existing records?
-      operationId: putRecord
+      operationId: createOrReplaceRecord
       tags:
         - Records
       parameters:
