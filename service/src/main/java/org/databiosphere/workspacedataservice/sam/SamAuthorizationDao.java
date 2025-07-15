@@ -2,22 +2,22 @@ package org.databiosphere.workspacedataservice.sam;
 
 public interface SamAuthorizationDao {
   /** Sam resource type name for Workspaces */
-  public static final String RESOURCE_NAME_WORKSPACE = "workspace";
+  String RESOURCE_NAME_WORKSPACE = "workspace";
 
   /** Sam action name for write permission */
-  public static final String ACTION_WRITE = "write";
+  String ACTION_WRITE = "write";
 
   /** Sam action name for read permission */
-  public static final String ACTION_READ = "read";
+  String ACTION_READ = "read";
 
   /** Sam policy name for read permission */
-  public static final String READER_POLICY_NAME = "reader";
+  String READER_POLICY_NAME = "reader";
 
   /* Resource type to specify when adding Sam member policies */
-  public static final String RESOURCE_NAME_TDR_SNAPSHOT = "datasnapshot";
+  String RESOURCE_NAME_TDR_SNAPSHOT = "datasnapshot";
 
   /** All roles to add reader policy */
-  public static final String[] WORKSPACE_ROLES = {"reader", "writer", "owner", "project-owner"};
+  String[] WORKSPACE_ROLES = {"reader", "writer", "owner", "project-owner"};
 
   /**
    * Check if the current user has permission to read the workspace resource from Sam
