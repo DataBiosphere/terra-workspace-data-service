@@ -1313,7 +1313,7 @@ public class RecordDao {
             attributes.putAttribute(primaryKeyColumn, rs.getString(columnIndex));
             continue;
           }
-          if (referenceColToTable.size() > 0
+          if (!referenceColToTable.isEmpty()
               && referenceColToTable.containsKey(columnName)
               && rs.getString(columnName) != null) {
             attributes.putAttribute(
