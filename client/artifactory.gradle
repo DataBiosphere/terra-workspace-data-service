@@ -50,13 +50,13 @@ publishing {
                 }
             }
         }
+    }
         repositories {
             maven {
                 url = uri("artifactregistry://${garLocation}-maven.pkg.dev/${garProjectId}/${garRepoId}")
             }
         }
     }
-}
 
 //artifactory {
 //    publish {
