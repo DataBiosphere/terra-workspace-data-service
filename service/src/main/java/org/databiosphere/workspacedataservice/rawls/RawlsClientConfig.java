@@ -10,7 +10,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.client.ClientHttpRequestFactory;
-import org.springframework.http.client.HttpComponentsClientHttpRequestFactory;
+import org.springframework.http.client.SimpleClientHttpRequestFactory;
 import org.springframework.web.client.RestClient;
 import org.springframework.web.client.support.RestClientAdapter;
 import org.springframework.web.service.invoker.HttpServiceProxyFactory;
@@ -42,7 +42,7 @@ public class RawlsClientConfig {
   }
 
   ClientHttpRequestFactory customRequestFactory() {
-    HttpComponentsClientHttpRequestFactory factory = new HttpComponentsClientHttpRequestFactory();
+    SimpleClientHttpRequestFactory factory = new SimpleClientHttpRequestFactory();
     factory.setReadTimeout(Duration.ofSeconds(readTimeout));
     factory.setConnectTimeout(Duration.ofSeconds(connectTimeout));
     return factory;
