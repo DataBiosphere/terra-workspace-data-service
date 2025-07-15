@@ -71,7 +71,7 @@ paths:
     get:
       summary: Get record
       operationId: getRecord
-      description: Retrieves a single record by its type and id
+      description: Retrieves a single record by its record type and id
       tags:
         - Records
       parameters:
