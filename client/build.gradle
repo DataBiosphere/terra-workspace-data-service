@@ -51,3 +51,7 @@ compileJava {
         }
     }
 }
+
+tasks.named("publish") {
+    outputs.upToDateWhen { false }
+}
