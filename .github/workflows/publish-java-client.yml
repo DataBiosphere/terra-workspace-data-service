@@ -44,7 +44,13 @@ jobs:
           service_account: 'dsp-artifact-registry-push@dsp-artifact-registry.iam.gserviceaccount.com'
 
       - name: Debug publication configuration
-        run: ./gradlew :client:tasks --group=publishing --info
+        run: |
+          echo "Environment variables:"
+          echo "GOOGLE_CLOUD_PROJECT: $GOOGLE_CLOUD_PROJECT"
+          echo "GAR_LOCATION: $GAR_LOCATION" 
+          echo "GAR_REPOSITORY_ID: $GAR_REPOSITORY_ID"
+          echo "Publishing tasks:"
+          ./gradlew :client:tasks --group=publishing --info
         env:
           GOOGLE_CLOUD_PROJECT: dsp-artifact-registry
           GAR_LOCATION: us-central1
