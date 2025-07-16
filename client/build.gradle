@@ -54,4 +54,7 @@ compileJava {
 
 tasks.named("publish") {
     outputs.upToDateWhen { false }
+    dependsOn 'fixOpenApiGenerate'
+    dependsOn 'jar'
+    dependsOn 'sourcesJar'
 }

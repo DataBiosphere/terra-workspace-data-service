@@ -43,8 +43,15 @@ jobs:
           workload_identity_provider: 'projects/1038484894585/locations/global/workloadIdentityPools/github-wi-pool/providers/github-wi-provider'
           service_account: 'dsp-artifact-registry-push@dsp-artifact-registry.iam.gserviceaccount.com'
 
+      - name: Debug publication configuration
+        run: ./gradlew :client:tasks --group=publishing --info
+        env:
+          GOOGLE_CLOUD_PROJECT: dsp-artifact-registry
+          GAR_LOCATION: us-central1
+          GAR_REPOSITORY_ID: libs-snapshot-standard
+
       - name: Publish client to GAR
-        run: ./gradlew clean --build-cache :client:publish --info
+        run: ./gradlew --build-cache :client:publish --info --stacktrace
         env:
           GOOGLE_CLOUD_PROJECT: dsp-artifact-registry
           GAR_LOCATION: us-central1
