@@ -15,30 +15,6 @@ def garProjectId = System.getenv("GOOGLE_CLOUD_PROJECT")
 def garLocation = System.getenv("GAR_LOCATION")
 def garRepoId = System.getenv("GAR_REPOSITORY_ID")
 
-// Debug environment variables
-println "GAR Project ID: ${garProjectId}"
-println "GAR Location: ${garLocation}"
-println "GAR Repository ID: ${garRepoId}"
-
-/*
-
-
-publishing {
-    publications {
-        bufferClientLibrary(MavenPublication) {
-            from components.java
-            versionMapping {
-                usage('java-runtime') {
-                    fromResolutionResult()
-                }
-            }
-        }
-    }
-
-}
-
- */
-
 java {
     // Builds sources into the published package as part of the 'assemble' task.
     withSourcesJar()
@@ -49,32 +25,17 @@ publishing {
         wdsClient(MavenPublication) {
             artifactId = "workspacedataservice-client-okhttp-jakarta"
             from components.java
-            versionMapping {
-                usage('java-runtime') {
-                    fromResolutionResult()
-                }
-            }
+//            versionMapping {
+//                usage('java-runtime') {
+//                    fromResolutionResult()
+//                }
+//            }
         }
     }
     repositories {
-        if (garProjectId && garLocation && garRepoId) {
             maven {
-                name = "GoogleArtifactRegistry"
                 url = uri("artifactregistry://${garLocation}-maven.pkg.dev/${garProjectId}/${garRepoId}")
-                println "Configured GAR repository: artifactregistry://${garLocation}-maven.pkg.dev/${garProjectId}/${garRepoId}"
             }
-            // Also try the standard HTTPS URL as a fallback
-            maven {
-                name = "GoogleArtifactRegistryHTTPS"
-                url = uri("https://${garLocation}-maven.pkg.dev/${garProjectId}/${garRepoId}")
-                println "Configured GAR HTTPS repository: https://${garLocation}-maven.pkg.dev/${garProjectId}/${garRepoId}"
-            }
-        } else {
-            println "GAR environment variables not set, skipping repository configuration"
-            println "GOOGLE_CLOUD_PROJECT: ${garProjectId}"
-            println "GAR_LOCATION: ${garLocation}"
-            println "GAR_REPOSITORY_ID: ${garRepoId}"
-        }
     }
 }
 
