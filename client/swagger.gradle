@@ -24,8 +24,6 @@ openApiGenerate {
         useJakartaEe                            : "true",
         prependFormOrBodyParameters             : "true", // orders arguments in the Java client same as previous swagger-codegen
         hideGenerationTimestamp                 : "true", // prevent unnecessary diff noise
-        useBeanValidation                       : "true", // add validation annotations
-        performBeanValidation                   : "true", // perform validation
         serializableModel                       : "true", // make models serializable
     ])
     invokerPackage = "${artifactGroup}.client".toString()
