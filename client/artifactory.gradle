@@ -60,6 +60,69 @@ tasks.withType(GenerateModuleMetadata) {
     dependsOn 'fixOpenApiGenerate'
 }
 
+// Debug task to show publishing configuration
+task debugPublishing {
+    doLast {
+        println "=== Publishing Debug Information ==="
+        println "GAR Project ID: ${garProjectId}"
+        println "GAR Location: ${garLocation}"
+        println "GAR Repository ID: ${garRepoId}"
+        println "Google OAuth Access Token present: ${providers.environmentVariable('GOOGLE_OAUTH_ACCESS_TOKEN').isPresent()}"
+        
+        publishing.publications.each { pub ->
+            println "Publication: ${pub.name}"
+            println "  Group ID: ${pub.groupId}"
+            println "  Artifact ID: ${pub.artifactId}"
+            println "  Version: ${pub.version}"
+            println "  Artifacts: ${pub.artifacts.collect { it.file?.name ?: 'null' }}"
+        }
+        
+        publishing.repositories.each { repo ->
+            println "Repository: ${repo.name}"
+            println "  URL: ${repo.url}"
+        }
+    }
+}
+
+// Test task to try publishing locally (dry run style check)
+task testLocalPublish {
+    dependsOn 'fixOpenApiGenerate', 'jar', 'sourcesJar'
+    doLast {
+        println "=== Testing Publication Status ==="
+        
+        // Check if artifacts exist
+        def jarTask = tasks.getByName('jar')
+        def sourcesJarTask = tasks.getByName('sourcesJar')
+        
+        println "Main JAR exists: ${jarTask.archiveFile.get().asFile.exists()}"
+        println "Main JAR path: ${jarTask.archiveFile.get().asFile.absolutePath}"
+        println "Sources JAR exists: ${sourcesJarTask.archiveFile.get().asFile.exists()}"
+        println "Sources JAR path: ${sourcesJarTask.archiveFile.get().asFile.absolutePath}"
+        
+        // Show publication details
+        publishing.publications.wdsClient.artifacts.each { artifact ->
+            println "Artifact: ${artifact.file.name} (classifier: ${artifact.classifier ?: 'none'})"
+        }
+    }
+}
+
+// Task to check if publish task would be UP-TO-DATE
+task checkPublishUpToDate {
+    dependsOn 'fixOpenApiGenerate', 'jar', 'sourcesJar'
+    doLast {
+        println "=== Checking Publish Task State ==="
+        
+        def publishTasks = tasks.withType(PublishToMavenRepository)
+        publishTasks.each { task ->
+            println "Task: ${task.name}"
+            println "  Enabled: ${task.enabled}"
+            println "  Actions: ${task.actions.size()}"
+            println "  Inputs files: ${task.inputs.files.files.size()}"
+            println "  Output files: ${task.outputs.files.files.size()}"
+        }
+    }
+}
+
 //artifactory {
 //    publish {
 //        contextUrl = 'https://broadinstitute.jfrog.io/broadinstitute/'
