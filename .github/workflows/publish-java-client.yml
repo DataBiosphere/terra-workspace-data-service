@@ -1,6 +1,7 @@
 name: Publish Java Client
 on:
   workflow_call:
+  workflow_dispatch:
     # secrets:
     #   ARTIFACTORY_USERNAME:
     #     required: true
