@@ -10,22 +10,6 @@ plugins {
 
 }
 
-def garProjectId = System.getenv("GOOGLE_CLOUD_PROJECT")
-def garLocation = System.getenv("GAR_LOCATION")
-def garRepoId = System.getenv("GAR_REPOSITORY_ID")
-
-// Debug environment variables
-println "=== GAR Configuration Debug ==="
-println "GAR Project ID: '${garProjectId}'"
-println "GAR Location: '${garLocation}'"
-println "GAR Repository ID: '${garRepoId}'"
-println "All environment variables:"
-System.getenv().each { key, value ->
-    if (key.startsWith("GAR") || key.startsWith("GOOGLE")) {
-        println "  ${key}: ${value}"
-    }
-}
-println "=== End Debug ==="
 
 repositories {
     maven { url 'https://us-central1-maven.pkg.dev/dsp-artifact-registry/maven-central/' }
@@ -37,56 +21,7 @@ dependencies {
     implementation 'jakarta.ws.rs:jakarta.ws.rs-api:4.0.0'
 }
 
-java {
-    // Builds sources into the published package as part of the 'assemble' task.
-    withSourcesJar()
-}
-
-publishing {
-    publications {
-        wdsClient(MavenPublication) {
-            artifactId = "workspacedataservice-client-okhttp-jakarta"
-            from components.java
-            versionMapping {
-                usage('java-runtime') {
-                    fromResolutionResult()
-                }
-            }
-        }
-    }
-    repositories {
-        if (garProjectId && garLocation && garRepoId) {
-            println "Configuring GAR repository with:"
-            println "  Project: ${garProjectId}"
-            println "  Location: ${garLocation}"
-            println "  Repository: ${garRepoId}"
-            
-            // Try both artifactregistry:// and https:// protocols
-            maven {
-                name = "GoogleArtifactRegistry"
-                url = "artifactregistry://${garLocation}-maven.pkg.dev/${garProjectId}/${garRepoId}"
-            }
-            maven {
-                name = "GoogleArtifactRegistryHTTPS"
-                url = "https://${garLocation}-maven.pkg.dev/${garProjectId}/${garRepoId}"
-                println "Also configured HTTPS GAR repository"
-            }
-        } else {
-            println "GAR environment variables missing or incomplete:"
-            println "  GOOGLE_CLOUD_PROJECT: '${garProjectId}'"
-            println "  GAR_LOCATION: '${garLocation}'"
-            println "  GAR_REPOSITORY_ID: '${garRepoId}'"
-            
-            // Add a dummy repository so publish has something to do
-            maven {
-                name = "DummyRepo"
-                url = "file://${System.getProperty('java.io.tmpdir')}/dummy-repo"
-                println "Added dummy repository for testing"
-            }
-        }
-    }
-}
-
+apply from: 'artifactory.gradle'
 apply from: 'swagger.gradle'
 
 boolean isCiServer = System.getenv().containsKey("CI") && System.getenv().get("CI").toBoolean()
@@ -118,9 +53,3 @@ compileJava {
     }
 }
 
-tasks.named("publish") {
-    outputs.upToDateWhen { false }
-    dependsOn 'fixOpenApiGenerate'
-    dependsOn 'jar'
-    dependsOn 'sourcesJar'
-}
