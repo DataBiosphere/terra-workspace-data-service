@@ -25,8 +25,8 @@ jobs:
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v4
 
-      - name: Build all projects without running tests
-        run: ./gradlew --build-cache build -x test
+      # - name: Build all projects without running tests
+      #   run: ./gradlew --build-cache build -x test
 
 #      - name: Publish API client to Artifactory
 #        run: ./gradlew --build-cache :client:artifactoryPublish
@@ -42,18 +42,18 @@ jobs:
           workload_identity_provider: 'projects/1038484894585/locations/global/workloadIdentityPools/github-wi-pool/providers/github-wi-provider'
           service_account: 'dsp-artifact-registry-push@dsp-artifact-registry.iam.gserviceaccount.com'
 
-      - name: Debug publication configuration
-        run: |
-          echo "Environment variables:"
-          echo "GOOGLE_CLOUD_PROJECT: $GOOGLE_CLOUD_PROJECT"
-          echo "GAR_LOCATION: $GAR_LOCATION" 
-          echo "GAR_REPOSITORY_ID: $GAR_REPOSITORY_ID"
-          echo "Publishing tasks:"
-          ./gradlew :client:tasks --group=publishing --info
-        env:
-          GOOGLE_CLOUD_PROJECT: dsp-artifact-registry
-          GAR_LOCATION: us-central1
-          GAR_REPOSITORY_ID: libs-snapshot-standard
+      # - name: Debug publication configuration
+      #   run: |
+      #     echo "Environment variables:"
+      #     echo "GOOGLE_CLOUD_PROJECT: $GOOGLE_CLOUD_PROJECT"
+      #     echo "GAR_LOCATION: $GAR_LOCATION" 
+      #     echo "GAR_REPOSITORY_ID: $GAR_REPOSITORY_ID"
+      #     echo "Publishing tasks:"
+      #     ./gradlew :client:tasks --group=publishing --info
+      #   env:
+      #     GOOGLE_CLOUD_PROJECT: dsp-artifact-registry
+      #     GAR_LOCATION: us-central1
+      #     GAR_REPOSITORY_ID: libs-snapshot-standard
 
       - name: Publish client to GAR
         run: ./gradlew publish
