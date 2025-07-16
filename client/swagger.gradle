@@ -103,5 +103,3 @@ jar {
     from sourceSets.main.output
 }
 
-// Remove the duplicate sources jar configuration since it's already handled by java { withSourcesJar() }
-// in artifactory.gradle

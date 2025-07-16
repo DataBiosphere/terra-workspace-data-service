@@ -195,4 +195,4 @@ api:
 # configuration for the Rawls REST client
 rawls:
   connectTimeout: 10
-  readTimeout: 55
+  readTimeout: 45
