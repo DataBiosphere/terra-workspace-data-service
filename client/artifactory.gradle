@@ -34,7 +34,17 @@ publishing {
     }
     repositories {
         maven {
+            name = "GoogleArtifactRegistry"
             url = uri("artifactregistry://${garLocation}-maven.pkg.dev/${garProjectId}/${garRepoId}")
+        }
+        // Alternative repository using HTTPS (in case GAR plugin has issues)
+        maven {
+            name = "GoogleArtifactRegistryHTTPS"
+            url = uri("https://${garLocation}-maven.pkg.dev/${garProjectId}/${garRepoId}")
+            credentials {
+                username = "_token"
+                password = providers.environmentVariable("GOOGLE_OAUTH_ACCESS_TOKEN").orElse("").get()
+            }
         }
     }
 }
