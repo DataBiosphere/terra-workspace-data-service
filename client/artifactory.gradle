@@ -25,18 +25,29 @@ publishing {
         wdsClient(MavenPublication) {
             artifactId = "workspacedataservice-client-okhttp-jakarta"
             from components.java
-//            versionMapping {
-//                usage('java-runtime') {
-//                    fromResolutionResult()
-//                }
-//            }
+            versionMapping {
+                usage('java-runtime') {
+                    fromResolutionResult()
+                }
+            }
         }
     }
     repositories {
-            maven {
-                url = uri("artifactregistry://${garLocation}-maven.pkg.dev/${garProjectId}/${garRepoId}")
-            }
+        maven {
+            url = uri("artifactregistry://${garLocation}-maven.pkg.dev/${garProjectId}/${garRepoId}")
+        }
     }
+}
+
+// Ensure publishing depends on code generation
+tasks.withType(PublishToMavenRepository) {
+    dependsOn 'fixOpenApiGenerate'
+    dependsOn 'jar'
+    dependsOn 'sourcesJar'
+}
+
+tasks.withType(GenerateModuleMetadata) {
+    dependsOn 'fixOpenApiGenerate'
 }
 
 //artifactory {

@@ -23,6 +23,10 @@ openApiGenerate {
         disallowAdditionalPropertiesIfNotPresent: "false",
         useJakartaEe                            : "true",
         prependFormOrBodyParameters             : "true", // orders arguments in the Java client same as previous swagger-codegen
+        hideGenerationTimestamp                 : "true", // prevent unnecessary diff noise
+        useBeanValidation                       : "true", // add validation annotations
+        performBeanValidation                   : "true", // perform validation
+        serializableModel                       : "true", // make models serializable
     ])
     invokerPackage = "${artifactGroup}.client".toString()
     modelPackage = "${artifactGroup}.model".toString()
@@ -91,5 +95,24 @@ tasks.register('fixOpenApiGenerate') {
 idea.module.generatedSourceDirs = [file("${openApiGenerate.outputDir.get()}/src/main/java")]
 sourceSets.main.java.srcDir files("${openApiGenerate.outputDir.get()}/src/main/java")
 
+// Make sure all compilation and publishing depends on source generation
 compileJava.dependsOn tasks.getByName('fixOpenApiGenerate')
 sourcesJar.dependsOn tasks.getByName('fixOpenApiGenerate')
+
+// Ensure jar task includes all generated sources
+jar {
+    dependsOn 'fixOpenApiGenerate'
+    from sourceSets.main.output
+}
+
+// Make sure the publication includes the generated sources
+afterEvaluate {
+    publishing {
+        publications {
+            withType(MavenPublication) {
+                // Ensure the publication includes generated sources
+                artifact sourcesJar
+            }
+        }
+    }
+}
