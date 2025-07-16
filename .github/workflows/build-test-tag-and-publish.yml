@@ -132,9 +132,9 @@ jobs:
    # if: needs.bump-check.outputs.is-bump == 'no' && github.event_name == 'push' && github.ref_name == 'main'
     needs: [ build, bump-check, tag-job ]
     uses: ./.github/workflows/publish-java-client.yml
-    secrets:
-      ARTIFACTORY_PASSWORD: ${{ secrets.ARTIFACTORY_PASSWORD }}
-      ARTIFACTORY_USERNAME: ${{ secrets.ARTIFACTORY_USERNAME }}
+    # secrets:
+    #   ARTIFACTORY_PASSWORD: ${{ secrets.ARTIFACTORY_PASSWORD }}
+    #   ARTIFACTORY_USERNAME: ${{ secrets.ARTIFACTORY_USERNAME }}
 
   # Publish GitHub Release
   release-job:
