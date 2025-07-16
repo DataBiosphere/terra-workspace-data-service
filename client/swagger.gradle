@@ -103,14 +103,5 @@ jar {
     from sourceSets.main.output
 }
 
-// Make sure the publication includes the generated sources
-afterEvaluate {
-    publishing {
-        publications {
-            withType(MavenPublication) {
-                // Ensure the publication includes generated sources
-                artifact sourcesJar
-            }
-        }
-    }
-}
+// Remove the duplicate sources jar configuration since it's already handled by java { withSourcesJar() }
+// in artifactory.gradle
