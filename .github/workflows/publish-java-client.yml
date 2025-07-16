@@ -1,11 +1,11 @@
 name: Publish Java Client
 on:
   workflow_call:
-    secrets:
-      ARTIFACTORY_USERNAME:
-        required: true
-      ARTIFACTORY_PASSWORD:
-        required: true
+    # secrets:
+    #   ARTIFACTORY_USERNAME:
+    #     required: true
+    #   ARTIFACTORY_PASSWORD:
+    #     required: true
 
 jobs:
   build_publish_client:
