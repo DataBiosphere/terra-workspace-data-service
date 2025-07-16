@@ -44,7 +44,7 @@ jobs:
           service_account: 'dsp-artifact-registry-push@dsp-artifact-registry.iam.gserviceaccount.com'
 
       - name: Publish client to GAR
-        run: ./gradlew clean --build-cache :client:publish --rerun-tasks
+        run: ./gradlew clean --build-cache :client:publish --debug
         env:
           GOOGLE_CLOUD_PROJECT: dsp-artifact-registry
           GAR_LOCATION: us-central1
