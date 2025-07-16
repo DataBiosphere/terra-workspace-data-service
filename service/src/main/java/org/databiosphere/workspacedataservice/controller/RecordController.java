@@ -154,7 +154,7 @@ public class RecordController {
     return new ResponseEntity<>(HttpStatus.NO_CONTENT);
   }
 
-  @PatchMapping("{instanceId}/types/{v}/{type}/{attribute}")
+  @PutMapping("{instanceId}/types/{v}/{type}/{attribute}")
   public ResponseEntity<AttributeSchema> updateAttribute(
       @PathVariable("instanceId") UUID instanceId,
       @PathVariable("v") String version,
