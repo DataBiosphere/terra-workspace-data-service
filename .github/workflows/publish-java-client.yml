@@ -26,8 +26,8 @@ jobs:
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v4
 
-      - name: Build all projects without running tests
-        run: ./gradlew --build-cache build -x test
+#      - name: Build all projects without running tests
+#        run: ./gradlew --build-cache build -x test
 
 #      - name: Publish API client to Artifactory
 #        run: ./gradlew --build-cache :client:artifactoryPublish

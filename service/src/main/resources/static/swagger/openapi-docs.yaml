@@ -366,7 +366,7 @@ paths:
     patch:
       summary: Update an attribute
       description: Update an attribute. All records of this type will be updated.
-      operationId: updateAttributeSchema
+      operationId: updateAttribute
       tags:
         - Schema
       parameters:
