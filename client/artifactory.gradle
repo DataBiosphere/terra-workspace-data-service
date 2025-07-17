@@ -44,6 +44,7 @@ tasks.withType(PublishToMavenRepository) {
     dependsOn 'fixOpenApiGenerate'
     dependsOn 'jar'
     dependsOn 'sourcesJar'
+    outputs.upToDateWhen { false } 
 }
 
 tasks.withType(GenerateModuleMetadata) {
