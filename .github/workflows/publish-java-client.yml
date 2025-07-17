@@ -1,12 +1,6 @@
 name: Publish Java Client
 on:
   workflow_call:
-  workflow_dispatch:
-    # secrets:
-    #   ARTIFACTORY_USERNAME:
-    #     required: true
-    #   ARTIFACTORY_PASSWORD:
-    #     required: true
 
 jobs:
   build_publish_client:
@@ -25,18 +19,9 @@ jobs:
 
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v4
-        with:
-          cache-disabled: true
 
-#      - name: Build all projects without running tests
-#        run: ./gradlew --build-cache build -x test
-
-#      - name: Publish API client to Artifactory
-#        run: ./gradlew --build-cache :client:artifactoryPublish
-#        env:
-#          ARTIFACTORY_USERNAME: ${{ secrets.ARTIFACTORY_USERNAME }}
-#          ARTIFACTORY_PASSWORD: ${{ secrets.ARTIFACTORY_PASSWORD }}
-#          ARTIFACTORY_REPO_KEY: libs-snapshot-local
+      - name: Build all projects without running tests
+        run: ./gradlew --build-cache build -x test
 
       - name: Authenticate to GCP
         uses: google-github-actions/auth@v2
