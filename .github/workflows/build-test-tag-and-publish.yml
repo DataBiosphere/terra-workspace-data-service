@@ -24,6 +24,8 @@ jobs:
           distribution: 'temurin'
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v4
+        with:
+          cache-disabled: true
 
       # - name: Build all projects without running tests
       #   run: ./gradlew --build-cache build -x test
@@ -63,6 +65,8 @@ jobs:
 
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v4
+        with:
+          cache-disabled: true
 
       # - name: Cache SonarCloud packages
       #   uses: actions/cache@v4
@@ -109,22 +113,22 @@ jobs:
     secrets: inherit
 
   # Publish Docker image to Google Container Registry, also reports to Sherlock
-  docker-image-job:
-    if: needs.bump-check.outputs.is-bump == 'no'
-    needs: [ build, bump-check, tag-job ]
-    uses: ./.github/workflows/publish-docker.yml
-    with:
-      new-tag: ${{ needs.tag-job.outputs.new-tag }}
+  # docker-image-job:
+  #   if: needs.bump-check.outputs.is-bump == 'no'
+  #   needs: [ build, bump-check, tag-job ]
+  #   uses: ./.github/workflows/publish-docker.yml
+  #   with:
+  #     new-tag: ${{ needs.tag-job.outputs.new-tag }}
 
-  # Publish Python client to PyPI
-  python-client-job:
-    if: needs.bump-check.outputs.is-bump == 'no' && github.event_name == 'push' && github.ref_name == 'main'
-    needs: [ build, bump-check, tag-job ]
-    uses: ./.github/workflows/release-python-client.yml
-    with:
-      new-tag: ${{ needs.tag-job.outputs.new-tag }}
-    secrets:
-      PYPI_API_TOKEN: ${{ secrets.PYPI_API_TOKEN }}
+  # # Publish Python client to PyPI
+  # python-client-job:
+  #   if: needs.bump-check.outputs.is-bump == 'no' && github.event_name == 'push' && github.ref_name == 'main'
+  #   needs: [ build, bump-check, tag-job ]
+  #   uses: ./.github/workflows/release-python-client.yml
+  #   with:
+  #     new-tag: ${{ needs.tag-job.outputs.new-tag }}
+  #   secrets:
+  #     PYPI_API_TOKEN: ${{ secrets.PYPI_API_TOKEN }}
 
   # Publish Java client to GAR
   java-client-job:
@@ -174,12 +178,12 @@ jobs:
           echo "jiraId=${JIRA_ID}" >> $GITHUB_OUTPUT
 
   # Publish new version to DSP infrastructure
-  publish-app-version-job:
-    if: needs.bump-check.outputs.is-bump == 'no' && github.event_name == 'push' && github.ref_name == 'main'
-    needs: [ build, bump-check, tag-job, get-jira-id, docker-image-job ]
-    uses: ./.github/workflows/publish-app-version.yml
-    with:
-      new-tag: ${{ needs.tag-job.outputs.new-tag }}
-      jiraId: ${{ needs.get-jira-id.outputs.jiraId }}
-    secrets:
-      BROADBOT_TOKEN: ${{ secrets.BROADBOT_TOKEN }}
+  # publish-app-version-job:
+  #   if: needs.bump-check.outputs.is-bump == 'no' && github.event_name == 'push' && github.ref_name == 'main'
+  #   needs: [ build, bump-check, tag-job, get-jira-id, docker-image-job ]
+  #   uses: ./.github/workflows/publish-app-version.yml
+  #   with:
+  #     new-tag: ${{ needs.tag-job.outputs.new-tag }}
+  #     jiraId: ${{ needs.get-jira-id.outputs.jiraId }}
+  #   secrets:
+  #     BROADBOT_TOKEN: ${{ secrets.BROADBOT_TOKEN }}
