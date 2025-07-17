@@ -3,14 +3,11 @@ package org.databiosphere.workspacedataservice.rawls;
 import io.micrometer.observation.ObservationRegistry;
 import java.net.MalformedURLException;
 import java.net.URL;
-import java.time.Duration;
 import org.databiosphere.workspacedataservice.retry.RestClientRetry;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.http.client.ClientHttpRequestFactory;
-import org.springframework.http.client.SimpleClientHttpRequestFactory;
 import org.springframework.web.client.RestClient;
 import org.springframework.web.client.support.RestClientAdapter;
 import org.springframework.web.service.invoker.HttpServiceProxyFactory;
@@ -20,12 +17,6 @@ public class RawlsClientConfig {
 
   @Value("${rawlsurl:}")
   private String rawlsUrl;
-
-  @Value("${rawls.connectTimeout:10}")
-  private Integer connectTimeout;
-
-  @Value("${rawls.readTimeout:45}")
-  private Integer readTimeout;
 
   @Bean
   public RawlsClient rawlsClient(RawlsApi rawlsApi, RestClientRetry restClientRetry) {
@@ -39,13 +30,6 @@ public class RawlsClientConfig {
         HttpServiceProxyFactory.builderFor(RestClientAdapter.create(restClient)).build();
 
     return httpServiceProxyFactory.createClient(RawlsApi.class);
-  }
-
-  ClientHttpRequestFactory customRequestFactory() {
-    SimpleClientHttpRequestFactory factory = new SimpleClientHttpRequestFactory();
-    factory.setReadTimeout(Duration.ofSeconds(readTimeout));
-    factory.setConnectTimeout(Duration.ofSeconds(connectTimeout));
-    return factory;
   }
 
   // fluent RestClient, initialized with Rawls' base url, auth from TokenContextUtil, and the
@@ -62,7 +46,6 @@ public class RawlsClientConfig {
         .observationRegistry(observationRegistry)
         .baseUrl(rawlsUrl)
         .requestInitializer(new BearerAuthRequestInitializer())
-        .requestFactory(customRequestFactory())
         .build();
   }
 }
