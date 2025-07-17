@@ -31,41 +31,41 @@ jobs:
 #      - name: Build all projects without running tests
 #        run: ./gradlew --build-cache build -x test
 
-  unit-tests:
-    needs: [ build ]
-    runs-on: ubuntu-latest
+  # unit-tests:
+  #   needs: [ build ]
+  #   runs-on: ubuntu-latest
 
-    services:
-      postgres:
-        image: postgres:14
-        env:
-          POSTGRES_PASSWORD: postgres
-        options: >-
-          --health-cmd pg_isready
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
-        ports: [ "5432:5432" ]
+  #   services:
+  #     postgres:
+  #       image: postgres:14
+  #       env:
+  #         POSTGRES_PASSWORD: postgres
+  #       options: >-
+  #         --health-cmd pg_isready
+  #         --health-interval 10s
+  #         --health-timeout 5s
+  #         --health-retries 5
+  #       ports: [ "5432:5432" ]
 
-    steps:
-      - uses: actions/checkout@v4
-        # Needed by sonar to get the git history for the branch the PR will be merged into.
-        with:
-          fetch-depth: 0
+  #   steps:
+  #     - uses: actions/checkout@v4
+  #       # Needed by sonar to get the git history for the branch the PR will be merged into.
+  #       with:
+  #         fetch-depth: 0
 
-      - name: Initialize Postgres DB
-        env:
-          PGPASSWORD: postgres
-        run: psql -h 127.0.0.1 -U postgres -f ./local-dev/local-postgres-init.sql
+  #     - name: Initialize Postgres DB
+  #       env:
+  #         PGPASSWORD: postgres
+  #       run: psql -h 127.0.0.1 -U postgres -f ./local-dev/local-postgres-init.sql
 
-      - name: Set up JDK
-        uses: actions/setup-java@v4
-        with:
-          java-version: '17'
-          distribution: 'temurin'
+  #     - name: Set up JDK
+  #       uses: actions/setup-java@v4
+  #       with:
+  #         java-version: '17'
+  #         distribution: 'temurin'
 
-      - name: Setup Gradle
-        uses: gradle/actions/setup-gradle@v4
+  #     - name: Setup Gradle
+  #       uses: gradle/actions/setup-gradle@v4
 
 #      - name: Cache SonarCloud packages
 #        uses: actions/cache@v4
@@ -85,13 +85,13 @@ jobs:
 #          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 #        run: ./gradlew --build-cache sonar
 
-      - name: Upload Test Reports
-        if: steps.build-test.outcome == 'failure'
-        uses: actions/upload-artifact@v4
-        with:
-          name: Test Reports
-          path: service/build/reports
-          retention-days: 14
+      # - name: Upload Test Reports
+      #   if: steps.build-test.outcome == 'failure'
+      #   uses: actions/upload-artifact@v4
+      #   with:
+      #     name: Test Reports
+      #     path: service/build/reports
+      #     retention-days: 14
 
   bump-check:
     runs-on: ubuntu-latest
@@ -108,7 +108,7 @@ jobs:
   tag-job:
     if: needs.bump-check.outputs.is-bump == 'no'
     uses: ./.github/workflows/tag.yml
-    needs: [ build, unit-tests, bump-check ]
+    needs: [ build, bump-check ]
     secrets: inherit
 
   # Publish Docker image to Google Container Registry, also reports to Sherlock
