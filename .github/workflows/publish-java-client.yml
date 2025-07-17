@@ -1,15 +1,12 @@
 name: Publish Java Client
 on:
   workflow_call:
-    secrets:
-      ARTIFACTORY_USERNAME:
-        required: true
-      ARTIFACTORY_PASSWORD:
-        required: true
 
 jobs:
   build_publish_client:
     runs-on: ubuntu-latest
+    permissions:
+      id-token: write
     steps:
       - uses: actions/checkout@v4
         with:
@@ -26,9 +23,18 @@ jobs:
       - name: Build all projects without running tests
         run: ./gradlew --build-cache build -x test
 
-      - name: Publish API client to Artifactory
-        run: ./gradlew --build-cache :client:artifactoryPublish
+      - name: Authenticate to GCP
+        uses: google-github-actions/auth@v2
+        with:
+          token_format: access_token
+          workload_identity_provider: 'projects/1038484894585/locations/global/workloadIdentityPools/github-wi-pool/providers/github-wi-provider'
+          service_account: 'dsp-artifact-registry-push@dsp-artifact-registry.iam.gserviceaccount.com'
+
+      - name: Publish client to GAR
+        run: ./gradlew publish
         env:
-          ARTIFACTORY_USERNAME: ${{ secrets.ARTIFACTORY_USERNAME }}
-          ARTIFACTORY_PASSWORD: ${{ secrets.ARTIFACTORY_PASSWORD }}
-          ARTIFACTORY_REPO_KEY: libs-snapshot-local
+          GOOGLE_CLOUD_PROJECT: dsp-artifact-registry
+          GAR_LOCATION: us-central1
+          GAR_REPOSITORY_ID: libs-snapshot-standard
+
+
