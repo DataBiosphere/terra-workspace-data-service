@@ -191,3 +191,8 @@ api:
     backoff:
       delay: 150
       multiplier: 1.5
+
+# configuration for the Rawls REST client
+rawls:
+  connectTimeout: 10
+  readTimeout: 45
