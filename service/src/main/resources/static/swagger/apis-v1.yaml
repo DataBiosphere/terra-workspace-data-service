@@ -73,6 +73,17 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/GenericJob'
+    get:
+      summary: Import from a file
+      description: Imports records from the specified URL.
+      operationId: importGetV1
+      tags:
+        - Import
+      parameters:
+        - $ref: '#/components/parameters/instanceUuidPathParam'
+      responses:
+        202:
+          description: Import accepted.
 
   ##############################
   # Job APIs

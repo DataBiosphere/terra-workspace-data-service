@@ -32,4 +32,9 @@ public class ImportController implements ImportApi {
     GenericJobServerModel importJob = importService.createImport(instanceUuid, importRequest);
     return new ResponseEntity<>(importJob, HttpStatus.ACCEPTED);
   }
+
+  @Override
+  public ResponseEntity importGetV1(UUID instanceUuid) {
+    return new ResponseEntity<>(HttpStatus.ACCEPTED);
+  }
 }
