@@ -129,7 +129,7 @@ jobs:
 
   # Publish Java client to Artifactory
   java-client-job:
-#    if: needs.bump-check.outputs.is-bump == 'no' && github.event_name == 'push' && github.ref_name == 'main'
+    if: needs.bump-check.outputs.is-bump == 'no' && github.event_name == 'push' && github.ref_name == 'main'
     needs: [ build, bump-check, tag-job ]
     uses: ./.github/workflows/publish-java-client.yml
 
