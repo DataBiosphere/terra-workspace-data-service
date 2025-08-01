@@ -65,7 +65,7 @@ dependencies {
     implementation 'org.postgresql:postgresql'
     implementation 'org.webjars:webjars-locator-lite' // versioned by spring dependency management
     implementation 'com.fasterxml.jackson.dataformat:jackson-dataformat-csv'
-    implementation 'io.sentry:sentry-logback:8.16.0'
+    implementation 'io.sentry:sentry-logback:8.18.0'
     implementation 'net.logstash.logback:logstash-logback-encoder:8.1'
     implementation 'org.codehaus.janino:janino'
     implementation 'org.liquibase:liquibase-core'
@@ -78,7 +78,7 @@ dependencies {
 
     // required by openapi-generated models and api interfaces
     implementation 'jakarta.validation:jakarta.validation-api'
-    implementation 'io.swagger.core.v3:swagger-annotations:2.2.34'
+    implementation 'io.swagger.core.v3:swagger-annotations:2.2.35'
 
     // Terra libraries
     implementation group: 'org.broadinstitute.dsde.workbench', name: 'sam-client_2.13', version: 'v0.0.282'
@@ -86,7 +86,7 @@ dependencies {
     implementation "bio.terra:datarepo-client:2.13.0-SNAPSHOT"
     // WSM client included for models only
     implementation "bio.terra:workspace-manager-client:0.254.983-SNAPSHOT"
-    implementation "bio.terra:java-pfb-library:0.74.0"
+    implementation "bio.terra:java-pfb-library:0.77.0"
     implementation project(path: ':client')
 
     // Parquet, used for TDR snapshot import
@@ -120,7 +120,7 @@ dependencies {
     implementation "org.apache.hadoop:hadoop-mapreduce-client-core:$hadoop_version", withoutHadoopExcludes
 
     annotationProcessor 'org.springframework.boot:spring-boot-configuration-processor'
-    runtimeOnly 'org.webjars.npm:swagger-ui-dist:5.25.3'
+    runtimeOnly 'org.webjars.npm:swagger-ui-dist:5.27.0'
     testImplementation 'io.micrometer:micrometer-observation-test'
     testImplementation 'org.springframework.boot:spring-boot-starter-test'
     testImplementation 'org.junit.jupiter:junit-jupiter'
@@ -131,14 +131,14 @@ dependencies {
     testImplementation 'org.awaitility:awaitility'
 
     // google bucket mock
-    testImplementation 'com.google.cloud:google-cloud-nio:0.127.38'
+    testImplementation 'com.google.cloud:google-cloud-nio:0.128.1'
 
     constraints {
         implementation('org.json:json:20250517') {
             because("CVE-2022-45688")
         }
         // commons-compress required by org.apache.avro:avro:1.11.3, required by java-pfb-library:0.14.0
-        implementation('org.apache.commons:commons-compress:1.27.1') {
+        implementation('org.apache.commons:commons-compress:1.28.0') {
             because("CVE-2023-42503")
         }
         implementation('org.apache.commons:commons-configuration2:2.12.0') {
@@ -149,7 +149,7 @@ dependencies {
             because("CVE-2025-48734")
         }
         // tomcat-embed-core is included by Spring Boot
-        implementation('org.apache.tomcat.embed:tomcat-embed-core:11.0.8') {
+        implementation('org.apache.tomcat.embed:tomcat-embed-core:11.0.9') {
             because("CVE-2025-48988")
         }
     }
