@@ -5,7 +5,7 @@ plugins {
 
     id 'org.openapi.generator'
     id 'com.diffplug.spotless'
-    id 'com.google.cloud.artifactregistry.gradle-plugin' version '2.1.5'
+    id 'com.google.cloud.artifactregistry.gradle-plugin' version '2.2.5'
 }
 
 repositories {
