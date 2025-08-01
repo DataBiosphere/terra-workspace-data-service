@@ -43,7 +43,7 @@ jib {
 ext {
     parquet_mr_version = "1.15.2"
     hadoop_version = "3.4.1"
-    spring_cloud_gcp_version = "6.2.2"
+    spring_cloud_gcp_version = "7.0.0"
 }
 
 dependencies {
