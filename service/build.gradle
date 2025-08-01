@@ -73,7 +73,7 @@ dependencies {
     implementation 'org.ehcache:ehcache:3.10.8:jakarta'
     implementation 'org.hashids:hashids:1.0.3'
     implementation 'jakarta.ws.rs:jakarta.ws.rs-api'
-    implementation 'com.google.mug:mug:8.7'
+    implementation 'com.google.mug:mug:9.1'
     implementation 'org.apache.lucene:lucene-queryparser:9.12.2'
 
     // required by openapi-generated models and api interfaces
