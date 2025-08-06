@@ -62,10 +62,10 @@ class ImportRequirementsFactoryTest extends ControlPlaneTestBase {
     return Stream.of(
         Arguments.of(
             /* importUri */ URI.create("https://storage.googleapis.com/test-bucket/file.pfb"),
-            /* shouldReuqireProtectedDataPolicy */ false),
+            /* shouldRequireProtectedDataPolicy */ false),
         Arguments.of(
             /* importUri */ URI.create("https://files.terra.bio/file.pfb"),
-            /* shouldReuqireProtectedDataPolicy */ false));
+            /* shouldRequireProtectedDataPolicy */ false));
   }
 
   /*
