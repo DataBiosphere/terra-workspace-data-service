@@ -97,6 +97,10 @@ class ImportRequirementsFactoryTest extends ControlPlaneTestBase {
         Arguments.of(
             /* importUri */ URI.create(
                 "https://s3.amazonaws.com/gen3-theanvil-io-pfb-export/file.pfb"),
+            /* shouldRequirePrivateWorkspace/ProtectedDataPolicy */ true),
+        Arguments.of(
+            /* importUri */ URI.create(
+                "https://nih-nhlbi-topmed-released-phs000810-abc.amazonaws.com/parent-EFG_-phs000810-hij2.avro"),
             /* shouldRequirePrivateWorkspace/ProtectedDataPolicy */ true));
   }
 }

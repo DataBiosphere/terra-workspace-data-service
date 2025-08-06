@@ -144,7 +144,8 @@ class DefaultImportValidatorTest extends ControlPlaneTestBase {
         "https://storage.googleapis.com/testbucket/file",
         // AWS
         "https://s3.amazonaws.com/testbucket/file",
-        "https://testbucket.s3.amazonaws.com/file"
+        "https://testbucket.s3.amazonaws.com/file",
+        "https://nih-nhlbi-biodata-catalyst-test.s3.amazonaws.com/file.avro"
       })
   void allowsImportsFromCloudStorage(String cloudStorageUrl) {
     // Arrange
