@@ -17,7 +17,7 @@ jobs:
 
     steps:
       - name: Checkout sources
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
       - name: Set up JDK
         uses: actions/setup-java@v4
         with:
@@ -46,7 +46,7 @@ jobs:
         ports: [ "5432:5432" ]
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         # Needed by sonar to get the git history for the branch the PR will be merged into.
         with:
           fetch-depth: 0
@@ -96,7 +96,7 @@ jobs:
     outputs:
       is-bump: ${{ steps.bumpcheck.outputs.is-bump }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - name: Skip version bump merges
         id: bumpcheck
         uses: ./.github/actions/bump-skip
