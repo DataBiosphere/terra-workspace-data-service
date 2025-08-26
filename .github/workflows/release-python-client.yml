@@ -73,7 +73,7 @@ jobs:
           docker run -v ${{ github.workspace }}/service/src/test/resources/nginx.conf:/etc/nginx/nginx.conf:ro -v ${{ github.workspace }}/service/src/test/resources:/usr/share/nginx/html -p 9889:80 -d nginx:1.23.3
 
       - name: Set up JDK
-        uses: actions/setup-java@v4
+        uses: actions/setup-java@v5
         with:
           java-version: '17'
           distribution: 'temurin'
