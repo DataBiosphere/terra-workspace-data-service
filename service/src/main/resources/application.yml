@@ -165,6 +165,9 @@ twds:
         requireProtectedDataPolicy: true
         requiredAuthDomainGroups:
           - "federal_data_lockdown"
+    allowlist:
+      - ^drs:\/\/repo-prod\.prod\.sagebase\.org\/
+      - ^https:\/\/pdc-pfb-files\.s3\.amazonaws\.com\/
 
   pg_dump:
     path: ${PGDUMP_PATH:/usr/bin/pg_dump}

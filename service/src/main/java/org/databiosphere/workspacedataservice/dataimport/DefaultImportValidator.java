@@ -53,6 +53,7 @@ public class DefaultImportValidator implements ImportValidator {
       SamDao samDao,
       Set<Pattern> allowedHttpsHosts,
       List<ImportSourceConfig> sources,
+      Set<Pattern> allowlist,
       @Nullable String allowedRawlsBucket,
       ConnectivityChecker connectivityChecker,
       DrsImportProperties drsImportProperties) {
@@ -72,7 +73,7 @@ public class DefaultImportValidator implements ImportValidator {
     }
 
     this.allowedHostsByScheme = allowedHostsBuilder.build();
-    this.importRequirementsFactory = new ImportRequirementsFactory(sources);
+    this.importRequirementsFactory = new ImportRequirementsFactory(sources, allowlist);
     this.protectedDataSupport = protectedDataSupport;
     this.samDao = samDao;
     this.connectivityChecker = connectivityChecker;

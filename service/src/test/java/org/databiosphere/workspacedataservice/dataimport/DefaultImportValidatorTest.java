@@ -76,6 +76,8 @@ class DefaultImportValidatorTest extends ControlPlaneTestBase {
                   /* requirePrivateWorkspace */ true,
                   /* requireProtectedDataPolicy */ false,
                   /* requiredAuthDomainGroups */ List.of())),
+          /* allowlist */ Set.of(
+              Pattern.compile("allowed\\.pfb"), Pattern.compile("itsfine\\.pfb")),
           /* allowedRawlsBucket */ "test-bucket",
           new NoopConnectivityChecker(),
           drsImportProperties);
@@ -299,6 +301,7 @@ class DefaultImportValidatorTest extends ControlPlaneTestBase {
             samDao,
             /* allowedHttpsHosts */ Set.of(Pattern.compile(".*\\.terra\\.bio")),
             /* sources */ List.of(),
+            /* allowlist */ Set.of(),
             /* allowedRawlsBucket */ "test-bucket",
             mockConnectivityChecker,
             drsImportProperties);

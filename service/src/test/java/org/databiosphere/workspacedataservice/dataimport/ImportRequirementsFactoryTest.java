@@ -22,7 +22,8 @@ class ImportRequirementsFactoryTest extends ControlPlaneTestBase {
       URI importUri, boolean shouldRequirePrivateWorkspace) {
     // Arrange
     ImportRequirementsFactory importRequirementsFactory =
-        new ImportRequirementsFactory(dataImportProperties.getSources());
+        new ImportRequirementsFactory(
+            dataImportProperties.getSources(), dataImportProperties.getAllowlist());
 
     // Act
     ImportRequirements importRequirements =
@@ -48,7 +49,8 @@ class ImportRequirementsFactoryTest extends ControlPlaneTestBase {
       URI importUri, boolean shouldRequireProtectedDataPolicy) {
     // Arrange
     ImportRequirementsFactory importRequirementsFactory =
-        new ImportRequirementsFactory(dataImportProperties.getSources());
+        new ImportRequirementsFactory(
+            dataImportProperties.getSources(), dataImportProperties.getAllowlist());
 
     // Act
     ImportRequirements importRequirements =

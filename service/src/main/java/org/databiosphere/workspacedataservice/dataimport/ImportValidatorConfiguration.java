@@ -28,6 +28,7 @@ public class ImportValidatorConfiguration {
         samDao,
         dataImportProperties.getAllowedHosts(),
         dataImportProperties.getSources(),
+        dataImportProperties.getAllowlist(),
         dataImportProperties.getRawlsBucketName(),
         connectivityChecker,
         drsImportProperties);

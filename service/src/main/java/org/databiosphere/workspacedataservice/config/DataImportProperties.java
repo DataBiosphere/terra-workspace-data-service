@@ -21,6 +21,7 @@ public class DataImportProperties {
   private String statusUpdatesTopic;
   private String statusUpdatesSubscription;
   private List<ImportSourceConfig> sources;
+  private Set<Pattern> allowlist = emptySet();
   private boolean shouldAddImportMetadata = false;
   private boolean connectivityCheckEnabled = false;
 
@@ -108,6 +109,14 @@ public class DataImportProperties {
 
   public void setSources(List<ImportSourceConfig> sources) {
     this.sources = sources;
+  }
+
+  public Set<Pattern> getAllowlist() {
+    return allowlist;
+  }
+
+  public void setAllowlist(String[] allowlist) {
+    this.allowlist = stream(allowlist).map(Pattern::compile).collect(Collectors.toSet());
   }
 
   /**
