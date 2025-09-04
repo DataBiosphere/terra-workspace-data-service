@@ -4,9 +4,10 @@ import static java.util.Collections.emptySet;
 import static java.util.regex.Pattern.compile;
 
 import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.Sets;
 import io.micrometer.common.util.StringUtils;
 import java.net.URI;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -33,15 +34,7 @@ public class DefaultImportValidator implements ImportValidator {
           TypeEnum.PFB, Set.of(SCHEME_HTTPS, SCHEME_DRS),
           TypeEnum.RAWLSJSON, Set.of(SCHEME_GS),
           TypeEnum.TDRMANIFEST, Set.of(SCHEME_HTTPS));
-  private static final Set<Pattern> ALWAYS_ALLOWED_HOSTS =
-      Set.of(
-          compile("storage\\.googleapis\\.com"),
-          compile(".*\\.core\\.windows\\.net"),
-          // S3 allows multiple URL formats
-          // https://docs.aws.amazon.com/AmazonS3/latest/userguide/VirtualHosting.html
-          compile("s3\\.amazonaws\\.com"), // path style legacy global endpoint
-          compile(".*\\.s3\\.amazonaws\\.com") // virtual host style legacy global endpoint
-          );
+
   private final Map<String, Set<Pattern>> allowedHostsByScheme;
   private final ImportRequirementsFactory importRequirementsFactory;
   private final ProtectedDataSupport protectedDataSupport;
@@ -56,22 +49,39 @@ public class DefaultImportValidator implements ImportValidator {
       @Nullable String allowedRawlsBucket,
       ConnectivityChecker connectivityChecker,
       DrsImportProperties drsImportProperties) {
-    var allowedHostsBuilder =
-        ImmutableMap.<String, Set<Pattern>>builder()
-            .put(SCHEME_HTTPS, Sets.union(ALWAYS_ALLOWED_HOSTS, allowedHttpsHosts))
-            .put(
-                SCHEME_DRS,
-                drsImportProperties.getAllowedHosts().stream()
-                    .map(Pattern::compile)
-                    .collect(Collectors.toSet()));
+
+    // Initialize schemeToHosts with known schemes and empty sets
+    Map<String, Set<Pattern>> schemeToHosts = new HashMap<>();
+    schemeToHosts.put(SCHEME_HTTPS, new HashSet<>(allowedHttpsHosts));
+    schemeToHosts.put(SCHEME_GS, new HashSet<>());
+    schemeToHosts.put(
+        SCHEME_DRS,
+        drsImportProperties.getAllowedHosts().stream()
+            .map(Pattern::compile)
+            .collect(Collectors.toSet()));
+
+    // Process the source URL patterns to extract schemes and hosts
+    Set<Pattern> sourceUrlPatterns =
+        sources.stream().flatMap(source -> source.urls().stream()).collect(Collectors.toSet());
+
+    Pattern schemeExtractor = Pattern.compile("^\\^(https?|gs|drs):\\\\/\\\\/(.+?)\\\\/(?:\\*|$)");
+    sourceUrlPatterns.forEach(
+        sourceUrl -> {
+          Matcher matcher = schemeExtractor.matcher(sourceUrl.toString());
+          if (matcher.find()) {
+            String scheme = matcher.group(1);
+            String hostRegex = matcher.group(2);
+
+            // Add the host pattern to the appropriate scheme bucket
+            Pattern hostPattern = Pattern.compile(hostRegex);
+            schemeToHosts.computeIfAbsent(scheme, k -> new HashSet<>()).add(hostPattern);
+          }
+        });
 
     if (StringUtils.isNotBlank(allowedRawlsBucket)) {
-      allowedHostsBuilder.put(SCHEME_GS, Set.of(compile(allowedRawlsBucket)));
-    } else {
-      allowedHostsBuilder.put(SCHEME_GS, emptySet());
+      schemeToHosts.get(SCHEME_GS).add(compile(allowedRawlsBucket));
     }
-
-    this.allowedHostsByScheme = allowedHostsBuilder.build();
+    this.allowedHostsByScheme = ImmutableMap.copyOf(schemeToHosts);
     this.importRequirementsFactory = new ImportRequirementsFactory(sources);
     this.protectedDataSupport = protectedDataSupport;
     this.samDao = samDao;
