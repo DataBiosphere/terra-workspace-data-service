@@ -1,6 +1,6 @@
 package org.databiosphere.workspacedataservice.service;
 
-import static org.databiosphere.workspacedataservice.generated.ImportRequestServerModel.TypeEnum.*;
+import static org.databiosphere.workspacedataservice.generated.ImportRequestServerModel.TypeEnum.PFB;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.mockito.Mockito.when;
 
@@ -36,8 +36,7 @@ class ImportServiceControlPlaneTest extends ControlPlaneTestBase {
 
   @MockitoBean DataTableTypeInspector dataTableTypeInspector;
 
-  private final URI importUri =
-      URI.create("https://teststorageaccount.blob.core.windows.net/testcontainer/file");
+  private final URI importUri = URI.create("https://anvil.gi.ucsc.edu/testcontainer/file");
   private final ImportRequestServerModel importRequest =
       new ImportRequestServerModel(PFB, importUri);
 

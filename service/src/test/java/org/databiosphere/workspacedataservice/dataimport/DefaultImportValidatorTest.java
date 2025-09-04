@@ -5,6 +5,7 @@ import static org.assertj.core.api.AssertionsForClassTypes.assertThatExceptionOf
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
@@ -135,27 +136,6 @@ class DefaultImportValidatorTest extends ControlPlaneTestBase {
     assertEquals("Files may not be imported from file URLs.", err.getMessage());
   }
 
-  @ParameterizedTest
-  @ValueSource(
-      strings = {
-        // Azure
-        "https://teststorageaccount.blob.core.windows.net/testcontainer/file",
-        // GCP
-        "https://storage.googleapis.com/testbucket/file",
-        // AWS
-        "https://s3.amazonaws.com/testbucket/file",
-        "https://testbucket.s3.amazonaws.com/file",
-        "https://nih-nhlbi-biodata-catalyst-test.s3.amazonaws.com/file.avro"
-      })
-  void allowsImportsFromCloudStorage(String cloudStorageUrl) {
-    // Arrange
-    URI importUri = URI.create(cloudStorageUrl);
-    ImportRequestServerModel importRequest = new ImportRequestServerModel(TypeEnum.PFB, importUri);
-
-    // Act/Assert
-    assertDoesNotThrow(() -> importValidator.validateImport(importRequest, destinationWorkspaceId));
-  }
-
   @Test
   void allowsImportsFromConfiguredSources() {
     // Arrange
@@ -166,10 +146,22 @@ class DefaultImportValidatorTest extends ControlPlaneTestBase {
     assertDoesNotThrow(() -> importValidator.validateImport(importRequest, destinationWorkspaceId));
   }
 
-  @Test
-  void rejectsImportsFromOtherSources() {
+  @ParameterizedTest
+  @ValueSource(
+      strings = {
+        // Azure
+        "https://teststorageaccount.blob.core.windows.net/testcontainer/file",
+        // GCP
+        "https://storage.googleapis.com/testbucket/file",
+        // AWS
+        "https://s3.amazonaws.com/testbucket/file",
+        "https://testbucket.s3.amazonaws.com/file",
+        "https://nih-nhlbi-biodata-catalyst-test.s3.amazonaws.com/file.avro",
+        "https://example.com/file"
+      })
+  void rejectsImportsFromOtherSources(String sourceUrl) {
     // Arrange
-    URI importUri = URI.create("https://example.com/file");
+    URI importUri = URI.create(sourceUrl);
     ImportRequestServerModel importRequest = new ImportRequestServerModel(TypeEnum.PFB, importUri);
 
     // Act/Assert
@@ -177,7 +169,7 @@ class DefaultImportValidatorTest extends ControlPlaneTestBase {
         assertThrows(
             ValidationException.class,
             () -> importValidator.validateImport(importRequest, destinationWorkspaceId));
-    assertEquals("Files may not be imported from example.com.", err.getMessage());
+    assertTrue(err.getMessage().contains("Files may not be imported from"));
   }
 
   @Test
