@@ -24,7 +24,6 @@ public class ImportRequirementsFactory {
       return new ImportRequirements(false, false, List.of());
     }
 
-    // TODO don't match uri here
     boolean requiresPrivateWorkspace =
         sources.stream()
             .filter(source -> source.matchesUri(importUri))

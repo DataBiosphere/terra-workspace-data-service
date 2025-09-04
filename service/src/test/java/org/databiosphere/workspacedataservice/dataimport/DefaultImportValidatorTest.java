@@ -361,6 +361,20 @@ class DefaultImportValidatorTest extends ControlPlaneTestBase {
     }
   }
 
+  @Test
+  void rejectsUrlsNotInSourcesOrAllowlist() {
+    URI importUri = URI.create("https://not-in-sources-or-allowlist.example.com/file.pfb");
+    ImportRequestServerModel importRequest = new ImportRequestServerModel(TypeEnum.PFB, importUri);
+
+    ValidationException err =
+        assertThrows(
+            ValidationException.class,
+            () -> importValidator.validateImport(importRequest, destinationWorkspaceId));
+    assertEquals(
+        "Files may not be imported from not-in-sources-or-allowlist.example.com.",
+        err.getMessage());
+  }
+
   static Stream<Arguments> requirePrivateWorkspacesForImportsFromConfiguredSourcesTestCases() {
     URI privateImport = URI.create("https://files.terra.bio/private.pfb");
     URI otherImport = URI.create("https://files.terra.bio/file.pfb");

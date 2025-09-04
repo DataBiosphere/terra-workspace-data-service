@@ -1,6 +1,8 @@
 package org.databiosphere.workspacedataservice.dataimport;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.net.URI;
 import java.util.stream.Stream;
@@ -58,6 +60,24 @@ class ImportRequirementsFactoryTest extends ControlPlaneTestBase {
 
     // Assert
     assertEquals(shouldRequireProtectedDataPolicy, importRequirements.protectedDataPolicy());
+  }
+
+  @ParameterizedTest
+  @MethodSource("allowlistTestCases")
+  void allowlistUrlsHaveNoRequirements(URI importUri) {
+    ImportRequirementsFactory factory =
+        new ImportRequirementsFactory(
+            dataImportProperties.getSources(), dataImportProperties.getAllowlist());
+    ImportRequirements reqs = factory.getRequirementsForImport(importUri);
+    assertFalse(reqs.privateWorkspace());
+    assertFalse(reqs.protectedDataPolicy());
+    assertTrue(reqs.requiredAuthDomainGroups().isEmpty());
+  }
+
+  private static Stream<Arguments> allowlistTestCases() {
+    return Stream.of(
+        Arguments.of(URI.create("drs://repo-prod.prod.sagebase.org/somefile")),
+        Arguments.of(URI.create("https://pdc-pfb-files.s3.amazonaws.com/anotherfile")));
   }
 
   private static Stream<Arguments> requireProtectedDataPolicyTestCases() {
