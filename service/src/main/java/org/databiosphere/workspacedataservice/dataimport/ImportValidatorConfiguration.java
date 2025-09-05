@@ -30,7 +30,8 @@ public class ImportValidatorConfiguration {
         dataImportProperties.getSources(),
         dataImportProperties.getRawlsBucketName(),
         connectivityChecker,
-        drsImportProperties);
+        drsImportProperties,
+        dataImportProperties.getAllowedBuckets());
   }
 
   /** Allow import validation to be disabled for some test workflows. */

@@ -5,6 +5,7 @@ import static org.assertj.core.api.AssertionsForClassTypes.assertThatExceptionOf
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
@@ -56,10 +57,14 @@ class DefaultImportValidatorTest extends ControlPlaneTestBase {
         ProtectedDataSupport protectedDataSupport,
         SamDao samDao,
         DrsImportProperties drsImportProperties) {
+      when(drsImportProperties.getAllowedHosts())
+          .thenReturn(List.of("repo-prod\\.prod\\.sagebase\\.org"));
       return new DefaultImportValidator(
           protectedDataSupport,
           samDao,
-          /* allowedHttpsHosts */ Set.of(Pattern.compile(".*\\.terra\\.bio")),
+          /* allowedHttpsHosts */ Set.of(
+              Pattern.compile(".*\\.terra\\.bio"),
+              Pattern.compile("pdc-pfb-files\\.s3\\.amazonaws.com")),
           /* sources */ List.of(
               new ImportSourceConfig(
                   /* urls */ List.of(Pattern.compile("authdomain\\.pfb")),
@@ -78,7 +83,9 @@ class DefaultImportValidatorTest extends ControlPlaneTestBase {
                   /* requiredAuthDomainGroups */ List.of())),
           /* allowedRawlsBucket */ "test-bucket",
           new NoopConnectivityChecker(),
-          drsImportProperties);
+          drsImportProperties,
+          /*allowedBuckets*/ Set.of(
+              Pattern.compile("storage\\.googleapis\\.com/datarepo-.*-snapshot-export-bucket")));
     }
   }
 
@@ -138,6 +145,33 @@ class DefaultImportValidatorTest extends ControlPlaneTestBase {
   @ParameterizedTest
   @ValueSource(
       strings = {
+        "https://files.terra.bio/file",
+        "https://pdc-pfb-files.s3.amazonaws.com/file",
+        "drs://repo-prod.prod.sagebase.org/file"
+      })
+  void allowsImportsFromConfiguredSources(String sourceUrl) {
+    // Arrange
+    URI importUri = URI.create(sourceUrl);
+    ImportRequestServerModel importRequest = new ImportRequestServerModel(TypeEnum.PFB, importUri);
+
+    // Act/Assert
+    assertDoesNotThrow(() -> importValidator.validateImport(importRequest, destinationWorkspaceId));
+  }
+
+  @Test
+  void allowsImportsFromIdentifiedBuckets() {
+    // Arrange
+    URI importUri =
+        URI.create("https://storage.googleapis.com/datarepo-a1b2c3d4-snapshot-export-bucket/file");
+    ImportRequestServerModel importRequest = new ImportRequestServerModel(TypeEnum.PFB, importUri);
+
+    // Act/Assert
+    assertDoesNotThrow(() -> importValidator.validateImport(importRequest, destinationWorkspaceId));
+  }
+
+  @ParameterizedTest
+  @ValueSource(
+      strings = {
         // Azure
         "https://teststorageaccount.blob.core.windows.net/testcontainer/file",
         // GCP
@@ -145,31 +179,12 @@ class DefaultImportValidatorTest extends ControlPlaneTestBase {
         // AWS
         "https://s3.amazonaws.com/testbucket/file",
         "https://testbucket.s3.amazonaws.com/file",
-        "https://nih-nhlbi-biodata-catalyst-test.s3.amazonaws.com/file.avro"
+        "https://nih-nhlbi-biodata-catalyst-test.s3.amazonaws.com/file.avro",
+        "https://example.com/file"
       })
-  void allowsImportsFromCloudStorage(String cloudStorageUrl) {
+  void rejectsImportsFromOtherSources(String sourceUrl) {
     // Arrange
-    URI importUri = URI.create(cloudStorageUrl);
-    ImportRequestServerModel importRequest = new ImportRequestServerModel(TypeEnum.PFB, importUri);
-
-    // Act/Assert
-    assertDoesNotThrow(() -> importValidator.validateImport(importRequest, destinationWorkspaceId));
-  }
-
-  @Test
-  void allowsImportsFromConfiguredSources() {
-    // Arrange
-    URI importUri = URI.create("https://files.terra.bio/file");
-    ImportRequestServerModel importRequest = new ImportRequestServerModel(TypeEnum.PFB, importUri);
-
-    // Act/Assert
-    assertDoesNotThrow(() -> importValidator.validateImport(importRequest, destinationWorkspaceId));
-  }
-
-  @Test
-  void rejectsImportsFromOtherSources() {
-    // Arrange
-    URI importUri = URI.create("https://example.com/file");
+    URI importUri = URI.create(sourceUrl);
     ImportRequestServerModel importRequest = new ImportRequestServerModel(TypeEnum.PFB, importUri);
 
     // Act/Assert
@@ -177,7 +192,7 @@ class DefaultImportValidatorTest extends ControlPlaneTestBase {
         assertThrows(
             ValidationException.class,
             () -> importValidator.validateImport(importRequest, destinationWorkspaceId));
-    assertEquals("Files may not be imported from example.com.", err.getMessage());
+    assertTrue(err.getMessage().contains("Files may not be imported from"));
   }
 
   @Test
@@ -301,7 +316,9 @@ class DefaultImportValidatorTest extends ControlPlaneTestBase {
             /* sources */ List.of(),
             /* allowedRawlsBucket */ "test-bucket",
             mockConnectivityChecker,
-            drsImportProperties);
+            drsImportProperties,
+            /*allowedBuckets*/ Set.of(
+                Pattern.compile("storage\\.googleapis\\.com/datarepo-.*-snapshot-export-bucket")));
 
     URI importUri = URI.create("https://127.0.0.1/unit-test");
     ImportRequestServerModel importRequest = new ImportRequestServerModel(TypeEnum.PFB, importUri);

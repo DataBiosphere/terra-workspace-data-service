@@ -17,6 +17,7 @@ public class DataImportProperties {
   private boolean enableTdrPermissionSync = false;
 
   private Set<Pattern> allowedHosts = emptySet();
+  private Set<Pattern> allowedBuckets = emptySet();
   private String rawlsNotificationsTopic;
   private String statusUpdatesTopic;
   private String statusUpdatesSubscription;
@@ -40,9 +41,9 @@ public class DataImportProperties {
    * will complete well before Rawls writes data, so we should not mark the job as completed. Rawls
    * will send a message indicating when the logical job is complete.
    *
+   * @return the configured value
    * @see org.databiosphere.workspacedataservice.dataimport.pfb.PfbQuartzJob
    * @see org.databiosphere.workspacedataservice.dataimport.tdr.TdrManifestQuartzJob
-   * @return the configured value
    */
   public boolean isSucceedOnCompletion() {
     return succeedOnCompletion;
@@ -55,8 +56,8 @@ public class DataImportProperties {
   /**
    * Permissions syncing on TDR import jobs is only enabled on the control plane.
    *
-   * @see org.databiosphere.workspacedataservice.dataimport.tdr.TdrManifestQuartzJob
    * @return the configured value
+   * @see org.databiosphere.workspacedataservice.dataimport.tdr.TdrManifestQuartzJob
    */
   public boolean isTdrPermissionSyncingEnabled() {
     return enableTdrPermissionSync;
@@ -67,8 +68,7 @@ public class DataImportProperties {
   }
 
   /**
-   * Accepted sources for imported files. This includes configured sources as well as default /
-   * always allowed sources (GCS buckets, Azure storage containers, and S3 buckets).
+   * Accepted sources for imported files. This includes configured hosts and cloud storage buckets.
    */
   public Set<Pattern> getAllowedHosts() {
     return allowedHosts;
@@ -76,6 +76,14 @@ public class DataImportProperties {
 
   public void setAllowedHosts(String[] allowedHosts) {
     this.allowedHosts = stream(allowedHosts).map(Pattern::compile).collect(Collectors.toSet());
+  }
+
+  public Set<Pattern> getAllowedBuckets() {
+    return allowedBuckets;
+  }
+
+  public void setAllowedBuckets(String[] allowedBuckets) {
+    this.allowedBuckets = stream(allowedBuckets).map(Pattern::compile).collect(Collectors.toSet());
   }
 
   public String getRawlsNotificationsTopic() {
