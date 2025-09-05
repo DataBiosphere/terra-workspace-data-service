@@ -29,16 +29,16 @@ public class PfbRecordConverter extends AvroRecordConverter {
     try {
       if (!genericRecord.hasField(fieldName)) {
         throw new PfbParsingException(
-            "Column [%s] is required, but was not found.".formatted(fieldName));
+            "Column [%s] is required, but was not found in the incoming PFB file.".formatted(fieldName));
       }
       Object fieldValue = genericRecord.get(fieldName);
       if (fieldValue == null) {
-        throw new PfbParsingException("Column [%s] cannot be null.".formatted(fieldName));
+        throw new PfbParsingException("Column [%s] cannot be null in the incoming PFB file.".formatted(fieldName));
       }
       return fieldValue.toString();
     } catch (Exception ex) {
       throw new PfbParsingException(
-          "Error parsing column [%s]: %s".formatted(fieldName, ex.getMessage()), ex);
+          "Error parsing column [%s] in the incoming PFB file: %s".formatted(fieldName, ex.getMessage()), ex);
     }
   }
 
