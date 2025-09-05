@@ -1,7 +1,5 @@
 package org.databiosphere.workspacedataservice.dataimport;
 
-import java.util.Set;
-import java.util.regex.Pattern;
 import org.databiosphere.workspacedataservice.config.ConfigurationException;
 import org.databiosphere.workspacedataservice.config.DataImportProperties;
 import org.databiosphere.workspacedataservice.config.DrsImportProperties;
@@ -24,8 +22,7 @@ public class ImportValidatorConfiguration {
       SamDao samDao,
       DataImportProperties dataImportProperties,
       ConnectivityChecker connectivityChecker,
-      DrsImportProperties drsImportProperties,
-      Set<Pattern> allowedBuckets) {
+      DrsImportProperties drsImportProperties) {
     return new DefaultImportValidator(
         protectedDataSupport,
         samDao,
@@ -34,7 +31,7 @@ public class ImportValidatorConfiguration {
         dataImportProperties.getRawlsBucketName(),
         connectivityChecker,
         drsImportProperties,
-        allowedBuckets);
+        dataImportProperties.getAllowedBuckets());
   }
 
   /** Allow import validation to be disabled for some test workflows. */
