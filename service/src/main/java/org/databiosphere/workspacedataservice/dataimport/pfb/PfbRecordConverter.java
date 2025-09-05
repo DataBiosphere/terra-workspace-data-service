@@ -5,6 +5,7 @@ import java.util.Collection;
 import java.util.Set;
 import org.apache.avro.generic.GenericRecord;
 import org.databiosphere.workspacedataservice.dataimport.AvroRecordConverter;
+import org.databiosphere.workspacedataservice.service.model.exception.PfbParsingException;
 import org.databiosphere.workspacedataservice.shared.model.Record;
 import org.databiosphere.workspacedataservice.shared.model.RecordAttributes;
 import org.databiosphere.workspacedataservice.shared.model.RecordType;
@@ -24,10 +25,25 @@ public class PfbRecordConverter extends AvroRecordConverter {
     super(objectMapper);
   }
 
+  private String extractField(GenericRecord genericRecord, String fieldName) {
+    try {
+      if (!genericRecord.hasField(fieldName)) {
+        throw new PfbParsingException("Column [%s] is required, but was not found.".formatted(fieldName));
+      }
+      Object fieldValue = genericRecord.get(fieldName);
+      if (fieldValue == null) {
+        throw new PfbParsingException("Column [%s] cannot be null.".formatted(fieldName));
+      }
+      return fieldValue.toString();
+    } catch (Exception ex) {
+      throw new PfbParsingException("Error parsing column [%s]: %s".formatted(fieldName, ex.getMessage()), ex);
+    }
+  }
+
   private Record createEmptyRecord(GenericRecord genericRecord) {
-    return new Record(
-        genericRecord.get(ID_FIELD).toString(),
-        RecordType.valueOf(genericRecord.get(TYPE_FIELD).toString()));
+    String id = extractField(genericRecord, ID_FIELD);
+    String recordType = extractField(genericRecord, TYPE_FIELD);
+    return new Record(id, RecordType.valueOf(recordType));
   }
 
   @Override
