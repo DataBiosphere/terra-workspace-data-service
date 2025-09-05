@@ -274,8 +274,9 @@ class ImportServiceTest extends ControlPlaneTestBase {
     doNothing().when(schedulerDao).schedule(any(Schedulable.class));
 
     // Act/Assert
-    URI importUri = URI.create("http://anvil.gi.ucsc.edu/testcontainer/file");
-    ImportRequestServerModel importRequest = new ImportRequestServerModel(importType, importUri);
+    URI testImportUri = URI.create("http://anvil.gi.ucsc.edu/testcontainer/file");
+    ImportRequestServerModel importRequest =
+        new ImportRequestServerModel(importType, testImportUri);
     ValidationException err =
         assertThrows(
             ValidationException.class,

@@ -6,8 +6,6 @@ import static java.util.regex.Pattern.compile;
 import com.google.common.collect.ImmutableMap;
 import io.micrometer.common.util.StringUtils;
 import java.net.URI;
-import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -34,12 +32,13 @@ public class DefaultImportValidator implements ImportValidator {
           TypeEnum.PFB, Set.of(SCHEME_HTTPS, SCHEME_DRS),
           TypeEnum.RAWLSJSON, Set.of(SCHEME_GS),
           TypeEnum.TDRMANIFEST, Set.of(SCHEME_HTTPS));
-
+  private final Set<Pattern> allowedBuckets;
   private final Map<String, Set<Pattern>> allowedHostsByScheme;
   private final ImportRequirementsFactory importRequirementsFactory;
   private final ProtectedDataSupport protectedDataSupport;
   private final SamDao samDao;
   private final ConnectivityChecker connectivityChecker;
+  private final Set<Pattern> sourceUrlPatterns;
 
   public DefaultImportValidator(
       ProtectedDataSupport protectedDataSupport,
@@ -48,40 +47,28 @@ public class DefaultImportValidator implements ImportValidator {
       List<ImportSourceConfig> sources,
       @Nullable String allowedRawlsBucket,
       ConnectivityChecker connectivityChecker,
-      DrsImportProperties drsImportProperties) {
+      DrsImportProperties drsImportProperties,
+      Set<Pattern> allowedBuckets) {
 
-    // Initialize schemeToHosts with known schemes and empty sets
-    Map<String, Set<Pattern>> schemeToHosts = new HashMap<>();
-    schemeToHosts.put(SCHEME_HTTPS, new HashSet<>(allowedHttpsHosts));
-    schemeToHosts.put(SCHEME_GS, new HashSet<>());
-    schemeToHosts.put(
-        SCHEME_DRS,
-        drsImportProperties.getAllowedHosts().stream()
-            .map(Pattern::compile)
-            .collect(Collectors.toSet()));
-
-    // Process the source URL patterns to extract schemes and hosts
-    Set<Pattern> sourceUrlPatterns =
-        sources.stream().flatMap(source -> source.urls().stream()).collect(Collectors.toSet());
-
-    Pattern schemeExtractor = Pattern.compile("^\\^(https?|gs|drs):\\\\/\\\\/(.+?)\\\\/(?:\\*|$)");
-    sourceUrlPatterns.forEach(
-        sourceUrl -> {
-          Matcher matcher = schemeExtractor.matcher(sourceUrl.toString());
-          if (matcher.find()) {
-            String scheme = matcher.group(1);
-            String hostRegex = matcher.group(2);
-
-            // Add the host pattern to the appropriate scheme bucket
-            Pattern hostPattern = Pattern.compile(hostRegex);
-            schemeToHosts.computeIfAbsent(scheme, k -> new HashSet<>()).add(hostPattern);
-          }
-        });
+    var allowedHostsBuilder =
+        ImmutableMap.<String, Set<Pattern>>builder()
+            .put(SCHEME_HTTPS, allowedHttpsHosts)
+            .put(
+                SCHEME_DRS,
+                drsImportProperties.getAllowedHosts().stream()
+                    .map(Pattern::compile)
+                    .collect(Collectors.toSet()));
 
     if (StringUtils.isNotBlank(allowedRawlsBucket)) {
-      schemeToHosts.get(SCHEME_GS).add(compile(allowedRawlsBucket));
+      allowedHostsBuilder.put(SCHEME_GS, Set.of(compile(allowedRawlsBucket)));
+    } else {
+      allowedHostsBuilder.put(SCHEME_GS, emptySet());
     }
-    this.allowedHostsByScheme = ImmutableMap.copyOf(schemeToHosts);
+
+    this.allowedHostsByScheme = allowedHostsBuilder.build();
+    this.allowedBuckets = allowedBuckets;
+    this.sourceUrlPatterns =
+        sources.stream().flatMap(source -> source.urls().stream()).collect(Collectors.toSet());
     this.importRequirementsFactory = new ImportRequirementsFactory(sources);
     this.protectedDataSupport = protectedDataSupport;
     this.samDao = samDao;
@@ -109,8 +96,19 @@ public class DefaultImportValidator implements ImportValidator {
       throw new ValidationException("Files may not be imported from %s URLs.".formatted(urlScheme));
     }
 
-    if (getAllowedHosts(importRequest).stream()
-        .noneMatch(allowedHost -> allowedHost.matcher(importUrl.getHost()).matches())) {
+    boolean isHostAllowed =
+        getAllowedHosts(importRequest).stream()
+            .anyMatch(allowedHost -> allowedHost.matcher(importUrl.getHost()).matches());
+
+    boolean isUrlAllowed =
+        sourceUrlPatterns.stream()
+            .anyMatch(urlPattern -> urlPattern.matcher(importUrl.toString()).find());
+
+    boolean isBucketAllowed =
+        allowedBuckets.stream()
+            .anyMatch(bucketPattern -> bucketPattern.matcher(importUrl.toString()).find());
+
+    if (!isHostAllowed && !isUrlAllowed && !isBucketAllowed) {
       throw new ValidationException(
           "Files may not be imported from %s.".formatted(importUrl.getHost()));
     }

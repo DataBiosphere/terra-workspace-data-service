@@ -151,6 +151,10 @@ twds:
       - .*\.singlecell\.gi\.ucsc\.edu,
       - .*gen3\.biodatacatalyst\.nhlbi\.nih\.gov
       - .*service\.azul\.data\.humancellatlas\.org
+      - pdc-pfb-files\.s3\.amazonaws.com
+    allowed-buckets:
+      - storage\.googleapis\.com\/datarepo-.*-snapshot-export-bucket
+      - s3\.amazonaws\.com\/edu-ucsc-gi-platform-anvil-prod-storage-anvilprod\.us-east-1
     sources:
       - urls:
           - ^https:\/\/.*gen3\.biodatacatalyst\.nhlbi\.nih\.gov\/
@@ -178,6 +182,9 @@ twds:
     host: ${env.wds.db.host}
     # When running on Azure in k8s with workload identity set PGDUMP_USE_AZURE_IDENTITY to true
     useAzureIdentity: ${PGDUMP_USE_AZURE_IDENTITY:true}
+drs:
+  allowed-hosts:
+    - repo-prod\.prod\.sagebase\.org
 
 # retry configuration for REST clients (Sam, TDR, etc)
 rest:
