@@ -155,22 +155,6 @@ twds:
     allowed-buckets:
       - storage\.googleapis\.com\/datarepo-.*-snapshot-export-bucket
       - s3\.amazonaws\.com\/edu-ucsc-gi-platform-anvil-prod-storage-prod\.us-east-1
-    sources:
-      - urls:
-          - ^https:\/\/.*gen3\.biodatacatalyst\.nhlbi\.nih\.gov\/
-          - ^https:\/\/gen3-biodatacatalyst-nhlbi-nih-gov-pfb-export\.s3\.amazonaws\.com\/
-          - ^https:\/\/s3\.amazonaws.com\/gen3-biodatacatalyst-nhlbi-nih-gov-pfb-export\/
-          - ^https:\/\/pic-sure-auth-prod-data-export\.s3\.amazonaws\.com\/
-          - ^https:\/\/s3\.amazonaws\.com\/pic-sure-auth-prod-data-export\/
-          - ^https:\/\/s3\.amazonaws\.com\/edu-ucsc-gi-platform-anvil-prod-storage-anvilprod\.us-east-1\/
-          - ^https:\/\/nih-nhlbi-.*\.amazonaws\.com\/
-          # anvil data is in TDR now, these are the old URLs
-          - ^https:\/\/gen3-theanvil-io-pfb-export\.s3\.amazonaws\.com\/
-          - ^https:\/\/s3\.amazonaws\.com\/gen3-theanvil-io-pfb-export\/
-        requirePrivateWorkspace: true
-        requireProtectedDataPolicy: true
-        requiredAuthDomainGroups:
-          - "federal_data_lockdown"
 
   pg_dump:
     path: ${PGDUMP_PATH:/usr/bin/pg_dump}

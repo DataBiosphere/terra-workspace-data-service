@@ -108,6 +108,9 @@ public class DefaultImportValidator implements ImportValidator {
         allowedBuckets.stream()
             .anyMatch(bucketPattern -> bucketPattern.matcher(importUrl.toString()).find());
 
+    // If URL is not specifically allow-listed in either allowed-hosts, allowed-buckets, or
+    // protection required list,
+    // then it's not allowed.
     if (!isHostAllowed && !isUrlAllowed && !isBucketAllowed) {
       throw new ValidationException(
           "Files may not be imported from %s.".formatted(importUrl.getHost()));
