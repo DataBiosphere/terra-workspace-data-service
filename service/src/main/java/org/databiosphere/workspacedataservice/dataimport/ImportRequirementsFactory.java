@@ -13,20 +13,24 @@ public class ImportRequirementsFactory {
 
   public ImportRequirements getRequirementsForImport(URI importUri) {
     boolean requiresPrivateWorkspace =
-        sources.stream()
-            .filter(source -> source.matchesUri(importUri))
-            .anyMatch(ImportSourceConfig::requirePrivateWorkspace);
+        sources != null
+            && sources.stream()
+                .filter(source -> source.matchesUri(importUri))
+                .anyMatch(ImportSourceConfig::requirePrivateWorkspace);
 
     boolean requiresProtectedDataPolicy =
-        sources.stream()
-            .filter(source -> source.matchesUri(importUri))
-            .anyMatch(ImportSourceConfig::requireProtectedDataPolicy);
+        sources != null
+            && sources.stream()
+                .filter(source -> source.matchesUri(importUri))
+                .anyMatch(ImportSourceConfig::requireProtectedDataPolicy);
 
     List<String> requiredAuthDomainGroups =
-        sources.stream()
-            .filter(source -> source.matchesUri(importUri))
-            .flatMap(source -> source.requiredAuthDomainGroups().stream())
-            .toList();
+        sources == null
+            ? List.of()
+            : sources.stream()
+                .filter(source -> source.matchesUri(importUri))
+                .flatMap(source -> source.requiredAuthDomainGroups().stream())
+                .toList();
 
     return new ImportRequirements(
         requiresPrivateWorkspace, requiresProtectedDataPolicy, requiredAuthDomainGroups);
