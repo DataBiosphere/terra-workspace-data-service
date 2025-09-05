@@ -28,7 +28,8 @@ public class PfbRecordConverter extends AvroRecordConverter {
   private String extractField(GenericRecord genericRecord, String fieldName) {
     try {
       if (!genericRecord.hasField(fieldName)) {
-        throw new PfbParsingException("Column [%s] is required, but was not found.".formatted(fieldName));
+        throw new PfbParsingException(
+            "Column [%s] is required, but was not found.".formatted(fieldName));
       }
       Object fieldValue = genericRecord.get(fieldName);
       if (fieldValue == null) {
@@ -36,7 +37,8 @@ public class PfbRecordConverter extends AvroRecordConverter {
       }
       return fieldValue.toString();
     } catch (Exception ex) {
-      throw new PfbParsingException("Error parsing column [%s]: %s".formatted(fieldName, ex.getMessage()), ex);
+      throw new PfbParsingException(
+          "Error parsing column [%s]: %s".formatted(fieldName, ex.getMessage()), ex);
     }
   }
 
