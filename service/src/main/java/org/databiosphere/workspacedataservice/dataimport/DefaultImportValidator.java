@@ -68,7 +68,11 @@ public class DefaultImportValidator implements ImportValidator {
     this.allowedHostsByScheme = allowedHostsBuilder.build();
     this.allowedBuckets = allowedBuckets;
     this.sourceUrlPatterns =
-        sources.stream().flatMap(source -> source.urls().stream()).collect(Collectors.toSet());
+        sources == null
+            ? emptySet()
+            : sources.stream()
+                .flatMap(source -> source.urls().stream())
+                .collect(Collectors.toSet());
     this.importRequirementsFactory = new ImportRequirementsFactory(sources);
     this.protectedDataSupport = protectedDataSupport;
     this.samDao = samDao;
