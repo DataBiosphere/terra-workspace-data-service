@@ -154,7 +154,7 @@ twds:
       - pdc-pfb-files\.s3\.amazonaws.com
     allowed-buckets:
       - storage\.googleapis\.com\/datarepo-.*-snapshot-export-bucket
-      - s3\.amazonaws\.com\/edu-ucsc-gi-platform-anvil-prod-storage-prod\.us-east-1
+      - s3\.amazonaws\.com\/edu-ucsc-gi-platform-hca-prod-storage-prod\.us-east-1
 
   pg_dump:
     path: ${PGDUMP_PATH:/usr/bin/pg_dump}
