@@ -85,7 +85,8 @@ class DefaultImportValidatorTest extends ControlPlaneTestBase {
           new NoopConnectivityChecker(),
           drsImportProperties,
           /*allowedBuckets*/ Set.of(
-              Pattern.compile("storage\\.googleapis\\.com/datarepo-.*-snapshot-export-bucket")));
+              Pattern.compile(
+                  "^https:\\/\\/storage\\.googleapis\\.com/datarepo-.*-snapshot-export-bucket")));
     }
   }
 
