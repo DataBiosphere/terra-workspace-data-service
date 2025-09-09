@@ -46,7 +46,7 @@ following active profiles must be set:
 To run WDS locally and therefore use the local application properties, set the profile as follows:
 
 ```bash
-export SPRING_PROFILES_ACTIVE=local,data-plane
+export SPRING_PROFILES_ACTIVE=local,control-plane
 ```
 
 Other profiles that are available are:
