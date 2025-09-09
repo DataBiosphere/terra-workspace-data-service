@@ -80,13 +80,17 @@ class DefaultImportValidatorTest extends ControlPlaneTestBase {
                   /* urls */ List.of(Pattern.compile("private\\.pfb")),
                   /* requirePrivateWorkspace */ true,
                   /* requireProtectedDataPolicy */ false,
+                  /* requiredAuthDomainGroups */ List.of()),
+              new ImportSourceConfig(
+                  /* urls */ List.of(
+                      Pattern.compile(
+                          "^https:\\/\\/storage\\.googleapis\\.com/datarepo-.*-snapshot-export-bucket")),
+                  /* requirePrivateWorkspace */ false,
+                  /* requireProtectedDataPolicy */ false,
                   /* requiredAuthDomainGroups */ List.of())),
           /* allowedRawlsBucket */ "test-bucket",
           new NoopConnectivityChecker(),
-          drsImportProperties,
-          /*allowedBuckets*/ Set.of(
-              Pattern.compile(
-                  "^https:\\/\\/storage\\.googleapis\\.com/datarepo-.*-snapshot-export-bucket")));
+          drsImportProperties);
     }
   }
 
@@ -314,12 +318,17 @@ class DefaultImportValidatorTest extends ControlPlaneTestBase {
             protectedDataSupport,
             samDao,
             /* allowedHttpsHosts */ Set.of(Pattern.compile(".*\\.terra\\.bio")),
-            /* sources */ List.of(),
+            /* sources */ List.of(
+                new ImportSourceConfig(
+                    /* urls */ List.of(
+                        Pattern.compile(
+                            "^https:\\/\\/storage\\.googleapis\\.com/datarepo-.*-snapshot-export-bucket")),
+                    /* requirePrivateWorkspace */ false,
+                    /* requireProtectedDataPolicy */ false,
+                    /* requiredAuthDomainGroups */ List.of())),
             /* allowedRawlsBucket */ "test-bucket",
             mockConnectivityChecker,
-            drsImportProperties,
-            /*allowedBuckets*/ Set.of(
-                Pattern.compile("storage\\.googleapis\\.com/datarepo-.*-snapshot-export-bucket")));
+            drsImportProperties);
 
     URI importUri = URI.create("https://127.0.0.1/unit-test");
     ImportRequestServerModel importRequest = new ImportRequestServerModel(TypeEnum.PFB, importUri);

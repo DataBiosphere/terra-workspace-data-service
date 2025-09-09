@@ -32,7 +32,6 @@ public class DefaultImportValidator implements ImportValidator {
           TypeEnum.PFB, Set.of(SCHEME_HTTPS, SCHEME_DRS),
           TypeEnum.RAWLSJSON, Set.of(SCHEME_GS),
           TypeEnum.TDRMANIFEST, Set.of(SCHEME_HTTPS));
-  private final Set<Pattern> allowedBuckets;
   private final Map<String, Set<Pattern>> allowedHostsByScheme;
   private final ImportRequirementsFactory importRequirementsFactory;
   private final ProtectedDataSupport protectedDataSupport;
@@ -47,8 +46,7 @@ public class DefaultImportValidator implements ImportValidator {
       List<ImportSourceConfig> sources,
       @Nullable String allowedRawlsBucket,
       ConnectivityChecker connectivityChecker,
-      DrsImportProperties drsImportProperties,
-      Set<Pattern> allowedBuckets) {
+      DrsImportProperties drsImportProperties) {
 
     var allowedHostsBuilder =
         ImmutableMap.<String, Set<Pattern>>builder()
@@ -66,7 +64,6 @@ public class DefaultImportValidator implements ImportValidator {
     }
 
     this.allowedHostsByScheme = allowedHostsBuilder.build();
-    this.allowedBuckets = allowedBuckets;
     this.sourceUrlPatterns =
         sources == null
             ? emptySet()
@@ -108,14 +105,9 @@ public class DefaultImportValidator implements ImportValidator {
         sourceUrlPatterns.stream()
             .anyMatch(urlPattern -> urlPattern.matcher(importUrl.toString()).find());
 
-    boolean isBucketAllowed =
-        allowedBuckets.stream()
-            .anyMatch(bucketPattern -> bucketPattern.matcher(importUrl.toString()).find());
-
-    // If URL is not specifically allow-listed in either allowed-hosts, allowed-buckets, or
-    // protection required list,
-    // then it's not allowed.
-    if (!isHostAllowed && !isUrlAllowed && !isBucketAllowed) {
+    // If URL is not specifically allow-listed in either allowed-hosts or
+    // protection required list, then it's not allowed.
+    if (!isHostAllowed && !isUrlAllowed) {
       throw new ValidationException(
           "Files may not be imported from %s.".formatted(importUrl.getHost()));
     }

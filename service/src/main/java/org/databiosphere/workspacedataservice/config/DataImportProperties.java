@@ -17,7 +17,6 @@ public class DataImportProperties {
   private boolean enableTdrPermissionSync = false;
 
   private Set<Pattern> allowedHosts = emptySet();
-  private Set<Pattern> allowedBuckets = emptySet();
   private String rawlsNotificationsTopic;
   private String statusUpdatesTopic;
   private String statusUpdatesSubscription;
@@ -76,14 +75,6 @@ public class DataImportProperties {
 
   public void setAllowedHosts(String[] allowedHosts) {
     this.allowedHosts = stream(allowedHosts).map(Pattern::compile).collect(Collectors.toSet());
-  }
-
-  public Set<Pattern> getAllowedBuckets() {
-    return allowedBuckets;
-  }
-
-  public void setAllowedBuckets(String[] allowedBuckets) {
-    this.allowedBuckets = stream(allowedBuckets).map(Pattern::compile).collect(Collectors.toSet());
   }
 
   public String getRawlsNotificationsTopic() {
