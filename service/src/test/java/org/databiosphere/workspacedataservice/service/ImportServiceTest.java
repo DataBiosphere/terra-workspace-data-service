@@ -88,8 +88,7 @@ class ImportServiceTest extends ControlPlaneTestBase {
 
   GoogleApi mockSamGoogleApi = Mockito.mock(GoogleApi.class);
 
-  private final URI importUri =
-      URI.create("https://teststorageaccount.blob.core.windows.net/testcontainer/path/to/file");
+  private final URI importUri = URI.create("https://anvil.gi.ucsc.edu/testcontainer/path/to/file");
 
   @BeforeAll
   void beforeAll() {
@@ -275,9 +274,9 @@ class ImportServiceTest extends ControlPlaneTestBase {
     doNothing().when(schedulerDao).schedule(any(Schedulable.class));
 
     // Act/Assert
-    URI importUri =
-        URI.create("http://teststorageaccount.blob.core.windows.net/testcontainer/file");
-    ImportRequestServerModel importRequest = new ImportRequestServerModel(importType, importUri);
+    URI testImportUri = URI.create("http://anvil.gi.ucsc.edu/testcontainer/file");
+    ImportRequestServerModel importRequest =
+        new ImportRequestServerModel(importType, testImportUri);
     ValidationException err =
         assertThrows(
             ValidationException.class,

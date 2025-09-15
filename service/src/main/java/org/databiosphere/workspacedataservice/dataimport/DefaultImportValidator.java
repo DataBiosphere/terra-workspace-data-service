@@ -4,7 +4,6 @@ import static java.util.Collections.emptySet;
 import static java.util.regex.Pattern.compile;
 
 import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.Sets;
 import io.micrometer.common.util.StringUtils;
 import java.net.URI;
 import java.util.List;
@@ -33,20 +32,12 @@ public class DefaultImportValidator implements ImportValidator {
           TypeEnum.PFB, Set.of(SCHEME_HTTPS, SCHEME_DRS),
           TypeEnum.RAWLSJSON, Set.of(SCHEME_GS),
           TypeEnum.TDRMANIFEST, Set.of(SCHEME_HTTPS));
-  private static final Set<Pattern> ALWAYS_ALLOWED_HOSTS =
-      Set.of(
-          compile("storage\\.googleapis\\.com"),
-          compile(".*\\.core\\.windows\\.net"),
-          // S3 allows multiple URL formats
-          // https://docs.aws.amazon.com/AmazonS3/latest/userguide/VirtualHosting.html
-          compile("s3\\.amazonaws\\.com"), // path style legacy global endpoint
-          compile(".*\\.s3\\.amazonaws\\.com") // virtual host style legacy global endpoint
-          );
   private final Map<String, Set<Pattern>> allowedHostsByScheme;
   private final ImportRequirementsFactory importRequirementsFactory;
   private final ProtectedDataSupport protectedDataSupport;
   private final SamDao samDao;
   private final ConnectivityChecker connectivityChecker;
+  private final Set<Pattern> sourceUrlPatterns;
 
   public DefaultImportValidator(
       ProtectedDataSupport protectedDataSupport,
@@ -56,9 +47,10 @@ public class DefaultImportValidator implements ImportValidator {
       @Nullable String allowedRawlsBucket,
       ConnectivityChecker connectivityChecker,
       DrsImportProperties drsImportProperties) {
+
     var allowedHostsBuilder =
         ImmutableMap.<String, Set<Pattern>>builder()
-            .put(SCHEME_HTTPS, Sets.union(ALWAYS_ALLOWED_HOSTS, allowedHttpsHosts))
+            .put(SCHEME_HTTPS, allowedHttpsHosts)
             .put(
                 SCHEME_DRS,
                 drsImportProperties.getAllowedHosts().stream()
@@ -72,6 +64,12 @@ public class DefaultImportValidator implements ImportValidator {
     }
 
     this.allowedHostsByScheme = allowedHostsBuilder.build();
+    this.sourceUrlPatterns =
+        sources == null
+            ? emptySet()
+            : sources.stream()
+                .flatMap(source -> source.urls().stream())
+                .collect(Collectors.toSet());
     this.importRequirementsFactory = new ImportRequirementsFactory(sources);
     this.protectedDataSupport = protectedDataSupport;
     this.samDao = samDao;
@@ -99,8 +97,17 @@ public class DefaultImportValidator implements ImportValidator {
       throw new ValidationException("Files may not be imported from %s URLs.".formatted(urlScheme));
     }
 
-    if (getAllowedHosts(importRequest).stream()
-        .noneMatch(allowedHost -> allowedHost.matcher(importUrl.getHost()).matches())) {
+    boolean isHostAllowed =
+        getAllowedHosts(importRequest).stream()
+            .anyMatch(allowedHost -> allowedHost.matcher(importUrl.getHost()).matches());
+
+    boolean isUrlAllowed =
+        sourceUrlPatterns.stream()
+            .anyMatch(urlPattern -> urlPattern.matcher(importUrl.toString()).find());
+
+    // If URL is not specifically allow-listed in either allowed-hosts or
+    // protection required list, then it's not allowed.
+    if (!isHostAllowed && !isUrlAllowed) {
       throw new ValidationException(
           "Files may not be imported from %s.".formatted(importUrl.getHost()));
     }

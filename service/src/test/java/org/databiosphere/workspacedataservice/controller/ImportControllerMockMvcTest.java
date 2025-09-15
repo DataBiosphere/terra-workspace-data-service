@@ -53,7 +53,7 @@ class ImportControllerMockMvcTest extends MockMvcTestBase {
     ImportRequestServerModel importRequest =
         new ImportRequestServerModel(
             ImportRequestServerModel.TypeEnum.PFB,
-            new URI("https://teststorageaccount.blob.core.windows.net/testcontainer/file"));
+            new URI("https://anvil.gi.ucsc.edu/testcontainer/file"));
 
     // calling the API should result in 201 Created
     MvcResult mvcResult =

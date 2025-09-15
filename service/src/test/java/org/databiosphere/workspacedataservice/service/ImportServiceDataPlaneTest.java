@@ -38,8 +38,7 @@ class ImportServiceDataPlaneTest extends DataPlaneTestBase {
   @Autowired @SingleTenant WorkspaceId workspaceId;
   @MockitoBean CollectionService collectionService;
 
-  private final URI importUri =
-      URI.create("https://teststorageaccount.blob.core.windows.net/testcontainer/file");
+  private final URI importUri = URI.create("https://anvil.gi.ucsc.edu/testcontainer/file");
   private final ImportRequestServerModel importRequest =
       new ImportRequestServerModel(PFB, importUri);
 
