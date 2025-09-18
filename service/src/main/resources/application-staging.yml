@@ -7,3 +7,10 @@ drshubUrl: https://drshub.dsde-staging.broadinstitute.org/
 drs:
   allowed-hosts:
     - jade\.datarepo-.*\.broadinstitute\.org
+  sources:
+    - urls:
+        - ^https:\/\/storage\.googleapis\.com\/datarepo-.*-snapshot-export-bucket
+        - ^https:\/\/storage\.googleapis\.com\/fixtures-for-tests
+      requirePrivateWorkspace: false
+      requireProtectedDataPolicy: false
+      requiredAuthDomainGroups:
