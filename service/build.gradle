@@ -193,7 +193,7 @@ spotless {
         targetExclude "${layout.buildDirectory.asFile}/**"
         targetExclude "**/swagger-code/**"
         targetExclude "**/generated*/**"
-        googleJavaFormat('1.18.1')
+        googleJavaFormat() // let spotless choose which version to use
         toggleOffOn() // allow spotless:off & spotless:on to protect code from formatting
     }
 }
