@@ -71,7 +71,7 @@ public class RestClientRetry {
           .lowCardinalityKeyValue("outcome", "ERROR");
       observation.error(e);
       switch (exceptionHttpCode) {
-          // retryable http codes
+        // retryable http codes
         case 0:
           LOGGER.warn(loggerHint + " REST request resulted in connection failure", e);
           throw new RestConnectionException();
@@ -84,7 +84,7 @@ public class RestClientRetry {
           throw new RestServerException(
               requireNonNull(HttpStatus.resolve(exceptionHttpCode)), e.getMessage()); // retryable
 
-          // non-retryable http codes
+        // non-retryable http codes
         case 401:
           throw new AuthenticationException(e.getMessage());
         case 403:

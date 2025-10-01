@@ -222,8 +222,8 @@ public class RawlsModel {
             yield AttributeValue.of(node.toString());
           }
         }
-        default -> throw new RawlsDeserializationException(
-            "Unexpected JSON token: " + currentToken) {};
+        default ->
+            throw new RawlsDeserializationException("Unexpected JSON token: " + currentToken) {};
       };
     }
   }

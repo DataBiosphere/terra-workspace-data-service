@@ -122,8 +122,9 @@ public class BatchWriteService {
               recordSink.upsertBatch(recType, schema, recordsToWrite, primaryKey);
             }
             case DELETE -> recordSink.deleteBatch(recType, recordsToWrite);
-            default -> throw new UnsupportedOperationException(
-                "OperationType " + opType + " is not supported");
+            default ->
+                throw new UnsupportedOperationException(
+                    "OperationType " + opType + " is not supported");
           }
           // update the result counts
           result.increaseCount(recType, recordsToWrite.size());

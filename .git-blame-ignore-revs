@@ -3,3 +3,6 @@
 
 # AJ-1289: Reformat code using spotless to match Google style guide.
 c795c46f2ce4bf30fce829979bcfc40ec12eef0c
+
+# Reformat code with an updated version of google-java-format
+c9348741a676497a7bfae123293c243c018e38e0

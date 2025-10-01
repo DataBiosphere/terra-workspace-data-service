@@ -56,8 +56,9 @@ public class MultiCloudRecordSinkFactory implements RecordSinkFactory {
   public RecordSink buildRecordSink(ImportDetails importDetails) {
     return switch (workspaceService.getDataTableType(importDetails.workspaceId())) {
       case RAWLS -> RawlsRecordSink.create(mapper, storage, pubSub, importDetails);
-      case WDS -> new WdsRecordSink(
-          recordService, recordDao, dataTypeInferer, importDetails.collectionId());
+      case WDS ->
+          new WdsRecordSink(
+              recordService, recordDao, dataTypeInferer, importDetails.collectionId());
     };
   }
 
@@ -71,8 +72,9 @@ public class MultiCloudRecordSinkFactory implements RecordSinkFactory {
   public RecordSink buildRecordSink(CollectionId collectionId) {
     WorkspaceId workspaceId = collectionService.getWorkspaceId(collectionId);
     return switch (workspaceService.getDataTableType(workspaceId)) {
-      case RAWLS -> throw new NotImplementedException(
-          "MultiCloudRecordSinkFactory does not support building a RawlsRecordSink from a CollectionId");
+      case RAWLS ->
+          throw new NotImplementedException(
+              "MultiCloudRecordSinkFactory does not support building a RawlsRecordSink from a CollectionId");
       case WDS -> new WdsRecordSink(recordService, recordDao, dataTypeInferer, collectionId);
     };
   }
