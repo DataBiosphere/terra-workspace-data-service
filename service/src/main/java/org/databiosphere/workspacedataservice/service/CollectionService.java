@@ -412,10 +412,10 @@ public class CollectionService {
     try {
       return switch (dataTableTypeInspector.getWorkspaceDataTableType(virtualWorkspaceId)) {
         case RAWLS -> // this is a known, Rawls-powered workspace. It's a virtual collection.
-        virtualWorkspaceId;
+            virtualWorkspaceId;
         case WDS -> // this is a known, WDS-powered workspace. Virtual collections are not allowed
-        // for WDS-powered workspaces. This is an error.
-        throw new MissingObjectException(COLLECTION);
+            // for WDS-powered workspaces. This is an error.
+            throw new MissingObjectException(COLLECTION);
       };
     } catch (RawlsException rawlsException) {
       if (HttpStatus.NOT_FOUND.equals(rawlsException.getStatusCode())) {

@@ -63,7 +63,8 @@ class TsvJsonEquivalenceTest extends ControlPlaneTestBase {
     String json =
         """
                 {"attributes":{"col1":%s}}
-                """.formatted(jsonValue);
+                """
+            .formatted(jsonValue);
 
     RecordAttributes tsvAttributes = readTsv(tsv);
     RecordAttributes jsonAttributes =

@@ -614,7 +614,8 @@ class RecordControllerMockMvcTest extends MockMvcTestBase {
 					value
 					foo
 					bar
-					baz		""".getBytes());
+					baz		"""
+                .getBytes());
 
     String recordType = "null-headers";
     mockMvc

@@ -1097,30 +1097,32 @@ public class RecordDao {
           ARRAY_OF_DATE,
           ARRAY_OF_DATE_TIME,
           ARRAY_OF_NUMBER,
-          EMPTY_ARRAY -> attVal.stream()
-          .map(e -> Objects.toString(e, null)) // .toString() non-nulls, else return null
-          .toList()
-          .toArray(new String[0]);
+          EMPTY_ARRAY ->
+          attVal.stream()
+              .map(e -> Objects.toString(e, null)) // .toString() non-nulls, else return null
+              .toList()
+              .toArray(new String[0]);
       case ARRAY_OF_BOOLEAN ->
-      // accept all casings of True and False if they're strings
-      attVal.stream()
-          .map(Object::toString)
-          .map(String::toLowerCase)
-          .map(Boolean::parseBoolean)
-          .toList()
-          .toArray(new Boolean[0]);
-      case ARRAY_OF_JSON -> attVal.stream()
-          .map(
-              el -> {
-                try {
-                  return objectMapper.writeValueAsString(el);
-                } catch (JsonProcessingException e) {
-                  throw new SerializationException(
-                      "Could not serialize array element to json string", e);
-                }
-              })
-          .toList()
-          .toArray(new String[0]);
+          // accept all casings of True and False if they're strings
+          attVal.stream()
+              .map(Object::toString)
+              .map(String::toLowerCase)
+              .map(Boolean::parseBoolean)
+              .toList()
+              .toArray(new Boolean[0]);
+      case ARRAY_OF_JSON ->
+          attVal.stream()
+              .map(
+                  el -> {
+                    try {
+                      return objectMapper.writeValueAsString(el);
+                    } catch (JsonProcessingException e) {
+                      throw new SerializationException(
+                          "Could not serialize array element to json string", e);
+                    }
+                  })
+              .toList()
+              .toArray(new String[0]);
       default -> throw new IllegalArgumentException("Unhandled array type " + typeMapping);
     };
   }

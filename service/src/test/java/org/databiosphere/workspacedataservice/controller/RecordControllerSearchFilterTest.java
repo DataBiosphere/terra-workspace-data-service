@@ -86,7 +86,8 @@ class RecordControllerSearchFilterTest extends MockMvcTestBase {
   @Test
   void nullFilter() {
     String testCase = "when filter is entirely omitted";
-    String searchRequestPayload = """
+    String searchRequestPayload =
+"""
 {"limit": 5, "sortAttribute": "sortByMe"}
 """;
     List<String> expected = List.of("000", "001", "002", "003", "004");
@@ -96,7 +97,8 @@ class RecordControllerSearchFilterTest extends MockMvcTestBase {
   @Test
   void nullIds() {
     String testCase = "when filter is specified but filter.ids is not";
-    String searchRequestPayload = """
+    String searchRequestPayload =
+"""
 {"limit": 5, "sortAttribute": "sortByMe", "filter": {}}
 """;
     List<String> expected = List.of("000", "001", "002", "003", "004");
@@ -107,7 +109,7 @@ class RecordControllerSearchFilterTest extends MockMvcTestBase {
   void emptyIds() {
     String testCase = "when filter.ids is specified but empty";
     String searchRequestPayload =
-        """
+"""
 {"limit": 5, "sortAttribute": "sortByMe", "filter": {"ids": []}}
 """;
     List<String> expected = List.of();
@@ -118,7 +120,7 @@ class RecordControllerSearchFilterTest extends MockMvcTestBase {
   void oneId() {
     String testCase = "when filter.ids contains a single matching id";
     String searchRequestPayload =
-        """
+"""
 {"limit": 5, "sortAttribute": "sortByMe", "filter": {"ids": ["012"]}}
 """;
     List<String> expected = List.of("012");
@@ -129,7 +131,7 @@ class RecordControllerSearchFilterTest extends MockMvcTestBase {
   void multipleIds() {
     String testCase = "when filter.ids contains multiple matching ids";
     String searchRequestPayload =
-        """
+"""
 {"limit": 5, "sortAttribute": "sortByMe", "filter": {"ids": ["003", "009", "012"]}}
 """;
     List<String> expected = List.of("003", "009", "012");
@@ -140,7 +142,7 @@ class RecordControllerSearchFilterTest extends MockMvcTestBase {
   void someMatch() {
     String testCase = "when filter.ids contains some known and some unknown ids";
     String searchRequestPayload =
-        """
+"""
 {"limit": 5, "sortAttribute": "sortByMe", "filter": {"ids": ["003", "unknown", "012"]}}
 """;
     List<String> expected = List.of("003", "012");
@@ -151,7 +153,7 @@ class RecordControllerSearchFilterTest extends MockMvcTestBase {
   void unknownIds() {
     String testCase = "when filter.ids contains ids that match nothing";
     String searchRequestPayload =
-        """
+"""
 {"limit": 5, "sortAttribute": "sortByMe", "filter": {"ids": ["unknown1", "unknown2"]}}
 """;
     List<String> expected = List.of();
@@ -162,7 +164,7 @@ class RecordControllerSearchFilterTest extends MockMvcTestBase {
   void moreIdsThanLimit() {
     String testCase = "when filter.ids contains more matching ids than the query limit";
     String searchRequestPayload =
-        """
+"""
 {"limit": 2, "sortAttribute": "sortByMe", "filter": {"ids": ["002", "004", "006", "008"]}}
 """;
     List<String> expected = List.of("002", "004");
@@ -173,7 +175,7 @@ class RecordControllerSearchFilterTest extends MockMvcTestBase {
   void offsetRespected() {
     String testCase = "when filter.ids is over limit, offset is still respected";
     String searchRequestPayload =
-        """
+"""
 {"limit": 2, "offset": 2, "sortAttribute": "sortByMe", "filter": {"ids": ["002", "004", "006", "008"]}}
 """;
     List<String> expected = List.of("006", "008");
@@ -184,7 +186,7 @@ class RecordControllerSearchFilterTest extends MockMvcTestBase {
   void idOrderIsIgnored() {
     String testCase = "when filter.ids order conflicts with sortAttribute, sortAttribute wins";
     String searchRequestPayload =
-        """
+"""
 {"limit": 3, "sortAttribute": "sortByMe", "sort": "DESC", "filter": {"ids": ["004", "006", "008"]}}
 """;
     List<String> expected = List.of("008", "006", "004");
