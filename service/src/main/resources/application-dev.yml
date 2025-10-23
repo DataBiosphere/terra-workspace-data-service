@@ -12,3 +12,12 @@ drs:
   allowed-hosts:
     - jade\.datarepo-.*\.broadinstitute\.org
     - repo-dev\.dev\.sagebase\.org
+twds:
+  data-import:
+    sources:
+      - urls:
+          - ^https:\/\/s3\.amazonaws\.com\/edu-ucsc-gi-platform-anvil-dev-storage-anvildev\.us-east-1\/
+        requirePrivateWorkspace: true
+        requireProtectedDataPolicy: true
+        requiredAuthDomainGroups:
+          - "federal_data_lockdown"
