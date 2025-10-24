@@ -20,7 +20,6 @@ twds:
         requirePrivateWorkspace: true
         requireProtectedDataPolicy: true
         requiredAuthDomainGroups:
-          - "federal_data_lockdown"
       - urls:
           - ^https:\/\/storage\.googleapis\.com\/datarepo-.*-snapshot-export-bucket
           - ^https:\/\/s3\.amazonaws\.com\/edu-ucsc-gi-platform-hca-prod-storage-prod\.us-east-1
