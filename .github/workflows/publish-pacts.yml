@@ -127,7 +127,7 @@ jobs:
 
       - name: Upload pact files to artifact
         id: upload-pacts
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: ${{ env.WDS_PACTS_ARTIFACT }}
           path: ${{ env.WDS_PACTS_OUTPUT_DIR }}
@@ -142,7 +142,7 @@ jobs:
     steps:
       - name: Download pact files from artifact
         id: download-pacts
-        uses: actions/download-artifact@v5
+        uses: actions/download-artifact@v6
         with:
           name: ${{ env.WDS_PACTS_ARTIFACT }}
           path: ${{ env.WDS_PACTS_OUTPUT_DIR }}
