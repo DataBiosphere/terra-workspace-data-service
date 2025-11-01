@@ -66,7 +66,7 @@ dependencies {
     implementation 'org.webjars:webjars-locator-lite' // versioned by spring dependency management
     implementation 'com.fasterxml.jackson.dataformat:jackson-dataformat-csv'
     implementation 'io.sentry:sentry-logback:8.23.0'
-    implementation 'net.logstash.logback:logstash-logback-encoder:8.1'
+    implementation 'net.logstash.logback:logstash-logback-encoder:9.0'
     implementation 'org.codehaus.janino:janino'
     implementation 'org.liquibase:liquibase-core'
     implementation 'javax.cache:cache-api'
