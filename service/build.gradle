@@ -43,7 +43,7 @@ jib {
 ext {
     parquet_mr_version = "1.16.0"
     hadoop_version = "3.4.2"
-    spring_cloud_gcp_version = "7.3.2"
+    spring_cloud_gcp_version = "7.4.1"
 }
 
 dependencies {
@@ -65,7 +65,7 @@ dependencies {
     implementation 'org.postgresql:postgresql'
     implementation 'org.webjars:webjars-locator-lite' // versioned by spring dependency management
     implementation 'com.fasterxml.jackson.dataformat:jackson-dataformat-csv'
-    implementation 'io.sentry:sentry-logback:8.23.0'
+    implementation 'io.sentry:sentry-logback:8.25.0'
     implementation 'net.logstash.logback:logstash-logback-encoder:9.0'
     implementation 'org.codehaus.janino:janino'
     implementation 'org.liquibase:liquibase-core'
@@ -73,20 +73,20 @@ dependencies {
     implementation 'org.ehcache:ehcache:3.10.8:jakarta'
     implementation 'org.hashids:hashids:1.0.3'
     implementation 'jakarta.ws.rs:jakarta.ws.rs-api'
-    implementation 'com.google.mug:mug:9.2'
+    implementation 'com.google.mug:mug:9.3'
     implementation 'org.apache.lucene:lucene-queryparser:9.12.3'
 
     // required by openapi-generated models and api interfaces
     implementation 'jakarta.validation:jakarta.validation-api'
-    implementation 'io.swagger.core.v3:swagger-annotations:2.2.38'
+    implementation 'io.swagger.core.v3:swagger-annotations:2.2.40'
 
     // Terra libraries
     implementation group: 'org.broadinstitute.dsde.workbench', name: 'sam-client_2.13', version: 'v0.0.282'
-    implementation 'com.squareup.okhttp3:okhttp:5.1.0' // required by Sam client
+    implementation 'com.squareup.okhttp3:okhttp:5.3.0' // required by Sam client
     implementation "bio.terra:datarepo-client:2.13.0-SNAPSHOT"
     // WSM client included for models only
     implementation "bio.terra:workspace-manager-client:0.254.983-SNAPSHOT"
-    implementation "bio.terra:java-pfb-library:0.86.0"
+    implementation "bio.terra:java-pfb-library:0.87.0"
     implementation project(path: ':client')
 
     // Parquet, used for TDR snapshot import
@@ -120,7 +120,7 @@ dependencies {
     implementation "org.apache.hadoop:hadoop-mapreduce-client-core:$hadoop_version", withoutHadoopExcludes
 
     annotationProcessor 'org.springframework.boot:spring-boot-configuration-processor'
-    runtimeOnly 'org.webjars.npm:swagger-ui-dist:5.29.1'
+    runtimeOnly 'org.webjars.npm:swagger-ui-dist:5.30.1'
     testImplementation 'io.micrometer:micrometer-observation-test'
     testImplementation 'org.springframework.boot:spring-boot-starter-test'
     testImplementation 'org.junit.jupiter:junit-jupiter'
@@ -131,7 +131,7 @@ dependencies {
     testImplementation 'org.awaitility:awaitility'
 
     // google bucket mock
-    testImplementation 'com.google.cloud:google-cloud-nio:0.128.5'
+    testImplementation 'com.google.cloud:google-cloud-nio:0.128.7'
 
     constraints {
         implementation('org.json:json:20250517') {
@@ -149,7 +149,7 @@ dependencies {
             because("CVE-2025-48734")
         }
         // tomcat-embed-core is included by Spring Boot
-        implementation('org.apache.tomcat.embed:tomcat-embed-core:11.0.12') {
+        implementation('org.apache.tomcat.embed:tomcat-embed-core:11.0.13') {
             because("CVE-2025-48988")
         }
     }
