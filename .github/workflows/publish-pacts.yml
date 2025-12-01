@@ -26,7 +26,7 @@ jobs:
     outputs:
       is-bump: ${{ steps.bumpcheck.outputs.is-bump }}
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
       - name: Skip version bump merges
         id: bumpcheck
         uses: ./.github/actions/bump-skip
@@ -73,7 +73,7 @@ jobs:
       repo-version: ${{ steps.extract-branch.outputs.repo-version }}
 
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
 
       - name: Extract branch
         id: extract-branch
@@ -108,7 +108,7 @@ jobs:
 
     steps:
       - name: Checkout current code
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
       - name: Set up JDK
         uses: actions/setup-java@v5
         with:
