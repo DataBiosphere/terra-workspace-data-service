@@ -8,7 +8,7 @@ plugins {
     id 'org.openapi.generator'
     id 'com.diffplug.spotless'
     id 'jacoco'
-    id "au.com.dius.pact" version "4.6.17"
+    id "au.com.dius.pact" version "4.6.18"
     id 'jvm-test-suite'
     id 'antlr'
 }
@@ -65,7 +65,7 @@ dependencies {
     implementation 'org.postgresql:postgresql'
     implementation 'org.webjars:webjars-locator-lite' // versioned by spring dependency management
     implementation 'com.fasterxml.jackson.dataformat:jackson-dataformat-csv'
-    implementation 'io.sentry:sentry-logback:8.25.0'
+    implementation 'io.sentry:sentry-logback:8.27.1'
     implementation 'net.logstash.logback:logstash-logback-encoder:9.0'
     implementation 'org.codehaus.janino:janino'
     implementation 'org.liquibase:liquibase-core'
@@ -73,20 +73,20 @@ dependencies {
     implementation 'org.ehcache:ehcache:3.10.8:jakarta'
     implementation 'org.hashids:hashids:1.0.3'
     implementation 'jakarta.ws.rs:jakarta.ws.rs-api'
-    implementation 'com.google.mug:mug:9.3'
+    implementation 'com.google.mug:mug:9.4'
     implementation 'org.apache.lucene:lucene-queryparser:9.12.3'
 
     // required by openapi-generated models and api interfaces
     implementation 'jakarta.validation:jakarta.validation-api'
-    implementation 'io.swagger.core.v3:swagger-annotations:2.2.40'
+    implementation 'io.swagger.core.v3:swagger-annotations:2.2.41'
 
     // Terra libraries
     implementation group: 'org.broadinstitute.dsde.workbench', name: 'sam-client_2.13', version: 'v0.0.282'
-    implementation 'com.squareup.okhttp3:okhttp:5.3.0' // required by Sam client
+    implementation 'com.squareup.okhttp3:okhttp:5.3.2' // required by Sam client
     implementation "bio.terra:datarepo-client:2.13.0-SNAPSHOT"
     // WSM client included for models only
     implementation "bio.terra:workspace-manager-client:0.254.983-SNAPSHOT"
-    implementation "bio.terra:java-pfb-library:0.87.0"
+    implementation "bio.terra:java-pfb-library:0.90.0"
     implementation project(path: ':client')
 
     // Parquet, used for TDR snapshot import
@@ -120,18 +120,18 @@ dependencies {
     implementation "org.apache.hadoop:hadoop-mapreduce-client-core:$hadoop_version", withoutHadoopExcludes
 
     annotationProcessor 'org.springframework.boot:spring-boot-configuration-processor'
-    runtimeOnly 'org.webjars.npm:swagger-ui-dist:5.30.1'
+    runtimeOnly 'org.webjars.npm:swagger-ui-dist:5.30.3'
     testImplementation 'io.micrometer:micrometer-observation-test'
     testImplementation 'org.springframework.boot:spring-boot-starter-test'
     testImplementation 'org.junit.jupiter:junit-jupiter'
     testImplementation project(':client')
-    testImplementation 'au.com.dius.pact.provider:spring:4.6.17'
-    testImplementation 'au.com.dius.pact.consumer:junit5:4.6.17'
+    testImplementation 'au.com.dius.pact.provider:spring:4.6.18'
+    testImplementation 'au.com.dius.pact.consumer:junit5:4.6.18'
     testImplementation 'org.junit-pioneer:junit-pioneer:2.3.0'
     testImplementation 'org.awaitility:awaitility'
 
     // google bucket mock
-    testImplementation 'com.google.cloud:google-cloud-nio:0.128.7'
+    testImplementation 'com.google.cloud:google-cloud-nio:0.128.8'
 
     constraints {
         implementation('org.json:json:20250517') {
@@ -141,7 +141,7 @@ dependencies {
         implementation('org.apache.commons:commons-compress:1.28.0') {
             because("CVE-2023-42503")
         }
-        implementation('org.apache.commons:commons-configuration2:2.12.0') {
+        implementation('org.apache.commons:commons-configuration2:2.13.0') {
             because("CVE-2024-29131, CVE-2024-29133")
         }
         // required by org.apache.hadoop:hadoop-common:3.4.1
@@ -149,7 +149,7 @@ dependencies {
             because("CVE-2025-48734")
         }
         // tomcat-embed-core is included by Spring Boot
-        implementation('org.apache.tomcat.embed:tomcat-embed-core:11.0.13') {
+        implementation('org.apache.tomcat.embed:tomcat-embed-core:11.0.14') {
             because("CVE-2025-48988")
         }
     }
