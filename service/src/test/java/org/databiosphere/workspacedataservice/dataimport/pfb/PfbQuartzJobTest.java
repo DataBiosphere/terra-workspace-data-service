@@ -21,6 +21,7 @@ import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import org.databiosphere.workspacedataservice.common.ControlPlaneTestBase;
 import org.databiosphere.workspacedataservice.dao.JobDao;
+import org.databiosphere.workspacedataservice.dataimport.protecteddatasupport.ProtectedDataSupport;
 import org.databiosphere.workspacedataservice.rawls.RawlsClient;
 import org.databiosphere.workspacedataservice.service.BatchWriteService;
 import org.databiosphere.workspacedataservice.service.CollectionService;
@@ -57,6 +58,7 @@ class PfbQuartzJobTest extends ControlPlaneTestBase {
   @MockitoBean DataTableTypeInspector dataTableTypeInspector;
   @Autowired PfbTestSupport testSupport;
   @Autowired MeterRegistry meterRegistry;
+  @MockitoBean ProtectedDataSupport protectedDataSupport;
 
   // test resources used below
   @Value("classpath:avro/minimal_data.avro")

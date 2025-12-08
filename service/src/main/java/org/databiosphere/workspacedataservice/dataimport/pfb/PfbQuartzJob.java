@@ -26,6 +26,9 @@ import org.databiosphere.workspacedataservice.config.DataImportProperties;
 import org.databiosphere.workspacedataservice.dao.JobDao;
 import org.databiosphere.workspacedataservice.dataimport.ImportDetails;
 import org.databiosphere.workspacedataservice.dataimport.ImportDetailsRetriever;
+import org.databiosphere.workspacedataservice.dataimport.ImportRequirements;
+import org.databiosphere.workspacedataservice.dataimport.ImportRequirementsFactory;
+import org.databiosphere.workspacedataservice.dataimport.protecteddatasupport.ProtectedDataSupport;
 import org.databiosphere.workspacedataservice.dataimport.snapshotsupport.MultiCloudSnapshotSupportFactory;
 import org.databiosphere.workspacedataservice.dataimport.snapshotsupport.SnapshotSupport;
 import org.databiosphere.workspacedataservice.jobexec.JobDataMapReader;
@@ -66,6 +69,8 @@ public class PfbQuartzJob extends QuartzJob {
   private final ImportDetailsRetriever importDetailsRetriever;
   private final ImportMetrics importMetrics;
   private final DrsService drsService;
+  private final ProtectedDataSupport protectedDataSupport;
+  private final ImportRequirementsFactory importRequirementsFactory;
 
   public PfbQuartzJob(
       JobDao jobDao,
@@ -78,7 +83,8 @@ public class PfbQuartzJob extends QuartzJob {
       MultiCloudSnapshotSupportFactory snapshotSupportFactory,
       DataImportProperties dataImportProperties,
       ImportDetailsRetriever importDetailsRetriever,
-      DrsService drsService) {
+      DrsService drsService,
+      ProtectedDataSupport protectedDataSupport) {
     super(jobDao, observationRegistry, dataImportProperties);
     this.recordSourceFactory = recordSourceFactory;
     this.recordSinkFactory = recordSinkFactory;
@@ -88,6 +94,9 @@ public class PfbQuartzJob extends QuartzJob {
     this.importDetailsRetriever = importDetailsRetriever;
     this.importMetrics = importMetrics;
     this.drsService = drsService;
+    this.protectedDataSupport = protectedDataSupport;
+    this.importRequirementsFactory =
+        new ImportRequirementsFactory(dataImportProperties.getSources());
   }
 
   @Override
@@ -109,15 +118,32 @@ public class PfbQuartzJob extends QuartzJob {
 
     ImportDetails details = importDetailsRetriever.fetch(jobId, jobData, PrefixStrategy.PFB);
 
+    // Early PFB content inspection to determine if auth domains should be applied
+    // This is HTTP connection #0 to the PFB.
+    logger.info("Inspecting PFB content for auth domain requirements...");
+    Set<UUID> snapshotIds = withPfbStream(uri, this::findSnapshots);
+    boolean hasNresConsent = false;
+    if (snapshotIds.isEmpty()) {
+      hasNresConsent = withPfbStream(uri, this::hasNresConsentGroup);
+      if (!hasNresConsent) {
+        // Without NRES, we need to check the requirements and potentially add auth domains which
+        // were deferred
+        ImportRequirements requirements = importRequirementsFactory.getRequirementsForImport(uri);
+
+        // Apply auth domains if needed based on actual content
+        if (!requirements.requiredAuthDomainGroups().isEmpty()) {
+          logger.info("Applying auth domain groups based on PFB content analysis...");
+          protectedDataSupport.addAuthDomainGroupsToWorkspace(
+              details.workspaceId(), requirements.requiredAuthDomainGroups());
+        }
+      }
+    }
     // Find all the snapshot ids in the PFB, then create or verify references from the
     // workspace to the snapshot for each of those snapshot ids.
     // This will throw an exception if there are policy conflicts between the workspace
     // and the snapshots.
     //
-    // This is HTTP connection #1 to the PFB.
-    logger.info("Finding snapshots in this PFB...");
-    Set<UUID> snapshotIds = withPfbStream(uri, this::findSnapshots);
-
+    // This is HTTP connection #1 to the PFB (reusing snapshotIds from earlier).
     logger.info("Linking snapshots...");
     linkSnapshots(snapshotIds, details.workspaceId());
 
@@ -260,5 +286,21 @@ public class PfbQuartzJob extends QuartzJob {
       logger.warn("found unparseable snapshot id '{}' in PFB contents", input);
       return null;
     }
+  }
+
+  /** Check if the PFB contains any records with anvil_dataset:consent_group set to NRES */
+  private boolean hasNresConsentGroup(DataFileStream<GenericRecord> dataStream) {
+    Stream<GenericRecord> recordStream =
+        StreamSupport.stream(
+            Spliterators.spliteratorUnknownSize(dataStream.iterator(), Spliterator.ORDERED), false);
+
+    return recordStream
+        .map(rec -> rec.get("object"))
+        .filter(GenericRecord.class::isInstance)
+        .map(GenericRecord.class::cast)
+        .filter(obj -> obj.hasField("anvil_dataset:consent_group"))
+        .map(obj -> obj.get("anvil_dataset:consent_group"))
+        .filter(Objects::nonNull)
+        .anyMatch(consentGroup -> "NRES".equals(consentGroup.toString()));
   }
 }

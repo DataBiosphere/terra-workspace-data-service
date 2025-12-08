@@ -8,6 +8,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -262,7 +263,7 @@ class DefaultImportValidatorTest extends ControlPlaneTestBase {
     // Arrange
     ImportRequestServerModel importRequest =
         new ImportRequestServerModel(
-            TypeEnum.PFB, URI.create("https://files.terra.bio/authdomain.pfb"));
+            TypeEnum.TDRMANIFEST, URI.create("https://files.terra.bio/authdomain.pfb"));
 
     // Act
     importValidator.validateImport(importRequest, destinationWorkspaceId);
@@ -270,6 +271,21 @@ class DefaultImportValidatorTest extends ControlPlaneTestBase {
     // Assert
     verify(protectedDataSupport)
         .addAuthDomainGroupsToWorkspace(destinationWorkspaceId, List.of(authDomain));
+  }
+
+  // AuthDomains for PFBs are added at a later stage, not by the ImportValidator
+  @Test
+  void doesNotAddAuthDomainsForPfbs() {
+    // Arrange
+    ImportRequestServerModel importRequest =
+        new ImportRequestServerModel(
+            TypeEnum.PFB, URI.create("https://files.terra.bio/authdomain.pfb"));
+
+    // Act
+    importValidator.validateImport(importRequest, destinationWorkspaceId);
+
+    // Assert
+    verify(protectedDataSupport, never()).addAuthDomainGroupsToWorkspace(any(), any());
   }
 
   @ParameterizedTest
