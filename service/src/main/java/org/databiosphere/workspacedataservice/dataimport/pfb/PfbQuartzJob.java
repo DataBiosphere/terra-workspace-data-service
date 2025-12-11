@@ -122,9 +122,11 @@ public class PfbQuartzJob extends QuartzJob {
     // This is HTTP connection #0 to the PFB.
     logger.info("Inspecting PFB content for auth domain requirements...");
     Set<UUID> snapshotIds = withPfbStream(uri, this::findSnapshots);
+    logger.info("Found {} unique snapshot IDs in PFB", snapshotIds.size());
     boolean hasNresConsent = false;
     if (snapshotIds.isEmpty()) {
       hasNresConsent = withPfbStream(uri, this::hasNresConsentGroup);
+      logger.info("NRES consent group present in PFB: {}", hasNresConsent);
       if (!hasNresConsent) {
         // Without NRES, we need to check the requirements and potentially add auth domains which
         // were deferred
