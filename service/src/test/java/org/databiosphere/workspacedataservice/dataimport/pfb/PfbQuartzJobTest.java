@@ -4,6 +4,7 @@ import static org.databiosphere.workspacedataservice.TestTags.SLOW;
 import static org.databiosphere.workspacedataservice.dataimport.pfb.PfbTestUtils.stubJobContext;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.times;
@@ -66,6 +67,9 @@ class PfbQuartzJobTest extends ControlPlaneTestBase {
 
   @Value("classpath:avro/test.avro")
   Resource testAvroResource;
+
+  @Value("classpath:avro/consent_nres.avro")
+  Resource consentNresResource;
 
   @BeforeEach
   void beforeEach() {
@@ -232,5 +236,24 @@ class PfbQuartzJobTest extends ControlPlaneTestBase {
     double endingSnapshotsLinkedTotal = snapshotsLinkedSummary.totalAmount();
     assertEquals(1, endingSnapshotsLinkedCount - startingSnapshotsLinkedCount);
     assertEquals(0, endingSnapshotsLinkedTotal - startingSnapshotsLinkedTotal);
+  }
+
+  @Test
+  void hasNresConsentGroupReturnsCorrectValues() throws IOException {
+    PfbQuartzJob pfbQuartzJob = testSupport.buildPfbQuartzJob();
+
+    // Test case 1: File without NRES consent group should return false
+    //    boolean hasNresWithoutConsent =
+    //        pfbQuartzJob.withPfbStream(
+    //            minimalDataAvroResource.getURI(), pfbQuartzJob::hasNresConsentGroup);
+    //    assertFalse(
+    //        hasNresWithoutConsent,
+    //        "Should return false when no anvil_dataset with NRES consent group exists");
+
+    // Test case 2: File with NRES consent group should return true
+    boolean hasNresWithConsent =
+        pfbQuartzJob.withPfbStream(consentNresResource.getURI(), pfbQuartzJob::hasNresConsentGroup);
+    assertTrue(
+        hasNresWithConsent, "Should return true when anvil_dataset with NRES consent group exists");
   }
 }

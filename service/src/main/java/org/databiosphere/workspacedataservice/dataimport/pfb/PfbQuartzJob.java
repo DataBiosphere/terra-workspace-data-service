@@ -291,18 +291,17 @@ public class PfbQuartzJob extends QuartzJob {
   }
 
   /** Check if the PFB contains any anvil_dataset records with consent_group set to NRES */
-  private boolean hasNresConsentGroup(DataFileStream<GenericRecord> dataStream) {
+  boolean hasNresConsentGroup(DataFileStream<GenericRecord> dataStream) {
     Stream<GenericRecord> recordStream =
         StreamSupport.stream(
             Spliterators.spliteratorUnknownSize(dataStream.iterator(), Spliterator.ORDERED), false);
 
     return recordStream
-        .filter(rec -> "anvil_dataset".equals(rec.get("name"))) // Filter for anvil_dataset table
+        .filter(
+            rec ->
+                "anvil_dataset"
+                    .equals(rec.get("name").toString())) // Filter for anvil_dataset table
         .map(rec -> rec.get("object"))
-        .filter(GenericRecord.class::isInstance)
-        .map(GenericRecord.class::cast)
-        .filter(obj -> obj.hasField("anvil_dataset")) // Check if object has anvil_dataset field
-        .map(obj -> obj.get("anvil_dataset"))
         .filter(GenericRecord.class::isInstance)
         .map(GenericRecord.class::cast)
         .filter(
