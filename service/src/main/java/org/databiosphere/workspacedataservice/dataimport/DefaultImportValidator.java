@@ -153,7 +153,7 @@ public class DefaultImportValidator implements ImportValidator {
     }
 
     // Skip auth domain application for PFBs until content is analyzed
-    if (!(importRequest.getType() == TypeEnum.PFB)
+    if (importRequest.getType() != TypeEnum.PFB
         && !requirements.requiredAuthDomainGroups().isEmpty()) {
       protectedDataSupport.addAuthDomainGroupsToWorkspace(
           destinationWorkspaceId, requirements.requiredAuthDomainGroups());

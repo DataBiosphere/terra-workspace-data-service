@@ -3,6 +3,7 @@ package org.databiosphere.workspacedataservice.dataimport.pfb;
 import static org.databiosphere.workspacedataservice.TestTags.SLOW;
 import static org.databiosphere.workspacedataservice.dataimport.pfb.PfbTestUtils.stubJobContext;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
@@ -18,9 +19,11 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.UUID;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import org.databiosphere.workspacedataservice.common.ControlPlaneTestBase;
+import org.databiosphere.workspacedataservice.config.DataImportProperties;
 import org.databiosphere.workspacedataservice.dao.JobDao;
 import org.databiosphere.workspacedataservice.dataimport.protecteddatasupport.ProtectedDataSupport;
 import org.databiosphere.workspacedataservice.rawls.RawlsClient;
@@ -60,6 +63,7 @@ class PfbQuartzJobTest extends ControlPlaneTestBase {
   @Autowired PfbTestSupport testSupport;
   @Autowired MeterRegistry meterRegistry;
   @MockitoBean ProtectedDataSupport protectedDataSupport;
+  @MockitoBean DataImportProperties dataImportProperties;
 
   // test resources used below
   @Value("classpath:avro/minimal_data.avro")
@@ -243,17 +247,112 @@ class PfbQuartzJobTest extends ControlPlaneTestBase {
     PfbQuartzJob pfbQuartzJob = testSupport.buildPfbQuartzJob();
 
     // Test case 1: File without NRES consent group should return false
-    //    boolean hasNresWithoutConsent =
-    //        pfbQuartzJob.withPfbStream(
-    //            minimalDataAvroResource.getURI(), pfbQuartzJob::hasNresConsentGroup);
-    //    assertFalse(
-    //        hasNresWithoutConsent,
-    //        "Should return false when no anvil_dataset with NRES consent group exists");
+    boolean hasNresWithoutConsent =
+        pfbQuartzJob.withPfbStream(
+            minimalDataAvroResource.getURI(), pfbQuartzJob::hasNresConsentGroup);
+    assertFalse(
+        hasNresWithoutConsent,
+        "Should return false when no anvil_dataset with NRES consent group exists");
 
     // Test case 2: File with NRES consent group should return true
     boolean hasNresWithConsent =
         pfbQuartzJob.withPfbStream(consentNresResource.getURI(), pfbQuartzJob::hasNresConsentGroup);
     assertTrue(
         hasNresWithConsent, "Should return true when anvil_dataset with NRES consent group exists");
+  }
+
+  @Test
+  void authDomainsNotAddedWhenNresConsentGroupPresent() throws JobExecutionException, IOException {
+    UUID jobId = UUID.randomUUID();
+    CollectionId collectionId = CollectionId.of(UUID.randomUUID());
+    WorkspaceId workspaceId = WorkspaceId.of(UUID.randomUUID());
+    JobExecutionContext mockContext = stubJobContext(jobId, consentNresResource, collectionId.id());
+
+    when(collectionService.getWorkspaceId(collectionId)).thenReturn(workspaceId);
+    when(batchWriteService.batchWrite(any(), any(), any(), any()))
+        .thenReturn(BatchWriteResult.empty());
+
+    // Mock DataImportProperties to return sources that will create ImportRequirements with auth
+    // domains
+    DataImportProperties.ImportSourceConfig mockSource =
+        new DataImportProperties.ImportSourceConfig(
+            List.of(Pattern.compile(".*")), // Match any URI
+            false, // requirePrivateWorkspace
+            false, // requireProtectedDataPolicy
+            List.of("test-auth-domain") // requiredAuthDomainGroups
+            );
+    when(dataImportProperties.getSources()).thenReturn(List.of(mockSource));
+
+    testSupport.buildPfbQuartzJob().execute(mockContext);
+
+    // When NRES consent group is present, auth domains should NOT be added
+    verify(protectedDataSupport, times(0)).addAuthDomainGroupsToWorkspace(any(), any());
+
+    verify(jobDao).running(jobId);
+  }
+
+  @Test
+  void authDomainsAddedWhenNoNresConsentGroupAndNoSnapshots()
+      throws JobExecutionException, IOException {
+    UUID jobId = UUID.randomUUID();
+    CollectionId collectionId = CollectionId.of(UUID.randomUUID());
+    WorkspaceId workspaceId = WorkspaceId.of(UUID.randomUUID());
+    JobExecutionContext mockContext =
+        stubJobContext(jobId, minimalDataAvroResource, collectionId.id());
+
+    when(collectionService.getWorkspaceId(collectionId)).thenReturn(workspaceId);
+    when(batchWriteService.batchWrite(any(), any(), any(), any()))
+        .thenReturn(BatchWriteResult.empty());
+
+    // Mock DataImportProperties to return sources that will create ImportRequirements with auth
+    // domains
+    DataImportProperties.ImportSourceConfig mockSource =
+        new DataImportProperties.ImportSourceConfig(
+            List.of(Pattern.compile(".*")), // Match any URI
+            false, // requirePrivateWorkspace
+            false, // requireProtectedDataPolicy
+            List.of("test-auth-domain") // requiredAuthDomainGroups
+            );
+    when(dataImportProperties.getSources()).thenReturn(List.of(mockSource));
+
+    testSupport.buildPfbQuartzJob().execute(mockContext);
+
+    // When no NRES consent group and no snapshots, auth domains should be added
+    // (assuming the ImportRequirements has required auth domain groups)
+    ArgumentCaptor<List<String>> authDomainCaptor = ArgumentCaptor.forClass(List.class);
+    verify(protectedDataSupport, times(1)).addAuthDomainGroupsToWorkspace(eq(workspaceId), any());
+    List<String> capturedAuthDomains = authDomainCaptor.getValue();
+    System.out.println("Captured auth domains: " + capturedAuthDomains);
+
+    verify(jobDao).running(jobId);
+  }
+
+  @Test
+  void authDomainsAddedWhenSnapshotsPresent() throws JobExecutionException, IOException {
+    UUID jobId = UUID.randomUUID();
+    CollectionId collectionId = CollectionId.of(UUID.randomUUID());
+    WorkspaceId workspaceId = WorkspaceId.of(UUID.randomUUID());
+    JobExecutionContext mockContext = stubJobContext(jobId, testAvroResource, collectionId.id());
+
+    when(collectionService.getWorkspaceId(collectionId)).thenReturn(workspaceId);
+    when(batchWriteService.batchWrite(any(), any(), any(), any()))
+        .thenReturn(BatchWriteResult.empty());
+    // Mock DataImportProperties to return sources that will create ImportRequirements with auth
+    // domains
+    DataImportProperties.ImportSourceConfig mockSource =
+        new DataImportProperties.ImportSourceConfig(
+            List.of(Pattern.compile(".*")), // Match any URI
+            false, // requirePrivateWorkspace
+            false, // requireProtectedDataPolicy
+            List.of("test-auth-domain") // requiredAuthDomainGroups
+            );
+    when(dataImportProperties.getSources()).thenReturn(List.of(mockSource));
+
+    testSupport.buildPfbQuartzJob().execute(mockContext);
+
+    // When snapshots are present, auth domains should be added regardless of consent group
+    verify(protectedDataSupport, times(1)).addAuthDomainGroupsToWorkspace(any(), any());
+
+    verify(jobDao).running(jobId);
   }
 }

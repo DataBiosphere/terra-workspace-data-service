@@ -127,19 +127,16 @@ public class PfbQuartzJob extends QuartzJob {
     if (snapshotIds.isEmpty()) {
       hasNresConsent = withPfbStream(uri, this::hasNresConsentGroup);
       logger.info("NRES consent group present in PFB: {}", hasNresConsent);
-      if (!hasNresConsent) {
-        // Without NRES, we need to check the requirements and potentially add auth domains which
-        // were deferred
-        ImportRequirements requirements = importRequirementsFactory.getRequirementsForImport(uri);
-
-        // Apply auth domains if needed based on actual content
-        if (!requirements.requiredAuthDomainGroups().isEmpty()) {
-          logger.info("Applying auth domain groups based on PFB content analysis...");
-          protectedDataSupport.addAuthDomainGroupsToWorkspace(
-              details.workspaceId(), requirements.requiredAuthDomainGroups());
-        }
-      }
     }
+    ImportRequirements requirements = importRequirementsFactory.getRequirementsForImport(uri);
+
+    // Apply auth domains unless we have no snapshots AND NRES consent is present
+    if (!requirements.requiredAuthDomainGroups().isEmpty() && !hasNresConsent) {
+      logger.info("Applying auth domain groups based on PFB content analysis...");
+      protectedDataSupport.addAuthDomainGroupsToWorkspace(
+          details.workspaceId(), requirements.requiredAuthDomainGroups());
+    }
+
     // Find all the snapshot ids in the PFB, then create or verify references from the
     // workspace to the snapshot for each of those snapshot ids.
     // This will throw an exception if there are policy conflicts between the workspace
