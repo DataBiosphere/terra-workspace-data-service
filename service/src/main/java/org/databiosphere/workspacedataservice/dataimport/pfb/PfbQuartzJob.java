@@ -288,19 +288,34 @@ public class PfbQuartzJob extends QuartzJob {
     }
   }
 
-  /** Check if the PFB contains any records with anvil_dataset:consent_group set to NRES */
+  /** Check if the PFB contains any anvil_dataset records with consent_group set to NRES */
   private boolean hasNresConsentGroup(DataFileStream<GenericRecord> dataStream) {
     Stream<GenericRecord> recordStream =
         StreamSupport.stream(
             Spliterators.spliteratorUnknownSize(dataStream.iterator(), Spliterator.ORDERED), false);
 
     return recordStream
+        .filter(rec -> "anvil_dataset".equals(rec.get("name"))) // Filter for anvil_dataset table
         .map(rec -> rec.get("object"))
         .filter(GenericRecord.class::isInstance)
         .map(GenericRecord.class::cast)
-        .filter(obj -> obj.hasField("anvil_dataset:consent_group"))
-        .map(obj -> obj.get("anvil_dataset:consent_group"))
+        .filter(obj -> obj.hasField("anvil_dataset")) // Check if object has anvil_dataset field
+        .map(obj -> obj.get("anvil_dataset"))
+        .filter(GenericRecord.class::isInstance)
+        .map(GenericRecord.class::cast)
+        .filter(
+            anvilDataset -> anvilDataset.hasField("consent_group")) // Check for consent_group field
+        .map(anvilDataset -> anvilDataset.get("consent_group"))
         .filter(Objects::nonNull)
-        .anyMatch(consentGroup -> "NRES".equals(consentGroup.toString()));
+        .anyMatch(
+            consentGroup -> {
+              // Handle both single values and arrays
+              if (consentGroup instanceof java.util.Collection) {
+                return ((java.util.Collection<?>) consentGroup)
+                    .stream().anyMatch(item -> "NRES".equals(String.valueOf(item)));
+              } else {
+                return "NRES".equals(String.valueOf(consentGroup));
+              }
+            });
   }
 }
