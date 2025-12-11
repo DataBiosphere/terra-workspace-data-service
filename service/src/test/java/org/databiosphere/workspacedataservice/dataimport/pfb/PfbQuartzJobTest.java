@@ -319,10 +319,7 @@ class PfbQuartzJobTest extends ControlPlaneTestBase {
 
     // When no NRES consent group and no snapshots, auth domains should be added
     // (assuming the ImportRequirements has required auth domain groups)
-    ArgumentCaptor<List<String>> authDomainCaptor = ArgumentCaptor.forClass(List.class);
     verify(protectedDataSupport, times(1)).addAuthDomainGroupsToWorkspace(eq(workspaceId), any());
-    List<String> capturedAuthDomains = authDomainCaptor.getValue();
-    System.out.println("Captured auth domains: " + capturedAuthDomains);
 
     verify(jobDao).running(jobId);
   }
