@@ -11,6 +11,7 @@ import bio.terra.pfb.PfbReader;
 import io.micrometer.observation.Observation;
 import io.micrometer.observation.ObservationRegistry;
 import java.net.URI;
+import java.util.List;
 import java.util.Objects;
 import java.util.Set;
 import java.util.Spliterator;
@@ -130,8 +131,12 @@ public class PfbQuartzJob extends QuartzJob {
     }
     ImportRequirements requirements = importRequirementsFactory.getRequirementsForImport(uri);
 
-    // Apply auth domains unless we have no snapshots AND NRES consent is present
-    if (!requirements.requiredAuthDomainGroups().isEmpty() && !hasNresConsent) {
+    // If we skipped auth domains earlier, but now there is neither an NRES consent group nor any
+    // snapshots,
+    // apply the configured auth domains now.
+    if (!requirements.alwaysApplyAuthDomains()
+        && !requirements.requiredAuthDomainGroups().isEmpty()
+        && !hasNresConsent) {
       logger.info("Applying auth domain groups based on PFB content analysis...");
       protectedDataSupport.addAuthDomainGroupsToWorkspace(
           details.workspaceId(), requirements.requiredAuthDomainGroups());
@@ -293,32 +298,39 @@ public class PfbQuartzJob extends QuartzJob {
         StreamSupport.stream(
             Spliterators.spliteratorUnknownSize(dataStream.iterator(), Spliterator.ORDERED), false);
 
-    return recordStream
-        .filter(
-            rec ->
-                "anvil_dataset"
-                    .equals(rec.get("name").toString())) // Filter for anvil_dataset table
-        .map(rec -> rec.get("object"))
-        .filter(GenericRecord.class::isInstance)
-        .map(GenericRecord.class::cast)
-        .filter(
-            anvilDataset -> anvilDataset.hasField("consent_group")) // Check for consent_group field
-        .map(anvilDataset -> anvilDataset.get("consent_group"))
-        .filter(
+    // Collect all consent groups from anvil_dataset records
+    List<Object> consentGroups =
+        recordStream
+            .filter(rec -> "anvil_dataset".equals(rec.get("name").toString()))
+            .map(rec -> rec.get("object"))
+            .filter(GenericRecord.class::isInstance)
+            .map(GenericRecord.class::cast)
+            .filter(anvilDataset -> anvilDataset.hasField("consent_group"))
+            .map(anvilDataset -> anvilDataset.get("consent_group"))
+            .filter(Objects::nonNull)
+            .filter(
+                consentGroup -> {
+                  if (consentGroup instanceof java.util.Collection) {
+                    return !((java.util.Collection<?>) consentGroup).isEmpty();
+                  } else {
+                    return !consentGroup.toString().isEmpty();
+                  }
+                })
+            .collect(Collectors.toList());
+
+    // Must have at least one consent group AND all must be NRES
+    if (consentGroups.isEmpty()) {
+      return false;
+    }
+
+    return consentGroups.stream()
+        .allMatch(
             consentGroup -> {
-              if (consentGroup == null) return false;
-              if (consentGroup instanceof java.util.Collection) {
-                return !((java.util.Collection<?>) consentGroup).isEmpty();
-              } else {
-                return !consentGroup.toString().isEmpty();
-              }
-            })
-        .anyMatch(
-            consentGroup -> {
-              // Handle both single values and arrays
               if (consentGroup instanceof java.util.Collection) {
                 return ((java.util.Collection<?>) consentGroup)
-                    .stream().anyMatch(item -> "NRES".equals(String.valueOf(item)));
+                    .stream()
+                        .filter(Objects::nonNull)
+                        .allMatch(item -> "NRES".equals(String.valueOf(item)));
               } else {
                 return "NRES".equals(String.valueOf(consentGroup));
               }

@@ -45,7 +45,8 @@ class ImportRequirementsFactoryTest extends ControlPlaneTestBase {
                         "^https:\\/\\/s3\\.amazonaws\\.com\\/gen3-theanvil-io-pfb-export\\/")),
                 true, // requirePrivateWorkspace
                 true, // requireProtectedDataPolicy
-                List.of("mock-auth-group")));
+                List.of("mock-auth-group"),
+                true));
     when(dataImportProperties.getSources()).thenReturn(mockSources);
   }
 

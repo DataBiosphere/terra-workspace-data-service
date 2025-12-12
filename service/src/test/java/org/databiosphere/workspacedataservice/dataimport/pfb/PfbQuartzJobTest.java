@@ -84,6 +84,9 @@ class PfbQuartzJobTest extends ControlPlaneTestBase {
   @Value("classpath:avro/notnres.avro")
   Resource nonNresConsentResource;
 
+  @Value("classpath:avro/multi_consent.avro")
+  Resource multiConsentResource;
+
   @BeforeEach
   void beforeEach() {
     // dataTableTypeInspector says ok to use data tables
@@ -284,6 +287,15 @@ class PfbQuartzJobTest extends ControlPlaneTestBase {
     assertFalse(
         hasDifferentConsent,
         "Should return false when anvil_dataset exists but consent group has different value than NRES");
+
+    // Test case 5: File with multiple anvil_dataset entries, but not all with NRES consent
+    // group, should return false
+    boolean hasMultipleConsent =
+        pfbQuartzJob.withPfbStream(
+            multiConsentResource.getURI(), pfbQuartzJob::hasNresConsentGroup);
+    assertFalse(
+        hasMultipleConsent,
+        "Should return false when multiple consent groups exist and not all have NRES");
   }
 
   @Test
@@ -304,7 +316,8 @@ class PfbQuartzJobTest extends ControlPlaneTestBase {
             List.of(Pattern.compile(".*")), // Match any URI
             false, // requirePrivateWorkspace
             false, // requireProtectedDataPolicy
-            List.of("test-auth-domain") // requiredAuthDomainGroups
+            List.of("test-auth-domain"), // requiredAuthDomainGroups
+            true // alwaysApplyAuthDomains
             );
     when(dataImportProperties.getSources()).thenReturn(List.of(mockSource));
 
@@ -336,7 +349,8 @@ class PfbQuartzJobTest extends ControlPlaneTestBase {
             List.of(Pattern.compile(".*")), // Match any URI
             false, // requirePrivateWorkspace
             false, // requireProtectedDataPolicy
-            List.of("test-auth-domain") // requiredAuthDomainGroups
+            List.of("test-auth-domain"), // requiredAuthDomainGroups
+            false // alwaysApplyAuthDomains
             );
     when(dataImportProperties.getSources()).thenReturn(List.of(mockSource));
 
@@ -367,7 +381,8 @@ class PfbQuartzJobTest extends ControlPlaneTestBase {
             List.of(Pattern.compile(".*")), // Match any URI
             false, // requirePrivateWorkspace
             false, // requireProtectedDataPolicy
-            List.of("test-auth-domain") // requiredAuthDomainGroups
+            List.of("test-auth-domain"), // requiredAuthDomainGroups
+            false // alwaysApplyAuthDomains
             );
     when(dataImportProperties.getSources()).thenReturn(List.of(mockSource));
 
