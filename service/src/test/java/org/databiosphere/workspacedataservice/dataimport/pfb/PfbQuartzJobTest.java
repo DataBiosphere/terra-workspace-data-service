@@ -75,6 +75,15 @@ class PfbQuartzJobTest extends ControlPlaneTestBase {
   @Value("classpath:avro/consent_nres.avro")
   Resource consentNresResource;
 
+  @Value("classpath:avro/consent_and_source_ids.avro")
+  Resource consentAndSourceResource;
+
+  @Value("classpath:avro/noconsent.avro")
+  Resource datasetNoConsentResource;
+
+  @Value("classpath:avro/notnres.avro")
+  Resource nonNresConsentResource;
+
   @BeforeEach
   void beforeEach() {
     // dataTableTypeInspector says ok to use data tables
@@ -259,6 +268,22 @@ class PfbQuartzJobTest extends ControlPlaneTestBase {
         pfbQuartzJob.withPfbStream(consentNresResource.getURI(), pfbQuartzJob::hasNresConsentGroup);
     assertTrue(
         hasNresWithConsent, "Should return true when anvil_dataset with NRES consent group exists");
+
+    // Test case 3: File with the correct table but no consent group should return false
+    boolean hasNoConsent =
+        pfbQuartzJob.withPfbStream(
+            datasetNoConsentResource.getURI(), pfbQuartzJob::hasNresConsentGroup);
+    assertFalse(
+        hasNoConsent, "Should return false when anvil_dataset exists but has no consent group");
+
+    // Test case 4: File with the correct table but consent group has a different value than NRES
+    // should return false
+    boolean hasDifferentConsent =
+        pfbQuartzJob.withPfbStream(
+            nonNresConsentResource.getURI(), pfbQuartzJob::hasNresConsentGroup);
+    assertFalse(
+        hasDifferentConsent,
+        "Should return false when anvil_dataset exists but consent group has different value than NRES");
   }
 
   @Test
@@ -329,7 +354,8 @@ class PfbQuartzJobTest extends ControlPlaneTestBase {
     UUID jobId = UUID.randomUUID();
     CollectionId collectionId = CollectionId.of(UUID.randomUUID());
     WorkspaceId workspaceId = WorkspaceId.of(UUID.randomUUID());
-    JobExecutionContext mockContext = stubJobContext(jobId, testAvroResource, collectionId.id());
+    JobExecutionContext mockContext =
+        stubJobContext(jobId, consentAndSourceResource, collectionId.id());
 
     when(collectionService.getWorkspaceId(collectionId)).thenReturn(workspaceId);
     when(batchWriteService.batchWrite(any(), any(), any(), any()))

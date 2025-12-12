@@ -304,7 +304,15 @@ public class PfbQuartzJob extends QuartzJob {
         .filter(
             anvilDataset -> anvilDataset.hasField("consent_group")) // Check for consent_group field
         .map(anvilDataset -> anvilDataset.get("consent_group"))
-        .filter(Objects::nonNull)
+        .filter(
+            consentGroup -> {
+              if (consentGroup == null) return false;
+              if (consentGroup instanceof java.util.Collection) {
+                return !((java.util.Collection<?>) consentGroup).isEmpty();
+              } else {
+                return !consentGroup.toString().isEmpty();
+              }
+            })
         .anyMatch(
             consentGroup -> {
               // Handle both single values and arrays
