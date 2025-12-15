@@ -135,7 +135,9 @@ public class PfbQuartzJob extends QuartzJob {
     // snapshots,
     // apply the configured auth domains now.
     if (!requirements.requiredAuthDomainGroups().isEmpty()
-        && (requirements.alwaysApplyAuthDomains() || (snapshotIds.isEmpty() && !hasNresConsent))) {
+        && !requirements.alwaysApplyAuthDomains()
+        && snapshotIds.isEmpty()
+        && !hasNresConsent) {
       logger.info("Applying auth domain groups based on PFB content analysis...");
       protectedDataSupport.addAuthDomainGroupsToWorkspace(
           details.workspaceId(), requirements.requiredAuthDomainGroups());
