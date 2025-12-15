@@ -317,7 +317,7 @@ class PfbQuartzJobTest extends ControlPlaneTestBase {
             false, // requirePrivateWorkspace
             false, // requireProtectedDataPolicy
             List.of("test-auth-domain"), // requiredAuthDomainGroups
-            true // alwaysApplyAuthDomains
+            false // alwaysApplyAuthDomains
             );
     when(dataImportProperties.getSources()).thenReturn(List.of(mockSource));
 
@@ -364,7 +364,7 @@ class PfbQuartzJobTest extends ControlPlaneTestBase {
   }
 
   @Test
-  void authDomainsAddedWhenSnapshotsPresent() throws JobExecutionException, IOException {
+  void authDomainsNotAddedWhenSnapshotsPresent() throws JobExecutionException, IOException {
     UUID jobId = UUID.randomUUID();
     CollectionId collectionId = CollectionId.of(UUID.randomUUID());
     WorkspaceId workspaceId = WorkspaceId.of(UUID.randomUUID());
@@ -388,8 +388,8 @@ class PfbQuartzJobTest extends ControlPlaneTestBase {
 
     testSupport.buildPfbQuartzJob().execute(mockContext);
 
-    // When snapshots are present, auth domains should be added regardless of consent group
-    verify(protectedDataSupport, times(1)).addAuthDomainGroupsToWorkspace(any(), any());
+    // When snapshots are present, auth domains not be added
+    verify(protectedDataSupport, times(0)).addAuthDomainGroupsToWorkspace(any(), any());
 
     verify(jobDao).running(jobId);
   }

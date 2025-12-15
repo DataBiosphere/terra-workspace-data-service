@@ -134,9 +134,8 @@ public class PfbQuartzJob extends QuartzJob {
     // If we skipped auth domains earlier, but now there is neither an NRES consent group nor any
     // snapshots,
     // apply the configured auth domains now.
-    if (!requirements.alwaysApplyAuthDomains()
-        && !requirements.requiredAuthDomainGroups().isEmpty()
-        && !hasNresConsent) {
+    if (!requirements.requiredAuthDomainGroups().isEmpty()
+        && (requirements.alwaysApplyAuthDomains() || (snapshotIds.isEmpty() && !hasNresConsent))) {
       logger.info("Applying auth domain groups based on PFB content analysis...");
       protectedDataSupport.addAuthDomainGroupsToWorkspace(
           details.workspaceId(), requirements.requiredAuthDomainGroups());
@@ -316,7 +315,7 @@ public class PfbQuartzJob extends QuartzJob {
                     return !consentGroup.toString().isEmpty();
                   }
                 })
-            .collect(Collectors.toList());
+            .toList();
 
     // Must have at least one consent group AND all must be NRES
     if (consentGroups.isEmpty()) {
