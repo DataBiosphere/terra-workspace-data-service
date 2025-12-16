@@ -11,6 +11,7 @@ import bio.terra.pfb.PfbReader;
 import io.micrometer.observation.Observation;
 import io.micrometer.observation.ObservationRegistry;
 import java.net.URI;
+import java.util.List;
 import java.util.Objects;
 import java.util.Set;
 import java.util.Spliterator;
@@ -26,6 +27,9 @@ import org.databiosphere.workspacedataservice.config.DataImportProperties;
 import org.databiosphere.workspacedataservice.dao.JobDao;
 import org.databiosphere.workspacedataservice.dataimport.ImportDetails;
 import org.databiosphere.workspacedataservice.dataimport.ImportDetailsRetriever;
+import org.databiosphere.workspacedataservice.dataimport.ImportRequirements;
+import org.databiosphere.workspacedataservice.dataimport.ImportRequirementsFactory;
+import org.databiosphere.workspacedataservice.dataimport.protecteddatasupport.ProtectedDataSupport;
 import org.databiosphere.workspacedataservice.dataimport.snapshotsupport.MultiCloudSnapshotSupportFactory;
 import org.databiosphere.workspacedataservice.dataimport.snapshotsupport.SnapshotSupport;
 import org.databiosphere.workspacedataservice.jobexec.JobDataMapReader;
@@ -66,6 +70,8 @@ public class PfbQuartzJob extends QuartzJob {
   private final ImportDetailsRetriever importDetailsRetriever;
   private final ImportMetrics importMetrics;
   private final DrsService drsService;
+  private final ProtectedDataSupport protectedDataSupport;
+  private final ImportRequirementsFactory importRequirementsFactory;
 
   public PfbQuartzJob(
       JobDao jobDao,
@@ -78,7 +84,8 @@ public class PfbQuartzJob extends QuartzJob {
       MultiCloudSnapshotSupportFactory snapshotSupportFactory,
       DataImportProperties dataImportProperties,
       ImportDetailsRetriever importDetailsRetriever,
-      DrsService drsService) {
+      DrsService drsService,
+      ProtectedDataSupport protectedDataSupport) {
     super(jobDao, observationRegistry, dataImportProperties);
     this.recordSourceFactory = recordSourceFactory;
     this.recordSinkFactory = recordSinkFactory;
@@ -88,6 +95,9 @@ public class PfbQuartzJob extends QuartzJob {
     this.importDetailsRetriever = importDetailsRetriever;
     this.importMetrics = importMetrics;
     this.drsService = drsService;
+    this.protectedDataSupport = protectedDataSupport;
+    this.importRequirementsFactory =
+        new ImportRequirementsFactory(dataImportProperties.getSources());
   }
 
   @Override
@@ -109,15 +119,36 @@ public class PfbQuartzJob extends QuartzJob {
 
     ImportDetails details = importDetailsRetriever.fetch(jobId, jobData, PrefixStrategy.PFB);
 
+    // Early PFB content inspection to determine if auth domains should be applied
+    // This is HTTP connection #0 to the PFB.
+    logger.info("Inspecting PFB content for auth domain requirements...");
+    Set<UUID> snapshotIds = withPfbStream(uri, this::findSnapshots);
+    logger.info("Found {} unique snapshot IDs in PFB", snapshotIds.size());
+    boolean hasNresConsent = false;
+    if (snapshotIds.isEmpty()) {
+      hasNresConsent = withPfbStream(uri, this::hasNresConsentGroup);
+      logger.info("NRES consent group present in PFB: {}", hasNresConsent);
+    }
+    ImportRequirements requirements = importRequirementsFactory.getRequirementsForImport(uri);
+
+    // If we skipped auth domains earlier, but now there is neither an NRES consent group nor any
+    // snapshots,
+    // apply the configured auth domains now.
+    if (!requirements.requiredAuthDomainGroups().isEmpty()
+        && !requirements.alwaysApplyAuthDomains()
+        && snapshotIds.isEmpty()
+        && !hasNresConsent) {
+      logger.info("Applying auth domain groups based on PFB content analysis...");
+      protectedDataSupport.addAuthDomainGroupsToWorkspace(
+          details.workspaceId(), requirements.requiredAuthDomainGroups());
+    }
+
     // Find all the snapshot ids in the PFB, then create or verify references from the
     // workspace to the snapshot for each of those snapshot ids.
     // This will throw an exception if there are policy conflicts between the workspace
     // and the snapshots.
     //
-    // This is HTTP connection #1 to the PFB.
-    logger.info("Finding snapshots in this PFB...");
-    Set<UUID> snapshotIds = withPfbStream(uri, this::findSnapshots);
-
+    // This is HTTP connection #1 to the PFB (reusing snapshotIds from earlier).
     logger.info("Linking snapshots...");
     linkSnapshots(snapshotIds, details.workspaceId());
 
@@ -260,5 +291,50 @@ public class PfbQuartzJob extends QuartzJob {
       logger.warn("found unparseable snapshot id '{}' in PFB contents", input);
       return null;
     }
+  }
+
+  /** Check if the PFB contains any anvil_dataset records with consent_group set to NRES */
+  boolean hasNresConsentGroup(DataFileStream<GenericRecord> dataStream) {
+    Stream<GenericRecord> recordStream =
+        StreamSupport.stream(
+            Spliterators.spliteratorUnknownSize(dataStream.iterator(), Spliterator.ORDERED), false);
+
+    // Collect all consent groups from anvil_dataset records
+    List<Object> consentGroups =
+        recordStream
+            .filter(rec -> "anvil_dataset".equals(rec.get("name").toString()))
+            .map(rec -> rec.get("object"))
+            .filter(GenericRecord.class::isInstance)
+            .map(GenericRecord.class::cast)
+            .filter(anvilDataset -> anvilDataset.hasField("consent_group"))
+            .map(anvilDataset -> anvilDataset.get("consent_group"))
+            .filter(Objects::nonNull)
+            .filter(
+                consentGroup -> {
+                  if (consentGroup instanceof java.util.Collection) {
+                    return !((java.util.Collection<?>) consentGroup).isEmpty();
+                  } else {
+                    return !consentGroup.toString().isEmpty();
+                  }
+                })
+            .toList();
+
+    // Must have at least one consent group AND all must be NRES
+    if (consentGroups.isEmpty()) {
+      return false;
+    }
+
+    return consentGroups.stream()
+        .allMatch(
+            consentGroup -> {
+              if (consentGroup instanceof java.util.Collection) {
+                return ((java.util.Collection<?>) consentGroup)
+                    .stream()
+                        .filter(Objects::nonNull)
+                        .allMatch(item -> "NRES".equals(String.valueOf(item)));
+              } else {
+                return "NRES".equals(String.valueOf(consentGroup));
+              }
+            });
   }
 }

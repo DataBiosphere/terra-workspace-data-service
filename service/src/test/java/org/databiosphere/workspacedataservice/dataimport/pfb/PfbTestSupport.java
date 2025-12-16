@@ -9,6 +9,7 @@ import org.databiosphere.workspacedataservice.activitylog.ActivityLogger;
 import org.databiosphere.workspacedataservice.config.DataImportProperties;
 import org.databiosphere.workspacedataservice.dao.JobDao;
 import org.databiosphere.workspacedataservice.dataimport.ImportDetailsRetriever;
+import org.databiosphere.workspacedataservice.dataimport.protecteddatasupport.ProtectedDataSupport;
 import org.databiosphere.workspacedataservice.dataimport.snapshotsupport.MultiCloudSnapshotSupportFactory;
 import org.databiosphere.workspacedataservice.generated.GenericJobServerModel;
 import org.databiosphere.workspacedataservice.generated.ImportRequestServerModel;
@@ -41,6 +42,7 @@ class PfbTestSupport {
   @Autowired private DataImportProperties dataImportProperties;
   @Autowired private ImportDetailsRetriever importDetailsRetriever;
   @Autowired private DrsService drsService;
+  @Autowired private ProtectedDataSupport protectedDataSupport;
 
   UUID executePfbImportQuartzJob(UUID collectionId, Resource pfbResource)
       throws IOException, JobExecutionException {
@@ -71,6 +73,7 @@ class PfbTestSupport {
         snapshotSupportFactory,
         dataImportProperties,
         importDetailsRetriever,
-        drsService);
+        drsService,
+        protectedDataSupport);
   }
 }

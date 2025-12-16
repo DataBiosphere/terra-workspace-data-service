@@ -160,6 +160,7 @@ twds:
         requirePrivateWorkspace: false
         requireProtectedDataPolicy: false
         requiredAuthDomainGroups:
+        alwaysApplyAuthDomains: true
 
   pg_dump:
     path: ${PGDUMP_PATH:/usr/bin/pg_dump}

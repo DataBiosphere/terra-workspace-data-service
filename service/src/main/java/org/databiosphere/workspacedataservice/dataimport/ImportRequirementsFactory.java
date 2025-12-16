@@ -32,7 +32,16 @@ public class ImportRequirementsFactory {
                 .flatMap(source -> source.requiredAuthDomainGroups().stream())
                 .toList();
 
+    boolean alwaysApplyAuthDomains =
+        sources != null
+            && sources.stream()
+                .filter(source -> source.matchesUri(importUri))
+                .anyMatch(ImportSourceConfig::alwaysApplyAuthDomains);
+
     return new ImportRequirements(
-        requiresPrivateWorkspace, requiresProtectedDataPolicy, requiredAuthDomainGroups);
+        requiresPrivateWorkspace,
+        requiresProtectedDataPolicy,
+        requiredAuthDomainGroups,
+        alwaysApplyAuthDomains);
   }
 }

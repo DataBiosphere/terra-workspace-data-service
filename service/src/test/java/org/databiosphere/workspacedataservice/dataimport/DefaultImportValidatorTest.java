@@ -8,6 +8,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -70,24 +71,34 @@ class DefaultImportValidatorTest extends ControlPlaneTestBase {
                   /* urls */ List.of(Pattern.compile("authdomain\\.pfb")),
                   /* requirePrivateWorkspace */ false,
                   /* requireProtectedDataPolicy */ false,
-                  /* requiredAuthDomainGroups */ List.of(authDomain)),
+                  /* requiredAuthDomainGroups */ List.of(authDomain),
+                  /* alwaysApplyAuthDomains */ true),
               new ImportSourceConfig(
                   /* urls */ List.of(Pattern.compile("protected\\.pfb")),
                   /* requirePrivateWorkspace */ false,
                   /* requireProtectedDataPolicy */ true,
-                  /* requiredAuthDomainGroups */ List.of()),
+                  /* requiredAuthDomainGroups */ List.of(),
+                  /* alwaysApplyAuthDomains */ true),
               new ImportSourceConfig(
                   /* urls */ List.of(Pattern.compile("private\\.pfb")),
                   /* requirePrivateWorkspace */ true,
                   /* requireProtectedDataPolicy */ false,
-                  /* requiredAuthDomainGroups */ List.of()),
+                  /* requiredAuthDomainGroups */ List.of(),
+                  /* alwaysApplyAuthDomains */ true),
               new ImportSourceConfig(
                   /* urls */ List.of(
                       Pattern.compile(
                           "^https:\\/\\/storage\\.googleapis\\.com/datarepo-.*-snapshot-export-bucket")),
                   /* requirePrivateWorkspace */ false,
                   /* requireProtectedDataPolicy */ false,
-                  /* requiredAuthDomainGroups */ List.of())),
+                  /* requiredAuthDomainGroups */ List.of(),
+                  /* alwaysApplyAuthDomains */ true),
+              new ImportSourceConfig(
+                  /* urls */ List.of(Pattern.compile("special-case\\.pfb")),
+                  /* requirePrivateWorkspace */ false,
+                  /* requireProtectedDataPolicy */ false,
+                  /* requiredAuthDomainGroups */ List.of("an-auth-domain"),
+                  /* alwaysApplyAuthDomains */ false)),
           /* allowedRawlsBucket */ "test-bucket",
           new NoopConnectivityChecker(),
           drsImportProperties);
@@ -272,6 +283,21 @@ class DefaultImportValidatorTest extends ControlPlaneTestBase {
         .addAuthDomainGroupsToWorkspace(destinationWorkspaceId, List.of(authDomain));
   }
 
+  // If specified to defer, do not add auth domains at validation time
+  @Test
+  void doesNotAddAuthDomainsIfDeferred() {
+    // Arrange
+    ImportRequestServerModel importRequest =
+        new ImportRequestServerModel(
+            TypeEnum.PFB, URI.create("https://files.terra.bio/special-case.pfb"));
+
+    // Act
+    importValidator.validateImport(importRequest, destinationWorkspaceId);
+
+    // Assert
+    verify(protectedDataSupport, never()).addAuthDomainGroupsToWorkspace(any(), any());
+  }
+
   @ParameterizedTest
   @MethodSource("requireProtectedWorkspacesForImportsFromConfiguredSourcesTestCases")
   void requireProtectedWorkspacesForImportsFromConfiguredSources(
@@ -325,7 +351,8 @@ class DefaultImportValidatorTest extends ControlPlaneTestBase {
                             "^https:\\/\\/storage\\.googleapis\\.com/datarepo-.*-snapshot-export-bucket")),
                     /* requirePrivateWorkspace */ false,
                     /* requireProtectedDataPolicy */ false,
-                    /* requiredAuthDomainGroups */ List.of())),
+                    /* requiredAuthDomainGroups */ List.of(),
+                    /* alwaysApplyAuthDomains */ true)),
             /* allowedRawlsBucket */ "test-bucket",
             mockConnectivityChecker,
             drsImportProperties);

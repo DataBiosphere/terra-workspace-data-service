@@ -152,7 +152,9 @@ public class DefaultImportValidator implements ImportValidator {
           "Data from this source cannot be imported into a public workspace.");
     }
 
-    if (!requirements.requiredAuthDomainGroups().isEmpty()) {
+    // Apply auth domain groups if present and always applied, else defer
+    if (requirements.alwaysApplyAuthDomains()
+        && !requirements.requiredAuthDomainGroups().isEmpty()) {
       protectedDataSupport.addAuthDomainGroupsToWorkspace(
           destinationWorkspaceId, requirements.requiredAuthDomainGroups());
     }
