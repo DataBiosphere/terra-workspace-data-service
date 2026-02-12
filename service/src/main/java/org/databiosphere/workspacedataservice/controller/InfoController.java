@@ -1,6 +1,7 @@
 package org.databiosphere.workspacedataservice.controller;
 
 import java.util.Map;
+import org.databiosphere.workspacedataservice.annotations.DeploymentMode.*;
 import org.springframework.boot.actuate.health.HealthComponent;
 import org.springframework.boot.actuate.health.HealthEndpoint;
 import org.springframework.boot.actuate.health.HttpCodeStatusMapper;
@@ -15,6 +16,8 @@ import org.springframework.web.bind.annotation.RestController;
  * Actuator. Since Actuator runs on port 9098, we need these minimal APIs to serve /status and
  * /health on the standard port.
  */
+@DataPlane
+@ControlPlane
 @RestController
 public class InfoController {
 

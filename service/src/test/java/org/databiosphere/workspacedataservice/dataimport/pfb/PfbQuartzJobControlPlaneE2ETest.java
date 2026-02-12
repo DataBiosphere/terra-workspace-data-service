@@ -20,8 +20,6 @@ import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
@@ -31,6 +29,7 @@ import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.google.common.collect.ImmutableMap;
 import com.google.mu.util.stream.BiStream;
+import io.micrometer.prometheusmetrics.PrometheusMeterRegistry;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
@@ -82,7 +81,6 @@ import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.context.bean.override.mockito.MockitoSpyBean;
 import org.springframework.test.web.servlet.MockMvc;
-import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.util.StreamUtils;
 
 /**
@@ -100,6 +98,7 @@ class PfbQuartzJobControlPlaneE2ETest extends ControlPlaneTestBase {
   @Autowired ObjectMapper mapper;
   @Autowired PfbTestSupport testSupport;
   @Autowired MockMvc mockMvc;
+  @Autowired PrometheusMeterRegistry prometheusMeterRegistry;
 
   @Autowired
   @Qualifier("mockGcsStorage")
@@ -571,8 +570,7 @@ class PfbQuartzJobControlPlaneE2ETest extends ControlPlaneTestBase {
   }
 
   private List<String> getWdsMetrics() throws Exception {
-    MvcResult result = mockMvc.perform(get("/prometheus")).andExpect(status().isOk()).andReturn();
-    String content = result.getResponse().getContentAsString();
+    String content = prometheusMeterRegistry.scrape();
 
     return stream(content.split("\n")).filter(line -> line.startsWith("wds")).toList();
   }
