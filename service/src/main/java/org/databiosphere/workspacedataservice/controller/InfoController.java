@@ -3,7 +3,10 @@ package org.databiosphere.workspacedataservice.controller;
 import java.util.Map;
 import org.springframework.boot.actuate.health.HealthComponent;
 import org.springframework.boot.actuate.health.HealthEndpoint;
+import org.springframework.boot.actuate.health.HttpCodeStatusMapper;
+import org.springframework.boot.actuate.health.Status;
 import org.springframework.boot.actuate.info.InfoEndpoint;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -17,15 +20,37 @@ public class InfoController {
 
   private final HealthEndpoint healthEndpoint;
   private final InfoEndpoint infoEndpoint;
+  private final HttpCodeStatusMapper statusMapper;
 
-  public InfoController(HealthEndpoint healthEndpoint, InfoEndpoint infoEndpoint) {
+  public InfoController(
+      HealthEndpoint healthEndpoint, InfoEndpoint infoEndpoint, HttpCodeStatusMapper statusMapper) {
     this.healthEndpoint = healthEndpoint;
     this.infoEndpoint = infoEndpoint;
+    this.statusMapper = statusMapper;
   }
 
   @GetMapping("/status")
-  public HealthComponent status() {
-    return healthEndpoint.health();
+  public ResponseEntity<HealthComponent> status() {
+    HealthComponent health = healthEndpoint.health();
+    int statusCode = statusMapper.getStatusCode(health.getStatus());
+
+    return ResponseEntity.status(statusCode).body(health);
+  }
+
+  @GetMapping("/status/liveness")
+  public ResponseEntity<HealthComponent> statusLiveness() {
+    HealthComponent health = healthEndpoint.healthForPath("liveness");
+    int statusCode = statusMapper.getStatusCode(health.getStatus());
+
+    return ResponseEntity.status(statusCode).body(health);
+  }
+
+  @GetMapping("/status/readiness")
+  public ResponseEntity<Status> statusReadiness() {
+    HealthComponent health = healthEndpoint.healthForPath("readiness");
+    int statusCode = statusMapper.getStatusCode(health.getStatus());
+
+    return ResponseEntity.status(statusCode).body(health.getStatus());
   }
 
   @GetMapping("/version")
