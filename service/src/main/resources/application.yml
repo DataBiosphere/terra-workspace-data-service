@@ -46,6 +46,8 @@ management:
       enabled: true
     pubsub:
       enabled: true
+  server:
+    port: 9098
 
   # additional keys to expose in the actuator info endpoint:
   info:

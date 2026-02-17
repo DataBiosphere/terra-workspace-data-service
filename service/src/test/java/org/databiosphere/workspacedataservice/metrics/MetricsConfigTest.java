@@ -1,12 +1,8 @@
 package org.databiosphere.workspacedataservice.metrics;
 
-import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.not;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+import static org.assertj.core.api.Assertions.assertThat;
 
-import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.prometheusmetrics.PrometheusMeterRegistry;
 import java.util.Set;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.databiosphere.workspacedataservice.common.ControlPlaneTestBase;
@@ -19,24 +15,21 @@ import org.springframework.boot.info.BuildProperties;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.annotation.DirtiesContext;
-import org.springframework.test.web.servlet.MockMvc;
 
 @DirtiesContext
 @SpringBootTest(properties = "management.prometheus.metrics.export.enabled=true")
 @AutoConfigureMockMvc
 class MetricsConfigTest extends ControlPlaneTestBase {
   @Autowired private BuildProperties buildProperties;
-  @Autowired private MockMvc mockMvc;
-  @Autowired private MeterRegistry metrics;
+  @Autowired private PrometheusMeterRegistry metrics;
 
   @Test
-  void metricsAreTaggedWithVersion() throws Exception {
+  void metricsAreTaggedWithVersion() {
     String expectedVersion = buildProperties.getVersion();
-    mockMvc
-        .perform(get("/prometheus"))
-        .andExpect(status().isOk())
-        .andExpect(content().string(containsString("version=\"%s\"".formatted(expectedVersion))))
-        .andExpect(content().string(containsString("service=\"wds\"")));
+    String scrape = metrics.scrape();
+
+    assertThat(scrape).contains("version=\"%s\"".formatted(expectedVersion));
+    assertThat(scrape).contains("service=\"wds\"");
   }
 
   private static Set<String> allowedPrefixes() {
@@ -45,21 +38,15 @@ class MetricsConfigTest extends ControlPlaneTestBase {
 
   @ParameterizedTest(name = "metrics with a \"{0}\" prefix are included in prometheus output")
   @MethodSource("allowedPrefixes")
-  void allowlistedMetricsAreVisible(String prefix) throws Exception {
-    String randomMetricName = RandomStringUtils.randomAlphanumeric(10);
+  void allowlistedMetricsAreVisible(String prefix) {
+    String randomMetricName = RandomStringUtils.insecure().nextAlphanumeric(10);
     String expectedPrometheusString = "%s_%s".formatted(prefix, randomMetricName);
 
-    mockMvc
-        .perform(get("/prometheus"))
-        .andExpect(status().isOk())
-        .andExpect(content().string(not(containsString(expectedPrometheusString))));
+    assertThat(metrics.scrape()).doesNotContain(expectedPrometheusString);
 
     metrics.counter("%s.%s".formatted(prefix, randomMetricName)).increment();
 
-    mockMvc
-        .perform(get("/prometheus"))
-        .andExpect(status().isOk())
-        .andExpect(content().string(containsString(expectedPrometheusString)));
+    assertThat(metrics.scrape()).contains(expectedPrometheusString);
   }
 
   @ParameterizedTest(name = "\"{0}\" is excluded from prometheus output")
@@ -72,14 +59,13 @@ class MetricsConfigTest extends ControlPlaneTestBase {
         // wds is an allowed prefix, but doesn't count if it's embedded deeper in the name
         "metric.containing.but.not.starting.with.wds"
       })
-  void excludeMetricsThatAreNotOnAllowlist(String disallowedMetricName) throws Exception {
+  void excludeMetricsThatAreNotOnAllowlist(String disallowedMetricName) {
     String unexpectedPrometheusString = disallowedMetricName.replace('.', '_');
 
     metrics.counter(disallowedMetricName).increment();
 
-    mockMvc
-        .perform(get("/prometheus"))
-        .andExpect(status().isOk())
-        .andExpect(content().string(not(containsString(unexpectedPrometheusString))));
+    String scrape = metrics.scrape();
+
+    assertThat(scrape).doesNotContain(unexpectedPrometheusString);
   }
 }
