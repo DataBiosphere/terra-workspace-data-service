@@ -1,16 +1,16 @@
 import org.springframework.boot.gradle.plugin.SpringBootPlugin
 
 plugins {
-    id 'org.springframework.boot' version '3.5.7' apply false
+    id 'org.springframework.boot' version '3.5.11' apply false
     id 'io.spring.dependency-management' version '1.1.7' apply false
     id 'com.google.cloud.tools.jib' version '3.4.3' apply false
-    id "org.sonarqube" version "7.0.1.6134" apply false
+    id "org.sonarqube" version "7.2.2.6593" apply false
     id 'idea'
-    id "org.openapi.generator" version "7.17.0" apply false
+    id "org.openapi.generator" version "7.20.0" apply false
     id 'java'
-    id 'com.gorylenko.gradle-git-properties' version '2.5.3'
+    id 'com.gorylenko.gradle-git-properties' version '2.5.7'
     id 'jacoco'
-    id 'com.diffplug.spotless' version '8.0.0' apply false
+    id 'com.diffplug.spotless' version '8.2.1' apply false
 }
 
 repositories {
