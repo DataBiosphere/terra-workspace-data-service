@@ -302,8 +302,13 @@ public abstract class AvroRecordConverter {
           new Conversions.DecimalConversion()
               .fromFixed(fixedAttr, fixedAttr.getSchema(), logicalType);
 
-      // strip trailing zeros from the decimal part. Example: 0.220000000 will become 0.22
-      return bigDecimal.stripTrailingZeros();
+      // now, try to turn the BigDecimal back into an int or a double; this truncates the
+      // precision to the actual value. Example: 0.220000000 will become 0.22
+      try {
+        return bigDecimal.intValueExact();
+      } catch (ArithmeticException ae) {
+        return bigDecimal.doubleValue();
+      }
     }
 
     // here, we could handle other logical types such as date or the various timestamps
