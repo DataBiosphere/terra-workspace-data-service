@@ -148,6 +148,10 @@ dependencies {
         implementation('commons-beanutils:commons-beanutils:1.11.0') {
             because("CVE-2025-48734")
         }
+        // aircompressor required by parquet
+        implementation('io.airlift:aircompressor:2.0.3') {
+            because("CVE-2025-67721")
+        }
         // tomcat-embed-core is included by Spring Boot
         implementation('org.apache.tomcat.embed:tomcat-embed-core:11.0.14') {
             because("CVE-2025-48988")
