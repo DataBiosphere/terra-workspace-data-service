@@ -153,7 +153,7 @@ dependencies {
             because("CVE-2025-67721")
         }
         // tomcat-embed-core is included by Spring Boot
-        implementation('org.apache.tomcat.embed:tomcat-embed-core:11.0.18') {
+        implementation('org.apache.tomcat.embed:tomcat-embed-core:11.0.21') {
             because("CVE-2025-48988")
         }
     }
