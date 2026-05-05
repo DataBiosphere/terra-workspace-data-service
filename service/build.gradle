@@ -120,7 +120,7 @@ dependencies {
     implementation "org.apache.hadoop:hadoop-mapreduce-client-core:$hadoop_version", withoutHadoopExcludes
 
     annotationProcessor 'org.springframework.boot:spring-boot-configuration-processor'
-    runtimeOnly 'org.webjars.npm:swagger-ui-dist:5.30.1'
+    runtimeOnly 'org.webjars.npm:swagger-ui-dist:5.32.1'
     testImplementation 'io.micrometer:micrometer-observation-test'
     testImplementation 'org.springframework.boot:spring-boot-starter-test'
     testImplementation 'org.junit.jupiter:junit-jupiter'
@@ -155,6 +155,9 @@ dependencies {
         // tomcat-embed-core is included by Spring Boot
         implementation('org.apache.tomcat.embed:tomcat-embed-core:11.0.21') {
             because("CVE-2025-48988")
+        }
+        implementation('org.eclipse.jetty:jetty-server:12.0.32') {
+            because("GHSA-xxh7-fcf3-rj7f")
         }
     }
 }
