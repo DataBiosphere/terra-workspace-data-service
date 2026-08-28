@@ -61,6 +61,7 @@ dependencies {
     implementation 'io.micrometer:micrometer-registry-prometheus'
     implementation 'org.springframework.integration:spring-integration-jdbc'
     implementation 'org.aspectj:aspectjweaver' // required by spring-retry, not used directly
+    implementation 'org.eclipse.jetty:jetty-client' // required by Rawls client
     implementation 'com.google.guava:guava:33.5.0-jre'
     implementation 'org.postgresql:postgresql'
     implementation 'org.webjars:webjars-locator-lite' // versioned by spring dependency management
@@ -104,7 +105,10 @@ dependencies {
         exclude(group: 'log4j')
         exclude(group: 'org.slf4j')
         exclude(group: 'io.netty')
+        // Keep a whole unused web server, and its CVEs, off the classpath.
         exclude(group: 'org.mortbay.jetty')
+        exclude(group: 'org.eclipse.jetty')
+        exclude(group: 'org.eclipse.jetty.websocket')
         exclude(group: 'javax.servlet')
         exclude(group: 'javax.servlet.jsp')
         exclude(group: 'com.sun.jersey')
