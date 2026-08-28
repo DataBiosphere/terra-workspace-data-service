@@ -104,7 +104,6 @@ dependencies {
         exclude(group: 'log4j')
         exclude(group: 'org.slf4j')
         exclude(group: 'io.netty')
-        // Keep a whole unused web server, and its CVEs, off the classpath.
         exclude(group: 'org.mortbay.jetty')
         exclude(group: 'org.eclipse.jetty')
         exclude(group: 'org.eclipse.jetty.websocket')
