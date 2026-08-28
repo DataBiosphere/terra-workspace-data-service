@@ -15,7 +15,6 @@ repositories {
 
 dependencies {
     implementation 'jakarta.annotation:jakarta.annotation-api:3.0.0'
-    implementation 'jakarta.ws.rs:jakarta.ws.rs-api:4.0.0'
 }
 
 apply from: 'publishing.gradle'

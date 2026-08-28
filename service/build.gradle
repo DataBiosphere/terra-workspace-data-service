@@ -68,7 +68,6 @@ dependencies {
     implementation 'com.fasterxml.jackson.dataformat:jackson-dataformat-csv'
     implementation 'io.sentry:sentry-logback:8.25.0'
     implementation 'net.logstash.logback:logstash-logback-encoder:9.0'
-    implementation 'org.codehaus.janino:janino'
     implementation 'org.liquibase:liquibase-core'
     implementation 'javax.cache:cache-api'
     implementation 'org.ehcache:ehcache:3.10.8:jakarta'
@@ -155,13 +154,6 @@ dependencies {
         // aircompressor required by parquet
         implementation('io.airlift:aircompressor:2.0.3') {
             because("CVE-2025-67721")
-        }
-        // tomcat-embed-core is included by Spring Boot
-        implementation('org.apache.tomcat.embed:tomcat-embed-core:11.0.22') {
-            because("CVE-2025-48988")
-        }
-        implementation('org.eclipse.jetty:jetty-server:12.0.32') {
-            because("GHSA-xxh7-fcf3-rj7f")
         }
     }
 }
