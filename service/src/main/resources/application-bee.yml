@@ -14,3 +14,26 @@ drs:
   allowed-hosts:
     - data\.[^.]+\.bee\.envs-terra\.bio # This is a regex that matches tdr bee environments
     - repo-dev\.dev\.sagebase\.org
+
+twds:
+  data-import:
+    sources:
+      - urls:
+          - ^https:\/\/storage\.googleapis\.com\/datarepo-.*-snapshot-export-bucket
+          - ^https:\/\/s3\.amazonaws\.com\/edu-ucsc-gi-platform-hca-prod-storage-prod\.us-east-1
+          - ^https:\/\/storage\.googleapis\.com\/fixtures-for-tests
+        requirePrivateWorkspace: true
+        requireProtectedDataPolicy: true
+        requiredAuthDomainGroups:
+          - "required_for_testing"
+
+  pg_dump:
+    path: ${PGDUMP_PATH:/usr/bin/pg_dump}
+    psqlPath: ${PSQL_PATH:/usr/bin/psql}
+    port: ${env.wds.db.port}
+    user: ${env.wds.db.user}
+    dbName: ${env.wds.db.name}
+    password: ${env.wds.db.password}
+    host: ${env.wds.db.host}
+    # When running on Azure in k8s with workload identity set PGDUMP_USE_AZURE_IDENTITY to true
+    useAzureIdentity: ${PGDUMP_USE_AZURE_IDENTITY:true}
