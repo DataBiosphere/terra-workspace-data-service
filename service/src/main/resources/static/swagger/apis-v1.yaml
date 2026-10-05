@@ -33,6 +33,35 @@ paths:
   ##############################
   # Import APIs
   ##############################
+  /getUrlSize/v1:
+    post:
+      summary: Get a list of file size for a given signed url
+      description: Get a list of file size for a given signed url
+      operationId: getUrlSizeV1
+      tags:
+        - Import
+      requestBody:
+        description: A request to the original signed url file or manifest to urls
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              title: UrlInfoRequest
+              required:
+                - url
+              properties:
+                url:
+                  type: string
+                  format: uri
+                  description: signed url file or manifest to urls
+      responses:
+        202:
+          description: Request accepted.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UrlSizeResult'
   /{instanceUuid}/import/v1:
     post:
       summary: Import from a file
@@ -533,6 +562,29 @@ components:
           additionalProperties: true
           description: |
             The key is the expression name and the value is the result of the expression.
+    UrlSizeResult:
+      type: object
+      description: Sizes of the files reachable from the requested url.
+      properties:
+        originalUrl:
+          type: string
+          description: the url that was requested
+        files:
+          type: array
+          description: one entry per file; a manifest resolves to multiple entries
+          items:
+            $ref: '#/components/schemas/FileInfo'
+    FileInfo:
+      type: object
+      description: A single file and its size.
+      properties:
+        signed_url:
+          type: string
+          description: signed url for this file
+        sizeBytes:
+          type: integer
+          format: int64
+          description: size of this file in bytes
     GenericJob:
       x-all-of-name: GenericJob
       description: |
