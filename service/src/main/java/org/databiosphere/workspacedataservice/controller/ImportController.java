@@ -9,7 +9,7 @@ import org.databiosphere.workspacedataservice.generated.GenericJobServerModel;
 import org.databiosphere.workspacedataservice.generated.ImportApi;
 import org.databiosphere.workspacedataservice.generated.ImportRequestServerModel;
 import org.databiosphere.workspacedataservice.generated.UrlInfoRequestServerModel;
-import org.databiosphere.workspacedataservice.generated.UrlSizeResultServerModel;
+import org.databiosphere.workspacedataservice.generated.UrlInfoResultServerModel;
 import org.databiosphere.workspacedataservice.service.ImportService;
 import org.databiosphere.workspacedataservice.service.PermissionService;
 import org.databiosphere.workspacedataservice.service.SignedUrlUtilService;
@@ -36,12 +36,13 @@ public class ImportController implements ImportApi {
   }
 
   @Override
-  public ResponseEntity<UrlSizeResultServerModel> getUrlSizeV1(
+  public ResponseEntity<UrlInfoResultServerModel> getUrlInfoV1(
       UrlInfoRequestServerModel urlInfoRequest) {
     List<FileInfoServerModel> files = signedUrlUtilService.getInfo(urlInfoRequest);
-    UrlSizeResultServerModel result = new UrlSizeResultServerModel();
-    result.setOriginalUrl(urlInfoRequest.getUrl().toString());
-    result.setFiles(files);
+    UrlInfoResultServerModel result = new UrlInfoResultServerModel(
+      urlInfoRequest.getUrl().toString(),
+      files
+    );
     return new ResponseEntity<>(result, HttpStatus.OK);
   }
 

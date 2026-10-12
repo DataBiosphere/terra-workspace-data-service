@@ -33,11 +33,11 @@ paths:
   ##############################
   # Import APIs
   ##############################
-  /getUrlSize/v1:
+  /getUrlInfo/v1:
     post:
-      summary: Get a list of file size for a given signed url
-      description: Get a list of file size for a given signed url
-      operationId: getUrlSizeV1
+      summary: Get a list of file information for a given signed url
+      description: Get a list of file information for a given signed url
+      operationId: getUrlInfoV1
       tags:
         - Import
       requestBody:
@@ -61,7 +61,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/UrlSizeResult'
+                $ref: '#/components/schemas/UrlInfoResult'
   /{instanceUuid}/import/v1:
     post:
       summary: Import from a file
@@ -562,9 +562,12 @@ components:
           additionalProperties: true
           description: |
             The key is the expression name and the value is the result of the expression.
-    UrlSizeResult:
+    UrlInfoResult:
       type: object
-      description: Sizes of the files reachable from the requested url.
+      description: Information of a single or multiple files reachable from the requested url.
+      required:
+        - originalUrl
+        - files
       properties:
         originalUrl:
           type: string
@@ -576,7 +579,7 @@ components:
             $ref: '#/components/schemas/FileInfo'
     FileInfo:
       type: object
-      description: A single file and its size.
+      description: Information about a single file, such as size, for a given url
       properties:
         signed_url:
           type: string

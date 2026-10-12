@@ -45,7 +45,7 @@ public class SignedUrlUtilService {
     return false;
   }
 
-  private List<URI> extractmultipleUris(UrlInfoRequestServerModel urlInfoRequest) {
+  private List<URI> extractMultipleUrls(UrlInfoRequestServerModel urlInfoRequest) {
     HttpRequest request =
         HttpRequest.newBuilder().uri(urlInfoRequest.getUrl()).timeout(TIMEOUT).GET().build();
 
@@ -141,7 +141,7 @@ public class SignedUrlUtilService {
     importValidator.validateUrl(urlInfoRequest.getUrl());
 
     if (isManifest(urlInfoRequest)) {
-      List<URI> uris = extractmultipleUris(urlInfoRequest);
+      List<URI> uris = extractMultipleUrls(urlInfoRequest);
       return getFileSizesFromManifestSignedUrl(uris);
     } else {
       return List.of(getFileSizeFromSignedUri(urlInfoRequest.getUrl()));
