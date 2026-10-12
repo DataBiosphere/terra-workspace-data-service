@@ -4,10 +4,10 @@ import java.util.List;
 import java.util.UUID;
 import org.databiosphere.workspacedataservice.annotations.DeploymentMode.ControlPlane;
 import org.databiosphere.workspacedataservice.annotations.DeploymentMode.DataPlane;
-import org.databiosphere.workspacedataservice.generated.FileInfoServerModel;
 import org.databiosphere.workspacedataservice.generated.GenericJobServerModel;
 import org.databiosphere.workspacedataservice.generated.ImportApi;
 import org.databiosphere.workspacedataservice.generated.ImportRequestServerModel;
+import org.databiosphere.workspacedataservice.generated.UrlFileInfoServerModel;
 import org.databiosphere.workspacedataservice.generated.UrlInfoRequestServerModel;
 import org.databiosphere.workspacedataservice.generated.UrlInfoResultServerModel;
 import org.databiosphere.workspacedataservice.service.ImportService;
@@ -38,11 +38,9 @@ public class ImportController implements ImportApi {
   @Override
   public ResponseEntity<UrlInfoResultServerModel> getUrlInfoV1(
       UrlInfoRequestServerModel urlInfoRequest) {
-    List<FileInfoServerModel> files = signedUrlUtilService.getInfo(urlInfoRequest);
-    UrlInfoResultServerModel result = new UrlInfoResultServerModel(
-      urlInfoRequest.getUrl().toString(),
-      files
-    );
+    List<UrlFileInfoServerModel> files = signedUrlUtilService.getInfo(urlInfoRequest);
+    UrlInfoResultServerModel result =
+        new UrlInfoResultServerModel(urlInfoRequest.getUrl().toString(), files);
     return new ResponseEntity<>(result, HttpStatus.OK);
   }
 

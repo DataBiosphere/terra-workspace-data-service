@@ -9,7 +9,7 @@ import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 import org.databiosphere.workspacedataservice.dataimport.ImportValidator;
-import org.databiosphere.workspacedataservice.generated.FileInfoServerModel;
+import org.databiosphere.workspacedataservice.generated.UrlFileInfoServerModel;
 import org.databiosphere.workspacedataservice.generated.UrlInfoRequestServerModel;
 import org.databiosphere.workspacedataservice.service.model.exception.ValidationException;
 import org.json.JSONArray;
@@ -75,8 +75,8 @@ public class SignedUrlUtilService {
     return uriList;
   }
 
-  private List<FileInfoServerModel> getFileSizesFromManifestSignedUrl(List<URI> signedUris) {
-    List<FileInfoServerModel> fileInfos = new ArrayList<>();
+  private List<UrlFileInfoServerModel> getFileSizesFromManifestSignedUrl(List<URI> signedUris) {
+    List<UrlFileInfoServerModel> fileInfos = new ArrayList<>();
     signedUris.forEach(
         uri -> {
           try {
@@ -91,7 +91,7 @@ public class SignedUrlUtilService {
     return fileInfos;
   }
 
-  private FileInfoServerModel getFileSizeFromSignedUri(URI signedUri) {
+  private UrlFileInfoServerModel getFileSizeFromSignedUri(URI signedUri) {
     HttpRequest request =
         HttpRequest.newBuilder()
             .uri(signedUri)
@@ -111,14 +111,14 @@ public class SignedUrlUtilService {
     // -1 if the Content-Length header is missing
     Long size = response.headers().firstValueAsLong("Content-Length").orElse(-1L);
 
-    FileInfoServerModel info = new FileInfoServerModel();
+    UrlFileInfoServerModel info = new UrlFileInfoServerModel();
     info.setSignedUrl(signedUri.toString());
     info.setSizeBytes(size);
     return info;
   }
 
-  private FileInfoServerModel unknownSize(URI uri) {
-    FileInfoServerModel info = new FileInfoServerModel();
+  private UrlFileInfoServerModel unknownSize(URI uri) {
+    UrlFileInfoServerModel info = new UrlFileInfoServerModel();
     info.setSignedUrl(uri.toString());
     info.setSizeBytes(-1L);
     return info;
@@ -137,7 +137,7 @@ public class SignedUrlUtilService {
     }
   }
 
-  public List<FileInfoServerModel> getInfo(UrlInfoRequestServerModel urlInfoRequest) {
+  public List<UrlFileInfoServerModel> getInfo(UrlInfoRequestServerModel urlInfoRequest) {
     importValidator.validateUrl(urlInfoRequest.getUrl());
 
     if (isManifest(urlInfoRequest)) {

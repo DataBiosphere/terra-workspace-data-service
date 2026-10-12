@@ -576,8 +576,8 @@ components:
           type: array
           description: one entry per file; a manifest resolves to multiple entries
           items:
-            $ref: '#/components/schemas/FileInfo'
-    FileInfo:
+            $ref: '#/components/schemas/UrlFileInfo'
+    UrlFileInfo:
       type: object
       description: Information about a single file, such as size, for a given url
       properties:
