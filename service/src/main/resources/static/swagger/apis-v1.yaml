@@ -33,6 +33,35 @@ paths:
   ##############################
   # Import APIs
   ##############################
+  /getUrlInfo/v1:
+    post:
+      summary: Get a list of file information for a given signed url
+      description: Get a list of file information for a given signed url
+      operationId: getUrlInfoV1
+      tags:
+        - Import
+      requestBody:
+        description: A request to the original signed url file or manifest to urls
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              title: UrlInfoRequest
+              required:
+                - url
+              properties:
+                url:
+                  type: string
+                  format: uri
+                  description: signed url file or manifest to urls
+      responses:
+        202:
+          description: Request accepted.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UrlInfoResult'
   /{instanceUuid}/import/v1:
     post:
       summary: Import from a file
@@ -533,6 +562,32 @@ components:
           additionalProperties: true
           description: |
             The key is the expression name and the value is the result of the expression.
+    UrlInfoResult:
+      type: object
+      description: Information of a single or multiple files reachable from the requested url.
+      required:
+        - originalUrl
+        - files
+      properties:
+        originalUrl:
+          type: string
+          description: the url that was requested
+        files:
+          type: array
+          description: one entry per file; a manifest resolves to multiple entries
+          items:
+            $ref: '#/components/schemas/UrlFileInfo'
+    UrlFileInfo:
+      type: object
+      description: Information about a single file, such as size, for a given url
+      properties:
+        signed_url:
+          type: string
+          description: signed url for this file
+        sizeBytes:
+          type: integer
+          format: int64
+          description: size of this file in bytes
     GenericJob:
       x-all-of-name: GenericJob
       description: |

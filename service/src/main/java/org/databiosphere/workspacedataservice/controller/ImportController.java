@@ -1,13 +1,18 @@
 package org.databiosphere.workspacedataservice.controller;
 
+import java.util.List;
 import java.util.UUID;
 import org.databiosphere.workspacedataservice.annotations.DeploymentMode.ControlPlane;
 import org.databiosphere.workspacedataservice.annotations.DeploymentMode.DataPlane;
 import org.databiosphere.workspacedataservice.generated.GenericJobServerModel;
 import org.databiosphere.workspacedataservice.generated.ImportApi;
 import org.databiosphere.workspacedataservice.generated.ImportRequestServerModel;
+import org.databiosphere.workspacedataservice.generated.UrlFileInfoServerModel;
+import org.databiosphere.workspacedataservice.generated.UrlInfoRequestServerModel;
+import org.databiosphere.workspacedataservice.generated.UrlInfoResultServerModel;
 import org.databiosphere.workspacedataservice.service.ImportService;
 import org.databiosphere.workspacedataservice.service.PermissionService;
+import org.databiosphere.workspacedataservice.service.SignedUrlUtilService;
 import org.databiosphere.workspacedataservice.shared.model.CollectionId;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -19,10 +24,24 @@ import org.springframework.web.bind.annotation.RestController;
 public class ImportController implements ImportApi {
   private final ImportService importService;
   private final PermissionService permissionService;
+  private final SignedUrlUtilService signedUrlUtilService;
 
-  public ImportController(ImportService importService, PermissionService permissionService) {
+  public ImportController(
+      ImportService importService,
+      PermissionService permissionService,
+      SignedUrlUtilService signedUrlUtilService) {
     this.importService = importService;
     this.permissionService = permissionService;
+    this.signedUrlUtilService = signedUrlUtilService;
+  }
+
+  @Override
+  public ResponseEntity<UrlInfoResultServerModel> getUrlInfoV1(
+      UrlInfoRequestServerModel urlInfoRequest) {
+    List<UrlFileInfoServerModel> files = signedUrlUtilService.getInfo(urlInfoRequest);
+    UrlInfoResultServerModel result =
+        new UrlInfoResultServerModel(urlInfoRequest.getUrl().toString(), files);
+    return new ResponseEntity<>(result, HttpStatus.OK);
   }
 
   @Override
