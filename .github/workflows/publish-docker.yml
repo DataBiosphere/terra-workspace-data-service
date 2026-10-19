@@ -63,7 +63,7 @@ jobs:
 
       - name: Run Trivy vulnerability scanner
         # Link to the github location of the action https://github.com/broadinstitute/dsp-appsec-trivy-action
-        uses: broadinstitute/dsp-appsec-trivy-action@v1
+        uses: broadinstitute/dsp-appsec-trivy-action@v2
         with:
           image: ${{ steps.gcr-image-name.outputs.name }}:${{ steps.setHash.outputs.git_short_sha }}
 
