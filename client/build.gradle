@@ -40,6 +40,8 @@ spotlessJavaCheck.onlyIf({ spotlessEnabled })
 
 // Run spotless check when running in github actions, otherwise run spotless apply.
 compileJava {
+    // consumers (e.g. Orchestration) run on Java 17; don't let a newer local JDK raise the bytecode level
+    options.release = 17
     if (spotlessEnabled) {
         if (isCiServer) {
             dependsOn(spotlessCheck)

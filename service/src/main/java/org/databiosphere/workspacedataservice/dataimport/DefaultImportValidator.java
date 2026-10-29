@@ -76,8 +76,38 @@ public class DefaultImportValidator implements ImportValidator {
     this.connectivityChecker = connectivityChecker;
   }
 
+  private Set<Pattern> getAllowedHosts(URI url) {
+    return allowedHostsByScheme.get(url.getScheme());
+  }
+
   private Set<Pattern> getAllowedHosts(ImportRequestServerModel importRequest) {
     return allowedHostsByScheme.get(importRequest.getUrl().getScheme());
+  }
+
+  public void validateUrl(URI url) throws ValidationException {
+    if (!url.isAbsolute()) {
+      throw new ValidationException("Invalid import URL.");
+    }
+
+    boolean isHostAllowed =
+        getAllowedHosts(url).stream()
+            .anyMatch(allowedHost -> allowedHost.matcher(url.getHost()).matches());
+
+    boolean isUrlAllowed =
+        sourceUrlPatterns.stream()
+            .anyMatch(urlPattern -> urlPattern.matcher(url.toString()).find());
+
+    // If URL is not specifically allow-listed in either allowed-hosts or
+    // protection required list, then it's not allowed.
+    if (!isHostAllowed && !isUrlAllowed) {
+      throw new ValidationException("Files may not be imported from %s.".formatted(url.getHost()));
+    }
+
+    try {
+      connectivityChecker.validateConnectivity(url);
+    } catch (Exception e) {
+      throw new ValidationException("Unable to connect to import URI: " + e.getMessage());
+    }
   }
 
   public void validateImport(
