@@ -1,5 +1,6 @@
 package org.databiosphere.workspacedataservice.service;
 
+import java.io.IOException;
 import java.io.InputStream;
 import java.net.URI;
 import java.net.http.HttpClient;
@@ -92,29 +93,55 @@ public class SignedUrlUtilService {
   }
 
   private UrlFileInfoServerModel getFileSizeFromSignedUri(URI signedUri) {
+    // signed urls are bound to the http method they were signed for, which is GET; a HEAD
+    // request fails the signature check with a 403. Request only the first byte instead.
     HttpRequest request =
         HttpRequest.newBuilder()
             .uri(signedUri)
             .timeout(TIMEOUT)
-            .method("HEAD", HttpRequest.BodyPublishers.noBody())
+            .header("Range", "bytes=0-0")
+            .GET()
             .build();
 
-    HttpResponse<Void> response = send(request, HttpResponse.BodyHandlers.discarding(), signedUri);
+    HttpResponse<InputStream> response =
+        send(request, HttpResponse.BodyHandlers.ofInputStream(), signedUri);
 
-    int statusCode = response.statusCode();
-    if (statusCode < 200 || statusCode > 299) {
-      // e.g. an expired signature returns 403 with no Content-Length; surface that rather
-      // than silently reporting a size of -1
-      throw new ValidationException("Url returned status code %d.".formatted(statusCode));
+    long size;
+    // close the body unread; if the server ignored the Range header this avoids downloading
+    // the whole file
+    try (InputStream ignored = response.body()) {
+      int statusCode = response.statusCode();
+      if (statusCode < 200 || statusCode > 299) {
+        // e.g. an expired signature returns 403 with no Content-Length; surface that rather
+        // than silently reporting a size of -1
+        throw new ValidationException("Url returned status code %d.".formatted(statusCode));
+      }
+      size = sizeFromHeaders(response);
+    } catch (IOException e) {
+      throw new ValidationException(
+          "Unable to read response from %s: %s".formatted(signedUri, e.getMessage()), e);
     }
-
-    // -1 if the Content-Length header is missing
-    Long size = response.headers().firstValueAsLong("Content-Length").orElse(-1L);
 
     UrlFileInfoServerModel info = new UrlFileInfoServerModel();
     info.setSignedUrl(signedUri.toString());
     info.setSizeBytes(size);
     return info;
+  }
+
+  private long sizeFromHeaders(HttpResponse<?> response) {
+    // 206 Partial Content: the total size follows the slash, e.g. "bytes 0-0/108993"
+    if (response.statusCode() == 206) {
+      return response
+          .headers()
+          .firstValue("Content-Range")
+          .map(contentRange -> contentRange.substring(contentRange.lastIndexOf('/') + 1))
+          .filter(total -> total.chars().allMatch(Character::isDigit) && !total.isEmpty())
+          .map(Long::parseLong)
+          .orElse(-1L); // -1 if Content-Range is missing or the total is unknown ("*")
+    }
+    // 200 OK: the server ignored the Range header and Content-Length is the full size;
+    // -1 if the Content-Length header is missing
+    return response.headers().firstValueAsLong("Content-Length").orElse(-1L);
   }
 
   private UrlFileInfoServerModel unknownSize(URI uri) {
