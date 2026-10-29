@@ -14,3 +14,8 @@ drs:
   allowed-hosts:
     - data\.[^.]+\.bee\.envs-terra\.bio # This is a regex that matches tdr bee environments
     - repo-dev\.dev\.sagebase\.org
+
+twds:
+  data-import:
+    allowed-hosts:
+      - cdis-presigned-url-test\.s3\.amazonaws\.com
