@@ -29,6 +29,8 @@ subprojects {
     ext {
         artifactGroup = "${group}.${rootProject.name}"
     }
+    // Override via Spring Boot property so logback-classic and logback-core stay in sync
+    ext['logback.version'] = '1.6.6'
 
     apply plugin: 'io.spring.dependency-management'
 
@@ -37,7 +39,7 @@ subprojects {
             mavenBom(SpringBootPlugin.BOM_COORDINATES)
         }
         dependencies {
-            dependency 'ch.qos.logback:logback-classic:1.6.6'
+            // no dependencyManagement overrides at this time
         }
     }
 }
