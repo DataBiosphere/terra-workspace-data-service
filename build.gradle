@@ -37,7 +37,7 @@ subprojects {
             mavenBom(SpringBootPlugin.BOM_COORDINATES)
         }
         dependencies {
-            // no dependencyManagement overrides at this time
+            dependency 'ch.qos.logback:logback-classic:1.6.6'
         }
     }
 }
