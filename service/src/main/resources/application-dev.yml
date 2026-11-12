@@ -14,6 +14,14 @@ drs:
     - repo-dev\.dev\.sagebase\.org
 twds:
   data-import:
+    allowed-hosts:
+      - anvil\.gi\.ucsc\.edu
+      - .*\.singlecell\.gi\.ucsc\.edu,
+      - .*gen3\.biodatacatalyst\.nhlbi\.nih\.gov
+      - .*service\.azul\.data\.humancellatlas\.org
+      - pdc-pfb-files\.s3\.amazonaws.com
+      - cdis-presigned-url-test\.s3\.amazonaws\.com
+      - bdc-indexing-manifests\.s3\.amazonaws\.com
     sources:
       - urls:
           - ^https:\/\/s3\.amazonaws\.com\/edu-ucsc-gi-platform-anvil-dev-storage-anvildev\.us-east-1\/
