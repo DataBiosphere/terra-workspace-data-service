@@ -23,5 +23,6 @@ twds:
       - .*gen3\.biodatacatalyst\.nhlbi\.nih\.gov
       - .*service\.azul\.data\.humancellatlas\.org
       - pdc-pfb-files\.s3\.amazonaws.com
+      - staging-gen3-biodatacatalyst-nhlbi-nih-gov-pfb-exp\.s3\.amazonaws\.com
       - cdis-presigned-url-test\.s3\.amazonaws\.com
       - bdc-indexing-manifests\.s3\.amazonaws\.com
