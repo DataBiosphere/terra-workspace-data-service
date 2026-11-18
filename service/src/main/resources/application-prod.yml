@@ -13,6 +13,7 @@ twds:
       - .*service\.azul\.data\.humancellatlas\.org
       - .*redcaptest\.vumc\.org
       - .*redcap\.vumc\.org
+      - cdis-presigned-url-test\.s3\.amazonaws\.com
     sources:
       - urls:
           - ^https:\/\/.*gen3\.biodatacatalyst\.nhlbi\.nih\.gov\/
