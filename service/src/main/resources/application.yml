@@ -155,6 +155,9 @@ twds:
       - .*service\.azul\.data\.humancellatlas\.org
       - pdc-pfb-files\.s3\.amazonaws.com
       - gen3-biodatacatalyst-nhlbi-nih-gov-pfb-export\.s3\.amazonaws\.com
+      - staging-gen3-biodatacatalyst-nhlbi-nih-gov-pfb-exp\.s3\.amazonaws\.com
+      - cdis-presigned-url-test\.s3\.amazonaws\.com
+      - bdc-indexing-manifests\.s3\.amazonaws\.com
     sources:
       - urls:
           - ^https:\/\/storage\.googleapis\.com\/datarepo-.*-snapshot-export-bucket

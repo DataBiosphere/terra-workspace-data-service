@@ -9,6 +9,7 @@ twds:
       - service\.prod\.anvil\.gi\.ucsc\.edu
       - .*\.singlecell\.gi\.ucsc\.edu
       - .*gen3\.biodatacatalyst\.nhlbi\.nih\.gov
+      - gen3-biodatacatalyst-nhlbi-nih-gov-pfb-export\.s3\.amazonaws\.com
       - .*service\.azul\.data\.humancellatlas\.org
       - .*redcaptest\.vumc\.org
       - .*redcap\.vumc\.org
