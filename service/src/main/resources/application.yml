@@ -150,11 +150,11 @@ twds:
     connectivity-check-enabled: false
     allowed-hosts:
       - anvil\.gi\.ucsc\.edu
-      - .*\.singlecell\.gi\.ucsc\.edu,
+      - .*\.singlecell\.gi\.ucsc\.edu
       - .*gen3\.biodatacatalyst\.nhlbi\.nih\.gov
       - .*service\.azul\.data\.humancellatlas\.org
       - pdc-pfb-files\.s3\.amazonaws.com
-      - gen3-biodatacatalyst-nhlbi-nih-gov-pfb-export\.s3\.amazonaws.com
+      - gen3-biodatacatalyst-nhlbi-nih-gov-pfb-export\.s3\.amazonaws\.com
     sources:
       - urls:
           - ^https:\/\/storage\.googleapis\.com\/datarepo-.*-snapshot-export-bucket
